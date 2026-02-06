@@ -200,6 +200,31 @@
                 border-color: #1d4ed8 !important;
             }
 
+        /* ====== Responsividade Móvel ====== */
+        @@media (max-width: 768px) {
+            .fc .fc-toolbar {
+                flex-direction: column !important;
+                gap: 15px !important;
+                align-items: center !important;
+            }
+
+            .fc .fc-toolbar-chunk {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+            }
+
+            .fc .fc-toolbar-title {
+                text-align: center;
+                font-size: 1.1rem;
+            }
+
+            /* Garante que o grupo "Semanas" e botões nav fiquem bem no meio */
+            .fc .fc-button-group {
+                justify-content: center;
+            }
+        }
+
     </style>
 }
 
@@ -262,14 +287,27 @@
                     </select>
                 </div>
 
+                <div id="rowStatus" class="cc-modal-row d-none">
+                    <label class="form-label mb-0">Status</label>
+                    <select id="idStatus" class="form-select">
+                        <option value="Agendado">Agendado</option>
+                        <option value="Pago">Pago</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+
                 <div class="text-muted small">
 
                 </div>
             </div>
 
             <div class="modal-footer">
+                <input type="hidden" id="idAgendamento" value="" />
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" id="btnSalvar" class="btn btn-primary">Salvar</button>
+                <button type="button" id="btnAlterar" class="btn btn-success d-none">Alterar</button>
+                <button type="button" id="btnExcluir" class="btn btn-danger d-none">Excluir</button>
             </div>
         </div>
     </div>
@@ -373,15 +411,53 @@
                 failureCallback(e);
             }
         }
-        function abrirModal(start, end) {
+        async function atualizarServicosDisponiveis(start, selectId, currentValue) {
+            const resp = await fetch(`?handler=AvailableServices&start=${encodeURIComponent(start.toISOString())}`);
+            if (!resp.ok) return;
+
+            const services = await resp.json();
+            const select = document.getElementById(selectId);
+            
+            // Se o serviço atual não estiver no retorno (por indisponibilidade), 
+            // no modo de edição é bom manter a opção dele se quisermos apenas visualizá-lo.
+            // Mas o requisito pede para "somente mostrar os disponíveis".
+            
+            select.innerHTML = '<option value="">Selecione...</option>';
+            services.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.nome;
+                opt.dataset.duracaoMin = s.duracaoMin;
+                if (currentValue && parseInt(currentValue) === s.id) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        async function abrirModal(start, end) {
             selectionStart = start;
             selectionEnd = end;
 
+            // Título dinâmico
+            document.querySelector('#agendamentoModal .modal-title').textContent = 'Novo agendamento';
+
+            document.getElementById('idAgendamento').value = '';
             document.getElementById('inicio').value = formatLocal(start);
+
+            // Fetch serviços disponíveis
+            await atualizarServicosDisponiveis(start, 'idServico');
 
             // limpa campos
             document.getElementById('idPessoa').value = '';
             document.getElementById('idServico').value = '';
+
+            // Toggle botões
+            document.getElementById('btnSalvar').classList.remove('d-none');
+            document.getElementById('btnAlterar').classList.add('d-none');
+            document.getElementById('btnExcluir').classList.add('d-none');
+
+            // Status no novo agendamento
+            document.getElementById('rowStatus').classList.add('d-none');
+            document.getElementById('idStatus').value = 'Agendado';
 
             // fim passa a ser calculado pelo serviço (fallback 30min)
             recalcularFimPeloServico();
@@ -447,9 +523,10 @@
 
             const result = await resp.json();
 
+            const primeiroNome = clienteTexto.split(' ')[0];
             calendar.addEvent({
                 id: result.id,
-                title: `${servicoTexto} - ${clienteTexto}`,
+                title: `${primeiroNome} - ${servicoTexto}`,
                 start: selectionStart,
                 end: selectionEnd,
                 color: result.servicoCor
@@ -457,6 +534,65 @@
 
 
             modal.hide();
+        }
+
+        async function alterarAgendamento() {
+            const id = document.getElementById('idAgendamento').value;
+            const idPessoaStr = document.getElementById('idPessoa').value;
+            const idServicoStr = document.getElementById('idServico').value;
+
+            if (!id || !idPessoaStr || !idServicoStr) {
+                alert('Dados incompletos.');
+                return;
+            }
+
+            const payload = {
+                id: parseInt(id),
+                idPessoa: parseInt(idPessoaStr),
+                idServico: parseInt(idServicoStr),
+                status: document.getElementById('idStatus').value
+            };
+
+            const resp = await fetch('?handler=Update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (resp.ok) {
+                const result = await resp.json();
+                const evt = calendar.getEventById(id);
+                if (evt) {
+                   evt.setProp('title', result.title);
+                   evt.setProp('backgroundColor', result.color);
+                   evt.setProp('borderColor', result.color);
+                   evt.setEnd(result.end);
+                }
+                modal.hide();
+            } else {
+                const txt = await resp.text();
+                alert(txt || 'Erro ao alterar agendamento.');
+            }
+        }
+
+        async function excluirAgendamento() {
+            const id = document.getElementById('idAgendamento').value;
+            if (!id || !confirm('Deseja realmente excluir?')) return;
+
+            const resp = await fetch(`?handler=Delete&id=${id}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+
+            if (resp.ok) {
+                calendar.getEventById(id)?.remove();
+                modal.hide();
+            } else {
+                alert('Erro ao excluir.');
+            }
         }
 
         /* funções do modal novo - acionado pelo botão*/
@@ -491,10 +627,13 @@
             document.getElementById('fimNovo').value = toDateTimeLocalValue(end);
         }
 
-        function abrirModalNovoAgendamento() {
+        async function abrirModalNovoAgendamento() {
             // default: próximo bloco de 30 min
             const start = roundToNext30Min(new Date());
             document.getElementById('inicioNovo').value = toDateTimeLocalValue(start);
+
+            // Fetch serviços disponíveis
+            await atualizarServicosDisponiveis(start, 'idServicoNovo');
 
             // limpa selects
             document.getElementById('idPessoaNovo').value = '';
@@ -556,9 +695,10 @@
 
             const result = await resp.json();
 
+            const primeiroNome = clienteTexto.split(' ')[0];
             calendar.addEvent({
                 id: result.id,
-                title: `${servicoTexto} - ${clienteTexto}`,
+                title: `${primeiroNome} - ${servicoTexto}`,
                 start: start,
                 end: end,
                 color: result.servicoCor
@@ -624,19 +764,38 @@
                 events: carregarEventos,
 
                 eventClick: async function (info) {
-                    const ok = confirm(`Excluir este agendamento?\n\n${info.event.title}`);
-                    if (!ok) return;
+                    const id = info.event.id;
+                    const resp = await fetch(`?handler=Details&id=${id}`);
+                    if (!resp.ok) return;
 
-                    const resp = await fetch(`?handler=Delete&id=${encodeURIComponent(info.event.id)}`, {
-                        method: 'POST',
-                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
-                    });
+                    const data = await resp.json();
+                    
+                    selectionStart = new Date(data.start);
 
-                    if (resp.ok) {
-                        info.event.remove();
-                    } else {
-                        alert('Não foi possível excluir.');
-                    }
+                    // Título dinâmico
+                    document.querySelector('#agendamentoModal .modal-title').textContent = 'Alterar Agendamento';
+
+                    document.getElementById('idAgendamento').value = data.id;
+                    document.getElementById('inicio').value = formatLocal(selectionStart);
+                    document.getElementById('idPessoa').value = data.idPessoa;
+                    
+                    // Fetch serviços disponíveis para este horário antes de setar o valor
+                    await atualizarServicosDisponiveis(selectionStart, 'idServico', data.idServico);
+                    
+                    document.getElementById('idServico').value = data.idServico;
+                    
+                    // Status
+                    document.getElementById('rowStatus').classList.remove('d-none');
+                    document.getElementById('idStatus').value = data.status;
+
+                    recalcularFimPeloServico();
+
+                    // Toggle botões
+                    document.getElementById('btnSalvar').classList.add('d-none');
+                    document.getElementById('btnAlterar').classList.remove('d-none');
+                    document.getElementById('btnExcluir').classList.remove('d-none');
+
+                    modal.show();
                 }
             });
 
@@ -644,8 +803,17 @@
             modalNovo = new bootstrap.Modal(document.getElementById('agendamentoNovoModal'));
 
             document.getElementById('btnSalvarNovo').addEventListener('click', salvarAgendamentoNovo);
+            document.getElementById('inicioNovo').addEventListener('change', async function() {
+                const start = fromDateTimeLocalValue(this.value);
+                if (start) {
+                    await atualizarServicosDisponiveis(start, 'idServicoNovo');
+                }
+                sugerirFimNovoPeloServico();
+            });
             document.getElementById('idServicoNovo').addEventListener('change', sugerirFimNovoPeloServico);
-            document.getElementById('inicioNovo').addEventListener('change', sugerirFimNovoPeloServico);
+
+            document.getElementById('btnAlterar').addEventListener('click', alterarAgendamento);
+            document.getElementById('btnExcluir').addEventListener('click', excluirAgendamento);
 
 
 

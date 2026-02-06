@@ -252,3 +252,43 @@ GO
 CREATE INDEX [IX_CorteCor_Pagamento_MeioPagamento_Data]
 ON [dbo].[CorteCor_Pagamento] ([IdMeioPagamento], [Data]);
 GO
+
+
+-- 1) Tabela de pagamentos vinculados a agendamentos
+CREATE TABLE dbo.CorteCor_Pagamento (
+    IdPagamento               UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_CorteCor_Pagamento_IdPagamento DEFAULT NEWID(),
+    IdAgendamento             INT NOT NULL,
+
+    Ativo                     BIT NOT NULL CONSTRAINT DF_CorteCor_Pagamento_Ativo DEFAULT (1),
+    Status                    VARCHAR(20) NOT NULL CONSTRAINT DF_CorteCor_Pagamento_Status DEFAULT ('Pendente'), 
+    Valor                     DECIMAL(18,2) NOT NULL,
+    Moeda                     CHAR(3) NOT NULL CONSTRAINT DF_CorteCor_Pagamento_Moeda DEFAULT ('BRL'),
+    Descricao                 NVARCHAR(200) NULL,
+
+    MercadoPagoPreferenceId   NVARCHAR(80) NULL,
+    MercadoPagoPaymentId      NVARCHAR(30) NULL,
+    CheckoutUrl               NVARCHAR(500) NULL,
+
+    MpStatus                  NVARCHAR(30) NULL,
+    MpStatusDetail            NVARCHAR(80) NULL,
+
+    CriadoEm                  DATETIME2(0) NOT NULL CONSTRAINT DF_CorteCor_Pagamento_CriadoEm DEFAULT SYSUTCDATETIME(),
+    AtualizadoEm              DATETIME2(0) NULL,
+    PagoEm                    DATETIME2(0) NULL,
+
+    CONSTRAINT PK_CorteCor_Pagamento PRIMARY KEY (IdPagamento)
+);
+
+-- 2) FK para o agendamento (ajuste o nome da PK/tabela se necessário)
+ALTER TABLE dbo.CorteCor_Pagamento
+ADD CONSTRAINT FK_CorteCor_Pagamento_Agendamento
+FOREIGN KEY (IdAgendamento) REFERENCES dbo.CorteCor_Agendamento(IdAgendamento);
+
+-- 3) Um agendamento pode ter só 1 pagamento "ativo" por vez (permite reemitir depois marcando Ativo=0)
+CREATE UNIQUE INDEX UX_CorteCor_Pagamento_Agendamento_Ativo
+ON dbo.CorteCor_Pagamento (IdAgendamento)
+WHERE Ativo = 1;
+
+-- 4) Índice para localizar rápido por IDs vindos do Mercado Pago
+CREATE INDEX IX_CorteCor_Pagamento_MercadoPagoPaymentId
+ON dbo.CorteCor_Pagamento (MercadoPagoPaymentId);
