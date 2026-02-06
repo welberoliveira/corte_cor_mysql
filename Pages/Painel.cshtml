@@ -1,0 +1,89 @@
+﻿@page
+@model PainelModel
+
+<style>
+    .tdStatusPendente {
+        color: red;
+    }
+
+    .tdStatusAprovado {
+        color: green;
+    }
+</style>
+
+<style>
+    .charts-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .chart {
+        flex: 1 1 300px;
+        max-width: 400px;
+        height: 250px;
+        margin: 10px;
+    }
+</style>
+
+<div class="container mt-1" style="height: 400px;">
+    <h4 class="text-center mb-4">Painel Principal</h4>
+    <div class="form-group col-md-4">
+        <label for="estadoCivil">Selecione a Salao:</label>
+        <select class="form-control" id="IdSalao" name="IdSalao">
+            <option value="11">Salão de Beleza da Paula</option>
+            <option value="1">Flor de Mulher Beauty</option>
+            <option value="2">Encanto Rosa Salão</option>
+            <option value="3">Divina Bela Studio</option>
+            <option value="4">Bella Morena Espaço de Beleza</option>
+            <option value="5">Luna Rosa Beauty</option>
+            <option value="6">Doce Brilho Salão</option>
+            <option value="7">Essência Feminina</option>
+            <option value="8">Rainha do Espelho</option>
+            <option value="9">Beleza Tropical</option>
+            <option value="10">Linda & Leve Studio</option>
+        </select>
+    </div>
+
+    <button class="btn btn-info">Acessar como este Salão</button>
+
+
+    <!-- Carrega o Google Charts -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+        google.charts.load('current', { 'packages': ['corechart'] });
+        google.charts.setOnLoadCallback(drawAllCharts);
+
+        function drawAllCharts() {
+            drawChart('chartDocumentacao', 'Documentação do Imóvel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'Documentação'));
+            drawChart('chartCondicaoOcupacaoLote', 'Condição de Ocupação do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'Condição de Ocupação do Lote'));
+            drawChart('chartPossuiIPTU', 'Possui IPTU', getDataArray(@Html.Raw(Json.Serialize(Model.PossuiIPTUChartData)), 'Possui IPTU'));
+        }
+
+        // Converte o objeto JSON em um array adequado para o Google Charts
+        function getDataArray(chartData, labelName) {
+            var arr = [];
+            arr.push([labelName, 'Quantidade']);
+            for (var key in chartData) {
+                if (chartData.hasOwnProperty(key)) {
+                    arr.push([key, chartData[key]]);
+                }
+            }
+            return arr;
+        }
+
+        // Desenha um gráfico de pizza 3D
+        function drawChart(elementId, title, dataArray) {
+            var data = google.visualization.arrayToDataTable(dataArray);
+            var options = {
+                title: title,
+                is3D: true,
+                width: '100%',
+                height: '100%'
+            };
+            var chart = new google.visualization.PieChart(document.getElementById(elementId));
+            chart.draw(data, options);
+        }
+    </script>
+
+</div>

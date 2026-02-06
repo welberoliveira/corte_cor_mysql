@@ -1,0 +1,78 @@
+﻿@page
+@model CorteCor.Pages.FuncionarioServicoCadastroModel
+@{
+    ViewData["Title"] = "Relacionar Funcionário x Serviços";
+}
+
+<div class="container">
+    <h4>Relacionar Funcionário x Serviços</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-success">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="post">
+        <div class="form-group">
+            <label for="idFuncionario">Funcionário</label>
+            <select id="idFuncionario" name="idFuncionario" class="form-control" required>
+                <option value="">Selecione</option>
+                @foreach (var f in Model.Funcionarios)
+                {
+                    if (Model.IdFuncionarioSelecionado == f.IdFuncionario)
+                    {
+                        <option value="@f.IdFuncionario" selected>@f.Nome</option>
+                    }
+                    else
+                    {
+                        <option value="@f.IdFuncionario">@f.Nome</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Serviços</label>
+
+            <div class="border rounded p-3">
+                @foreach (var s in Model.Servicos)
+                {
+                    var marcado = Model.ServicosSelecionadosIds != null
+                    && Model.ServicosSelecionadosIds.Contains(s.IdServico);
+
+                    <div class="d-flex align-items-center mb-2">
+                        @if (marcado)
+                        {
+                            <input type="checkbox"
+                                   class="form-check-input me-2"
+                                   id="servico_@s.IdServico"
+                                   name="servicosSelecionados"
+                                   value="@s.IdServico"
+                                   checked />
+                        }
+                        else
+                        {
+                            <input type="checkbox"
+                                   class="form-check-input me-2"
+                                   id="servico_@s.IdServico"
+                                   name="servicosSelecionados"
+                                   value="@s.IdServico" />
+                        }
+
+                        <label for="servico_@s.IdServico" class="mb-0">
+                            @s.Nome – R$ @s.Preco.ToString("0.00")
+                        </label>
+                    </div>
+                }
+            </div>
+
+            <small class="form-text text-muted">
+                Marque todos os serviços que este funcionário poderá executar.
+            </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar Relação</button>
+    </form>
+</div>

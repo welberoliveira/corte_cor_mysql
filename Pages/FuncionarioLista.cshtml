@@ -1,0 +1,70 @@
+﻿@page
+@model CorteCor.Pages.FuncionarioListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        table th:nth-child(2),
+        table td:nth-child(2),
+        table th:nth-child(3),
+        table td:nth-child(3),
+        table th:nth-child(4),
+        table td:nth-child(4) {
+            display: none;
+        }
+    }
+</style>
+
+<div class="container">
+    <h4>Lista de Funcionários</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert">
+            @Model.Mensagem
+        </div>
+    }
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Seg</th>
+                <th>Ter</th>
+                <th>Qua</th>
+                <th>Qui</th>
+                <th>Sex</th>
+                <th>Sab</th>
+                <th>Dom</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Funcionario in Model.Funcionarios)
+            {
+                <tr>
+                    <td>@Funcionario.Nome</td>
+                    <td>@(Funcionario.seg ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.ter ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.qua ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.qui ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.sex ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.sab ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.dom ? "Sim" : "Não")</td>
+                    <td class="actions">
+                        <form method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
+                            <input type="hidden" name="action" value="alterar">
+                            <button class="btn btn-info">Alterar</button>
+                        </form>
+
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Funcionário?');">
+                            <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
+                            <input type="hidden" name="action" value="excluir">
+                            <button class="btn btn-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

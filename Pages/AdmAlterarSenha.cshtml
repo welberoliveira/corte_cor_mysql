@@ -1,0 +1,43 @@
+﻿@page
+@model CorteCor.Pages.AdmAlterarSenhaModel
+@{
+    ViewData["Title"] = "Alterar Senha";
+}
+
+<div class="container mt-4">
+    <h4 class="text-center">Alteração de Senha</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info text-center">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="post" class="p-4 border rounded shadow-sm bg-light">
+        <div class="form-group mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" class="form-control" asp-for="EmailUsuario" readonly />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="senhaAtual" class="form-label">Senha Atual</label>
+            <input type="password" id="senhaAtual" class="form-control" asp-for="SenhaAtual" required />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="novaSenha" class="form-label">Nova Senha</label>
+            <input type="password" id="novaSenha" class="form-control" asp-for="NovaSenha" required />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="confirmarSenha" class="form-label">Confirmar Nova Senha</label>
+            <input type="password" id="confirmarSenha" class="form-control" asp-for="ConfirmarSenha" required />
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">Alterar Senha</button>
+            <a href="Painel" class="btn btn-warning mt-1">Cancelar</a>
+        </div>
+    </form>
+</div>

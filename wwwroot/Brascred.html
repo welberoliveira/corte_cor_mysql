@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brascred Consórcios</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,700,700i|Montserrat:300,400,500,700" rel="stylesheet">
+
+    <!-- Vendor CSS Files -->
+    <link href="CartasContempladas/assets/vendor/animate.css/animate.min.css" rel="stylesheet">
+    <link href="CartasContempladas/assets/vendor/aos/aos.css" rel="stylesheet">
+    <link href="CartasContempladas/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="CartasContempladas/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="CartasContempladas/assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+    <link href="CartasContempladas/assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+    <link href="CartasContempladas/assets/fontawesome/css/all.css" rel="stylesheet">
+    <link href="CartasContempladas/assets/css/style.css" rel="stylesheet">
+
+    <script src="CartasContempladas/cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.7/inputmask.min.js"></script>
+
+</head>
+<body>
+
+    <header id="header" class="fixed-top d-flex align-items-center" style="background-color: aliceblue; height: 100px;">
+        <div class="container-fluid">
+            <div class="row justify-content-center align-items-center">
+                <div class="col-xl-11 d-flex align-items-center justify-content-between">
+                    <a href="#" class="logo"><img src="CartasContempladas/assets/img/logotipo_topo.png" alt="Logo" class="img-fluid"></a>
+
+                    <nav id="navbar" class="navbar">
+                        <ul>
+                            <li><a class="nav-link" href="javascript:selecionarFiltro('Veiculos')">Veículos</a></li>
+                            <li><a class="nav-link" href="javascript:selecionarFiltro('Imoveis')">Imóveis</a></li>
+                            <li><a class="nav-link" href="javascript:selecionarFiltro('Caminhoes')">Caminhões</a></li>
+                            <li><a class="nav-link" href="javascript:selecionarFiltro('Barcos')">Barcos</a></li>
+                            <li><a class="nav-link" href="javascript:selecionarFiltro('Maquinas')">Máquinas Agrícolas</a></li>
+                        </ul>
+
+                        <script>
+                            function selecionarFiltro(categoria) {
+                                // Desmarca todos os outros checkboxes, exceto "MelhoresCartas"
+                                document.querySelectorAll('.category-checkbox').forEach(checkbox => {
+                                    if (checkbox.name !== "MelhoresCartas") {
+                                        checkbox.checked = false;
+                                    }
+                                });
+
+                                // Marca o checkbox correspondente como verdadeiro
+                                let checkbox = document.querySelector(`input[name="${categoria}"]`);
+                                if (checkbox) {
+                                    checkbox.checked = true;
+                                }
+
+                                // Aciona o botão "Filtrar" automaticamente
+                                let botaoFiltrar = document.querySelector('input[type="submit"].btn-primary');
+                                if (botaoFiltrar) {
+                                    botaoFiltrar.click();
+                                }
+                            }
+
+                        </script>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="main">
+        <section id="about" class="mt-3">
+            <div class="container">
+                <header class="section-header text-center mt-4" style="color: navy;">
+                    <h4 class="fw-bold pt-3">CARTAS CONTEMPLADAS</h4>
+                </header>
+
+                <form id="filterForm" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-2 col-sm-12 mb-2">
+                            <label>Consórcios</label>
+                            <input class="form-control" type="text" id="consorcio">
+                        </div>
+                        <div class="col-md-2 col-sm-12 mb-2">
+                            <label>Valor</label>
+                            <input class="form-control numero" step="0.01" type="text" id="valor" name="valor">
+                        </div>
+                        <div class="col-md-2 col-sm-12 mb-2">
+                            <label>Entrada</label>
+                            <input class="form-control numero" step="0.01" type="text" id="entrada" name="entrada">
+                        </div>
+                        <div class="col-md-4 col-sm-12 mb-2 pt-4">
+                            <div class="row">
+                                <div class="col-6 ">
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" id="melhoresCartas" class="form-check-input">
+                                        <label>Melhores Cartas</label><br />
+
+                                        <input type="checkbox" id="veiculos" class="form-check-input">
+                                        <label>Veículos</label><br />
+
+                                        <input type="checkbox" id="imoveis" class="form-check-input">
+                                        <label>Imóveis</label>
+                                    </div>
+                                </div>
+                                <div class="col-6 ">
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" id="caminhoes" class="form-check-input">
+                                        <label>Caminhões</label><br />
+
+                                        <input type="checkbox" id="barcos" class="form-check-input">
+                                        <label>Barcos</label><br />
+
+                                        <input type="checkbox" id="maquinas" class="form-check-input">
+                                        <label>Máq. Agrícolas</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mt-4">
+                            <button type="button" onclick="applyFilters()" class="btn btn-primary">Filtrar</button>
+                        </div>
+                    </div>
+                </form>
+
+                <table id="TableCartas" class="table table-striped TableCartas" width="100%">
+                    <thead>
+                        <tr style="background-color: #008bd2 !important">
+                            <th>Consórcio</th>
+                            <th>Valor</th>
+                            <th>Entrada</th>
+                            <th>Parc. Restantes</th>
+                            <th>Saldo Devedor</th>
+                            <th>Reservar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="hide-during-search">
+                    </tbody>
+                </table>
+
+                <span class="hide-during-search">Limitado a 100 registros (use o filtro)</span>
+                <div style="    display: flex;    justify-content: center;    align-items: center;">
+                    <span id="loadingMessage" class="py-5" style="display: none; font-weight: bold; color:blue">Buscando Cartas Contempladas...</span>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer id="footer">
+        <div class="footer-top"></div>
+    </footer>
+
+    <a href="https://api.whatsapp.com/send?phone=553892176781" target="_blank" style="position:fixed; right:100px; bottom:10px; z-index: 9999">
+        <img src="CartasContempladas/whatsapp.png" alt="WhatsApp">
+    </a>
+
+    <script>
+        loadTableData();
+
+        $(document).ready(function () {
+            $(".numero").inputmask({
+                alias: "numeric",
+                radixPoint: ",",
+                groupSeparator: ".",
+                autoGroup: true,
+                digits: 2,
+                digitsOptional: false,
+                allowMinus: false,
+                rightAlign: false,
+                placeholder: "0",
+                clearMaskOnLostFocus: false
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const checkboxes = document.querySelectorAll(".category-checkbox");
+            const melhoresCartas = document.getElementById("MelhoresCartas");
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener("change", function () {
+                    if (this.checked) {
+                        checkboxes.forEach(cb => {
+                            if (cb !== this) {
+                                cb.checked = false;
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+        function exibirMensagem() {
+            document.querySelectorAll(".hide-during-search").forEach(el => el.style.display = "none");
+            document.getElementById("loadingMessage").style.display = "block";
+        }
+
+        function ocultarMensagem() {
+            document.querySelectorAll(".hide-during-search").forEach(el => el.style.display = "contents");
+            document.getElementById("loadingMessage").style.display = "none";
+        }
+
+        //API//
+
+        async function fetchData(url, method = 'GET', body = null) {
+            const options = { method };
+            if (body) {
+                options.headers = { 'Content-Type': 'application/json' };
+                options.body = JSON.stringify(body);
+            }
+            const response = await fetch(url, options);
+            return response.json();
+        }
+
+        async function loadTableData() {
+            const data = await fetchData('/API/PortalContempladas');
+            populateTable(data);
+        }
+
+        function populateTable(data) {
+            const tableBody = document.querySelector('#TableCartas tbody');
+            tableBody.innerHTML = '';
+            data.forEach(item => {
+                const row = `<tr>
+                            <td>${item.consorcio || 'Brascred'}</td>
+                            <td>${item.valor}</td>
+                            <td>${item.entrada}</td>
+                            <td>${item.parcelasRestantes}</td>
+                            <td>${item.saldo_Devedor}</td>
+                            <td><button class="btn btn-success">Reservar</button></td>
+                        </tr>`;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        async function applyFilters() {
+            const filters = {
+                consorcio: document.getElementById('consorcio').value,
+                valor: document.getElementById('valor').value,
+                entrada: document.getElementById('entrada').value,
+                veiculos: document.getElementById('veiculos').checked,
+                imoveis: document.getElementById('imoveis').checked,
+                melhoresCartas: document.getElementById('melhoresCartas').checked
+            };
+
+            exibirMensagem();
+            const data = await fetchData('/API/PortalContempladas', 'POST', filters);
+            populateTable(data);
+            ocultarMensagem();
+        }
+
+
+    </script>
+
+</body>
+</html>

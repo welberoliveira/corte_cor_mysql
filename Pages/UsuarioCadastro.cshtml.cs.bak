@@ -1,0 +1,138 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
+using System.Text;
+using static CorteCor.Models;
+
+namespace CorteCor.Pages
+{
+    [Authorize(Policy = "AdminPolicy")]
+    public class UsuarioCadastroModel : PageModel
+    {
+        public Usuario Usuario { get; set; }
+
+        public string ButtonText = "Cadastrar";
+        public string Mensagem { get; set; }
+        public string NomeClientes { get; set; }
+        public string NomeCliente { get; set; }
+        public string NomeCurto { get; set; }
+
+        public void OnGet(int? id)
+        {
+            int IdSalao = 0;
+            try
+            {
+                IdSalao = EntityHandler<object>.ObterIdSalao(User);
+                NomeClientes = EntityHandler<object>.BuscarNomeDicionárioSalao(IdSalao, "NomeClientes");
+                NomeCliente = EntityHandler<object>.BuscarNomeDicionárioSalao(IdSalao, "NomeCliente");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                RedirectToPage(HttpContext.Request.PathBase + "/Login");
+            }
+
+            if (id.HasValue)
+            {
+                var handler = new UsuarioHandler(IdSalao);
+                Usuario = handler.Listar().FirstOrDefault(m => m.IdUsuario == id.Value);
+                ButtonText = "Atualizar";
+            }
+        }
+
+        public void OnPost()
+        {
+            int IdSalao = 0;
+            try
+            {
+                IdSalao = EntityHandler<object>.ObterIdSalao(User);
+                NomeCliente = EntityHandler<object>.BuscarNomeDicionárioSalao(IdSalao, "NomeCliente");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                RedirectToPage(HttpContext.Request.PathBase + "/Login");
+            }
+
+            NomeCurto = EntityHandler<object>.BuscarNomeDicionárioSalao(IdSalao, "NomeCurto");
+
+            Random random = new Random();
+            string senha = random.Next(123456, 987654).ToString();
+            string senhaConvertida = Convert.ToBase64String(Encoding.UTF8.GetBytes(senha));
+
+            int.TryParse(Request.Form["id"], out var id);
+
+            var handler = new UsuarioHandler(IdSalao);
+            var Usuario = new Usuario
+            {
+                IdUsuario = id,
+                Nome = Request.Form["nome"],
+                Sobrenome= Request.Form["sobrenome"],
+                CPF= Request.Form["cpf"],
+                Email = Request.Form["email"],
+                Telefone = Request.Form["telefone"],
+                DataEntrada = DateTime.Parse(Request.Form["dataEntrada"]),
+                Status = "Ativo",
+                Senha = senhaConvertida.ToString()
+            };
+
+            if (handler.Listar().Where(m => m.Email == Usuario.Email).Where(m => m.IdSalao == IdSalao).Any())
+            {
+                Mensagem = $"Não foi possível finalizar o cadastro! Este email já está cadastrado: {Usuario.Email}";
+                Usuario = Usuario;
+                return;
+            }
+
+            if (id > 0)
+            {
+                handler.Atualizar(Usuario);
+                Mensagem = $"{NomeCliente} atualizado com sucesso!";
+            }
+            else
+            {
+                id = handler.CadastrarUsuario(Usuario);
+                Mensagem = $"{NomeCliente} cadastrado com sucesso!";
+            }
+
+            OnGet(id > 0 ? id : null); // Recarregar os dados atualizados
+        }
+
+        public void OnPostEnviarCredenciais()
+        {
+            string email = Request.Form["email"];
+            int.TryParse(Request.Form["id"], out var id);
+
+            int IdSalao = 0;
+            try
+            {
+                IdSalao = EntityHandler<object>.ObterIdSalao(User);
+                NomeCurto = EntityHandler<object>.BuscarNomeDicionárioSalao(IdSalao, "NomeCurto");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                RedirectToPage(HttpContext.Request.PathBase + "/Login");
+            }
+
+            var handler = new UsuarioHandler(IdSalao);
+            var Usuario = handler.Listar().Where(m => m.IdUsuario == id).ToList();
+
+
+            string senhaCriptografada = Usuario.FirstOrDefault().Senha;
+            byte[] senhaByte = Convert.FromBase64String(senhaCriptografada);
+            var senhaRecuperada = Encoding.UTF8.GetString(senhaByte);
+
+            // Enviar e-mail com a nova senha
+            string from = "gestor@tonni.com.br";
+            string subject = "Suas Credenciais - Tonni Corte & Cor";
+            string body = $"<p>Olá, seja bem-vindo</p>" +
+                          $"<p>O administrador do <b>Tonni Corte & Cor</b> criou um usuário para você nesse sistema.</p>" +
+                          $"<p>Sua senha é: <b>{senhaRecuperada.ToString()}</b></p>" +
+                          $"<p>Para acessar o sistema <a href='https://tonni.com.br/CorteCor/login/{NomeCurto}'>clique aqui</a>, ou acesse: <a href='https://tonni.com.br/CorteCor/login/{NomeCurto}'>tonni.com.br/CorteCor/login/{NomeCurto}</a></p>" +
+                          $"<br><br><p>Atenciosamente, <br>Equipe Tonni Tecnologia <br> <a href='https://tonni.com.br'>tonni.com.br</a></p>";
+
+            var loginManager = new LoginManager(IdSalao);
+            loginManager.EnviarEmail(email, from, subject, body);
+
+            Mensagem = $"A senha e instruções para acesso foram enviadas por email para: {email}. Lembre que o email pode estar no SPAM ou no Lixo Eletrônico.";
+        }
+    }
+}

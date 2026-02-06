@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumo de API</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Filtrar Cartas Contempladas</h1>
+    <form id="filterForm">
+        <label for="consorcio">Consórcio:</label>
+        <input type="text" id="consorcio" name="consorcio">
+        <label for="valor">Valor:</label>
+        <input type="text" id="valor" name="valor">
+        <label for="entrada">Entrada:</label>
+        <input type="text" id="entrada" name="entrada">
+        <label>
+            <input type="checkbox" id="veiculos" name="veiculos"> Veículos
+        </label>
+        <label>
+            <input type="checkbox" id="imoveis" name="imoveis"> Imóveis
+        </label>
+        <label>
+            <input type="checkbox" id="melhoresCartas" name="melhoresCartas"> Melhores Cartas
+        </label>
+        <button type="button" onclick="applyFilters()">Filtrar</button>
+    </form>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>Consórcio</th>
+                <th>Valor</th>
+                <th>Entrada</th>
+                <th>Tipo</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchData(url, method = 'GET', body = null) {
+            const options = { method };
+            if (body) {
+                options.headers = { 'Content-Type': 'application/json' };
+                options.body = JSON.stringify(body);
+            }
+            const response = await fetch(url, options);
+            return response.json();
+        }
+
+        async function loadTableData() {
+            const data = await fetchData('/Painel/Brascred2');
+            populateTable(data);
+        }
+
+        function populateTable(data) {
+            const tableBody = document.getElementById('dataTable').querySelector('tbody');
+            tableBody.innerHTML = '';
+            data.forEach(item => {
+                const row = `<tr>
+                    <td>${item.consorcio}</td>
+                    <td>${item.valor}</td>
+                    <td>${item.entrada}</td>
+                    <td>${item.tipo}</td>
+                </tr>`;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        async function applyFilters() {
+            const formData = new FormData(document.getElementById('filterForm'));
+            const filters = Object.fromEntries(formData.entries());
+            filters.veiculos = document.getElementById('veiculos').checked;
+            filters.imoveis = document.getElementById('imoveis').checked;
+            filters.melhoresCartas = document.getElementById('melhoresCartas').checked;
+
+            const data = await fetchData('/Painel/Brascred2', 'POST', filters);
+            populateTable(data);
+        }
+
+        // Carrega os dados ao abrir a página
+        loadTableData();
+    </script>
+</body>
+</html>

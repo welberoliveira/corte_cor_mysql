@@ -1,0 +1,128 @@
+﻿@page
+@model CorteCor.Pages.PagamentoCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Pagamentos";
+}
+
+<div class="container">
+    <h4>@Model.ButtonText Pagamento</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-success">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="id" value="@Model.Pagamento?.IdPagamento">
+
+        <div class="form-group">
+            <label for="idAgendamento">Id do Agendamento</label>
+            <input type="number" id="idAgendamento" name="idAgendamento" class="form-control" required
+                   value="@(Model.Pagamento?.IdAgendamento ?? 0)">
+        </div>
+
+        <div class="form-group">
+            <label for="idMeioPagamento">Id do Meio de Pagamento</label>
+            <input type="number" id="idMeioPagamento" name="idMeioPagamento" class="form-control" required
+                   value="@(Model.Pagamento?.IdMeioPagamento ?? 0)">
+        </div>
+
+        <div class="form-group">
+            <label for="tipo">Tipo</label>
+            <select id="tipo" name="tipo" class="form-control" required>
+                @{
+                    var tipoAtual = Model.Pagamento?.Tipo ?? "";
+                }
+
+                <option value="">Selecione</option>
+
+                @if (tipoAtual == "PIX")
+                {
+                    <option value="PIX" selected>PIX</option>
+                }
+                else
+                {
+                    <option value="PIX">PIX</option>
+                }
+
+                @if (tipoAtual == "CREDITO")
+                {
+                    <option value="CREDITO" selected>Cartão de Crédito</option>
+                }
+                else
+                {
+                    <option value="CREDITO">Cartão de Crédito</option>
+                }
+
+                @if (tipoAtual == "DEBITO")
+                {
+                    <option value="DEBITO" selected>Cartão de Débito</option>
+                }
+                else
+                {
+                    <option value="DEBITO">Cartão de Débito</option>
+                }
+
+                @if (tipoAtual == "BOLETO")
+                {
+                    <option value="BOLETO" selected>Boleto</option>
+                }
+                else
+                {
+                    <option value="BOLETO">Boleto</option>
+                }
+
+                @if (tipoAtual == "OUTROS")
+                {
+                    <option value="OUTROS" selected>Outros</option>
+                }
+                else
+                {
+                    <option value="OUTROS">Outros</option>
+                }
+            </select>
+        </div>
+
+
+        <div class="form-group">
+            <label for="valor">Valor (R$)</label>
+            <input type="text" id="valor" name="valor" class="form-control" required
+                   value="@(Model.Pagamento != null ? Model.Pagamento.Valor.ToString("0.00").Replace('.', ',') : "")">
+        </div>
+
+        <div class="form-group">
+            <label for="data">Data</label>
+            <input type="datetime-local" id="data" name="data" class="form-control" required
+                   value="@((Model.Pagamento != null && Model.Pagamento.Data != default(DateTime))
+                    ? Model.Pagamento.Data.ToString("yyyy-MM-ddTHH:mm")
+                    : DateTime.Now.ToString("yyyy-MM-ddTHH:mm"))">
+        </div>
+
+        <div class="form-group">
+            <label for="contos">Contos (observação)</label>
+            <input type="text" id="contos" name="contos" class="form-control" value="@Model.Pagamento?.Contos">
+        </div>
+
+        <div class="form-group">
+            <label for="campos">Campos (JSON / metadados)</label>
+            <textarea id="campos" name="campos" class="form-control" rows="5">@Model.Pagamento?.Campos</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $("#valor").inputmask("decimal", {
+            radixPoint: ",",
+            groupSeparator: ".",
+            autoGroup: true,
+            digits: 2,
+            digitsOptional: false,
+            rightAlign: false
+        });
+    });
+</script>

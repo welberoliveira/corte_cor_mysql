@@ -1,0 +1,63 @@
+﻿@page
+@model CorteCor.Pages.FuncionarioServicoListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        table th:nth-child(3),
+        table td:nth-child(3),
+        table th:nth-child(4),
+        table td:nth-child(4),
+        table th:nth-child(5),
+        table td:nth-child(5) {
+            display: none;
+        }
+    }
+</style>
+
+<div class="container">
+    <h4>Serviços vinculados aos Funcionários</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert">
+            @Model.Mensagem
+        </div>
+    }
+
+    <table>
+        <thead>
+            <tr>
+                <th>Funcionário</th>
+                <th>Serviço</th>
+                <th>Preço</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Itens)
+            {
+                <tr>
+                    <td>@item.FuncionarioNome</td>
+                    <td>@item.ServicoNome</td>
+                    <td>R$ @item.ServicoPreco.ToString("0.00")</td>
+
+                    <td class="actions">
+                        <form method="post" style="display: inline;">
+                            <input type="hidden" name="action" value="alterar" />
+                            <input type="hidden" name="idFuncionario" value="@item.IdFuncionario" />
+                            <button class="btn btn-info">Alterar</button>
+                        </form>
+
+                        <form method="post" style="display: inline;"
+                              onsubmit="return confirm('Tem certeza que deseja remover este vínculo?');">
+                            <input type="hidden" name="action" value="remover" />
+                            <input type="hidden" name="idFuncionario" value="@item.IdFuncionario" />
+                            <input type="hidden" name="idServico" value="@item.IdServico" />
+                            <button class="btn btn-danger">Remover</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

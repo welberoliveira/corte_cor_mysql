@@ -1,0 +1,68 @@
+﻿@page "{nomeSalaoLink=online}"
+@model EsqueciSenhaModel
+@{
+    ViewData["Title"] = "Recuperação de Senha";
+}
+
+<div class="container mt-5">
+    <h3 class="text-center">@Model.NomeSalao</h3>
+    <h4 class="text-center">Recuperação de Senha</h4>
+    <p class="text-center text-muted">Digite seu e-mail cadastrado e selecione seu perfil para receber uma nova senha no e-mail.</p>
+    <p class="text-center text-muted">Lembre de verificar no SPAM e no Lixo-Eletrônico, caso o e-mail não chegue na Caixa-de-Entrada.</p>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-success text-center">@Model.Mensagem</div>
+    }
+
+    <div class="card shadow p-4">
+        <form method="post">
+            <input type="hidden" name="IdSalao" value="@Model.SalaoLinkID">
+            <input type="hidden" name="tipoCadastro" value="@Model.TipoUsuario">
+            <div class="mb-3">
+                <label for="email" class="form-label">E-mail cadastrado</label>
+                <input type="email" id="email" name="Email" class="form-control" required>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Enviar Nova Senha</button>
+            </div>
+            <div class="text-center">
+                @if (Model.TipoUsuario == "1")
+                {
+                    <a href="~/Index/@Model.NomeCurto" class="btn btn-success mt-1">Voltar</a>
+                }
+                else
+                {
+                    <a href="~/Login/@Model.NomeCurto" class="btn btn-success mt-1">Voltar</a>
+                }
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+    }
+
+    .container {
+        max-width: 500px;
+    }
+
+    .card {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1.1rem;
+    }
+</style>

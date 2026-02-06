@@ -1,0 +1,167 @@
+﻿@page
+@model CorteCor.Pages.MeioPagamentoCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Meios de Pagamento";
+}
+
+<div class="container">
+    <h4>@Model.ButtonText Meio de Pagamento</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-success">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="id" value="@Model.MeioPagamento?.IdMeioPagamento">
+
+        <div class="form-group">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" class="form-control" required value="@Model.MeioPagamento?.Nome">
+            <small class="form-text text-muted">Ex: Pix Mercado Pago, Cartão Crédito Mercado Pago</small>
+        </div>
+
+        <div class="form-group">
+            <label for="tipo">Tipo</label>
+            <select id="tipo" name="tipo" class="form-control" required>
+                @{
+                    var tipoAtual = Model.MeioPagamento?.Tipo ?? "";
+                }
+
+                <option value="">Selecione</option>
+
+                @if (tipoAtual == "PIX")
+                {
+                    <option value="PIX" selected>PIX</option>
+                }
+                else
+                {
+                    <option value="PIX">PIX</option>
+                }
+
+                @if (tipoAtual == "CREDITO")
+                {
+                    <option value="CREDITO" selected>Cartão de Crédito</option>
+                }
+                else
+                {
+                    <option value="CREDITO">Cartão de Crédito</option>
+                }
+
+                @if (tipoAtual == "DEBITO")
+                {
+                    <option value="DEBITO" selected>Cartão de Débito</option>
+                }
+                else
+                {
+                    <option value="DEBITO">Cartão de Débito</option>
+                }
+
+                @if (tipoAtual == "BOLETO")
+                {
+                    <option value="BOLETO" selected>Boleto</option>
+                }
+                else
+                {
+                    <option value="BOLETO">Boleto</option>
+                }
+
+                @if (tipoAtual == "OUTROS")
+                {
+                    <option value="OUTROS" selected>Outros</option>
+                }
+                else
+                {
+                    <option value="OUTROS">Outros</option>
+                }
+            </select>
+        </div>
+
+
+        <div class="form-group">
+            <label for="gateway">Gateway</label>
+            <input type="text" id="gateway" name="gateway" class="form-control" required value="@Model.MeioPagamento?.Gateway">
+            <small class="form-text text-muted">Ex: MercadoPago, PagSeguro, Stripe, Pagarme</small>
+        </div>
+
+        <div class="form-group form-check">
+            <input class="form-check-input" type="checkbox" id="permiteParcelamento" name="permiteParcelamento" value="true"
+                   @(Model.MeioPagamento?.PermiteParcelamento == true ? "checked" : "")>
+            <label class="form-check-label" for="permiteParcelamento">Permite parcelamento</label>
+        </div>
+
+        <div class="form-group">
+            <label for="parcelasMax">Máx. parcelas</label>
+            <input type="number" id="parcelasMax" name="parcelasMax" class="form-control" min="1" max="24"
+                   value="@(Model.MeioPagamento?.ParcelasMax?.ToString() ?? "")">
+        </div>
+
+        <div class="form-group">
+            <label for="taxaPercentual">Taxa percentual (%)</label>
+            <input type="text" id="taxaPercentual" name="taxaPercentual" class="form-control"
+                   value="@(Model.MeioPagamento != null ? Model.MeioPagamento.TaxaPercentual.ToString("0.###").Replace('.', ',') : "")">
+            <small class="form-text text-muted">Ex: 2,49</small>
+        </div>
+
+        <div class="form-group">
+            <label for="taxaFixa">Taxa fixa (R$)</label>
+            <input type="text" id="taxaFixa" name="taxaFixa" class="form-control"
+                   value="@(Model.MeioPagamento != null ? Model.MeioPagamento.TaxaFixa.ToString("0.00").Replace('.', ',') : "")">
+            <small class="form-text text-muted">Ex: 0,39</small>
+        </div>
+
+        <div class="form-group">
+            <label for="prazoRecebimentoDias">Prazo de recebimento (dias)</label>
+            <input type="number" id="prazoRecebimentoDias" name="prazoRecebimentoDias" class="form-control" min="0" max="365" required
+                   value="@(Model.MeioPagamento?.PrazoRecebimentoDias ?? 0)">
+            <small class="form-text text-muted">PIX geralmente 0. Crédito pode ser 14, 30, etc.</small>
+        </div>
+
+        <div class="form-group form-check">
+            <input class="form-check-input" type="checkbox" id="ativo" name="ativo" value="true"
+                   @(Model.MeioPagamento?.Ativo != false ? "checked" : "")>
+            <label class="form-check-label" for="ativo">Ativo</label>
+        </div>
+
+        <div class="form-group">
+            <label for="dataCadastro">Data de Cadastro</label>
+            <input type="date" id="dataCadastro" name="dataCadastro" class="form-control" required
+                   value="@(Model.MeioPagamento?.DataCadastro.ToString("yyyy-MM-dd") ?? DateTime.Now.ToString("yyyy-MM-dd"))">
+        </div>
+
+        <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $("#taxaPercentual").inputmask("decimal", {
+            radixPoint: ",",
+            groupSeparator: ".",
+            autoGroup: true,
+            digits: 3,
+            digitsOptional: true,
+            rightAlign: false
+        });
+
+        $("#taxaFixa").inputmask("decimal", {
+            radixPoint: ",",
+            groupSeparator: ".",
+            autoGroup: true,
+            digits: 2,
+            digitsOptional: false,
+            rightAlign: false
+        });
+
+        function toggleParcelas() {
+            var marcado = $("#permiteParcelamento").is(":checked");
+            $("#parcelasMax").prop("disabled", !marcado);
+            if (!marcado) $("#parcelasMax").val("");
+        }
+
+        toggleParcelas();
+        $("#permiteParcelamento").change(toggleParcelas);
+    });
+</script>

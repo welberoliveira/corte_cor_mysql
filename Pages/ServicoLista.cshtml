@@ -1,0 +1,60 @@
+﻿@page
+@model CorteCor.Pages.ServicoListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        table th:nth-child(2),
+        table td:nth-child(2),
+        table th:nth-child(3),
+        table td:nth-child(3),
+        table th:nth-child(4),
+        table td:nth-child(4) {
+            display: none;
+        }
+    }
+</style>
+
+<div class="container">
+    <h4>Lista de Serviços</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert">
+            @Model.Mensagem
+        </div>
+    }
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Preço</th>
+                <th>Cor</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Servico in Model.Servicos)
+            {
+                <tr>
+                    <td>@Servico.Nome</td>
+                    <td>R$ @Servico.Preco.ToString("0.00")</td>
+                    <td>@Servico.Cor</td>
+                    <td class="actions">
+                        <form method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@Servico.IdServico">
+                            <input type="hidden" name="action" value="alterar">
+                            <button class="btn btn-info">Alterar</button>
+                        </form>
+
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Serviço?');">
+                            <input type="hidden" name="id" value="@Servico.IdServico">
+                            <input type="hidden" name="action" value="excluir">
+                            <button class="btn btn-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,49 @@
+﻿@page
+@model CorteCor.Pages.PessoaCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Clientes";
+}
+
+<div class="container">
+    <h4>@Model.ButtonText Cliente</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-success">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="id" value="@Model.Pessoa?.IdPessoa">
+
+        <div class="form-group">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Pessoa?.Nome">
+        </div>
+
+        <div class="form-group">
+            <label for="telefone">Telefone</label>
+            <input type="text" id="telefone" name="telefone" class="form-control" value="@Model.Pessoa?.Telefone">
+        </div>
+
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" class="form-control" value="@Model.Pessoa?.Email">
+        </div>
+
+        <div class="form-group">
+            <label for="dataNascimento">Data de Nascimento</label>
+            <input type="date" id="dataNascimento" name="dataNascimento" class="form-control"
+                   value="@(Model.Pessoa?.DataNascimento?.ToString("yyyy-MM-dd") ?? "")">
+        </div>
+
+        <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $("#telefone").inputmask("(99) 99999-9999");
+    });
+</script>

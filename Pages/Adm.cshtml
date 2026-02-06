@@ -1,0 +1,135 @@
+﻿@page "{nomeSalaoLink?}" 
+@model IndexModel
+@{
+    ViewData["Title"] = @Model.NomeSalao;
+}
+
+    
+    <style>
+        body {
+            display: block;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            padding: 30px;
+        }
+
+        .login-container {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        .login-container h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4e54c8;
+            box-shadow: 0 0 5px rgba(78, 84, 200, 0.5);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            color: #fff;
+            background: #4e54c8;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #3e44b0;
+        }
+
+        .footer {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .footer a {
+            color: #4e54c8;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+<div class="login-container">
+    <div style="text-align: center;">
+        <img src="~/img/cortecor.png" style="width:90%;margin-bottom: 20px">
+    </div>
+    
+    <h4 style="color:red">Administração Interna</h4>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger text-center">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="IdSalao" value="@Model.SalaoLinkID">
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Senha</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn">Entrar</button>
+    </form>
+    <div class="footer">
+        <p>Esqueceu a senha? <a href="~/EsqueciSenha/@Model.SalaoLink?t=1">Clique aqui</a></p>
+    </div>
+    <footer class="border-top  text-muted mt-5">
+        <div style="margin: auto;width: fit-content;">
+            <div class="mb-2" style="margin: auto;width: fit-content;">&copy; 2025 - Tonni Corte & Cor </div>
+            <div class="mb-2" style="margin: auto;width: fit-content;">Desenvolvido por <a href="https://tonni.com.br">TONNI Tecnologia</a></div>
+            <div style="margin: auto;width: fit-content;"><a href="Privacidade">Políticas de Privacidade</a></div>
+            <div style="margin: auto;width: fit-content;"><a href="TermosUso">Termos de Uso</a></div><br />
+            <div style="margin: auto;width: fit-content;">
+                <a href="~/"
+                   style="color: red !important;">Área do Cliente</a>
+            </div>
+        </div>
+    </footer>
+</div>

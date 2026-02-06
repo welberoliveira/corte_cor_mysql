@@ -1,0 +1,62 @@
+﻿@page
+@model CorteCor.Pages.PessoaListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        table th:nth-child(2),
+        table td:nth-child(2),
+        table th:nth-child(3),
+        table td:nth-child(3),
+        table th:nth-child(4),
+        table td:nth-child(4) {
+            display: none;
+        }
+    }
+</style>
+
+<div class="container">
+    <h4>Lista de Pessoas</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert">
+            @Model.Mensagem
+        </div>
+    }
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Email</th>
+                <th>Data Nasc.</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Pessoa in Model.Pessoas)
+            {
+                <tr>
+                    <td>@Pessoa.Nome</td>
+                    <td style="white-space: nowrap">@Pessoa.Telefone</td>
+                    <td>@Pessoa.Email</td>
+                    <td>@(Pessoa.DataNascimento.HasValue ? Pessoa.DataNascimento.Value.ToShortDateString() : "")</td>
+                    <td class="actions">
+                        <form method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@Pessoa.IdPessoa">
+                            <input type="hidden" name="action" value="alterar">
+                            <button class="btn btn-info">Alterar</button>
+                        </form>
+
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta Pessoa?');">
+                            <input type="hidden" name="id" value="@Pessoa.IdPessoa">
+                            <input type="hidden" name="action" value="excluir">
+                            <button class="btn btn-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

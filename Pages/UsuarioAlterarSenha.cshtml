@@ -1,0 +1,41 @@
+﻿@page
+@model CorteCor.Pages.UsuarioAlterarSenhaModel
+@{
+    ViewData["Title"] = "Alterar Senha";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center">Alterar Senha</h2>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert-danger text-center mb-3 p-3">@Model.Mensagem</div>
+    }
+
+    <div class="alert-warning text-center p-3">
+        <p>Após a alteração, sua nova senha será enviada para seu e-mail cadastrado.</p>
+        <p>Certifique-se de que o e-mail cadastrado está correto: @Model.EmailUsuario</p>
+
+    </div>
+
+    <form method="post" class="mt-4">
+        <div class="form-group">
+            <label for="senhaAtual">Senha Atual</label>
+            <input type="password" id="senhaAtual" name="SenhaAtual" class="form-control" required />
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="novaSenha">Nova Senha</label>
+            <input type="password" id="novaSenha" name="NovaSenha" class="form-control" required />
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="confirmarSenha">Confirmar Nova Senha</label>
+            <input type="password" id="confirmarSenha" name="ConfirmarSenha" class="form-control" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-4 w-100">Alterar Senha</button>
+        <a href="UsuarioDashboard" class="btn btn-success mt-1 w-100">Voltar</a>
+
+    </form>
+</div>

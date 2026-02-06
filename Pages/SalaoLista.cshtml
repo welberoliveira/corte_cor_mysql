@@ -1,0 +1,89 @@
+﻿@page
+@model CorteCor.Pages.SalaoListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        table th:nth-child(2),
+        table td:nth-child(2),
+        table th:nth-child(3),
+        table td:nth-child(3),
+        table th:nth-child(4),
+        table td:nth-child(4) {
+            display: none;
+        }
+    }
+</style>
+
+<div class="container">
+    <h4>Lista de Saloes</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="get" class="mb-3">
+        <label for="statusFilter">Mostrar:</label>
+        <select id="statusFilter" name="statusFilter" onchange="this.form.submit()">
+            <option value="Ativo" selected="selected">Apenas Ativas</option>
+            <option value="Todos">Todos</option>
+        </select>
+    </form>
+
+    <table >
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Data de Cadastro</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Salao in Model.Saloes)
+            {
+                <tr>
+                    <td>@Salao.Nome</td>
+                    <td>@Salao.Email</td>
+                    <td style="white-space: nowrap">@Salao.Telefone</td>
+                    <td>@Salao.DataCadastro.ToShortDateString()</td>
+                    <td>@Salao.Status</td>
+                    <td class="actions">
+                        <form method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@Salao.IdSalao">
+                            <input type="hidden" name="action" value="alterar">
+                            <button class="btn btn-info">Alterar</button>
+                        </form>
+
+                        @if (Salao.Status == "Ativo")
+                        {
+                            <form method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@Salao.IdSalao">
+                                <input type="hidden" name="action" value="desativar">
+                                <button class="btn btn-warning">Desativar</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@Salao.IdSalao">
+                                <input type="hidden" name="action" value="ativar">
+                                <button class="btn btn-success">Ativar</button>
+                            </form>
+                        }
+
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta Salao?');">
+                            <input type="hidden" name="id" value="@Salao.IdSalao">
+                            <input type="hidden" name="action" value="excluir">
+                            <button class="btn btn-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

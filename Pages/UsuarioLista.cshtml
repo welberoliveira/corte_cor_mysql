@@ -1,0 +1,101 @@
+﻿@page
+@model UsuarioListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        table th:nth-child(2), /* Oculta o cabeçalho da coluna Email */
+        table td:nth-child(2), /* Oculta as células da coluna Email */
+        table th:nth-child(3), /* Oculta o cabeçalho da coluna Telefone */
+        table td:nth-child(3), /* Oculta as células da coluna Email */
+        table th:nth-child(4), /* Oculta o cabeçalho da coluna Telefone */
+        table td:nth-child(4) /* Oculta as células da coluna Telefone */ {
+            display: none;
+        }
+    }
+</style>
+
+<div class="container">
+    <h4>Lista de Usuários</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="get" class="mb-3">
+        <label for="statusFilter">Mostrar:</label>
+        <select id="statusFilter" name="statusFilter" onchange="this.form.submit()">
+            <option value="Ativo" selected="selected">Apenas Ativos</option>
+            <option value="Todos">Todos</option>
+        </select>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Salao</th>
+                <th>Data de Entrada</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Usuario in Model.Usuarios)
+            {
+                <tr>
+                    <td>@Usuario.Nome @Usuario.Sobrenome</td>
+                    <td>@Usuario.Email</td>
+                    <td style="white-space: nowrap">@Usuario.Telefone</td>
+                    <td>
+                        @{
+                            var pref = Model.Saloes.FirstOrDefault(p => p.IdSalao == Usuario.IdSalao);
+                            if (pref != null)
+                            {
+                                @pref.Nome;
+                            }
+                            else
+                            {
+                                @("Não definido");
+                            }
+                        }
+                    </td>
+                    <td>@Usuario.DataEntrada.ToShortDateString()</td>
+                    <td>@Usuario.Status</td>
+                    <td class="actions flex-nowrap">
+                        <form method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@Usuario.IdUsuario">
+                            <input type="hidden" name="action" value="alterar">
+                            <button class="btn btn-info">Alterar</button>
+                        </form>
+                        @if (Usuario.Status == "Ativo")
+                        {
+                            <form method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@Usuario.IdUsuario">
+                                <input type="hidden" name="action" value="desativar">
+                                <button class="btn btn-warning">Desativar</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@Usuario.IdUsuario">
+                                <input type="hidden" name="action" value="ativar">
+                                <button class="btn btn-success">Ativar</button>
+                            </form>
+                        }
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este registro?');">
+                            <input type="hidden" name="id" value="@Usuario.IdUsuario">
+                            <input type="hidden" name="action" value="excluir">
+                            <button class="btn btn-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

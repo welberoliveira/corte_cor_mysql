@@ -1,0 +1,393 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/CorteCor.styles.css" asp-append-version="true" />
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <link href="~/css/site2.css" rel="stylesheet" />
+    <!-- Adicionando jQuery (se ainda não estiver incluído) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <!-- Adicionando jQuery InputMask -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
+
+    <!--Scripts para DayPilot: https://www.daypilot.org/-->
+    <script src="~/js/daypilot/daypilot-all.min.js"></script>
+
+    @RenderSection("Styles", required: false)
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f3f4f6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0.3rem auto;
+            padding: 0.3rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.0rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .form-check-input {
+            max-width: 40px;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            background-color: #e7f9ed;
+            color: #276749;
+            border: 1px solid #c6f6d5;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+            table th {
+                background: #4e54c8;
+                color: white;
+                text-transform: uppercase;
+                font-weight: bold;
+                padding: 1rem;
+                text-align: left;
+            }
+
+            table td {
+                padding: 0.4rem;
+                border-bottom: 1px solid #ddd;
+                color: #555;
+            }
+
+            table tr:nth-child(even) {
+                background: #f9f9f9;
+            }
+
+            table tr:hover {
+                background: #f1f5ff;
+            }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+            min-width: 78px;
+        }
+
+        .btn-info {
+            background: #2d89ef;
+        }
+
+            .btn-info:hover {
+                background: #1a6ede;
+            }
+
+        .btn-success {
+            background: #38a169;
+        }
+
+            .btn-success:hover {
+                background: #2f855a;
+            }
+
+        .btn-warning {
+            background: #dd6b20;
+        }
+
+            .btn-warning:hover {
+                background: #c05621;
+            }
+
+        .btn-danger {
+            background: #e53e3e;
+        }
+
+        .btn-danger:hover {
+            background: #c53030;
+        }
+
+        form.mb-3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+            form.mb-3 label {
+                font-size: 1rem;
+                font-weight: bold;
+                color: #333;
+            }
+
+            form.mb-3 select {
+                padding: 0.5rem 1rem;
+                font-size: 1rem;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                outline: none;
+                transition: border-color 0.3s, box-shadow 0.3s;
+                background-color: #fff;
+                color: #333;
+                cursor: pointer;
+            }
+
+                form.mb-3 select:focus {
+                    border-color: #4e54c8;
+                    box-shadow: 0 0 8px rgba(78, 84, 200, 0.5);
+                }
+
+            .actions {
+                display: flex;
+                flex-wrap: wrap; /* Permite que os botões quebrem para a próxima linha */
+                gap: 0.5rem; /* Espaço entre os botões */
+            }
+
+                .actions button {
+                    flex: 1 1 calc(50% - 0.5rem); /* Botões ocupam 50% da largura menos o espaço entre eles */
+                    margin-bottom: 0.5rem; /* Espaço inferior para organizar a disposição */
+                }
+        }
+
+    }
+    </style>
+
+</head>
+<body>
+    <header>
+        @if (User.HasClaim(c => c.Type == "Role" && c.Value == "Admin") && !(ViewData["HideMenu"]?.ToString() == "true"))
+        {
+            <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+                <div class="container">
+                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/Painel">
+                        Tonni Corte & Cor <span style="font-size: 15px;font-weight: 700;color:red">(ADM)</span>
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                        <ul class="navbar-nav flex-grow-1">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Salao
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="SalaoDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoCadastro">Cadastrar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLista">Listar</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Usuários
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioCadastro">Cadastrar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioLista">Listar</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Relatórios
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Gráficos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Analíticos</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Estabelecimentos
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Estabelecimentos">Estabelecimentos</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item m-2">
+                                <div style="width:200px"></div>
+                            </li>
+                           
+                            <li class="nav-item m-2">
+                                <a href="UsuarioAlterarSenha" class="btn btn-warning" style="color:white">Alterar Senha</a>
+                            </li>
+                            <li class="nav-item m-2">
+                                <a class="btn btn-danger" asp-area="" asp-page="/Logout" style="color:white">Sair</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        }
+
+        @if (User.HasClaim(c => c.Type == "Role" && c.Value == "Usuario") && !(ViewData["HideMenu"]?.ToString() == "true"))
+        {
+            <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+                <div class="container">
+                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/UsuarioDashboard">Tonni Corte & Cor</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                        <ul class="navbar-nav flex-grow-1">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Clientes
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="PessoaCadastro/">Cadastrar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="PessoaLista/">Listar</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Funcionários
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioCadastro">Cadastrar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioLista">Listar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioServicoCadastro">Vincular Serviços para Funcionários</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioServicoLista">Listar Serviços de Funcionários</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Serviços
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoCadastro">Serviços Cadastrar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoLista">Serviços Listar </a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Pagamentos
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoCadastro">Realizar baixa **</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Relatórios de Pagamentos Recebidos**</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatórios de Pagamentos Pendentes**</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Agendamentos
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Agendamentos2">Agendamentos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Realizados**</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Pendentes**</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Cancelados**</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Configurações
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLeitura">Dados do Salão</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Configurar Mensagens**</a></li>
+
+                                    <li><hr class="dropdown-divider"></li>
+
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoCadastro">Cadastrar Meio de Pagamento</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoLista">Ver Meios de Pagamentos</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item m-2">
+                                <div style="width:30px"></div>
+                            </li>
+                            
+                            <li class="nav-item m-2">
+                                <a href="UsuarioAlterarSenha" class="btn btn-warning" style="color:white">Alterar Senha</a>
+                            </li>
+                            <li class="nav-item m-2">
+                                <a class="btn btn-danger" asp-area="" asp-page="/Logout2" style="color:white">Sair</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        }
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3 pt-3">
+            @RenderBody()
+        </main>
+    </div>
+    @if (!(ViewData["HideMenu"]?.ToString() == "true"))
+    {
+        <footer class="border-top  text-muted mt-5">
+            <div style="margin: auto;width: fit-content;">
+                <div class="mb-2" style="margin: auto;width: fit-content;">&copy; 2025 - Tonni Corte & Cor </div>
+                <div class="mb-2" style="margin: auto;width: fit-content;">Desenvolvido por <a href="https://tonni.com.br">TONNI Tecnologia</div>
+            </div>
+        </footer>
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+
+</body>
+</html>
