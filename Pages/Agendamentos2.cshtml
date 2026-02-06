@@ -268,7 +268,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" id="btnSalvar" class="btn btn-primary">Salvar</button>
             </div>
         </div>
@@ -329,7 +329,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" id="btnSalvarNovo" class="btn btn-primary">Salvar</button>
             </div>
         </div>
@@ -450,8 +450,9 @@
             calendar.addEvent({
                 id: result.id,
                 title: `${servicoTexto} - ${clienteTexto}`,
-                start: selectionStart
-                /*end: selectionEnd*/
+                start: selectionStart,
+                end: selectionEnd,
+                color: result.servicoCor
             });
 
 
@@ -559,7 +560,8 @@
                 id: result.id,
                 title: `${servicoTexto} - ${clienteTexto}`,
                 start: start,
-                end: end
+                end: end,
+                color: result.servicoCor
             });
 
             modalNovo.hide();
