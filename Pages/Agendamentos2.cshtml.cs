@@ -1,18 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Collections.Concurrent;
 using static CorteCor.Models;
 
 namespace CorteCor.Pages
 {
     public class Agendamentos2Model : PageModel
     {
-        // DEMO em mem�ria (troque por SQL Server depois)
-        private static readonly ConcurrentDictionary<string, CalendarEvent> _events = new();
-
         public List<Servico> Servicos { get; set; } = new();
         public List<Pessoa> Clientes { get; set; } = new();
-
 
         public void OnGet()
         {
@@ -24,20 +19,49 @@ namespace CorteCor.Pages
 
             var pessoaHandler = new PessoaHandler();
             Clientes = pessoaHandler.ListarPorSalao(idSalao);
-
         }
 
-        // FullCalendar espera: [{ id, title, start, end }]
+        // FullCalendar espera: [{ id, title, start, end, color }]
         public IActionResult OnGetEvents(DateTime start, DateTime end)
         {
-            var items = _events.Values
-                .Where(e => e.Start < end && e.End > start)
-                .Select(e => new
-                {
-                    id = e.Id,
-                    title = e.Title,
-                    start = e.Start,
-                    end = e.End
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+            // Carrega dados auxiliares para montar o objeto final
+            var servicoHandler = new ServicoHandler();
+            var servicos = servicoHandler.ListarPorSalao(idSalao);
+            var dictServicos = servicos.ToDictionary(s => s.IdServico);
+
+            var pessoaHandler = new PessoaHandler();
+            var clientes = pessoaHandler.ListarPorSalao(idSalao);
+            var dictPessoas = clientes.ToDictionary(p => p.IdPessoa, p => p.Nome);
+
+            // Carrega agendamentos do banco
+            var agendamentoHandler = new AgendamentoHandler();
+            // Nota: ListarPorSalao filtra por IdSalao via serviço.
+            // Para otimizar, seria ideal filtrar por data no banco, mas usaremos o filtro em memória por enquanto
+            // pois o método ListarPorSalao retorna todos.
+            var allAgendamentos = agendamentoHandler.ListarPorSalao(idSalao);
+
+            var items = allAgendamentos
+                .Where(a => a.DataHora >= start && a.DataHora < end && a.Status != "Cancelado")
+                .Select(a => {
+                   var servico = dictServicos.ContainsKey(a.IdServico) ? dictServicos[a.IdServico] : null;
+                   var nomeCliente = dictPessoas.ContainsKey(a.IdPessoa) ? dictPessoas[a.IdPessoa] : "Cliente Removido";
+                   
+                   var duracao = servico?.Duracao ?? TimeSpan.FromMinutes(30);
+                   var cor = servico?.Cor;
+                   if (string.IsNullOrEmpty(cor)) cor = "#3788d8";
+
+                   var primeiroNome = nomeCliente.Split(' ')[0];
+                   return new
+                   {
+                       id = a.IdAgendamento.ToString(),
+                       title = $"{primeiroNome} - {servico?.Nome ?? "Serviço Removido"}",
+                       start = a.DataHora,
+                       end = a.DataHora.Add(duracao),
+                       color = cor
+                   };
                 })
                 .ToList();
 
@@ -47,7 +71,6 @@ namespace CorteCor.Pages
         public class CreateRequest
         {
             public string? Start { get; set; }
-            public string? End { get; set; }
             public int IdPessoa { get; set; }
             public int IdServico { get; set; }
         }
@@ -58,73 +81,201 @@ namespace CorteCor.Pages
         {
             if (req == null) return BadRequest();
 
-            if (string.IsNullOrWhiteSpace(req.Start)) return BadRequest("Start inv�lido");
-            if (!DateTime.TryParse(req.Start, out var start)) return BadRequest("Start inv�lido");
+            if (string.IsNullOrWhiteSpace(req.Start)) return BadRequest("Start inválido");
+            if (!DateTime.TryParse(req.Start, out var start)) return BadRequest("Start inválido");
 
-            if (req.IdServico <= 0) return BadRequest("Servi�o � obrigat�rio");
-            if (req.IdPessoa <= 0) return BadRequest("Cliente � obrigat�rio");
+            if (req.IdServico <= 0) return BadRequest("Serviço é obrigatório");
+            if (req.IdPessoa <= 0) return BadRequest("Cliente é obrigatório");
 
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
+            // Validações
             var servicoHandler = new ServicoHandler();
             var servico = servicoHandler.ObterPorId(req.IdServico);
-            if (servico == null) return BadRequest("Servi�o n�o encontrado");
+            if (servico == null) return BadRequest("Serviço não encontrado");
+            if (servico.IdSalao != idSalao) return BadRequest("Serviço inválido para este salão");
 
             var pessoaHandler = new PessoaHandler();
             var pessoa = pessoaHandler.ObterPorId(req.IdPessoa);
-            if (pessoa == null) return BadRequest("Cliente n�o encontrado");
-            if (pessoa.IdSalao != idSalao) return BadRequest("Cliente inv�lido para este sal�o");
-
-            // FIM calculado pela dura��o do servi�o
-            //var end = start.Add(servico.Duracao);
-            DateTime end;
-
-            if (!string.IsNullOrWhiteSpace(req.End) && DateTime.TryParse(req.End, out var endParsed) && endParsed > start)
-                end = endParsed;
-            else
-                end = start.Add(servico.Duracao);
+            if (pessoa == null) return BadRequest("Cliente não encontrado");
+            if (pessoa.IdSalao != idSalao) return BadRequest("Cliente inválido para este salão");
 
 
-            var id = Guid.NewGuid().ToString("N");
-            var title = $"{servico.Nome} - {pessoa.Nome}";
+            var agendamentoHandler = new AgendamentoHandler();
+            var fsHandler = new FuncionarioServicoHandler();
+            var funcionarioHandler = new FuncionarioHandler();
 
-            _events[id] = new CalendarEvent
+            int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, start, idSalao);
+
+            if (idFuncionarioSelecionado == 0)
+                return BadRequest("Não há profissionais disponíveis para este serviço no horário selecionado.");
+
+            var novoAgendamento = new Agendamento
             {
-                Id = id,
-                Title = title,
-                Start = start,
-                End = end,
-                IdServico = req.IdServico
+                DataHora = start,
+                IdServico = req.IdServico,
+                IdPessoa = req.IdPessoa,
+                IdFuncionario = idFuncionarioSelecionado,
+                Status = "Agendado"
             };
+
+            int novoId = agendamentoHandler.CadastrarAgendamento(novoAgendamento);
 
             return new JsonResult(new
             {
-                id,
+                id = novoId,
                 servicoNome = servico.Nome,
                 servicoCor = servico.Cor
             });
         }
 
+        public IActionResult OnGetDetails(int id)
+        {
+            if (id <= 0) return BadRequest();
+
+            var agendamentoHandler = new AgendamentoHandler();
+            var a = agendamentoHandler.ObterPorId(id);
+            if (a == null) return NotFound();
+
+            return new JsonResult(new
+            {
+                id = a.IdAgendamento,
+                idPessoa = a.IdPessoa,
+                idServico = a.IdServico,
+                start = a.DataHora,
+                status = a.Status
+            });
+        }
+
+        public class UpdateRequest
+        {
+            public int Id { get; set; }
+            public int IdPessoa { get; set; }
+            public int IdServico { get; set; }
+            public string? Status { get; set; }
+        }
 
         [ValidateAntiForgeryToken]
-        public IActionResult OnPostDelete(string id)
+        public IActionResult OnPostUpdate([FromBody] UpdateRequest req)
         {
-            if (string.IsNullOrWhiteSpace(id)) return BadRequest();
-            _events.TryRemove(id, out _);
-            // TODO: aqui seria DELETE no banco
+            if (req == null || req.Id <= 0) return BadRequest();
+
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+            var agendamentoHandler = new AgendamentoHandler();
+            var agendamento = agendamentoHandler.ObterPorId(req.Id);
+            if (agendamento == null) return NotFound();
+
+            // Validações
+            var servicoHandler = new ServicoHandler();
+            var servico = servicoHandler.ObterPorId(req.IdServico);
+            if (servico == null || servico.IdSalao != idSalao) return BadRequest("Serviço inválido");
+
+            var pessoaHandler = new PessoaHandler();
+            var pessoa = pessoaHandler.ObterPorId(req.IdPessoa);
+            if (pessoa == null || pessoa.IdSalao != idSalao) return BadRequest("Cliente inválido");
+
+            // Re-calcula funcionário se necessário
+            int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, agendamento.DataHora, idSalao);
+
+            if (idFuncionarioSelecionado == 0)
+                return BadRequest("Não há profissionais disponíveis para este serviço no horário deste agendamento.");
+
+            agendamento.IdPessoa = req.IdPessoa;
+            agendamento.IdServico = req.IdServico;
+            agendamento.IdFuncionario = idFuncionarioSelecionado;
+            if (!string.IsNullOrEmpty(req.Status))
+                agendamento.Status = req.Status;
+
+            agendamentoHandler.Atualizar(agendamento);
+
+            var primeiroNome = pessoa.Nome.Split(' ')[0];
+            return new JsonResult(new
+            {
+                id = agendamento.IdAgendamento,
+                title = $"{primeiroNome} - {servico.Nome}",
+                color = servico.Cor,
+                end = agendamento.DataHora.Add(servico.Duracao)
+            });
+        }
+
+
+        [ValidateAntiForgeryToken]
+        public IActionResult OnPostDelete(int id)
+        {
+            if (id <= 0) return BadRequest();
+
+            // Opcional: Validar se pertence ao salão antes de excluir
+            // Mas para MVP/Demo, vamos direto ao delete
+            var agendamentoHandler = new AgendamentoHandler();
+            agendamentoHandler.Excluir(id);
+            
             return new JsonResult(new { ok = true });
         }
 
-        private class CalendarEvent
+        public IActionResult OnGetAvailableServices(DateTime start)
         {
-            public string Id { get; set; } = "";
-            public string Title { get; set; } = "";
-            public DateTime Start { get; set; }
-            public DateTime End { get; set; }
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
-            // (opcional)
-            public int IdServico { get; set; }
+            var servicoHandler = new ServicoHandler();
+            var allServicos = servicoHandler.ListarPorSalao(idSalao);
+
+            var available = allServicos
+                .Where(s => GetAvailableFuncionarioId(s.IdServico, start, idSalao) > 0)
+                .Select(s => new
+                {
+                    id = s.IdServico,
+                    nome = s.Nome,
+                    duracaoMin = (int)s.Duracao.TotalMinutes
+                })
+                .ToList();
+
+            return new JsonResult(available);
+        }
+
+        private int GetAvailableFuncionarioId(int idServico, DateTime start, int idSalao)
+        {
+            var servicoHandler = new ServicoHandler();
+            var servico = servicoHandler.ObterPorId(idServico);
+            if (servico == null || servico.IdSalao != idSalao) return 0;
+
+            var fsHandler = new FuncionarioServicoHandler();
+            var funcionarioHandler = new FuncionarioHandler();
+            var idsFuncionarios = fsHandler.ListarFuncionariosDoServico(idServico);
+
+            foreach (var idF in idsFuncionarios)
+            {
+                var f = funcionarioHandler.ObterPorId(idF);
+                if (f == null || f.IdSalao != idSalao) continue;
+
+                bool trabalha = false;
+                TimeSpan? ini = null, fim = null;
+
+                switch (start.DayOfWeek)
+                {
+                    case DayOfWeek.Monday: trabalha = f.seg; ini = f.seg_ini; fim = f.seg_fim; break;
+                    case DayOfWeek.Tuesday: trabalha = f.ter; ini = f.ter_ini; fim = f.ter_fim; break;
+                    case DayOfWeek.Wednesday: trabalha = f.qua; ini = f.qua_ini; fim = f.qua_fim; break;
+                    case DayOfWeek.Thursday: trabalha = f.qui; ini = f.qui_ini; fim = f.qui_fim; break;
+                    case DayOfWeek.Friday: trabalha = f.sex; ini = f.sex_ini; fim = f.sex_fim; break;
+                    case DayOfWeek.Saturday: trabalha = f.sab; ini = f.sab_ini; fim = f.sab_fim; break;
+                    case DayOfWeek.Sunday: trabalha = f.dom; ini = f.dom_ini; fim = f.dom_fim; break;
+                }
+
+                if (trabalha && ini.HasValue && fim.HasValue)
+                {
+                    var hora = start.TimeOfDay;
+                    if (hora >= ini.Value && hora + servico.Duracao <= fim.Value)
+                    {
+                        return f.IdFuncionario;
+                    }
+                }
+            }
+
+            return 0;
         }
     }
 }

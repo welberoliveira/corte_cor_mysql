@@ -9,7 +9,7 @@
         table td:nth-child(3),
         table th:nth-child(4),
         table td:nth-child(4) {
-            display: none;
+            /* display: none; Removed to show actions on mobile */
         }
     }
 </style>
@@ -39,7 +39,9 @@
                 <tr>
                     <td>@Servico.Nome</td>
                     <td>R$ @Servico.Preco.ToString("0.00")</td>
-                    <td>@Servico.Cor</td>
+                    <td>
+                        <div style="width: 30px; height: 30px; background-color: @Servico.Cor; border: 1px solid #ccc; border-radius: 4px;" title="@Servico.Cor"></div>
+                    </td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Servico.IdServico">

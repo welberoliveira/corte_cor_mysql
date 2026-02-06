@@ -36,9 +36,8 @@
         </div>
 
         <div class="form-group">
-            <label for="cor">Cor (texto)</label>
-            <input type="text" id="cor" name="cor" class="form-control" required value="@Model.Servico?.Cor">
-            <small class="form-text text-muted">Ex: azul, verde, roxo, #2E86DE</small>
+            <label for="cor">Cor</label>
+            <input type="color" id="cor" name="cor" class="form-control" required value="@Model.Servico?.Cor" style="height: 50px;">
         </div>
 
         <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
