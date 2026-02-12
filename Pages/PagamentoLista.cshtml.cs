@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+Ôªøusing Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
@@ -23,22 +23,23 @@ namespace CorteCor.Pages
         {
             var handler = new PagamentoHandler();
 
-            int id = int.Parse(Request.Form["id"]);
+            Guid id = Guid.Empty;
+            Guid.TryParse(Request.Form["id"], out id);
             string action = Request.Form["action"];
 
-            if (action == "excluir")
+            if (action == "excluir" && id != Guid.Empty)
             {
                 try
                 {
                     handler.Excluir(id);
-                    Mensagem = "Pagamento excluÌdo com sucesso.";
+                    Mensagem = "Pagamento exclu√≠do com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir este Pagamento porque ele est· associado a outros registros.";
+                    Mensagem = "N√£o foi poss√≠vel excluir este Pagamento porque ele est√° associado a outros registros.";
                 }
             }
-            else if (action == "alterar")
+            else if (action == "alterar" && id != Guid.Empty)
             {
                 Response.Redirect(HttpContext.Request.PathBase + $"/PagamentoCadastro?id={id}");
             }

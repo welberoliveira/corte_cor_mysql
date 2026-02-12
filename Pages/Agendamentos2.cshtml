@@ -253,7 +253,7 @@
             <div class="modal-body">
                 <div class="cc-modal-row">
                     <label class="form-label mb-0">Início</label>
-                    <input id="inicio" class="form-control" type="text" readonly />
+                    <input id="inicio" class="form-control" type="datetime-local" />
                 </div>
 
                 <div class="cc-modal-row">
@@ -308,6 +308,7 @@
                 <button type="button" id="btnSalvar" class="btn btn-primary">Salvar</button>
                 <button type="button" id="btnAlterar" class="btn btn-success d-none">Alterar</button>
                 <button type="button" id="btnExcluir" class="btn btn-danger d-none">Excluir</button>
+                <button type="button" id="btnPagar" class="btn btn-primary d-none">Pagar Agora</button>
             </div>
         </div>
     </div>
@@ -399,6 +400,7 @@
             }).format(dt);
         }
 
+
         async function carregarEventos(fetchInfo, successCallback, failureCallback) {
             try {
                 const url = `?handler=Events&start=${encodeURIComponent(fetchInfo.startStr)}&end=${encodeURIComponent(fetchInfo.endStr)}`;
@@ -441,7 +443,7 @@
             document.querySelector('#agendamentoModal .modal-title').textContent = 'Novo agendamento';
 
             document.getElementById('idAgendamento').value = '';
-            document.getElementById('inicio').value = formatLocal(start);
+            document.getElementById('inicio').value = toDateTimeLocalValue(start);
 
             // Fetch serviços disponíveis
             await atualizarServicosDisponiveis(start, 'idServico');
@@ -478,6 +480,12 @@
 
             const min = getDuracaoServicoMinutos();
             selectionEnd = new Date(selectionStart.getTime() + min * 60 * 1000);
+            
+            // Se for datetime-local
+            // document.getElementById('fim').value = toDateTimeLocalValue(selectionEnd); 
+            // Mas o fim é texto readonly na modal principal? Não, é "text" readonly. 
+            // Vamos manter padrao de exibicao texto para Fim, ou mudar para datetime-local readonly.
+            // O original era: input type="text" readonly. formatLocal(end).
             document.getElementById('fim').value = formatLocal(selectionEnd);
         }
 
@@ -495,7 +503,7 @@
             recalcularFimPeloServico();
 
             if (!idPessoaStr || !idServicoStr) {
-                alert('Informe Cliente e Serviço.');
+                Swal.fire('Atenção', 'Informe Cliente e Serviço.', 'warning');
                 return;
             }
 
@@ -517,7 +525,7 @@
             if (!resp.ok) {
                 const txt = await resp.text();
                 console.error(txt);
-                alert('Erro ao salvar agendamento.');
+                await showError(resp, 'Erro ao salvar agendamento.');
                 return;
             }
 
@@ -542,7 +550,7 @@
             const idServicoStr = document.getElementById('idServico').value;
 
             if (!id || !idPessoaStr || !idServicoStr) {
-                alert('Dados incompletos.');
+                Swal.fire('Atenção', 'Dados incompletos.', 'warning');
                 return;
             }
 
@@ -550,7 +558,8 @@
                 id: parseInt(id),
                 idPessoa: parseInt(idPessoaStr),
                 idServico: parseInt(idServicoStr),
-                status: document.getElementById('idStatus').value
+                status: document.getElementById('idStatus').value,
+                start: selectionStart.toISOString() 
             };
 
             const resp = await fetch('?handler=Update', {
@@ -568,19 +577,32 @@
                 if (evt) {
                    evt.setProp('title', result.title);
                    evt.setProp('backgroundColor', result.color);
-                   evt.setProp('borderColor', result.color);
-                   evt.setEnd(result.end);
+                   if (result.start) evt.setStart(result.start);
+                   if (result.end) evt.setEnd(result.end);
                 }
                 modal.hide();
+                Swal.fire('Sucesso', 'Agendamento atualizado.', 'success');
             } else {
-                const txt = await resp.text();
-                alert(txt || 'Erro ao alterar agendamento.');
+                await showError(resp, 'Erro ao alterar agendamento.');
             }
         }
 
         async function excluirAgendamento() {
             const id = document.getElementById('idAgendamento').value;
-            if (!id || !confirm('Deseja realmente excluir?')) return;
+            if (!id) return;
+
+            const result = await Swal.fire({
+                title: 'Excluir?',
+                text: "Deseja realmente excluir este agendamento?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e53e3e',
+                cancelButtonColor: '#ccc',
+                confirmButtonText: 'Sim, excluir!',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
 
             const resp = await fetch(`?handler=Delete&id=${id}`, {
                 method: 'POST',
@@ -590,8 +612,35 @@
             if (resp.ok) {
                 calendar.getEventById(id)?.remove();
                 modal.hide();
+                Swal.fire('Excluído', 'Agendamento removido.', 'success');
             } else {
-                alert('Erro ao excluir.');
+                await showError(resp, 'Erro ao excluir.');
+            }
+        }
+
+        async function iniciarPagamento() {
+            const id = document.getElementById('idAgendamento').value;
+            if (!id) return;
+
+            const resp = await fetch('?handler=Pagar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ idAgendamento: parseInt(id) })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.checkoutUrl) {
+                    window.open(data.checkoutUrl, '_blank');
+                    modal.hide();
+                    calendar.refetchEvents();
+                    Swal.fire('Pagamento Iniciado', 'Aguardando confirmação do Mercado Pago.', 'info');
+                }
+            } else {
+                await showError(resp, 'Erro ao iniciar pagamento.');
             }
         }
 
@@ -656,17 +705,17 @@
             const end = fromDateTimeLocalValue(document.getElementById('fimNovo').value);
 
             if (!start || !end) {
-                alert('Informe Início e Fim.');
+                Swal.fire('Atenção', 'Informe Início e Fim.', 'warning');
                 return;
             }
 
             if (end <= start) {
-                alert('O Fim deve ser maior que o Início.');
+                Swal.fire('Atenção', 'O Fim deve ser maior que o Início.', 'warning');
                 return;
             }
 
             if (!idPessoaStr || !idServicoStr) {
-                alert('Informe Cliente e Serviço.');
+                Swal.fire('Atenção', 'Informe Cliente e Serviço.', 'warning');
                 return;
             }
 
@@ -689,7 +738,7 @@
             if (!resp.ok) {
                 const txt = await resp.text();
                 console.error(txt);
-                alert('Erro ao salvar agendamento.');
+                await showError(resp, 'Erro ao salvar agendamento.');
                 return;
             }
 
@@ -776,7 +825,7 @@
                     document.querySelector('#agendamentoModal .modal-title').textContent = 'Alterar Agendamento';
 
                     document.getElementById('idAgendamento').value = data.id;
-                    document.getElementById('inicio').value = formatLocal(selectionStart);
+                    document.getElementById('inicio').value = toDateTimeLocalValue(selectionStart);
                     document.getElementById('idPessoa').value = data.idPessoa;
                     
                     // Fetch serviços disponíveis para este horário antes de setar o valor
@@ -790,10 +839,24 @@
 
                     recalcularFimPeloServico();
 
+                    // Bloqueio se Pago
+                    const isPago = data.status === 'Pago';
+                    document.getElementById('idPessoa').disabled = isPago;
+                    document.getElementById('idServico').disabled = isPago;
+                    document.getElementById('idStatus').disabled = isPago;
+
                     // Toggle botões
                     document.getElementById('btnSalvar').classList.add('d-none');
-                    document.getElementById('btnAlterar').classList.remove('d-none');
-                    document.getElementById('btnExcluir').classList.remove('d-none');
+                    
+                    if (isPago) {
+                        document.getElementById('btnAlterar').classList.add('d-none');
+                        document.getElementById('btnExcluir').classList.add('d-none');
+                        document.getElementById('btnPagar').classList.add('d-none');
+                    } else {
+                        document.getElementById('btnAlterar').classList.remove('d-none');
+                        document.getElementById('btnExcluir').classList.remove('d-none');
+                        document.getElementById('btnPagar').classList.remove('d-none');
+                    }
 
                     modal.show();
                 }
@@ -814,6 +877,7 @@
 
             document.getElementById('btnAlterar').addEventListener('click', alterarAgendamento);
             document.getElementById('btnExcluir').addEventListener('click', excluirAgendamento);
+            document.getElementById('btnPagar').addEventListener('click', iniciarPagamento);
 
 
 
@@ -821,6 +885,18 @@
             calendar.render();
             document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
             document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
+
+            document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
+            document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
+
+            // Listener para mudança de horário na edição
+            document.getElementById('inicio').addEventListener('change', function() {
+                const val = this.value;
+                if(val) {
+                    selectionStart = fromDateTimeLocalValue(val);
+                    recalcularFimPeloServico();
+                }
+            });
 
         });
     </script>

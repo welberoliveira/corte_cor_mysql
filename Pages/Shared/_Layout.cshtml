@@ -21,6 +21,9 @@
     <!--Scripts para DayPilot: https://www.daypilot.org/-->
     <script src="~/js/daypilot/daypilot-all.min.js"></script>
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     @RenderSection("Styles", required: false)
 
     <style>
@@ -211,7 +214,7 @@
         {
             <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
                 <div class="container">
-                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/Painel">
+                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/Agendamentos2">
                         Tonni Corte & Cor <span style="font-size: 15px;font-weight: 700;color:red">(ADM)</span>
                     </a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
@@ -381,10 +384,35 @@
         <footer class="border-top  text-muted mt-5">
             <div style="margin: auto;width: fit-content;">
                 <div class="mb-2" style="margin: auto;width: fit-content;">&copy; 2025 - Tonni Corte & Cor </div>
-                <div class="mb-2" style="margin: auto;width: fit-content;">Desenvolvido por <a href="https://tonni.com.br">TONNI Tecnologia</div>
+                <div class="mb-2" style="margin: auto;width: fit-content;">Desenvolvido por <a href="https://tonni.com.br">TONNI Tecnologia</a></div>
             </div>
         </footer>
     }
+
+    <script>
+        // ---- Global Error Handling Helper
+        async function showError(resp, defaultMsg) {
+            let msg = defaultMsg;
+            let detail = '';
+            try {
+                const errorData = await resp.json();
+                msg = errorData.message || defaultMsg;
+                detail = errorData.detail || '';
+            } catch (e) {
+                try {
+                    msg = await resp.text() || defaultMsg;
+                } catch (e2) { }
+            }
+
+            await Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: msg,
+                footer: detail ? `<div style="color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: .75rem 1.25rem; border: 1px solid transparent; border-radius: .25rem; font-size: 0.8em;"><b>Dica/Detalhe:</b> ${detail}</div>` : null,
+                confirmButtonColor: '#3085d6'
+            });
+        }
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 

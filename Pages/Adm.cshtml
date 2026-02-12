@@ -100,9 +100,16 @@
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger text-center">
-            @Model.ErrorMessage
-        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro de Login Admin',
+                    text: '@Html.Raw(Model.ErrorMessage)',
+                    confirmButtonColor: '#4e54c8'
+                });
+            });
+        </script>
     }
 
     <form method="post">
