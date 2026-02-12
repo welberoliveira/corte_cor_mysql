@@ -191,15 +191,37 @@ public class Models
 
     public class Pagamento
     {
-        public int IdPagamento { get; set; }
-        public string Contos { get; set; }
-        public string Campos { get; set; }
-        public DateTime Data { get; set; }
-        public decimal Valor { get; set; }
-        public string Tipo { get; set; }
-
-        public int IdMeioPagamento { get; set; }
+        public Guid IdPagamento { get; set; }
         public int IdAgendamento { get; set; }
+        public bool Ativo { get; set; }
+        public string Status { get; set; }
+        public decimal Valor { get; set; }
+        public string Moeda { get; set; }
+        public string? Descricao { get; set; }
+
+        public string? MercadoPagoPreferenceId { get; set; }
+        public string? MercadoPagoPaymentId { get; set; }
+        public string? CheckoutUrl { get; set; }
+
+        public string? MpStatus { get; set; }
+        public string? MpStatusDetail { get; set; }
+
+        public DateTime CriadoEm { get; set; }
+        public DateTime? AtualizadoEm { get; set; }
+        public DateTime? PagoEm { get; set; }
+
+        // Legacy fields for backward compatibility
+        public int IdMeioPagamento { get; set; }
+        public string? Tipo { get; set; }
+        public DateTime Data { get; set; }
+        public string? Contos { get; set; }
+        public string? Campos { get; set; }
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; } = string.Empty;
+        public string? Detail { get; set; }
+        public string? Code { get; set; }
     }
 }
-

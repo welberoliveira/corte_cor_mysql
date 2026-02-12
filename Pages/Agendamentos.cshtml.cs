@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 
+using static CorteCor.Models;
+
 namespace CorteCor.Pages
 {
     [Authorize]
@@ -330,7 +332,7 @@ namespace CorteCor.Pages
         public async Task<IActionResult> OnPostSaveAsync([FromBody] SaveRequest req)
         {
             var idSalao = GetIdSalao();
-            if (idSalao <= 0) return BadRequest("Salão inválido.");
+            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Salão inválido." });
 
             if (string.IsNullOrWhiteSpace(req.EmployeeId) ||
                 string.IsNullOrWhiteSpace(req.ClientId) ||
@@ -338,7 +340,7 @@ namespace CorteCor.Pages
                 string.IsNullOrWhiteSpace(req.Status) ||
                 string.IsNullOrWhiteSpace(req.Start))
             {
-                return BadRequest("Preencha Funcionário, Cliente, Serviço, Status e Início.");
+                return BadRequest(new ErrorResponse { Message = "Preencha Funcionário, Cliente, Serviço, Status e Início." });
             }
 
             var start = ParseDpDate(req.Start);
@@ -348,7 +350,7 @@ namespace CorteCor.Pages
 
             // 1) duração fixa pelo serviço
             var (duracaoMin, valorPadrao) = await GetServicoInfoAsync(con, idSalao, req.ServiceId);
-            if (duracaoMin <= 0) return BadRequest("Serviço sem duração configurada.");
+            if (duracaoMin <= 0) return BadRequest(new ErrorResponse { Message = "Serviço sem duração configurada." });
 
             var end = start.AddMinutes(duracaoMin);
 
@@ -359,26 +361,26 @@ namespace CorteCor.Pages
                 try
                 {
                     var ok = await FuncionarioPodeExecutarServicoAsync(con, idSalao, req.EmployeeId, req.ServiceId);
-                    if (!ok) return BadRequest("Este funcionário não está vinculado a este serviço.");
+                    if (!ok) return BadRequest(new ErrorResponse { Message = "Este funcionário não está vinculado a este serviço." });
                 }
                 catch (SqlException ex) when (ex.Message.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase))
                 {
                     // Se a tabela de vínculo não existir ainda, você pode:
                     // - criar a tabela, ou
                     // - desativar validateFuncionarioServico acima.
-                    return BadRequest("Tabela de vínculo Funcionário-Serviço não encontrada. Crie a tabela ou desative a validação no código.");
+                    return BadRequest(new ErrorResponse { Message = "Tabela de vínculo Funcionário-Serviço não encontrada. Crie a tabela ou desative a validação no código." });
                 }
             }
 
             // 3) valida horário de trabalho (se conseguir ler as janelas)
             var isWithin = await IsWithinWorkHoursAsync(con, idSalao, req.EmployeeId, start, end);
             if (!isWithin)
-                return BadRequest("Horário fora da disponibilidade do funcionário.");
+                return BadRequest(new ErrorResponse { Message = "Horário fora da disponibilidade do funcionário." });
 
             // 4) valida sobreposição (bloquear 100%)
             var hasConflict = await HasOverlapAsync(con, idSalao, req.EmployeeId, start, end, req.Id);
             if (hasConflict)
-                return BadRequest("Conflito: já existe um agendamento nesse horário para este funcionário.");
+                return BadRequest(new ErrorResponse { Message = "Conflito: já existe um agendamento nesse horário para este funcionário." });
 
             // 5) salvar (insert/update)
             var valor = ParseMoney(req.Value) ?? valorPadrao;
@@ -444,7 +446,7 @@ namespace CorteCor.Pages
                 cmd.Parameters.AddWithValue("@Status", req.Status);
 
                 var rows = await cmd.ExecuteNonQueryAsync();
-                if (rows == 0) return BadRequest("Agendamento não encontrado.");
+                if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento não encontrado." });
 
                 return new JsonResult(new { ok = true, id = req.Id });
             }
@@ -462,8 +464,8 @@ namespace CorteCor.Pages
         public async Task<IActionResult> OnPostDeleteAsync([FromBody] DeleteRequest req)
         {
             var idSalao = GetIdSalao();
-            if (idSalao <= 0) return BadRequest("Salão inválido.");
-            if (string.IsNullOrWhiteSpace(req.Id)) return BadRequest("Id inválido.");
+            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Salão inválido." });
+            if (string.IsNullOrWhiteSpace(req.Id)) return BadRequest(new ErrorResponse { Message = "Id inválido." });
 
             await using var con = new SqlConnection(ConnStr);
             await con.OpenAsync();
@@ -479,7 +481,7 @@ namespace CorteCor.Pages
             cmd.Parameters.AddWithValue("@Id", req.Id);
 
             var rows = await cmd.ExecuteNonQueryAsync();
-            if (rows == 0) return BadRequest("Agendamento não encontrado.");
+            if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento não encontrado." });
 
             return new JsonResult(new { ok = true });
         }
@@ -806,4 +808,7 @@ namespace CorteCor.Pages
         }
     }
 }
+
+
+
 

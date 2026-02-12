@@ -70,7 +70,7 @@ namespace CorteCor.Pages
 
 
                 // Redirecionar para a página inicial ou outra página protegida
-                return Redirect(HttpContext.Request.PathBase + "/UsuarioDashboard");
+                return Redirect(HttpContext.Request.PathBase + "/Agendamentos2");
             }
             else
             {

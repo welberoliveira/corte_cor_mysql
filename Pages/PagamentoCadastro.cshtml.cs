@@ -11,12 +11,12 @@ namespace CorteCor.Pages
         public string ButtonText = "Cadastrar";
         public string Mensagem { get; set; }
 
-        public void OnGet(int? id)
+        public void OnGet(Guid? id)
         {
-            if (id.HasValue)
+            if (id.HasValue && id.Value != Guid.Empty)
             {
                 var handler = new PagamentoHandler();
-                Pagamento = handler.Listar().FirstOrDefault(p => p.IdPagamento == id.Value);
+                Pagamento = handler.ObterPorId(id.Value);
                 ButtonText = "Atualizar";
             }
         }
@@ -37,8 +37,8 @@ namespace CorteCor.Pages
 
         public void OnPost()
         {
-            int id = 0;
-            int.TryParse(Request.Form["id"], out id);
+            Guid id = Guid.Empty;
+            Guid.TryParse(Request.Form["id"], out id);
 
             int idAgendamento = 0;
             int.TryParse(Request.Form["idAgendamento"], out idAgendamento);
@@ -51,7 +51,7 @@ namespace CorteCor.Pages
 
             var pagamento = new Pagamento
             {
-                IdPagamento = id,
+                IdPagamento = id == Guid.Empty ? Guid.NewGuid() : id,
                 IdAgendamento = idAgendamento,
                 IdMeioPagamento = idMeioPagamento,
 
@@ -60,23 +60,29 @@ namespace CorteCor.Pages
                 Data = data,
 
                 Contos = Request.Form["contos"],
-                Campos = Request.Form["campos"]
+                Campos = Request.Form["campos"],
+                
+                Ativo = true,
+                Status = "Pago", // Cadastro manual assume Pago? Ou Pendente? Mantendo coerente.
+                Moeda = "BRL",
+                CriadoEm = DateTime.UtcNow
             };
 
             var handler = new PagamentoHandler();
 
-            if (id > 0)
+            if (id != Guid.Empty)
             {
                 handler.Atualizar(pagamento);
                 Mensagem = "Pagamento atualizado com sucesso!";
             }
             else
             {
-                id = handler.CadastrarPagamento(pagamento);
+                handler.CadastrarPagamento(pagamento);
+                id = pagamento.IdPagamento;
                 Mensagem = "Pagamento cadastrado com sucesso!";
             }
 
-            OnGet(id > 0 ? id : (int?)null);
+            OnGet(id != Guid.Empty ? id : (Guid?)null);
         }
     }
 }

@@ -40,8 +40,11 @@ public class UsuarioHandler : EntityHandler<Usuario>
             command.Parameters.AddWithValue("@CPF", Usuario.CPF);
             command.Parameters.AddWithValue("@Email", Usuario.Email);
             command.Parameters.AddWithValue("@Telefone", Usuario.Telefone);
-            // Se DataEntrada for nullable, tratar:
-            command.Parameters.AddWithValue("@DataEntrada", Usuario.DataEntrada.ToString("yyyy-MM-dd"));
+            // Se DataEntrada for nullable ou MinValue, tratar:
+            if (Usuario.DataEntrada == DateTime.MinValue)
+                command.Parameters.AddWithValue("@DataEntrada", DBNull.Value);
+            else
+                command.Parameters.AddWithValue("@DataEntrada", Usuario.DataEntrada);
             command.Parameters.AddWithValue("@Status", Usuario.Status);
             command.Parameters.AddWithValue("@Senha", Usuario.Senha);
             command.Parameters.AddWithValue("@IdSalao", Usuario.IdSalao);
@@ -1822,14 +1825,15 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         return agendamentos;
     }
 
-    public List<Agendamento> ListarPorSalao(int idSalao)
+    public List<Agendamento> ListarPorIntervalo(int idSalao, DateTime inicio, DateTime fim)
     {
-        // Agendamento não tem IdSalao direto, então filtramos pelo Serviço (que tem IdSalao).
         string query = @"
         SELECT a.IdAgendamento, a.DataHora, a.Status, a.IdServico, a.IdPessoa, a.IdFuncionario
         FROM CorteCor_Agendamento a
         INNER JOIN CorteCor_Servico s ON s.IdServico = a.IdServico
         WHERE s.IdSalao = @IdSalao
+          AND a.DataHora >= @Inicio
+          AND a.DataHora < @Fim
         ORDER BY a.DataHora;";
 
         var agendamentos = new List<Agendamento>();
@@ -1838,6 +1842,8 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         using (var command = new SqlCommand(query, connection))
         {
             command.Parameters.AddWithValue("@IdSalao", idSalao);
+            command.Parameters.AddWithValue("@Inicio", inicio);
+            command.Parameters.AddWithValue("@Fim", fim);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1858,6 +1864,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
 
         return agendamentos;
     }
+
 
     public List<Agendamento> ListarPorFuncionario(int idFuncionario, DateTime? dataInicio = null, DateTime? dataFim = null)
     {
@@ -1923,6 +1930,34 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         }
     }
 
+    public bool VerificarDisponibilidade(int idFuncionario, DateTime inicio, DateTime fim, int? idAgendamentoIgnorar = null)
+    {
+        string query = @"
+        SELECT COUNT(1) 
+        FROM CorteCor_Agendamento a
+        INNER JOIN CorteCor_Servico s ON s.IdServico = a.IdServico
+        WHERE a.IdFuncionario = @IdFuncionario
+          AND a.Status <> 'Cancelado'
+          AND (@IdAgendamentoIgnorar IS NULL OR a.IdAgendamento <> @IdAgendamentoIgnorar)
+          AND (
+                (a.DataHora < @Fim) AND 
+                (DATEADD(minute, DATEDIFF(minute, 0, s.Duracao), a.DataHora) > @Inicio)
+              );";
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
+            command.Parameters.AddWithValue("@Inicio", inicio);
+            command.Parameters.AddWithValue("@Fim", fim);
+            command.Parameters.AddWithValue("@IdAgendamentoIgnorar", (object?)idAgendamentoIgnorar ?? DBNull.Value);
+
+            int count = (int)command.ExecuteScalar();
+            return count == 0;
+        }
+    }
+
+
     public override void AtivarDesativar(int id, bool ativar)
     {
         // Como "Status" é livre, padronizei:
@@ -1948,6 +1983,18 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         using (var connection = _dbHandler.GetConnection())
         using (var command = new SqlCommand(query, connection))
         {
+            command.Parameters.AddWithValue("@IdAgendamento", id);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    public void AtualizarStatus(int id, string status)
+    {
+        string query = "UPDATE CorteCor_Agendamento SET Status = @Status WHERE IdAgendamento = @IdAgendamento;";
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@Status", status);
             command.Parameters.AddWithValue("@IdAgendamento", id);
             command.ExecuteNonQuery();
         }
@@ -2207,240 +2254,223 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
 
 public class PagamentoHandler : EntityHandler<Pagamento>
 {
-    public int CadastrarPagamento(Pagamento pagamento)
+    public void CadastrarPagamento(Pagamento pagamento)
     {
-        int novoId = 0;
-
-        string query = @"
+        // Desativa pagamentos anteriores para evitar erro no índice único (UX_CorteCor_Pagamento_Agendamento_Ativo)
+        string deactivateQuery = "UPDATE CorteCor_Pagamento SET Ativo = 0 WHERE IdAgendamento = @IdAgendamento AND Ativo = 1;";
+        
+        string insertQuery = @"
         INSERT INTO CorteCor_Pagamento
-            (Contos, Campos, Data, Valor, Tipo, IdMeioPagamento, IdAgendamento)
+            (IdPagamento, IdAgendamento, Ativo, Status, Valor, Moeda, Descricao, 
+             MercadoPagoPreferenceId, MercadoPagoPaymentId, CheckoutUrl, MpStatus, MpStatusDetail)
         VALUES
-            (@Contos, @Campos, @Data, @Valor, @Tipo, @IdMeioPagamento, @IdAgendamento);
-        SELECT SCOPE_IDENTITY();";
+            (@IdPagamento, @IdAgendamento, @Ativo, @Status, @Valor, @Moeda, @Descricao, 
+             @MercadoPagoPreferenceId, @MercadoPagoPaymentId, @CheckoutUrl, @MpStatus, @MpStatusDetail);";
 
+        using (var connection = _dbHandler.GetConnection())
+        {
+            using (var commandDeactivate = new SqlCommand(deactivateQuery, connection))
+            {
+                commandDeactivate.Parameters.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
+                commandDeactivate.ExecuteNonQuery();
+            }
+
+            using (var command = new SqlCommand(insertQuery, connection))
+            {
+                command.Parameters.AddWithValue("@IdPagamento", pagamento.IdPagamento == Guid.Empty ? Guid.NewGuid() : pagamento.IdPagamento);
+                command.Parameters.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
+                command.Parameters.AddWithValue("@Ativo", pagamento.Ativo);
+                command.Parameters.AddWithValue("@Status", pagamento.Status ?? "Pendente");
+                command.Parameters.AddWithValue("@Valor", pagamento.Valor);
+                command.Parameters.AddWithValue("@Moeda", pagamento.Moeda ?? "BRL");
+                command.Parameters.AddWithValue("@Descricao", (object?)pagamento.Descricao ?? DBNull.Value);
+                command.Parameters.AddWithValue("@MercadoPagoPreferenceId", (object?)pagamento.MercadoPagoPreferenceId ?? DBNull.Value);
+                command.Parameters.AddWithValue("@MercadoPagoPaymentId", (object?)pagamento.MercadoPagoPaymentId ?? DBNull.Value);
+                command.Parameters.AddWithValue("@CheckoutUrl", (object?)pagamento.CheckoutUrl ?? DBNull.Value);
+                command.Parameters.AddWithValue("@MpStatus", (object?)pagamento.MpStatus ?? DBNull.Value);
+                command.Parameters.AddWithValue("@MpStatusDetail", (object?)pagamento.MpStatusDetail ?? DBNull.Value);
+
+                command.ExecuteNonQuery();
+            }
+        }
+    }
+
+    public Pagamento ObterPorIdAgendamento(int idAgendamento)
+    {
+        string query = "SELECT * FROM CorteCor_Pagamento WHERE IdAgendamento = @IdAgendamento AND Ativo = 1;";
         using (var connection = _dbHandler.GetConnection())
         using (var command = new SqlCommand(query, connection))
         {
-            command.Parameters.AddWithValue("@Contos", string.IsNullOrWhiteSpace(pagamento.Contos)
-                ? (object)DBNull.Value
-                : pagamento.Contos);
-
-            command.Parameters.AddWithValue("@Campos", string.IsNullOrWhiteSpace(pagamento.Campos)
-                ? (object)DBNull.Value
-                : pagamento.Campos);
-
-            command.Parameters.AddWithValue("@Data", pagamento.Data == default ? DateTime.Now : pagamento.Data);
-            command.Parameters.AddWithValue("@Valor", pagamento.Valor);
-            command.Parameters.AddWithValue("@Tipo", pagamento.Tipo ?? "");
-
-            command.Parameters.AddWithValue("@IdMeioPagamento", pagamento.IdMeioPagamento);
-            command.Parameters.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
-
-            object result = command.ExecuteScalar();
-            if (result != null && int.TryParse(result.ToString(), out int id))
-                novoId = id;
+            command.Parameters.AddWithValue("@IdAgendamento", idAgendamento);
+            using (var reader = command.ExecuteReader())
+            {
+                if (!reader.Read()) return null;
+                return Map(reader);
+            }
         }
-
-        return novoId;
     }
 
-    public Pagamento ObterPorId(int idPagamento)
+    public Pagamento ObterPorPreferenceId(string preferenceId)
+    {
+        string query = "SELECT * FROM CorteCor_Pagamento WHERE MercadoPagoPreferenceId = @PreferenceId AND Ativo = 1;";
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@PreferenceId", preferenceId);
+            using (var reader = command.ExecuteReader())
+            {
+                if (!reader.Read()) return null;
+                return Map(reader);
+            }
+        }
+    }
+
+    public Pagamento ObterPorPaymentId(string paymentId)
+    {
+        string query = "SELECT * FROM CorteCor_Pagamento WHERE MercadoPagoPaymentId = @PaymentId;";
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@PaymentId", paymentId);
+            using (var reader = command.ExecuteReader())
+            {
+                if (!reader.Read()) return null;
+                return Map(reader);
+            }
+        }
+    }
+
+    public void AtualizarPagamento(Pagamento p)
     {
         string query = @"
-        SELECT IdPagamento, Contos, Campos, Data, Valor, Tipo, IdMeioPagamento, IdAgendamento
-        FROM CorteCor_Pagamento
+        UPDATE CorteCor_Pagamento
+        SET Status = @Status,
+            MercadoPagoPaymentId = @MercadoPagoPaymentId,
+            MpStatus = @MpStatus,
+            MpStatusDetail = @MpStatusDetail,
+            AtualizadoEm = GETUTCDATE(),
+            PagoEm = @PagoEm,
+            Ativo = @Ativo
         WHERE IdPagamento = @IdPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
         using (var command = new SqlCommand(query, connection))
         {
-            command.Parameters.AddWithValue("@IdPagamento", idPagamento);
+            command.Parameters.AddWithValue("@Status", p.Status);
+            command.Parameters.AddWithValue("@MercadoPagoPaymentId", (object?)p.MercadoPagoPaymentId ?? DBNull.Value);
+            command.Parameters.AddWithValue("@MpStatus", (object?)p.MpStatus ?? DBNull.Value);
+            command.Parameters.AddWithValue("@MpStatusDetail", (object?)p.MpStatusDetail ?? DBNull.Value);
+            command.Parameters.AddWithValue("@PagoEm", (object?)p.PagoEm ?? DBNull.Value);
+            command.Parameters.AddWithValue("@Ativo", p.Ativo);
+            command.Parameters.AddWithValue("@IdPagamento", p.IdPagamento);
 
-            using (var reader = command.ExecuteReader())
-            {
-                if (!reader.Read()) return null;
+            command.ExecuteNonQuery();
+        }
+    }
 
-                return new Pagamento
-                {
-                    IdPagamento = reader["IdPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdPagamento"]),
-                    Contos = reader["Contos"] is DBNull ? "" : reader["Contos"].ToString(),
-                    Campos = reader["Campos"] is DBNull ? "" : reader["Campos"].ToString(),
-                    Data = reader["Data"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["Data"]),
-                    Valor = reader["Valor"] is DBNull ? 0m : Convert.ToDecimal(reader["Valor"]),
-                    Tipo = reader["Tipo"] is DBNull ? "" : reader["Tipo"].ToString(),
-                    IdMeioPagamento = reader["IdMeioPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdMeioPagamento"]),
-                    IdAgendamento = reader["IdAgendamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdAgendamento"])
-                };
-            }
+    private Pagamento Map(SqlDataReader reader)
+    {
+        return new Pagamento
+        {
+            IdPagamento = (Guid)reader["IdPagamento"],
+            IdAgendamento = (int)reader["IdAgendamento"],
+            Ativo = (bool)reader["Ativo"],
+            Status = reader["Status"].ToString(),
+            Valor = (decimal)reader["Valor"],
+            Moeda = reader["Moeda"].ToString(),
+            Descricao = reader["Descricao"]?.ToString(),
+            MercadoPagoPreferenceId = reader["MercadoPagoPreferenceId"]?.ToString(),
+            MercadoPagoPaymentId = reader["MercadoPagoPaymentId"]?.ToString(),
+            CheckoutUrl = reader["CheckoutUrl"]?.ToString(),
+            MpStatus = reader["MpStatus"]?.ToString(),
+            MpStatusDetail = reader["MpStatusDetail"]?.ToString(),
+            CriadoEm = (DateTime)reader["CriadoEm"],
+            AtualizadoEm = reader["AtualizadoEm"] is DBNull ? null : (DateTime?)reader["AtualizadoEm"],
+            PagoEm = reader["PagoEm"] is DBNull ? null : (DateTime?)reader["PagoEm"],
+            
+            // Legacy mapping
+            IdMeioPagamento = reader["IdMeioPagamento"] is DBNull ? 0 : (int)reader["IdMeioPagamento"],
+            Tipo = reader["Tipo"]?.ToString(),
+            Data = reader["Data"] is DBNull ? (DateTime)reader["CriadoEm"] : (DateTime)reader["Data"],
+            Contos = reader["Contos"]?.ToString(),
+            Campos = reader["Campos"]?.ToString()
+        };
+    }
+
+    public void Atualizar(Pagamento p)
+    {
+        string query = @"
+        UPDATE CorteCor_Pagamento
+        SET IdAgendamento = @IdAgendamento,
+            IdMeioPagamento = @IdMeioPagamento,
+            Tipo = @Tipo,
+            Valor = @Valor,
+            Data = @Data,
+            Contos = @Contos,
+            Campos = @Campos,
+            AtualizadoEm = GETUTCDATE()
+        WHERE IdPagamento = @IdPagamento;";
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@IdAgendamento", p.IdAgendamento);
+            command.Parameters.AddWithValue("@IdMeioPagamento", p.IdMeioPagamento == 0 ? (object)DBNull.Value : p.IdMeioPagamento);
+            command.Parameters.AddWithValue("@Tipo", p.Tipo ?? "");
+            command.Parameters.AddWithValue("@Valor", p.Valor);
+            command.Parameters.AddWithValue("@Data", p.Data == default ? DateTime.Now : p.Data);
+            command.Parameters.AddWithValue("@Contos", p.Contos ?? "");
+            command.Parameters.AddWithValue("@Campos", p.Campos ?? "");
+            command.Parameters.AddWithValue("@IdPagamento", p.IdPagamento);
+
+            command.ExecuteNonQuery();
         }
     }
 
     public override List<Pagamento> Listar()
     {
-        string query = @"
-        SELECT IdPagamento, Contos, Campos, Data, Valor, Tipo, IdMeioPagamento, IdAgendamento
-        FROM CorteCor_Pagamento
-        ORDER BY Data DESC;";
-
-        var pagamentos = new List<Pagamento>();
-
+        string query = "SELECT * FROM CorteCor_Pagamento ORDER BY CriadoEm DESC;";
+        var list = new List<Pagamento>();
         using (var connection = _dbHandler.GetConnection())
         using (var command = new SqlCommand(query, connection))
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
             {
-                pagamentos.Add(new Pagamento
-                {
-                    IdPagamento = reader["IdPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdPagamento"]),
-                    Contos = reader["Contos"] is DBNull ? "" : reader["Contos"].ToString(),
-                    Campos = reader["Campos"] is DBNull ? "" : reader["Campos"].ToString(),
-                    Data = reader["Data"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["Data"]),
-                    Valor = reader["Valor"] is DBNull ? 0m : Convert.ToDecimal(reader["Valor"]),
-                    Tipo = reader["Tipo"] is DBNull ? "" : reader["Tipo"].ToString(),
-                    IdMeioPagamento = reader["IdMeioPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdMeioPagamento"]),
-                    IdAgendamento = reader["IdAgendamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdAgendamento"])
-                });
+                list.Add(Map(reader));
             }
         }
-
-        return pagamentos;
+        return list;
     }
 
-    public List<Pagamento> ListarPorAgendamento(int idAgendamento)
+    public Pagamento ObterPorId(Guid id)
     {
-        string query = @"
-        SELECT IdPagamento, Contos, Campos, Data, Valor, Tipo, IdMeioPagamento, IdAgendamento
-        FROM CorteCor_Pagamento
-        WHERE IdAgendamento = @IdAgendamento
-        ORDER BY Data DESC;";
-
-        var pagamentos = new List<Pagamento>();
-
+        string query = "SELECT * FROM CorteCor_Pagamento WHERE IdPagamento = @Id;";
         using (var connection = _dbHandler.GetConnection())
         using (var command = new SqlCommand(query, connection))
         {
-            command.Parameters.AddWithValue("@IdAgendamento", idAgendamento);
-
+            command.Parameters.AddWithValue("@Id", id);
             using (var reader = command.ExecuteReader())
             {
-                while (reader.Read())
-                {
-                    pagamentos.Add(new Pagamento
-                    {
-                        IdPagamento = reader["IdPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdPagamento"]),
-                        Contos = reader["Contos"] is DBNull ? "" : reader["Contos"].ToString(),
-                        Campos = reader["Campos"] is DBNull ? "" : reader["Campos"].ToString(),
-                        Data = reader["Data"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["Data"]),
-                        Valor = reader["Valor"] is DBNull ? 0m : Convert.ToDecimal(reader["Valor"]),
-                        Tipo = reader["Tipo"] is DBNull ? "" : reader["Tipo"].ToString(),
-                        IdMeioPagamento = reader["IdMeioPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdMeioPagamento"]),
-                        IdAgendamento = reader["IdAgendamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdAgendamento"])
-                    });
-                }
+                if (!reader.Read()) return null;
+                return Map(reader);
             }
         }
-
-        return pagamentos;
     }
 
-    public List<Pagamento> ListarPorSalao(int idSalao)
+    public override void Excluir(int id) => throw new NotSupportedException("CorteCor_Pagamento utiliza UNIQUEIDENTIFIER. Use Excluir(Guid id).");
+
+    public void Excluir(Guid id)
     {
-        // Pagamento não tem IdSalao direto, então filtramos via Agendamento -> Serviço (que tem IdSalao).
-        string query = @"
-        SELECT p.IdPagamento, p.Contos, p.Campos, p.Data, p.Valor, p.Tipo, p.IdMeioPagamento, p.IdAgendamento
-        FROM CorteCor_Pagamento p
-        INNER JOIN CorteCor_Agendamento a ON a.IdAgendamento = p.IdAgendamento
-        INNER JOIN CorteCor_Servico s ON s.IdServico = a.IdServico
-        WHERE s.IdSalao = @IdSalao
-        ORDER BY p.Data DESC;";
-
-        var pagamentos = new List<Pagamento>();
-
+        string query = "DELETE FROM CorteCor_Pagamento WHERE IdPagamento = @Id;";
         using (var connection = _dbHandler.GetConnection())
         using (var command = new SqlCommand(query, connection))
         {
-            command.Parameters.AddWithValue("@IdSalao", idSalao);
-
-            using (var reader = command.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    pagamentos.Add(new Pagamento
-                    {
-                        IdPagamento = reader["IdPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdPagamento"]),
-                        Contos = reader["Contos"] is DBNull ? "" : reader["Contos"].ToString(),
-                        Campos = reader["Campos"] is DBNull ? "" : reader["Campos"].ToString(),
-                        Data = reader["Data"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["Data"]),
-                        Valor = reader["Valor"] is DBNull ? 0m : Convert.ToDecimal(reader["Valor"]),
-                        Tipo = reader["Tipo"] is DBNull ? "" : reader["Tipo"].ToString(),
-                        IdMeioPagamento = reader["IdMeioPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdMeioPagamento"]),
-                        IdAgendamento = reader["IdAgendamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdAgendamento"])
-                    });
-                }
-            }
-        }
-
-        return pagamentos;
-    }
-
-    public void Atualizar(Pagamento pagamento)
-    {
-        string query = @"
-        UPDATE CorteCor_Pagamento
-        SET Contos = @Contos,
-            Campos = @Campos,
-            Data = @Data,
-            Valor = @Valor,
-            Tipo = @Tipo,
-            IdMeioPagamento = @IdMeioPagamento,
-            IdAgendamento = @IdAgendamento
-        WHERE IdPagamento = @IdPagamento;";
-
-        using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
-        {
-            command.Parameters.AddWithValue("@Contos", string.IsNullOrWhiteSpace(pagamento.Contos)
-                ? (object)DBNull.Value
-                : pagamento.Contos);
-
-            command.Parameters.AddWithValue("@Campos", string.IsNullOrWhiteSpace(pagamento.Campos)
-                ? (object)DBNull.Value
-                : pagamento.Campos);
-
-            command.Parameters.AddWithValue("@Data", pagamento.Data == default ? DateTime.Now : pagamento.Data);
-            command.Parameters.AddWithValue("@Valor", pagamento.Valor);
-            command.Parameters.AddWithValue("@Tipo", pagamento.Tipo ?? "");
-
-            command.Parameters.AddWithValue("@IdMeioPagamento", pagamento.IdMeioPagamento);
-            command.Parameters.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
-
-            command.Parameters.AddWithValue("@IdPagamento", pagamento.IdPagamento);
-
+            command.Parameters.AddWithValue("@Id", id);
             command.ExecuteNonQuery();
         }
     }
 
-    public override void Excluir(int id)
-    {
-        string query = "DELETE FROM CorteCor_Pagamento WHERE IdPagamento = @IdPagamento;";
-
-        using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
-        {
-            command.Parameters.AddWithValue("@IdPagamento", id);
-            command.ExecuteNonQuery();
-        }
-    }
-
-    public override void AtivarDesativar(int id, bool ativar)
-    {
-        // Não existe Status/Ativo na tabela CorteCor_Pagamento.
-        throw new NotSupportedException("CorteCor_Pagamento não possui campo Status/Ativo.");
-    }
-
-    public override void Cadastrar(Pagamento entity)
-    {
-        throw new NotImplementedException();
-    }
+    public override void AtivarDesativar(int id, bool ativar) => throw new NotSupportedException("CorteCor_Pagamento utiliza UNIQUEIDENTIFIER.");
+    public override void Cadastrar(Pagamento entity) => throw new NotSupportedException("Use CadastrarPagamento(Pagamento pago).");
 }
