@@ -4,114 +4,104 @@
     ViewData["Title"] = "Cadastro de Pagamentos";
 }
 
-<div class="container">
-    <h4>@Model.ButtonText Pagamento</h4>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-file-invoice-dollar"></i> @Model.ButtonText Pagamento</h2>
+        <a asp-page="/PagamentoLista" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
             @Model.Mensagem
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <form method="post">
-        <input type="hidden" name="id" value="@Model.Pagamento?.IdPagamento">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                <input type="hidden" name="id" value="@Model.Pagamento?.IdPagamento">
 
-        <div class="form-group">
-            <label for="idAgendamento">Id do Agendamento</label>
-            <input type="number" id="idAgendamento" name="idAgendamento" class="form-control" required
-                   value="@(Model.Pagamento?.IdAgendamento ?? 0)">
+                @if (Model.Pagamento != null && Model.Pagamento.IdPagamento != Guid.Empty)
+                {
+                    <div class="row mb-4 bg-light p-3 rounded border">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Criado em</label>
+                            <div class="form-control-plaintext">@Model.Pagamento.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Pago em</label>
+                            <div class="form-control-plaintext">@(Model.Pagamento.PagoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Data do Agendamento</label>
+                            <div class="form-control-plaintext">@(Model.Pagamento.DataAgendamento?.ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+                        </div>
+                    </div>
+                }
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="idAgendamento" class="form-label">Código do Agendamento</label>
+                        <input type="number" id="idAgendamento" name="idAgendamento" class="form-control" required
+                               value="@(Model.Pagamento?.IdAgendamento ?? 0)">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="idMeioPagamento" class="form-label">Meio de Pagamento</label>
+                        <input type="number" id="idMeioPagamento" name="idMeioPagamento" class="form-control" required
+                               value="@(Model.Pagamento?.IdMeioPagamento ?? 0)">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="tipo" class="form-label">Tipo de Transação</label>
+                        <select id="tipo" name="tipo" class="form-select" required>
+                            @{
+                                var tipoAtual = Model.Pagamento?.Tipo ?? "";
+                            }
+                            <option value="">Selecione</option>
+                            <option value="PIX" selected="@(tipoAtual == "PIX")">PIX</option>
+                            <option value="CREDITO" selected="@(tipoAtual == "CREDITO")">Cartão de Crédito</option>
+                            <option value="DEBITO" selected="@(tipoAtual == "DEBITO")">Cartão de Débito</option>
+                            <option value="BOLETO" selected="@(tipoAtual == "BOLETO")">Boleto</option>
+                            <option value="OUTROS" selected="@(tipoAtual == "OUTROS")">Outros</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="valor" class="form-label">Valor (R$)</label>
+                        <input type="text" id="valor" name="valor" class="form-control fw-bold" required
+                               value="@(Model.Pagamento != null ? Model.Pagamento.Valor.ToString("0.00").Replace('.', ',') : "")">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="data" class="form-label">Data de Referncia</label>
+                        <input type="datetime-local" id="data" name="data" class="form-control" required
+                               value="@((Model.Pagamento != null && Model.Pagamento.Data != default(DateTime))
+                                ? Model.Pagamento.Data.ToString("yyyy-MM-ddTHH:mm")
+                                : DateTime.Now.ToString("yyyy-MM-ddTHH:mm"))">
+                    </div>
+
+                    <div class="col-12">
+                        <label for="contos" class="form-label">Descrição / observação</label>
+                        <input type="text" id="contos" name="contos" class="form-control" value="@Model.Pagamento?.Contos" placeholder="Ex: Pagamento realizado no balco">
+                    </div>
+
+                    <div class="col-12">
+                        <label for="campos" class="form-label">Metadados (JSON)</label>
+                        <textarea id="campos" name="campos" class="form-control" rows="3">@Model.Pagamento?.Campos</textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 border-top pt-3 text-end">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i> @Model.ButtonText
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <div class="form-group">
-            <label for="idMeioPagamento">Id do Meio de Pagamento</label>
-            <input type="number" id="idMeioPagamento" name="idMeioPagamento" class="form-control" required
-                   value="@(Model.Pagamento?.IdMeioPagamento ?? 0)">
-        </div>
-
-        <div class="form-group">
-            <label for="tipo">Tipo</label>
-            <select id="tipo" name="tipo" class="form-control" required>
-                @{
-                    var tipoAtual = Model.Pagamento?.Tipo ?? "";
-                }
-
-                <option value="">Selecione</option>
-
-                @if (tipoAtual == "PIX")
-                {
-                    <option value="PIX" selected>PIX</option>
-                }
-                else
-                {
-                    <option value="PIX">PIX</option>
-                }
-
-                @if (tipoAtual == "CREDITO")
-                {
-                    <option value="CREDITO" selected>Cartão de Crédito</option>
-                }
-                else
-                {
-                    <option value="CREDITO">Cartão de Crédito</option>
-                }
-
-                @if (tipoAtual == "DEBITO")
-                {
-                    <option value="DEBITO" selected>Cartão de Débito</option>
-                }
-                else
-                {
-                    <option value="DEBITO">Cartão de Débito</option>
-                }
-
-                @if (tipoAtual == "BOLETO")
-                {
-                    <option value="BOLETO" selected>Boleto</option>
-                }
-                else
-                {
-                    <option value="BOLETO">Boleto</option>
-                }
-
-                @if (tipoAtual == "OUTROS")
-                {
-                    <option value="OUTROS" selected>Outros</option>
-                }
-                else
-                {
-                    <option value="OUTROS">Outros</option>
-                }
-            </select>
-        </div>
-
-
-        <div class="form-group">
-            <label for="valor">Valor (R$)</label>
-            <input type="text" id="valor" name="valor" class="form-control" required
-                   value="@(Model.Pagamento != null ? Model.Pagamento.Valor.ToString("0.00").Replace('.', ',') : "")">
-        </div>
-
-        <div class="form-group">
-            <label for="data">Data</label>
-            <input type="datetime-local" id="data" name="data" class="form-control" required
-                   value="@((Model.Pagamento != null && Model.Pagamento.Data != default(DateTime))
-                    ? Model.Pagamento.Data.ToString("yyyy-MM-ddTHH:mm")
-                    : DateTime.Now.ToString("yyyy-MM-ddTHH:mm"))">
-        </div>
-
-        <div class="form-group">
-            <label for="contos">Contos (observação)</label>
-            <input type="text" id="contos" name="contos" class="form-control" value="@Model.Pagamento?.Contos">
-        </div>
-
-        <div class="form-group">
-            <label for="campos">Campos (JSON / metadados)</label>
-            <textarea id="campos" name="campos" class="form-control" rows="5">@Model.Pagamento?.Campos</textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
-    </form>
+    </div>
 </div>
 
 <script>
@@ -123,6 +113,24 @@
             digits: 2,
             digitsOptional: false,
             rightAlign: false
+        });
+
+        // Auto-fill value when Agendamento ID changes
+        $('#idAgendamento').on('change blur', function() {
+            var id = $(this).val();
+            if(id > 0) {
+                 $.get('?handler=DadosAgendamento', { id: id }, function(data) {
+                     if(data.success) {
+                         var currentVal = $('#valor').val();
+                         if(currentVal == "" || currentVal == "0,00" || currentVal == "0") {
+                             $('#valor').val(data.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+                         }
+                         if($('#contos').val() == "") {
+                             $('#contos').val(data.descricao);
+                         }
+                     }
+                 });
+            }
         });
     });
 </script>

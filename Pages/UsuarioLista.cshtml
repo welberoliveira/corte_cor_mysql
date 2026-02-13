@@ -1,21 +1,21 @@
-ï»¿@page
+@page
 @model UsuarioListaModel
 
 <style>
     @@media (max-width: 768px) {
-        table th:nth-child(2), /* Oculta o cabeÃ§alho da coluna Email */
-        table td:nth-child(2), /* Oculta as cÃ©lulas da coluna Email */
-        table th:nth-child(3), /* Oculta o cabeÃ§alho da coluna Telefone */
-        table td:nth-child(3), /* Oculta as cÃ©lulas da coluna Email */
-        table th:nth-child(4), /* Oculta o cabeÃ§alho da coluna Telefone */
-        table td:nth-child(4) /* Oculta as cÃ©lulas da coluna Telefone */ {
+        table th:nth-child(2), /* Oculta o cabeçalho da coluna Email */
+        table td:nth-child(2), /* Oculta as células da coluna Email */
+        table th:nth-child(3), /* Oculta o cabeçalho da coluna Telefone */
+        table td:nth-child(3), /* Oculta as células da coluna Email */
+        table th:nth-child(4), /* Oculta o cabeçalho da coluna Telefone */
+        table td:nth-child(4) /* Oculta as células da coluna Telefone */ {
             display: none;
         }
     }
 </style>
 
 <div class="container">
-    <h4>Lista de UsuÃ¡rios</h4>
+    <h4>Lista de Usuários</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -41,7 +41,7 @@
                 <th>Salao</th>
                 <th>Data de Entrada</th>
                 <th>Status</th>
-                <th>AÃ§Ãµes</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -60,7 +60,7 @@
                             }
                             else
                             {
-                                @("NÃ£o definido");
+                                @("Não definido");
                             }
                         }
                     </td>

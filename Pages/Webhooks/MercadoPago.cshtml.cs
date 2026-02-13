@@ -68,10 +68,15 @@ namespace CorteCor.Pages.Webhooks
                             var pagHandler = new PagamentoHandler();
                             var agendamentoHandler = new AgendamentoHandler();
 
-                            // Tenta localizar o pagamento pelo External Reference (IdAgendamento)
+                            // 1. Tenta localizar pelo ID do Pagamento (External Reference agora é GUID)
                             Pagamento p = null;
-                            if (int.TryParse(payment.ExternalReference, out int idAgendamentoRef))
+                            if (Guid.TryParse(payment.ExternalReference, out Guid idPagamentoRef))
                             {
+                                p = pagHandler.ObterPorId(idPagamentoRef);
+                            }
+                            else if (int.TryParse(payment.ExternalReference, out int idAgendamentoRef))
+                            {
+                                // Fallback para pagamentos antigos que usavam ID Agendamento
                                 p = pagHandler.ObterPorIdAgendamento(idAgendamentoRef);
                             }
 
@@ -89,9 +94,13 @@ namespace CorteCor.Pages.Webhooks
                                 }
                                 else if (payment.Status == "rejected" || payment.Status == "cancelled")
                                 {
+                                    // Se rejeitado, cancelamos APENAS a tentativa de pagamento.
+                                    // O agendamento permanece "Pendente" (ou "Agendado") para permitir nova tentativa.
                                     p.Status = "Cancelado";
                                     p.Ativo = false;
-                                    agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Agendado");
+                                    
+                                    // Opcional: Voltar status do agendamento para Agendado se estava Pendente?
+                                    // agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Agendado");
                                 }
 
                                 pagHandler.AtualizarPagamento(p);

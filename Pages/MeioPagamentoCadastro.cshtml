@@ -1,4 +1,4 @@
-Ôªø@page
+@page
 @model CorteCor.Pages.MeioPagamentoCadastroModel
 @{
     ViewData["Title"] = "Cadastro de Meios de Pagamento";
@@ -20,7 +20,7 @@
         <div class="form-group">
             <label for="nome">Nome</label>
             <input type="text" id="nome" name="nome" class="form-control" required value="@Model.MeioPagamento?.Nome">
-            <small class="form-text text-muted">Ex: Pix Mercado Pago, Cart√£o Cr√©dito Mercado Pago</small>
+            <small class="form-text text-muted">Ex: Pix Mercado Pago, Cart„o CrÈdito Mercado Pago</small>
         </div>
 
         <div class="form-group">
@@ -43,20 +43,20 @@
 
                 @if (tipoAtual == "CREDITO")
                 {
-                    <option value="CREDITO" selected>Cart√£o de Cr√©dito</option>
+                    <option value="CREDITO" selected>Cart„o de CrÈdito</option>
                 }
                 else
                 {
-                    <option value="CREDITO">Cart√£o de Cr√©dito</option>
+                    <option value="CREDITO">Cart„o de CrÈdito</option>
                 }
 
                 @if (tipoAtual == "DEBITO")
                 {
-                    <option value="DEBITO" selected>Cart√£o de D√©bito</option>
+                    <option value="DEBITO" selected>Cart„o de DÈbito</option>
                 }
                 else
                 {
-                    <option value="DEBITO">Cart√£o de D√©bito</option>
+                    <option value="DEBITO">Cart„o de DÈbito</option>
                 }
 
                 @if (tipoAtual == "BOLETO")
@@ -93,7 +93,7 @@
         </div>
 
         <div class="form-group">
-            <label for="parcelasMax">M√°x. parcelas</label>
+            <label for="parcelasMax">M·x. parcelas</label>
             <input type="number" id="parcelasMax" name="parcelasMax" class="form-control" min="1" max="24"
                    value="@(Model.MeioPagamento?.ParcelasMax?.ToString() ?? "")">
         </div>
@@ -116,7 +116,7 @@
             <label for="prazoRecebimentoDias">Prazo de recebimento (dias)</label>
             <input type="number" id="prazoRecebimentoDias" name="prazoRecebimentoDias" class="form-control" min="0" max="365" required
                    value="@(Model.MeioPagamento?.PrazoRecebimentoDias ?? 0)">
-            <small class="form-text text-muted">PIX geralmente 0. Cr√©dito pode ser 14, 30, etc.</small>
+            <small class="form-text text-muted">PIX geralmente 0. CrÈdito pode ser 14, 30, etc.</small>
         </div>
 
         <div class="form-group form-check">

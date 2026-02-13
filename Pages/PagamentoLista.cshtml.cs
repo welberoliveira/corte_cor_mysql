@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc; // Adicionado para IActionResult e BindProperty
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
@@ -13,13 +14,32 @@ namespace CorteCor.Pages
         public List<Pagamento> Pagamentos { get; set; }
         public string Mensagem { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataInicio { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataFim { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? Status { get; set; }
+        
+        [BindProperty(SupportsGet = true)]
+        public string? NomeCliente { get; set; }
+
         public void OnGet()
         {
             var handler = new PagamentoHandler();
-            Pagamentos = handler.Listar() ?? new List<Pagamento>();
+            var filtro = new PagamentoFiltroDTO
+            {
+                DataInicio = DataInicio,
+                DataFim = DataFim,
+                Status = Status,
+                NomeCliente = NomeCliente
+            };
+            Pagamentos = handler.Listar(filtro) ?? new List<Pagamento>();
         }
 
-        public void OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             var handler = new PagamentoHandler();
 
@@ -41,10 +61,19 @@ namespace CorteCor.Pages
             }
             else if (action == "alterar" && id != Guid.Empty)
             {
-                Response.Redirect(HttpContext.Request.PathBase + $"/PagamentoCadastro?id={id}");
+                return RedirectToPage("/PagamentoCadastro", new { id = id });
+            }
+            else if (action == "sincronizar" && id != Guid.Empty)
+            {
+                // Sincronização manual
+                var mpService = new MercadoPagoService(HttpContext.RequestServices.GetRequiredService<IConfiguration>());
+                bool synced = await handler.SincronizarPagamento(id, mpService);
+                if (synced) Mensagem = "Status sincronizado com sucesso!";
+                else Mensagem = "Não foi possível sincronizar ou pagamento não encontrado no Mercado Pago.";
             }
 
             OnGet();
+            return Page();
         }
     }
 }

@@ -1,10 +1,10 @@
-using System.Data;
+Ôªøusing System.Data;
 using System.Globalization;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Data.SqlClient;
+using CorteCor;
 
 using static CorteCor.Models;
 
@@ -13,15 +13,14 @@ namespace CorteCor.Pages
     [Authorize]
     public class AgendamentosModel : PageModel
     {
-
         private readonly IConfiguration _config;
+        private readonly IDatabaseHandler _dbHandler;
 
         public AgendamentosModel(IConfiguration config)
         {
             _config = config;
+            _dbHandler = new DatabaseHandler();
         }
-
-        private string ConnStr = "Server=websql3.internetbrasil.net;Database=tonni;User Id=tonni;Password=bW3M*60ZccuD;";
 
         private int GetIdSalao()
         {
@@ -33,7 +32,7 @@ namespace CorteCor.Pages
         private static DateTime ParseDpDate(string s)
         {
             // DayPilot geralmente envia "yyyy-MM-ddTHH:mm:ss"
-            // Vamos tratar como hor·rio local (Brasil).
+            // Vamos tratar como hor√°rio local (Brasil).
             return DateTime.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
         }
 
@@ -56,17 +55,16 @@ namespace CorteCor.Pages
         }
 
         // =========================
-        // RESOURCES (Funcion·rios)
+        // RESOURCES (Funcion√°rios)
         // =========================
-        public async Task<IActionResult> OnGetResourcesAsync()
+        public IActionResult OnGetResources()
         {
             var idSalao = GetIdSalao();
             if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
 
             var list = new List<object>();
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
             // Ajuste os nomes das colunas conforme seu banco
             var sql = @"
@@ -78,11 +76,12 @@ namespace CorteCor.Pages
     order by f.Nome;
     ";
 
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
 
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
             {
                 list.Add(new
                 {
@@ -97,15 +96,14 @@ namespace CorteCor.Pages
         // =========================
         // CLIENTES
         // =========================
-        public async Task<IActionResult> OnGetClientesAsync()
+        public IActionResult OnGetClientes()
         {
             var idSalao = GetIdSalao();
             if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
 
             var list = new List<object>();
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
             var sql = @"
     select 
@@ -115,11 +113,12 @@ namespace CorteCor.Pages
     where c.IdSalao = @IdSalao
     order by c.Nome;
     ";
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
 
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
             {
                 list.Add(new
                 {
@@ -132,19 +131,18 @@ namespace CorteCor.Pages
         }
 
         // =========================
-        // SERVI«OS
+        // SERVI√áOS
         // =========================
-        public async Task<IActionResult> OnGetServicosAsync()
+        public IActionResult OnGetServicos()
         {
             var idSalao = GetIdSalao();
             if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
 
             var list = new List<object>();
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
-            // Ajuste: duraÁ„o em minutos e valor padr„o
+            // Ajuste: dura√ß√£o em minutos e valor padr√£o
             var sql = @"
     select 
         s.IdServico as Id,
@@ -156,11 +154,12 @@ namespace CorteCor.Pages
     order by s.Nome;
     ";
 
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
 
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
             {
                 list.Add(new
                 {
@@ -177,7 +176,7 @@ namespace CorteCor.Pages
         // =========================
         // EVENTS (Agendamentos)
         // =========================
-        public async Task<IActionResult> OnGetEventsAsync(string start, string end, string? employeeId, string? status, string? q)
+        public IActionResult OnGetEvents(string start, string end, string? employeeId, string? status, string? q)
         {
             var idSalao = GetIdSalao();
             if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
@@ -191,10 +190,9 @@ namespace CorteCor.Pages
 
             var list = new List<object>();
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
-            // Retorna eventos que intersectam o range visÌvel
+            // Retorna eventos que intersectam o range vis√≠vel
             var sql = @"
     select
         a.IdAgendamento as Id,
@@ -221,17 +219,18 @@ namespace CorteCor.Pages
 
             sql += " order by a.DataInicio;";
 
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@Start", dtStart);
-            cmd.Parameters.AddWithValue("@End", dtEnd);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
+            cmd.AddWithValue("@Start", dtStart);
+            cmd.AddWithValue("@End", dtEnd);
 
-            if (employeeId != null) cmd.Parameters.AddWithValue("@IdFuncionario", employeeId);
-            if (status != null) cmd.Parameters.AddWithValue("@Status", status);
-            if (q != null) cmd.Parameters.AddWithValue("@Q", $"%{q}%");
+            if (employeeId != null) cmd.AddWithValue("@IdFuncionario", employeeId);
+            if (status != null) cmd.AddWithValue("@Status", status);
+            if (q != null) cmd.AddWithValue("@Q", $"%{q}%");
 
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
             {
                 var id = rd["Id"].ToString()!;
                 var ini = Convert.ToDateTime(rd["DataInicio"]);
@@ -264,13 +263,12 @@ namespace CorteCor.Pages
         // =========================
         // GET (Editar)
         // =========================
-        public async Task<IActionResult> OnGetGetAsync(string id)
+        public IActionResult OnGetGet(string id)
         {
             var idSalao = GetIdSalao();
             if (idSalao <= 0) return new NotFoundResult();
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
             var sql = @"
     select
@@ -288,12 +286,13 @@ namespace CorteCor.Pages
       and a.IdAgendamento = @Id;
     ";
 
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@Id", id);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
+            cmd.AddWithValue("@Id", id);
 
-            await using var rd = await cmd.ExecuteReaderAsync();
-            if (!await rd.ReadAsync()) return new NotFoundResult();
+            using var rd = cmd.ExecuteReader();
+            if (!rd.Read()) return new NotFoundResult();
 
             var ini = Convert.ToDateTime(rd["DataInicio"]);
             var fim = Convert.ToDateTime(rd["DataFim"]);
@@ -319,7 +318,7 @@ namespace CorteCor.Pages
         {
             [JsonPropertyName("id")] public string? Id { get; set; }
             [JsonPropertyName("start")] public string Start { get; set; } = "";
-            [JsonPropertyName("end")] public string End { get; set; } = ""; // ignorado (duraÁ„o È pelo serviÁo)
+            [JsonPropertyName("end")] public string End { get; set; } = ""; // ignorado (dura√ß√£o √© pelo servi√ßo)
             [JsonPropertyName("employeeId")] public string EmployeeId { get; set; } = "";
             [JsonPropertyName("clientId")] public string ClientId { get; set; } = "";
             [JsonPropertyName("serviceId")] public string ServiceId { get; set; } = "";
@@ -329,10 +328,10 @@ namespace CorteCor.Pages
         }
 
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OnPostSaveAsync([FromBody] SaveRequest req)
+        public IActionResult OnPostSave([FromBody] SaveRequest req)
         {
             var idSalao = GetIdSalao();
-            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Sal„o inv·lido." });
+            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Sal√£o inv√°lido." });
 
             if (string.IsNullOrWhiteSpace(req.EmployeeId) ||
                 string.IsNullOrWhiteSpace(req.ClientId) ||
@@ -340,47 +339,46 @@ namespace CorteCor.Pages
                 string.IsNullOrWhiteSpace(req.Status) ||
                 string.IsNullOrWhiteSpace(req.Start))
             {
-                return BadRequest(new ErrorResponse { Message = "Preencha Funcion·rio, Cliente, ServiÁo, Status e InÌcio." });
+                return BadRequest(new ErrorResponse { Message = "Preencha Funcion√°rio, Cliente, Servi√ßo, Status e In√≠cio." });
             }
 
             var start = ParseDpDate(req.Start);
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
-            // 1) duraÁ„o fixa pelo serviÁo
-            var (duracaoMin, valorPadrao) = await GetServicoInfoAsync(con, idSalao, req.ServiceId);
-            if (duracaoMin <= 0) return BadRequest(new ErrorResponse { Message = "ServiÁo sem duraÁ„o configurada." });
+            // 1) dura√ß√£o fixa pelo servi√ßo
+            var (duracaoMin, valorPadrao) = GetServicoInfo(con, idSalao, req.ServiceId);
+            if (duracaoMin <= 0) return BadRequest(new ErrorResponse { Message = "Servi√ßo sem dura√ß√£o configurada." });
 
             var end = start.AddMinutes(duracaoMin);
 
-            // 2) (opcional) funcion·rio faz serviÁo
+            // 2) (opcional) funcion√°rio faz servi√ßo
             var validateFuncionarioServico = true;
             if (validateFuncionarioServico)
             {
                 try
                 {
-                    var ok = await FuncionarioPodeExecutarServicoAsync(con, idSalao, req.EmployeeId, req.ServiceId);
-                    if (!ok) return BadRequest(new ErrorResponse { Message = "Este funcion·rio n„o est· vinculado a este serviÁo." });
+                    var ok = FuncionarioPodeExecutarServico(con, idSalao, req.EmployeeId, req.ServiceId);
+                    if (!ok) return BadRequest(new ErrorResponse { Message = "Este funcion√°rio n√£o est√° vinculado a este servi√ßo." });
                 }
-                catch (SqlException ex) when (ex.Message.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase))
+                catch (Exception ex) when (ex.Message.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Se a tabela de vÌnculo n„o existir ainda, vocÍ pode:
+                    // Se a tabela de v√≠nculo n√£o existir ainda, voc√™ pode:
                     // - criar a tabela, ou
                     // - desativar validateFuncionarioServico acima.
-                    return BadRequest(new ErrorResponse { Message = "Tabela de vÌnculo Funcion·rio-ServiÁo n„o encontrada. Crie a tabela ou desative a validaÁ„o no cÛdigo." });
+                    return BadRequest(new ErrorResponse { Message = "Tabela de v√≠nculo Funcion√°rio-Servi√ßo n√£o encontrada. Crie a tabela ou desative a valida√ß√£o no c√≥digo." });
                 }
             }
 
-            // 3) valida hor·rio de trabalho (se conseguir ler as janelas)
-            var isWithin = await IsWithinWorkHoursAsync(con, idSalao, req.EmployeeId, start, end);
+            // 3) valida hor√°rio de trabalho (se conseguir ler as janelas)
+            var isWithin = IsWithinWorkHours(con, idSalao, req.EmployeeId, start, end);
             if (!isWithin)
-                return BadRequest(new ErrorResponse { Message = "Hor·rio fora da disponibilidade do funcion·rio." });
+                return BadRequest(new ErrorResponse { Message = "Hor√°rio fora da disponibilidade do funcion√°rio." });
 
-            // 4) valida sobreposiÁ„o (bloquear 100%)
-            var hasConflict = await HasOverlapAsync(con, idSalao, req.EmployeeId, start, end, req.Id);
+            // 4) valida sobreposi√ß√£o (bloquear 100%)
+            var hasConflict = HasOverlap(con, idSalao, req.EmployeeId, start, end, req.Id);
             if (hasConflict)
-                return BadRequest(new ErrorResponse { Message = "Conflito: j· existe um agendamento nesse hor·rio para este funcion·rio." });
+                return BadRequest(new ErrorResponse { Message = "Conflito: j√° existe um agendamento nesse hor√°rio para este funcion√°rio." });
 
             // 5) salvar (insert/update)
             var valor = ParseMoney(req.Value) ?? valorPadrao;
@@ -402,18 +400,19 @@ namespace CorteCor.Pages
 
     select cast(scope_identity() as int);
     ";
-                await using var cmd = new SqlCommand(sql, con);
-                cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-                cmd.Parameters.AddWithValue("@IdFuncionario", req.EmployeeId);
-                cmd.Parameters.AddWithValue("@IdCliente", req.ClientId);
-                cmd.Parameters.AddWithValue("@IdServico", req.ServiceId);
-                cmd.Parameters.AddWithValue("@DataInicio", start);
-                cmd.Parameters.AddWithValue("@DataFim", end);
-                cmd.Parameters.AddWithValue("@Observacao", (object?)req.Obs ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Valor", (object?)valor ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Status", req.Status);
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.AddWithValue("@IdSalao", idSalao);
+                cmd.AddWithValue("@IdFuncionario", req.EmployeeId);
+                cmd.AddWithValue("@IdCliente", req.ClientId);
+                cmd.AddWithValue("@IdServico", req.ServiceId);
+                cmd.AddWithValue("@DataInicio", start);
+                cmd.AddWithValue("@DataFim", end);
+                cmd.AddWithValue("@Observacao", (object?)req.Obs ?? DBNull.Value);
+                cmd.AddWithValue("@Valor", (object?)valor ?? DBNull.Value);
+                cmd.AddWithValue("@Status", req.Status);
 
-                var newId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                var newId = Convert.ToInt32(cmd.ExecuteScalar());
                 return new JsonResult(new { ok = true, id = newId });
             }
             else
@@ -433,20 +432,21 @@ namespace CorteCor.Pages
     where IdSalao = @IdSalao
       and IdAgendamento = @Id;
     ";
-                await using var cmd = new SqlCommand(sql, con);
-                cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-                cmd.Parameters.AddWithValue("@Id", req.Id);
-                cmd.Parameters.AddWithValue("@IdFuncionario", req.EmployeeId);
-                cmd.Parameters.AddWithValue("@IdCliente", req.ClientId);
-                cmd.Parameters.AddWithValue("@IdServico", req.ServiceId);
-                cmd.Parameters.AddWithValue("@DataInicio", start);
-                cmd.Parameters.AddWithValue("@DataFim", end);
-                cmd.Parameters.AddWithValue("@Observacao", (object?)req.Obs ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Valor", (object?)valor ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Status", req.Status);
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.AddWithValue("@IdSalao", idSalao);
+                cmd.AddWithValue("@Id", req.Id);
+                cmd.AddWithValue("@IdFuncionario", req.EmployeeId);
+                cmd.AddWithValue("@IdCliente", req.ClientId);
+                cmd.AddWithValue("@IdServico", req.ServiceId);
+                cmd.AddWithValue("@DataInicio", start);
+                cmd.AddWithValue("@DataFim", end);
+                cmd.AddWithValue("@Observacao", (object?)req.Obs ?? DBNull.Value);
+                cmd.AddWithValue("@Valor", (object?)valor ?? DBNull.Value);
+                cmd.AddWithValue("@Status", req.Status);
 
-                var rows = await cmd.ExecuteNonQueryAsync();
-                if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento n„o encontrado." });
+                var rows = cmd.ExecuteNonQuery();
+                if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento n√£o encontrado." });
 
                 return new JsonResult(new { ok = true, id = req.Id });
             }
@@ -461,14 +461,13 @@ namespace CorteCor.Pages
         }
 
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OnPostDeleteAsync([FromBody] DeleteRequest req)
+        public IActionResult OnPostDelete([FromBody] DeleteRequest req)
         {
             var idSalao = GetIdSalao();
-            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Sal„o inv·lido." });
-            if (string.IsNullOrWhiteSpace(req.Id)) return BadRequest(new ErrorResponse { Message = "Id inv·lido." });
+            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Sal√£o inv√°lido." });
+            if (string.IsNullOrWhiteSpace(req.Id)) return BadRequest(new ErrorResponse { Message = "Id inv√°lido." });
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
             // Hard delete. Se preferir soft delete, troque para update Status='Cancelado'.
             var sql = @"
@@ -476,12 +475,13 @@ namespace CorteCor.Pages
     where IdSalao = @IdSalao
       and IdAgendamento = @Id;
     ";
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@Id", req.Id);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
+            cmd.AddWithValue("@Id", req.Id);
 
-            var rows = await cmd.ExecuteNonQueryAsync();
-            if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento n„o encontrado." });
+            var rows = cmd.ExecuteNonQuery();
+            if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento n√£o encontrado." });
 
             return new JsonResult(new { ok = true });
         }
@@ -489,7 +489,10 @@ namespace CorteCor.Pages
         // =========================
         // TIMERANGES (bloqueios)
         // =========================
-        public async Task<IActionResult> OnGetTimeRangesAsync(string start, string end, string? employeeId)
+        // =========================
+        // TIMERANGES (bloqueios)
+        // =========================
+        public IActionResult OnGetTimeRanges(string start, string end, string? employeeId)
         {
             var idSalao = GetIdSalao();
             if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
@@ -499,15 +502,14 @@ namespace CorteCor.Pages
 
             employeeId = string.IsNullOrWhiteSpace(employeeId) ? null : employeeId.Trim();
 
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
+            using var con = _dbHandler.GetConnection();
 
-            // buscar funcion·rios (ou 1 especÌfico)
-            var funcs = await GetFuncionariosComHorarioAsync(con, idSalao, employeeId);
+            // buscar funcion√°rios (ou 1 espec√≠fico)
+            var funcs = GetFuncionariosComHorario(con, idSalao, employeeId);
 
             var ranges = new List<object>();
 
-            // Para cada dia visÌvel e funcion·rio, gera bloqueios fora da janela de trabalho
+            // Para cada dia vis√≠vel e funcion√°rio, gera bloqueios fora da janela de trabalho
             for (var day = dtStart; day < dtEnd; day = day.AddDays(1))
             {
                 foreach (var f in funcs)
@@ -521,7 +523,7 @@ namespace CorteCor.Pages
                             start = ToIso(day.AddHours(0)),
                             end = ToIso(day.AddDays(1).AddHours(0)),
                             resource = f.IdFuncionario,
-                            text = "IndisponÌvel",
+                            text = "Indispon√≠vel",
                             cssClass = "dp-off"
                         });
                         continue;
@@ -529,7 +531,7 @@ namespace CorteCor.Pages
 
                     var (ini, fim) = ww.Value;
 
-                    // bloqueio antes do inÌcio
+                    // bloqueio antes do in√≠cio
                     if (ini > TimeSpan.Zero)
                     {
                         ranges.Add(new
@@ -537,12 +539,12 @@ namespace CorteCor.Pages
                             start = ToIso(day.Add(TimeSpan.Zero)),
                             end = ToIso(day.Add(ini)),
                             resource = f.IdFuncionario,
-                            text = "IndisponÌvel",
+                            text = "Indispon√≠vel",
                             cssClass = "dp-off"
                         });
                     }
 
-                    // bloqueio apÛs o fim
+                    // bloqueio ap√≥s o fim
                     if (fim < TimeSpan.FromHours(24))
                     {
                         ranges.Add(new
@@ -550,7 +552,7 @@ namespace CorteCor.Pages
                             start = ToIso(day.Add(fim)),
                             end = ToIso(day.AddDays(1).Add(TimeSpan.Zero)),
                             resource = f.IdFuncionario,
-                            text = "IndisponÌvel",
+                            text = "Indispon√≠vel",
                             cssClass = "dp-off"
                         });
                     }
@@ -561,31 +563,32 @@ namespace CorteCor.Pages
         }
 
         // =========================
-        // Helpers: Conflito / ServiÁo / Hor·rio / VÌnculo
+        // Helpers: Conflito / Servi√ßo / Hor√°rio / V√≠nculo
         // =========================
 
-        private async Task<(int duracaoMin, decimal? valorPadrao)> GetServicoInfoAsync(SqlConnection con, int idSalao, string idServico)
+        private (int duracaoMin, decimal? valorPadrao) GetServicoInfo(IDbConnection con, int idSalao, string idServico)
         {
             var sql = @"
     select DuracaoMinutos, Valor
     from CorteCor_Servico
     where IdSalao = @IdSalao and IdServico = @IdServico;
     ";
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@IdServico", idServico);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
+            cmd.AddWithValue("@IdServico", idServico);
 
-            await using var rd = await cmd.ExecuteReaderAsync();
-            if (!await rd.ReadAsync()) return (0, null);
+            using var rd = cmd.ExecuteReader();
+            if (!rd.Read()) return (0, null);
 
             var dur = rd["DuracaoMinutos"] is DBNull ? 0 : Convert.ToInt32(rd["DuracaoMinutos"]);
             var val = rd["Valor"] is DBNull ? (decimal?)null : Convert.ToDecimal(rd["Valor"]);
             return (dur, val);
         }
 
-        private async Task<bool> FuncionarioPodeExecutarServicoAsync(SqlConnection con, int idSalao, string idFuncionario, string idServico)
+        private bool FuncionarioPodeExecutarServico(IDbConnection con, int idSalao, string idFuncionario, string idServico)
         {
-            // Ajuste o nome da tabela/colunas conforme seu padr„o.
+            // Ajuste o nome da tabela/colunas conforme seu padr√£o.
             var sql = @"
     select 1
     from CorteCor_FuncionarioServico fs
@@ -594,16 +597,17 @@ namespace CorteCor.Pages
       and fs.IdServico = @IdServico;
     ";
 
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            cmd.Parameters.AddWithValue("@IdServico", idServico);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
+            cmd.AddWithValue("@IdFuncionario", idFuncionario);
+            cmd.AddWithValue("@IdServico", idServico);
 
-            var o = await cmd.ExecuteScalarAsync();
+            var o = cmd.ExecuteScalar();
             return o != null;
         }
 
-        private async Task<bool> HasOverlapAsync(SqlConnection con, int idSalao, string idFuncionario, DateTime start, DateTime end, string? ignoreId)
+        private bool HasOverlap(IDbConnection con, int idSalao, string idFuncionario, DateTime start, DateTime end, string? ignoreId)
         {
             var sql = @"
     select count(1)
@@ -617,22 +621,23 @@ namespace CorteCor.Pages
             if (!string.IsNullOrWhiteSpace(ignoreId))
                 sql += " and a.IdAgendamento <> @IgnoreId ";
 
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            cmd.Parameters.AddWithValue("@Start", start);
-            cmd.Parameters.AddWithValue("@End", end);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
+            cmd.AddWithValue("@IdFuncionario", idFuncionario);
+            cmd.AddWithValue("@Start", start);
+            cmd.AddWithValue("@End", end);
             if (!string.IsNullOrWhiteSpace(ignoreId))
-                cmd.Parameters.AddWithValue("@IgnoreId", ignoreId);
+                cmd.AddWithValue("@IgnoreId", ignoreId);
 
-            var c = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            var c = Convert.ToInt32(cmd.ExecuteScalar());
             return c > 0;
         }
 
-        private async Task<bool> IsWithinWorkHoursAsync(SqlConnection con, int idSalao, string idFuncionario, DateTime start, DateTime end)
+        private bool IsWithinWorkHours(IDbConnection con, int idSalao, string idFuncionario, DateTime start, DateTime end)
         {
-            // Se n„o conseguir ler janela (por falta de colunas), vamos permitir.
-            var f = (await GetFuncionariosComHorarioAsync(con, idSalao, idFuncionario)).FirstOrDefault();
+            // Se n√£o conseguir ler janela (por falta de colunas), vamos permitir.
+            var f = (GetFuncionariosComHorario(con, idSalao, idFuncionario)).FirstOrDefault();
             if (f == null) return true;
 
             var ww = f.GetWorkWindow(start.DayOfWeek);
@@ -648,7 +653,7 @@ namespace CorteCor.Pages
         }
 
         // =========================
-        // Leitura do hor·rio semanal do funcion·rio
+        // Leitura do hor√°rio semanal do funcion√°rio
         // (ajuste os nomes conforme seu DDL)
         // =========================
         private sealed class FuncHorario
@@ -678,12 +683,12 @@ namespace CorteCor.Pages
             };
         }
 
-        private async Task<List<FuncHorario>> GetFuncionariosComHorarioAsync(SqlConnection con, int idSalao, string? idFuncionario)
+        private List<FuncHorario> GetFuncionariosComHorario(IDbConnection con, int idSalao, string? idFuncionario)
         {
             var list = new List<FuncHorario>();
 
             // Ajuste aqui conforme seu DDL real do CorteCor_Funcionario.
-            // Eu puxo "Nome" + campos de hor·rio que podem ter nomes diferentes.
+            // Eu puxo "Nome" + campos de hor√°rio que podem ter nomes diferentes.
             var sql = @"
     select *
     from CorteCor_Funcionario f
@@ -692,13 +697,14 @@ namespace CorteCor.Pages
             if (!string.IsNullOrWhiteSpace(idFuncionario))
                 sql += " and f.IdFuncionario = @IdFuncionario ";
 
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.AddWithValue("@IdSalao", idSalao);
             if (!string.IsNullOrWhiteSpace(idFuncionario))
-                cmd.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
+                cmd.AddWithValue("@IdFuncionario", idFuncionario);
 
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
             {
                 var fh = new FuncHorario
                 {
@@ -706,13 +712,13 @@ namespace CorteCor.Pages
                     Nome = SafeGet(rd, "Nome") ?? ""
                 };
 
-                // tenta mapear janelas por m˙ltiplos nomes possÌveis
+                // tenta mapear janelas por m√∫ltiplos nomes poss√≠veis
                 fh.Seg = GetWorkWindowFromReader(rd, "Seg", "Segunda");
-                fh.Ter = GetWorkWindowFromReader(rd, "Ter", "Terca", "TerÁa");
+                fh.Ter = GetWorkWindowFromReader(rd, "Ter", "Terca", "Ter√ßa");
                 fh.Qua = GetWorkWindowFromReader(rd, "Qua", "Quarta");
                 fh.Qui = GetWorkWindowFromReader(rd, "Qui", "Quinta");
                 fh.Sex = GetWorkWindowFromReader(rd, "Sex", "Sexta");
-                fh.Sab = GetWorkWindowFromReader(rd, "Sab", "S·bado", "Sabado");
+                fh.Sab = GetWorkWindowFromReader(rd, "Sab", "S√°bado", "Sabado");
                 fh.Dom = GetWorkWindowFromReader(rd, "Dom", "Domingo");
 
                 list.Add(fh);
@@ -721,7 +727,7 @@ namespace CorteCor.Pages
             return list;
         }
 
-        private static string? SafeGet(SqlDataReader rd, string name)
+        private static string? SafeGet(IDataReader rd, string name)
         {
             try
             {
@@ -734,7 +740,7 @@ namespace CorteCor.Pages
             }
         }
 
-        private static TimeSpan? SafeGetTime(SqlDataReader rd, params string[] names)
+        private static TimeSpan? SafeGetTime(IDataReader rd, params string[] names)
         {
             foreach (var n in names)
             {
@@ -751,7 +757,7 @@ namespace CorteCor.Pages
             return null;
         }
 
-        private static bool? SafeGetBool(SqlDataReader rd, params string[] names)
+        private static bool? SafeGetBool(IDataReader rd, params string[] names)
         {
             foreach (var n in names)
             {
@@ -769,9 +775,9 @@ namespace CorteCor.Pages
             return null;
         }
 
-        private static (TimeSpan ini, TimeSpan fim)? GetWorkWindowFromReader(SqlDataReader rd, params string[] prefixes)
+        private static (TimeSpan ini, TimeSpan fim)? GetWorkWindowFromReader(IDataReader rd, params string[] prefixes)
         {
-            // procura padr„o:
+            // procura padr√£o:
             // {Prefix}_Ativo / {Prefix}Ativo / Ativo{Prefix}
             // {Prefix}_Inicio / {Prefix}Inicio / Inicio{Prefix}
             // {Prefix}_Fim / {Prefix}Fim / Fim{Prefix}
@@ -794,7 +800,7 @@ namespace CorteCor.Pages
                 if (ativo.HasValue && ativo.Value == false)
                     return null;
 
-                // Se n„o tem ini/fim => n„o conseguimos mapear (n„o bloqueia)
+                // Se n√£o tem ini/fim => n√£o conseguimos mapear (n√£o bloqueia)
                 if (!ini.HasValue || !fim.HasValue)
                     continue;
 
@@ -803,7 +809,7 @@ namespace CorteCor.Pages
                 return (ini.Value, fim.Value);
             }
 
-            // N„o achou colunas compatÌveis => n„o bloqueia (permite)
+            // N√£o achou colunas compat√≠veis => n√£o bloqueia (permite)
             return (TimeSpan.Zero, TimeSpan.FromHours(24));
         }
     }

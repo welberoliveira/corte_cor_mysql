@@ -110,7 +110,6 @@ CREATE TABLE [dbo].[CorteCor_Servico](
     [IdServico] INT IDENTITY(1,1) NOT NULL,
     [Nome] NVARCHAR(150) NOT NULL,
     [Preco] DECIMAL(10,2) NOT NULL,
-    [Cor] NVARCHAR(50) NOT NULL,
     [IdSalao] INT NOT NULL,
     [Duracao] TIME(0) NOT NULL,
     CONSTRAINT PK_CorteCor_Servico PRIMARY KEY (IdServico),
@@ -292,3 +291,17 @@ WHERE Ativo = 1;
 -- 4) Índice para localizar rápido por IDs vindos do Mercado Pago
 CREATE INDEX IX_CorteCor_Pagamento_MercadoPagoPaymentId
 ON dbo.CorteCor_Pagamento (MercadoPagoPaymentId);
+
+
+CREATE TABLE [dbo].[CorteCor_ModeloEmail](
+    [IdModelo] INT IDENTITY(1,1) NOT NULL,
+    [IdSalao] INT NOT NULL,
+    [TipoEvento] NVARCHAR(50) NOT NULL, -- Ex: 'BoasVindas', 'Confirmacao', 'Cancelamento', 'LembretePagamento'
+    [Assunto] NVARCHAR(255) NOT NULL,
+    [CorpoHTML] NVARCHAR(MAX) NOT NULL,
+    [Ativo] BIT NOT NULL DEFAULT 1,
+    CONSTRAINT PK_CorteCor_ModeloEmail PRIMARY KEY ([IdModelo]),
+    CONSTRAINT FK_CorteCor_ModeloEmail_Salao FOREIGN KEY ([IdSalao]) REFERENCES [dbo].[CorteCor_Salao]([IdSalao]),
+    CONSTRAINT UQ_ModeloEmail_Salao_Evento UNIQUE ([IdSalao], [TipoEvento]) -- Apenas 1 modelo ativo por evento por salão
+);
+GO

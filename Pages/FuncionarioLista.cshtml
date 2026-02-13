@@ -1,4 +1,4 @@
-ï»¿@page
+@page
 @model CorteCor.Pages.FuncionarioListaModel
 
 <style>
@@ -15,7 +15,7 @@
 </style>
 
 <div class="container">
-    <h4>Lista de FuncionÃ¡rios</h4>
+    <h4>Lista de Funcionários</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -35,7 +35,7 @@
                 <th>Sex</th>
                 <th>Sab</th>
                 <th>Dom</th>
-                <th>AÃ§Ãµes</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -43,13 +43,13 @@
             {
                 <tr>
                     <td>@Funcionario.Nome</td>
-                    <td>@(Funcionario.seg ? "Sim" : "NÃ£o")</td>
-                    <td>@(Funcionario.ter ? "Sim" : "NÃ£o")</td>
-                    <td>@(Funcionario.qua ? "Sim" : "NÃ£o")</td>
-                    <td>@(Funcionario.qui ? "Sim" : "NÃ£o")</td>
-                    <td>@(Funcionario.sex ? "Sim" : "NÃ£o")</td>
-                    <td>@(Funcionario.sab ? "Sim" : "NÃ£o")</td>
-                    <td>@(Funcionario.dom ? "Sim" : "NÃ£o")</td>
+                    <td>@(Funcionario.seg ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.ter ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.qua ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.qui ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.sex ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.sab ? "Sim" : "Não")</td>
+                    <td>@(Funcionario.dom ? "Sim" : "Não")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
@@ -57,7 +57,7 @@
                             <button class="btn btn-info">Alterar</button>
                         </form>
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este FuncionÃ¡rio?');">
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Funcionário?');">
                             <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
                             <input type="hidden" name="action" value="excluir">
                             <button class="btn btn-danger">Excluir</button>

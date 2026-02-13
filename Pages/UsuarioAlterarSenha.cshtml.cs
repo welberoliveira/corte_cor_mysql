@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
-using System.Data.SqlClient;
+using System.Data;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
+using CorteCor;
 
 namespace CorteCor.Pages
 {
@@ -48,7 +49,7 @@ namespace CorteCor.Pages
 
             if (NovaSenha != ConfirmarSenha)
             {
-                Mensagem = "As senhas n„o coincidem!";
+                Mensagem = "As senhas n√£o coincidem!";
                 return Page();
             }
 
@@ -56,9 +57,10 @@ namespace CorteCor.Pages
             using (var connection = dbHandler.GetConnection())
             {
                 string query = "SELECT Senha FROM CorteCor_Usuario WHERE Email = @Email";
-                using (var command = new SqlCommand(query, connection))
+                using (var command = connection.CreateCommand())
                 {
-                    command.Parameters.AddWithValue("@Email", emailUsuario);
+                    command.CommandText = query;
+                    command.AddWithValue("@Email", emailUsuario);
                     string senhaAtualDB = command.ExecuteScalar()?.ToString();
 
                     if (senhaAtualDB == null || senhaAtualDB != ConvertToBase64(SenhaAtual))
@@ -70,27 +72,28 @@ namespace CorteCor.Pages
 
                 // Atualizar a senha no banco de dados
                 string updateQuery = "UPDATE CorteCor_Usuario SET Senha = @NovaSenha WHERE Email = @Email";
-                using (var updateCommand = new SqlCommand(updateQuery, connection))
+                using (var updateCommand = connection.CreateCommand())
                 {
-                    updateCommand.Parameters.AddWithValue("@NovaSenha", ConvertToBase64(NovaSenha));
-                    updateCommand.Parameters.AddWithValue("@Email", emailUsuario);
+                    updateCommand.CommandText = updateQuery;
+                    updateCommand.AddWithValue("@NovaSenha", ConvertToBase64(NovaSenha));
+                    updateCommand.AddWithValue("@Email", emailUsuario);
                     updateCommand.ExecuteNonQuery();
                 }
 
                 // Enviar e-mail com a nova senha
                 string from = "CorteCor@tonni.com.br";
-                string subject = "AlteraÁ„o de Senha - Corte & Cor";
-                string body = $"<p>Ol·,</p>" +
-                              $"<p>VocÍ a alteraÁ„o da sua senha no sistema <b>Corte & Cor</b>.</p>" +
+                string subject = "Altera√ß√£o de Senha - Corte & Cor";
+                string body = $"<p>Ol√°,</p>" +
+                              $"<p>Voc√™ solicitou a altera√ß√£o da sua senha no sistema <b>Corte & Cor</b>.</p>" +
                               $"<p>Sua senha foi alterada para: <b>{NovaSenha}</b></p>" +
-                              $"<p>Para acessar a p·gina de autenticaÁ„o <a href='https://tonni.com.br/CorteCor/login/{NomeCurto}'>clique aqui</a></p>" +
+                              $"<p>Para acessar a p√°gina de autentica√ß√£o <a href='https://tonni.com.br/CorteCor/login/{NomeCurto}'>clique aqui</a></p>" +
                               $"<br><br><p>Atenciosamente, <br>Equipe Tonni Tecnologia <br> <a href='https://tonni.com.br'>tonni.com.br</a></p>";
 
                 var loginManager = new LoginManager();
                 loginManager.EnviarEmail(emailUsuario, from, subject, body);
             }
 
-            Mensagem = "Senha alterada com sucesso! Verifique seu e-mail. Lembre que o email pode estar no SPAM ou no Lixo EletrÙnico.";
+            Mensagem = "Senha alterada com sucesso! Verifique seu e-mail. Lembre que o email pode estar no SPAM ou no Lixo Eletr√¥nico.";
             return Page();
         }
 

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using static CorteCor.Models;
 using System.Transactions;
@@ -54,7 +54,7 @@ namespace CorteCor.Pages
                    var nomeCliente = dictPessoas.ContainsKey(a.IdPessoa) ? dictPessoas[a.IdPessoa] : "Cliente Removido";
                    
                    var duracao = servico?.Duracao ?? TimeSpan.FromMinutes(30);
-                   var cor = servico?.Cor;
+                   var cor = "#3788d8";
                    if (string.IsNullOrEmpty(cor)) cor = "#3788d8";
 
                    // Cores por status
@@ -144,7 +144,7 @@ namespace CorteCor.Pages
             {
                 id = novoId,
                 servicoNome = servico.Nome,
-                servicoCor = servico.Cor
+                servicoCor = "#3788d8"
             });
         }
 
@@ -233,7 +233,7 @@ namespace CorteCor.Pages
             {
                 id = agendamento.IdAgendamento,
                 title = $"{primeiroNome} - {servico.Nome}",
-                color = servico.Cor,
+                color = "#3788d8",
                 start = agendamento.DataHora, // Return new start
                 end = agendamento.DataHora.Add(servico.Duracao)
             });
@@ -245,7 +245,6 @@ namespace CorteCor.Pages
             public int IdAgendamento { get; set; }
         }
 
-        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public async Task<IActionResult> OnPostPagar([FromBody] PagarRequest req)
         {
             if (req == null || req.IdAgendamento <= 0) return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
@@ -268,11 +267,14 @@ namespace CorteCor.Pages
             var p = pessoaHandler.ObterPorId(a.IdPessoa);
             if (p == null) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
 
-            // Gera Preferência no Mercado Pago
+            // Gera novo ID para o Pagamento
+            var idPagamento = Guid.NewGuid();
+
+            // Gera Preferência no Mercado Pago usando o ID do Pagamento
             var mpService = new MercadoPagoService(HttpContext.RequestServices.GetRequiredService<IConfiguration>());
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var (pref, error) = await mpService.CreatePreferenceAsync(
-                a.IdAgendamento, 
+                idPagamento, 
                 $"Serviço {s.Nome} - Corte & Cor", 
                 s.Preco, 
                 p.Email ?? "cliente@cortecor.com", 
@@ -289,14 +291,15 @@ namespace CorteCor.Pages
             // Inicia transação para garantir consistência
             using (var scope = new System.Transactions.TransactionScope(System.Transactions.TransactionScopeAsyncFlowOption.Enabled))
             {
-                // Atualiza status do agendamento para Pendente
-                agendamentoHandler.AtualizarStatus(a.IdAgendamento, "Pendente");
+                // Atualiza status do agendamento para Pendente (se não estiver pago)
+                if (a.Status != "Pago")
+                    agendamentoHandler.AtualizarStatus(a.IdAgendamento, "Pendente");
 
-                // Registra o pagamento na tabela
+                // Registra o pagamento na tabela com o ID gerado
                 var pagHandler = new PagamentoHandler();
                 var novoPag = new Pagamento
                 {
-                    IdPagamento = Guid.NewGuid(),
+                    IdPagamento = idPagamento,
                     IdAgendamento = a.IdAgendamento,
                     Ativo = true,
                     Status = "Pendente",
@@ -304,9 +307,11 @@ namespace CorteCor.Pages
                     Moeda = "BRL",
                     Descricao = $"Pagamento do agendamento {a.IdAgendamento}",
                     MercadoPagoPreferenceId = pref.Id,
-                    CheckoutUrl = pref.InitPoint, // ou SandboxInitPoint se preferir
-                    CriadoEm = DateTime.UtcNow
+                    CheckoutUrl = pref.InitPoint, // Salva o link de pagamento
+                    CriadoEm = DateTime.UtcNow,
+                    Tipo = "MercadoPago"
                 };
+
                 pagHandler.CadastrarPagamento(novoPag);
 
                 scope.Complete();
@@ -314,6 +319,7 @@ namespace CorteCor.Pages
 
             return new JsonResult(new { checkoutUrl = pref.InitPoint });
         }
+
 
         public IActionResult OnPostDelete(int id)
         {

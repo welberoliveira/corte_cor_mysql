@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc; // Adicionado para JsonResult
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using static CorteCor.Models;
 
@@ -11,14 +12,54 @@ namespace CorteCor.Pages
         public string ButtonText = "Cadastrar";
         public string Mensagem { get; set; }
 
-        public void OnGet(Guid? id)
+        public void OnGet(Guid? id, int? idAgendamento)
         {
+            var handler = new PagamentoHandler();
+            
             if (id.HasValue && id.Value != Guid.Empty)
             {
-                var handler = new PagamentoHandler();
                 Pagamento = handler.ObterPorId(id.Value);
                 ButtonText = "Atualizar";
+                
+                // Se foi passado um idAgendamento via URL, atualiza o modelo
+                if (idAgendamento.HasValue && Pagamento != null) 
+                    Pagamento.IdAgendamento = idAgendamento.Value;
             }
+            else if (idAgendamento.HasValue)
+            {
+                // Pre-fill based on Scheduling
+                var agendamentoHandler = new AgendamentoHandler();
+                var agendamento = agendamentoHandler.ObterPorId(idAgendamento.Value);
+                if (agendamento != null)
+                {
+                    var servicoHandler = new ServicoHandler();
+                    var servico = servicoHandler.ObterPorId(agendamento.IdServico);
+                    
+                    Pagamento = new Pagamento
+                    {
+                        IdAgendamento = idAgendamento.Value,
+                        Valor = servico?.Preco ?? 0,
+                        Descricao = servico != null ? $"Pagamento Ref. Serviço {servico.Nome}" : "",
+                        Data = DateTime.Now
+                    };
+                }
+            }
+        }
+
+        public JsonResult OnGetDadosAgendamento(int id)
+        {
+            var agendamentoHandler = new AgendamentoHandler();
+            var agendamento = agendamentoHandler.ObterPorId(id);
+            if (agendamento != null)
+            {
+                var servicoHandler = new ServicoHandler();
+                var servico = servicoHandler.ObterPorId(agendamento.IdServico);
+                if (servico != null)
+                {
+                    return new JsonResult(new { success = true, valor = servico.Preco, descricao = $"Pagamento Ref. Serviço {servico.Nome}" });
+                }
+            }
+            return new JsonResult(new { success = false });
         }
 
         private static decimal ParseDecimalBR(string valor)
@@ -82,7 +123,7 @@ namespace CorteCor.Pages
                 Mensagem = "Pagamento cadastrado com sucesso!";
             }
 
-            OnGet(id != Guid.Empty ? id : (Guid?)null);
+            OnGet(id != Guid.Empty ? id : (Guid?)null, null);
         }
     }
 }

@@ -136,7 +136,6 @@ public class Models
         public int IdServico { get; set; }
         public string Nome { get; set; }
         public decimal Preco { get; set; }
-        public string Cor { get; set; }
         public int IdSalao { get; set; }
         public TimeSpan Duracao { get; set; }
 
@@ -216,6 +215,13 @@ public class Models
         public DateTime Data { get; set; }
         public string? Contos { get; set; }
         public string? Campos { get; set; }
+
+        [NotMapped]
+        public string? NomeCliente { get; set; }
+        [NotMapped]
+        public string? NomeServico { get; set; }
+        [NotMapped]
+        public DateTime? DataAgendamento { get; set; }
     }
 
     public class ErrorResponse
@@ -223,5 +229,13 @@ public class Models
         public string Message { get; set; } = string.Empty;
         public string? Detail { get; set; }
         public string? Code { get; set; }
+    }
+
+    public class PagamentoFiltroDTO
+    {
+        public DateTime? DataInicio { get; set; }
+        public DateTime? DataFim { get; set; }
+        public string? Status { get; set; }
+        public string? NomeCliente { get; set; }
     }
 }

@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System;
-using System.Data.SqlClient;
+using System.Data;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
+using CorteCor;
 
 
 namespace CorteCor.Pages
@@ -25,13 +25,16 @@ namespace CorteCor.Pages
         public string SalaoLink { get; set; }
         public string SalaoLinkID { get; set; }
         public string NomeSalao { get; set; }
-        public DatabaseHandler dbHandler = new();
+        public IDatabaseHandler dbHandler = new DatabaseHandler();
 
         public void OnGet(string t, string? nomeSalaoLink)
         {
             ViewData["HideMenu"] = "true";
 
-            if (string.IsNullOrEmpty(nomeSalaoLink)) RedirectToPage(HttpContext.Request.PathBase + t);
+            if (string.IsNullOrEmpty(nomeSalaoLink)) 
+            {
+                 // Logic to handle missing link if needed
+            }
 
             TipoUsuario = t;
 
@@ -40,15 +43,15 @@ namespace CorteCor.Pages
             {
                 SalaoLink = nomeSalaoLink;
 
-                var dbHandler = new DatabaseHandler();
                 using var connection = dbHandler.GetConnection();
                 string query = @"
                     SELECT IdSalao 
                     FROM CorteCor_Salao 
                     WHERE NomeCurto = @SalaoLink AND Status = 'Ativo';";
 
-                using var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@SalaoLink", SalaoLink);
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.AddWithValue("@SalaoLink", SalaoLink);
                 var result = command.ExecuteScalar();
 
                 if (result != null) IdSalao = Convert.ToInt32(result);
@@ -64,20 +67,21 @@ namespace CorteCor.Pages
 
             if (string.IsNullOrEmpty(Email))
             {
-                Mensagem = "Por favor, selecione um tipo de usu·rio e insira um e-mail v·lido.";
+                Mensagem = "Por favor, selecione um tipo de usu√°rio e insira um e-mail v√°lido.";
                 return;
             }
 
             object usuario = null;
-            string tabela = TipoUsuario == "1" ? "CorteCor_Usuario" : "CorteCor_Usuario";
+            string tabela = "CorteCor_Usuario";
 
-            // Buscar o usu·rio na tabela correspondente
+            // Buscar o usu√°rio na tabela correspondente
             string query = $"SELECT Email FROM {tabela} WHERE Email = @Email and IdSalao = @IdSalao";
             using (var connection = dbHandler.GetConnection())
-            using (var command = new System.Data.SqlClient.SqlCommand(query, connection))
+            using (var command = connection.CreateCommand())
             {
-                command.Parameters.AddWithValue("@Email", Email);
-                command.Parameters.AddWithValue("@IdSalao", IdSalao);
+                command.CommandText = query;
+                command.AddWithValue("@Email", Email);
+                command.AddWithValue("@IdSalao", IdSalao);
                 using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())
@@ -89,30 +93,31 @@ namespace CorteCor.Pages
 
             if (usuario == null)
             {
-                Mensagem = "E-mail n„o encontrado.";
+                Mensagem = "E-mail n√£o encontrado.";
                 return;
             }
 
             string novaSenha = GerarSenhaAleatoria();
             string senhaCriptografada = Convert.ToBase64String(Encoding.UTF8.GetBytes(novaSenha));
 
-            string updateQuery = $"UPDATE {tabela} SET Senha = @Senha WHERE Email = @Email  and IdSalao = @IdSalao";
+            string updateQuery = $"UPDATE {tabela} SET Senha = @Senha WHERE Email = @Email and IdSalao = @IdSalao";
             using (var connection = dbHandler.GetConnection())
-            using (var command = new System.Data.SqlClient.SqlCommand(updateQuery, connection))
+            using (var command = connection.CreateCommand())
             {
-                command.Parameters.AddWithValue("@Senha", senhaCriptografada);
-                command.Parameters.AddWithValue("@Email", Email);
-                command.Parameters.AddWithValue("@IdSalao", IdSalao);
+                command.CommandText = updateQuery;
+                command.AddWithValue("@Senha", senhaCriptografada);
+                command.AddWithValue("@Email", Email);
+                command.AddWithValue("@IdSalao", IdSalao);
                 command.ExecuteNonQuery();
             }
 
             string from = "CorteCor@tonni.com.br";
-            string subject = "RecuperaÁ„o de Senha - Corte & Cor";
-            string body = $"<p>Ol·,</p>" +
-                          $"<p>VocÍ solicitou a recuperaÁ„o da sua senha no sistema <b>Corte & Cor</b>.</p>" +
-                          $"<p>Sua nova senha È: <b>{novaSenha}</b></p>" +
-                          $"<p>… recomentdado alterar sua senha, clicando no bot„o \"Alterar Senha\", apÛs realizar seu acesso.</p>" +
-                          $"<p>Para acessar a p·gina de autenticaÁ„o <a href='tonni.com.br/CorteCor/login/{NomeCurto}'>clique aqui</a>, ou acesso: <a href='tonni.com.br/CorteCor/login/{NomeCurto}'>tonni.com.br/CorteCor/login/{NomeCurto}</a></p>" +
+            string subject = "Recupera√ß√£o de Senha - Corte & Cor";
+            string body = $"<p>Ol√°,</p>" +
+                          $"<p>Voc√™ solicitou a recupera√ß√£o da sua senha no sistema <b>Corte & Cor</b>.</p>" +
+                          $"<p>Sua nova senha √©: <b>{novaSenha}</b></p>" +
+                          $"<p>√â recomendado alterar sua senha, clicando no bot√£o \"Alterar Senha\", ap√≥s realizar seu acesso.</p>" +
+                          $"<p>Para acessar a p√°gina de autentica√ß√£o <a href='tonni.com.br/CorteCor/login/{NomeCurto}'>clique aqui</a>, ou acesso: <a href='tonni.com.br/CorteCor/login/{NomeCurto}'>tonni.com.br/CorteCor/login/{NomeCurto}</a></p>" +
                           $"<br><br><p>Atenciosamente, <br>Equipe Tonni Tecnologia <br> <a href='tonni.com.br'>tonni.com.br</a></p>" +
                           $"<p></p>";
 

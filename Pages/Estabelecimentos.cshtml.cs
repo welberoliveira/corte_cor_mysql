@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
+ï»¿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Data.SqlClient;
+using System.Data;
 using System.Text;
 
 namespace CorteCor.Pages
@@ -9,19 +9,26 @@ namespace CorteCor.Pages
     {
             private readonly IConfiguration _config;
 
+            private struct ParamDef 
+            { 
+                public string Name; 
+                public object Value; 
+                public DbType? Type; 
+            }
+
             public EstabelecimentosModel(IConfiguration config)
             {
                 _config = config;
             }
 
             // =========================
-            // Config de exportação
+            // Config de exportaÃ§Ã£o
             // =========================
             public int ExportMaxRows => 200000; // limite seguro
             public bool ExportTruncado { get; set; }
 
             // =========================
-            // Controle: só lista após pesquisar
+            // Controle: sÃ³ lista apÃ³s pesquisar
             // =========================
             [BindProperty(SupportsGet = true)]
             public bool Pesquisar { get; set; } = false;
@@ -54,7 +61,7 @@ namespace CorteCor.Pages
 
             public List<OptionItem> Portes { get; } = new()
         {
-            new OptionItem(0, "Não informado"),
+            new OptionItem(0, "NÃ£o informado"),
             new OptionItem(1, "Micro empresa"),
             new OptionItem(3, "Empresa de pequeno porte"),
             new OptionItem(5, "Demais")
@@ -103,7 +110,7 @@ namespace CorteCor.Pages
             [BindProperty(SupportsGet = true)] public DateTime? DataSitEspecialDe { get; set; }
             [BindProperty(SupportsGet = true)] public DateTime? DataSitEspecialAte { get; set; }
 
-            // Paginação
+            // PaginaÃ§Ã£o
             [BindProperty(SupportsGet = true)] public int Page { get; set; } = 1;
             [BindProperty(SupportsGet = true)] public int PageSize { get; set; } = 50;
 
@@ -132,7 +139,7 @@ namespace CorteCor.Pages
 
                 if (!Pesquisar)
                 {
-                    // Não listar nada no primeiro carregamento
+                    // NÃ£o listar nada no primeiro carregamento
                     Total = 0;
                     Itens = new();
                     ExportTruncado = false;
@@ -151,7 +158,7 @@ namespace CorteCor.Pages
             // =========================
             public IActionResult OnGetExportCsv()
             {
-                // sempre carrega dropdowns? não precisa
+                // sempre carrega dropdowns? nÃ£o precisa
                 using var conn = GetConnection();
                 var (whereSql, pars) = BuildWhere();
 
@@ -287,15 +294,13 @@ namespace CorteCor.Pages
                 if (PageSize > 200) PageSize = 200;
             }
 
-            private SqlConnection GetConnection()
+            private IDbConnection GetConnection()
             {
-                var cs = _config.GetConnectionString("TonniDb");
-                var conn = new SqlConnection(cs);
-                conn.Open();
-                return conn;
+                var dbHandler = new DatabaseHandler();
+                return dbHandler.GetConnection();
             }
 
-            private void LoadDropdowns(SqlConnection conn)
+            private void LoadDropdowns(IDbConnection conn)
             {
                 Cnaes = LoadOptionTable(conn, "dbo.CNPJ_Cnaes");
                 Municipios = LoadOptionTable(conn, "dbo.CNPJ_Municipios");
@@ -305,7 +310,7 @@ namespace CorteCor.Pages
                 Qualificacoes = LoadOptionTable(conn, "dbo.CNPJ_Qualificacoes");
             }
 
-            private List<OptionItem> LoadOptionTable(SqlConnection conn, string table)
+            private List<OptionItem> LoadOptionTable(IDbConnection conn, string table)
             {
                 var list = new List<OptionItem>();
 
@@ -314,8 +319,9 @@ SELECT Codigo, Descricao
 FROM {table}
 ORDER BY Descricao;";
 
-                using var cmd = new SqlCommand(sql, conn);
-            cmd.CommandTimeout = 300; // 300s = 5 minutos
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.CommandTimeout = 300; // 300s = 5 minutos
 
             using var rd = cmd.ExecuteReader();
                 while (rd.Read())
@@ -331,37 +337,37 @@ ORDER BY Descricao;";
             // =========================
             // WHERE builder
             // =========================
-            private (string whereSql, List<SqlParameter> pars) BuildWhere()
+            private (string whereSql, List<ParamDef> pars) BuildWhere()
             {
                 var sb = new StringBuilder(" WHERE 1=1 ");
-                var pars = new List<SqlParameter>();
+                var pars = new List<ParamDef>();
 
                 void AddLike(string col, string? val, string p)
                 {
                     if (string.IsNullOrWhiteSpace(val)) return;
                     sb.Append($" AND {col} LIKE @{p} ");
-                    pars.Add(new SqlParameter("@" + p, $"%{val.Trim()}%"));
+                    pars.Add(new ParamDef { Name = "@" + p, Value = $"%{val.Trim()}%", Type = DbType.String });
                 }
 
                 void AddEqInt(string col, int? val, string p)
                 {
                     if (!val.HasValue) return;
                     sb.Append($" AND {col} = @{p} ");
-                    pars.Add(new SqlParameter("@" + p, val.Value));
+                    pars.Add(new ParamDef { Name = "@" + p, Value = val.Value, Type = DbType.Int32 });
                 }
 
                 void AddEqByte(string col, int? val, string p)
                 {
                     if (!val.HasValue) return;
                     sb.Append($" AND {col} = @{p} ");
-                    pars.Add(new SqlParameter("@" + p, Convert.ToByte(val.Value)));
+                    pars.Add(new ParamDef { Name = "@" + p, Value = Convert.ToByte(val.Value), Type = DbType.Byte });
                 }
 
                 void AddEqStr(string col, string? val, string p)
                 {
                     if (string.IsNullOrWhiteSpace(val)) return;
                     sb.Append($" AND {col} = @{p} ");
-                    pars.Add(new SqlParameter("@" + p, val.Trim()));
+                    pars.Add(new ParamDef { Name = "@" + p, Value = val.Trim(), Type = DbType.String });
                 }
 
                 void AddDateRange(string col, DateTime? de, DateTime? ate, string pDe, string pAte)
@@ -369,12 +375,12 @@ ORDER BY Descricao;";
                     if (de.HasValue)
                     {
                         sb.Append($" AND {col} >= @{pDe} ");
-                        pars.Add(new SqlParameter("@" + pDe, de.Value.Date));
+                        pars.Add(new ParamDef { Name = "@" + pDe, Value = de.Value.Date, Type = DbType.Date });
                     }
                     if (ate.HasValue)
                     {
                         sb.Append($" AND {col} <= @{pAte} ");
-                        pars.Add(new SqlParameter("@" + pAte, ate.Value.Date));
+                        pars.Add(new ParamDef { Name = "@" + pAte, Value = ate.Value.Date, Type = DbType.Date });
                     }
                 }
 
@@ -413,7 +419,7 @@ ORDER BY Descricao;";
                 if (!string.IsNullOrWhiteSpace(Telefone))
                 {
                     sb.Append(" AND (est.Telefone1 LIKE @Telefone OR est.Telefone2 LIKE @Telefone OR est.Fax LIKE @Telefone) ");
-                    pars.Add(new SqlParameter("@Telefone", $"%{Telefone.Trim()}%"));
+                    pars.Add(new ParamDef { Name = "@Telefone", Value = $"%{Telefone.Trim()}%", Type = DbType.String });
                 }
 
                 if (SomenteComEmail)
@@ -449,7 +455,7 @@ ORDER BY Descricao;";
                 return (sb.ToString(), pars);
             }
 
-            private int ExecuteCount(SqlConnection conn, string whereSql, List<SqlParameter> pars)
+            private int ExecuteCount(IDbConnection conn, string whereSql, List<ParamDef> pars)
             {
                 var sql = @"
 SELECT COUNT(1)
@@ -457,14 +463,15 @@ FROM dbo.CNPJ_Estabelecimentos est
 INNER JOIN dbo.CNPJ_Empresas emp ON emp.CnpjBasico = est.CnpjBasico
 " + whereSql;
 
-                using var cmd = new SqlCommand(sql, conn);
-            cmd.CommandTimeout = 300; // 300s = 5 minutos
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.CommandTimeout = 300; // 300s = 5 minutos
 
-            cmd.Parameters.AddRange(CloneParams(pars));
+                AddParams(cmd, pars);
                 return Convert.ToInt32(cmd.ExecuteScalar());
             }
 
-            private List<EstabelecimentoRow> ExecuteList(SqlConnection conn, string whereSql, List<SqlParameter> pars)
+            private List<EstabelecimentoRow> ExecuteList(IDbConnection conn, string whereSql, List<ParamDef> pars)
             {
                 var offset = (Page - 1) * PageSize;
 
@@ -472,27 +479,31 @@ INNER JOIN dbo.CNPJ_Empresas emp ON emp.CnpjBasico = est.CnpjBasico
 ORDER BY est.CnpjBasico, est.CnpjOrdem, est.CnpjDv
 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
-                using var cmd = new SqlCommand(sql, conn);
-            cmd.CommandTimeout = 300; // 300s = 5 minutos
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.CommandTimeout = 300; // 300s = 5 minutos
 
-            cmd.Parameters.AddRange(CloneParams(pars));
-                cmd.Parameters.Add(new SqlParameter("@Offset", offset));
-                cmd.Parameters.Add(new SqlParameter("@PageSize", PageSize));
+                AddParams(cmd, pars);
+
+                var pOffset = cmd.CreateParameter(); pOffset.ParameterName = "@Offset"; pOffset.Value = offset; cmd.Parameters.Add(pOffset);
+                var pPageSize = cmd.CreateParameter(); pPageSize.ParameterName = "@PageSize"; pPageSize.Value = PageSize; cmd.Parameters.Add(pPageSize);
 
                 return ReadRows(cmd);
             }
 
             // Exporta TOP(@MaxRows)
-            private List<EstabelecimentoRow> ExecuteExport(SqlConnection conn, string whereSql, List<SqlParameter> pars, int maxRows)
+            private List<EstabelecimentoRow> ExecuteExport(IDbConnection conn, string whereSql, List<ParamDef> pars, int maxRows)
             {
                 var sql = BaseSelectSql(top: true) + whereSql + @"
 ORDER BY est.CnpjBasico, est.CnpjOrdem, est.CnpjDv;";
 
-                using var cmd = new SqlCommand(sql, conn);
-            cmd.CommandTimeout = 300; // 300s = 5 minutos
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.CommandTimeout = 300; // 300s = 5 minutos
 
-            cmd.Parameters.AddRange(CloneParams(pars));
-                cmd.Parameters.Add(new SqlParameter("@MaxRows", maxRows));
+                AddParams(cmd, pars);
+
+                var pMaxRows = cmd.CreateParameter(); pMaxRows.ParameterName = "@MaxRows"; pMaxRows.Value = maxRows; cmd.Parameters.Add(pMaxRows);
 
                 return ReadRows(cmd);
             }
@@ -542,7 +553,7 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
 ";
             }
 
-            private List<EstabelecimentoRow> ReadRows(SqlCommand cmd)
+            private List<EstabelecimentoRow> ReadRows(IDbCommand cmd)
             {
                 var list = new List<EstabelecimentoRow>();
 
@@ -600,7 +611,7 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
             }
 
             // =========================
-            // URL: paginação / export
+            // URL: paginaÃ§Ã£o / export
             // =========================
             public string BuildPageUrl(int page)
             {
@@ -611,7 +622,7 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
 
             public string BuildExportUrl(string handler)
             {
-                // mantém todos os filtros, apenas troca handler
+                // mantÃ©m todos os filtros, apenas troca handler
                 var baseUrl = BuildUrl(extra: null);
                 if (baseUrl.Contains("?"))
                     return baseUrl.Replace(Request.Path + "?", Request.Path + $"?handler={handler}&");
@@ -775,27 +786,17 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
                 public bool PossuiTelefone { get; set; }
             }
 
-        private static SqlParameter[] CloneParams(IEnumerable<SqlParameter> pars)
+        private void AddParams(IDbCommand cmd, IEnumerable<ParamDef> pars)
         {
-            return pars.Select(p =>
+            foreach (var p in pars)
             {
-                var c = new SqlParameter
-                {
-                    ParameterName = p.ParameterName,
-                    SqlDbType = p.SqlDbType,
-                    Direction = p.Direction,
-                    Size = p.Size,
-                    Precision = p.Precision,
-                    Scale = p.Scale,
-                    IsNullable = p.IsNullable,
-                    Value = p.Value ?? DBNull.Value
-                };
-
-                if (!string.IsNullOrWhiteSpace(p.TypeName))
-                    c.TypeName = p.TypeName;
-
-                return c;
-            }).ToArray();
+                var c = cmd.CreateParameter();
+                c.ParameterName = p.Name;
+                c.Value = p.Value ?? DBNull.Value;
+                if (p.Type.HasValue)
+                    c.DbType = p.Type.Value;
+                cmd.Parameters.Add(c);
+            }
         }
 
     }

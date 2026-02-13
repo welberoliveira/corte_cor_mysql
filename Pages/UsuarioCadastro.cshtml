@@ -1,11 +1,11 @@
-Ôªø@page
+@page
 @model UsuarioCadastroModel
 @{
-    ViewData["Title"] = @Model.ButtonText + " de Usu√°rios";
+    ViewData["Title"] = @Model.ButtonText + " de Usu·rios";
 }
 
 <div class="container">
-    <h4>@Model.ButtonText Usu√°rios</h4>
+    <h4>@Model.ButtonText Usu·rios</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -81,11 +81,11 @@
 
 <script>
     $(document).ready(function () {
-        $("#telefone").inputmask("(99) 99999-9999"); // M√°scara para telefone no Brasil
+        $("#telefone").inputmask("(99) 99999-9999"); // M·scara para telefone no Brasil
     });
 
     $(document).ready(function () {
-        $("#cpf").inputmask("999.999.999-99"); // M√°scara para CPF
+        $("#cpf").inputmask("999.999.999-99"); // M·scara para CPF
     });
 
     $(document).ready(function () {

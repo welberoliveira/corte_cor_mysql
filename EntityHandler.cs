@@ -4,12 +4,18 @@ using System.Data.SqlClient;
 using System.Net.Mail;
 using System.Net;
 using static CorteCor.Models;
+using CorteCor;
+using System.Data;
 using System.Security.Claims;
 using Microsoft.Extensions.Caching.Memory;
 
 public abstract class EntityHandler<T>
 {
-    protected readonly DatabaseHandler _dbHandler = new DatabaseHandler();
+    protected readonly IDatabaseHandler _dbHandler;
+    protected EntityHandler(IDatabaseHandler dbHandler = null)
+    {
+        _dbHandler = dbHandler ?? new DatabaseHandler();
+    }
 
     public abstract void Cadastrar(T entity);
     public abstract void AtivarDesativar(int id, bool ativar);
@@ -19,8 +25,7 @@ public abstract class EntityHandler<T>
 
 public class UsuarioHandler : EntityHandler<Usuario>
 {
-    public UsuarioHandler()
-    {
+    public UsuarioHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) {
     }
 
     public int CadastrarUsuario(Usuario Usuario)
@@ -33,21 +38,21 @@ public class UsuarioHandler : EntityHandler<Usuario>
                      SELECT SCOPE_IDENTITY();"; // Retorna o ID gerado
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", Usuario.Nome);
-            command.Parameters.AddWithValue("@Sobrenome", Usuario.Sobrenome);
-            command.Parameters.AddWithValue("@CPF", Usuario.CPF);
-            command.Parameters.AddWithValue("@Email", Usuario.Email);
-            command.Parameters.AddWithValue("@Telefone", Usuario.Telefone);
+            command.AddWithValue("@Nome", Usuario.Nome);
+            command.AddWithValue("@Sobrenome", Usuario.Sobrenome);
+            command.AddWithValue("@CPF", Usuario.CPF);
+            command.AddWithValue("@Email", Usuario.Email);
+            command.AddWithValue("@Telefone", Usuario.Telefone);
             // Se DataEntrada for nullable ou MinValue, tratar:
             if (Usuario.DataEntrada == DateTime.MinValue)
-                command.Parameters.AddWithValue("@DataEntrada", DBNull.Value);
+                command.AddWithValue("@DataEntrada", DBNull.Value);
             else
-                command.Parameters.AddWithValue("@DataEntrada", Usuario.DataEntrada);
-            command.Parameters.AddWithValue("@Status", Usuario.Status);
-            command.Parameters.AddWithValue("@Senha", Usuario.Senha);
-            command.Parameters.AddWithValue("@IdSalao", Usuario.IdSalao);
+                command.AddWithValue("@DataEntrada", Usuario.DataEntrada);
+            command.AddWithValue("@Status", Usuario.Status);
+            command.AddWithValue("@Senha", Usuario.Senha);
+            command.AddWithValue("@IdSalao", Usuario.IdSalao);
 
             object result = command.ExecuteScalar(); // Obtém o ID gerado
             if (result != null && int.TryParse(result.ToString(), out int id))
@@ -63,10 +68,10 @@ public class UsuarioHandler : EntityHandler<Usuario>
         string status = ativar ? "Ativo" : "Inativo";
         string query = "UPDATE CorteCor_Usuario SET Status = @Status WHERE IdUsuario = @IdUsuario";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Status", status);
-            command.Parameters.AddWithValue("@IdUsuario", id);
+            command.AddWithValue("@Status", status);
+            command.AddWithValue("@IdUsuario", id);
             command.ExecuteNonQuery();
         }
     }
@@ -78,7 +83,7 @@ public class UsuarioHandler : EntityHandler<Usuario>
                          ORDER BY IdSalao, Nome";
         var Usuarios = new List<Usuario>();
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
             using (var reader = command.ExecuteReader())
             {
@@ -107,9 +112,9 @@ public class UsuarioHandler : EntityHandler<Usuario>
     {
         string query = "DELETE FROM CorteCor_Usuario WHERE IdUsuario = @IdUsuario";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdUsuario", id);
+            command.AddWithValue("@IdUsuario", id);
             command.ExecuteNonQuery();
         }
     }
@@ -126,16 +131,16 @@ public class UsuarioHandler : EntityHandler<Usuario>
                              IdSalao = @IdSalao
                          WHERE IdUsuario = @IdUsuario";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", Usuario.Nome);
-            command.Parameters.AddWithValue("@Sobrenome", Usuario.Sobrenome);
-            command.Parameters.AddWithValue("@CPF", Usuario.CPF);
-            command.Parameters.AddWithValue("@Email", Usuario.Email);
-            command.Parameters.AddWithValue("@Telefone", Usuario.Telefone);
-            command.Parameters.AddWithValue("@DataEntrada", Usuario.DataEntrada);
-            command.Parameters.AddWithValue("@IdUsuario", Usuario.IdUsuario);
-            command.Parameters.AddWithValue("@IdSalao", Usuario.IdSalao);
+            command.AddWithValue("@Nome", Usuario.Nome);
+            command.AddWithValue("@Sobrenome", Usuario.Sobrenome);
+            command.AddWithValue("@CPF", Usuario.CPF);
+            command.AddWithValue("@Email", Usuario.Email);
+            command.AddWithValue("@Telefone", Usuario.Telefone);
+            command.AddWithValue("@DataEntrada", Usuario.DataEntrada);
+            command.AddWithValue("@IdUsuario", Usuario.IdUsuario);
+            command.AddWithValue("@IdSalao", Usuario.IdSalao);
             command.ExecuteNonQuery();
         }
     }
@@ -162,9 +167,9 @@ public class LoginManager
             WHERE Email = @Email 
               AND Status = 'Ativo';";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Email", email);
+            command.AddWithValue("@Email", email);
             using (var reader = command.ExecuteReader())
             {
                 if (reader.Read())
@@ -185,9 +190,9 @@ public class LoginManager
             WHERE Email = @Email 
               AND Status = 'Ativo';";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Email", email);
+            command.AddWithValue("@Email", email);
             using (var reader = command.ExecuteReader())
             {
                 if (reader.Read())
@@ -209,12 +214,12 @@ public class LoginManager
             VALUES 
                 (@Nome, @Email, @Senha, @Perfil, 'Ativo');";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", nome);
-            command.Parameters.AddWithValue("@Email", email);
-            command.Parameters.AddWithValue("@Senha", senhaHash);
-            command.Parameters.AddWithValue("@Perfil", perfil);
+            command.AddWithValue("@Nome", nome);
+            command.AddWithValue("@Email", email);
+            command.AddWithValue("@Senha", senhaHash);
+            command.AddWithValue("@Perfil", perfil);
             command.ExecuteNonQuery();
         }
     }
@@ -228,10 +233,10 @@ public class LoginManager
             WHERE Email = @Email 
               AND Status = 'Ativo' ;";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Senha", senhaHash);
-            command.Parameters.AddWithValue("@Email", email);
+            command.AddWithValue("@Senha", senhaHash);
+            command.AddWithValue("@Email", email);
             command.ExecuteNonQuery();
         }
     }
@@ -243,9 +248,9 @@ public class LoginManager
             SET Status = 'Inativo' 
             WHERE IdUsuario = @IdUsuario;";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdUsuario", idUsuario);
+            command.AddWithValue("@IdUsuario", idUsuario);
             command.ExecuteNonQuery();
         }
     }
@@ -325,8 +330,8 @@ public class Salaoervice
             WHERE IdSalao = @IdSalao";
 
         using var connection = _dbHandler.GetConnection();
-        using var command = new SqlCommand(query, connection);
-        command.Parameters.AddWithValue("@IdSalao", IdSalao);
+        using var command = connection.CreateCommand(query);
+        command.AddWithValue("@IdSalao", IdSalao);
 
         using var reader = command.ExecuteReader();
         if (reader.Read())
@@ -356,6 +361,7 @@ public class Salaoervice
 
 public class SalaoHandler : EntityHandler<Salao>
 {
+    public SalaoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     public int CadastrarSalao(Salao Salao)
     {
         int novoId = 0;
@@ -367,17 +373,17 @@ public class SalaoHandler : EntityHandler<Salao>
         SELECT SCOPE_IDENTITY();";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", Salao.Nome);
-            command.Parameters.AddWithValue("@Responsavel", Salao.Responsavel);
-            command.Parameters.AddWithValue("@Email", Salao.Email);
-            command.Parameters.AddWithValue("@Telefone", Salao.Telefone);
-            command.Parameters.AddWithValue("@Endereco", Salao.Endereco);
-            command.Parameters.AddWithValue("@CNPJ", Salao.CNPJ);
-            command.Parameters.AddWithValue("@Status", Salao.Status);
-            command.Parameters.AddWithValue("@DataCadastro", Salao.DataCadastro.ToString("yyyy-MM-dd"));
-            command.Parameters.AddWithValue("@Observacao", (object)Salao.Observacao ?? DBNull.Value);
+            command.AddWithValue("@Nome", Salao.Nome);
+            command.AddWithValue("@Responsavel", Salao.Responsavel);
+            command.AddWithValue("@Email", Salao.Email);
+            command.AddWithValue("@Telefone", Salao.Telefone);
+            command.AddWithValue("@Endereco", Salao.Endereco);
+            command.AddWithValue("@CNPJ", Salao.CNPJ);
+            command.AddWithValue("@Status", Salao.Status);
+            command.AddWithValue("@DataCadastro", Salao.DataCadastro.ToString("yyyy-MM-dd"));
+            command.AddWithValue("@Observacao", (object)Salao.Observacao ?? DBNull.Value);
 
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
@@ -393,10 +399,10 @@ public class SalaoHandler : EntityHandler<Salao>
         string status = ativar ? "Ativo" : "Inativo";
         string query = "UPDATE CorteCor_Salao SET Status = @Status WHERE IdSalao = @IdSalao";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Status", status);
-            command.Parameters.AddWithValue("@IdSalao", id);
+            command.AddWithValue("@Status", status);
+            command.AddWithValue("@IdSalao", id);
             command.ExecuteNonQuery();
         }
     }
@@ -411,7 +417,7 @@ public class SalaoHandler : EntityHandler<Salao>
         var Saloes = new List<Salao>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
             using (var reader = command.ExecuteReader())
             {
@@ -440,9 +446,9 @@ public class SalaoHandler : EntityHandler<Salao>
     {
         string query = "DELETE FROM CorteCor_Salao WHERE IdSalao = @IdSalao";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdSalao", id);
+            command.AddWithValue("@IdSalao", id);
             command.ExecuteNonQuery();
         }
     }
@@ -463,18 +469,18 @@ public class SalaoHandler : EntityHandler<Salao>
         WHERE IdSalao = @IdSalao";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", Salao.Nome);
-            command.Parameters.AddWithValue("@Responsavel", Salao.Responsavel);
-            command.Parameters.AddWithValue("@Email", Salao.Email);
-            command.Parameters.AddWithValue("@Telefone", Salao.Telefone);
-            command.Parameters.AddWithValue("@Endereco", Salao.Endereco);
-            command.Parameters.AddWithValue("@CNPJ", Salao.CNPJ);
-            command.Parameters.AddWithValue("@Status", Salao.Status);
-            command.Parameters.AddWithValue("@DataCadastro", Salao.DataCadastro);
-            command.Parameters.AddWithValue("@Observacao", (object)Salao.Observacao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@IdSalao", Salao.IdSalao);
+            command.AddWithValue("@Nome", Salao.Nome);
+            command.AddWithValue("@Responsavel", Salao.Responsavel);
+            command.AddWithValue("@Email", Salao.Email);
+            command.AddWithValue("@Telefone", Salao.Telefone);
+            command.AddWithValue("@Endereco", Salao.Endereco);
+            command.AddWithValue("@CNPJ", Salao.CNPJ);
+            command.AddWithValue("@Status", Salao.Status);
+            command.AddWithValue("@DataCadastro", Salao.DataCadastro);
+            command.AddWithValue("@Observacao", (object)Salao.Observacao ?? DBNull.Value);
+            command.AddWithValue("@IdSalao", Salao.IdSalao);
             command.ExecuteNonQuery();
         }
     }
@@ -487,6 +493,7 @@ public class SalaoHandler : EntityHandler<Salao>
 
 public class AdministradorHandler : EntityHandler<Administrador>
 {
+    public AdministradorHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     public int CadastrarAdministrador(Administrador admin)
     {
         int novoId = 0;
@@ -498,14 +505,14 @@ public class AdministradorHandler : EntityHandler<Administrador>
                 SELECT SCOPE_IDENTITY();";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", admin.Nome);
-            command.Parameters.AddWithValue("@Email", admin.Email);
-            command.Parameters.AddWithValue("@Senha", admin.Senha);
-            command.Parameters.AddWithValue("@Perfil", admin.Perfil);
-            command.Parameters.AddWithValue("@Status", admin.Status);
-            command.Parameters.AddWithValue("@DataCriacao", admin.DataCriacao);
+            command.AddWithValue("@Nome", admin.Nome);
+            command.AddWithValue("@Email", admin.Email);
+            command.AddWithValue("@Senha", admin.Senha);
+            command.AddWithValue("@Perfil", admin.Perfil);
+            command.AddWithValue("@Status", admin.Status);
+            command.AddWithValue("@DataCriacao", admin.DataCriacao);
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
             {
@@ -524,7 +531,7 @@ public class AdministradorHandler : EntityHandler<Administrador>
         var admins = new List<Administrador>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
             using (var reader = command.ExecuteReader())
             {
@@ -551,10 +558,10 @@ public class AdministradorHandler : EntityHandler<Administrador>
         string status = ativar ? "Ativo" : "Inativo";
         string query = "UPDATE CorteCor_Administrador SET Status = @Status WHERE IdUsuario = @IdUsuario";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Status", status);
-            command.Parameters.AddWithValue("@IdUsuario", id);
+            command.AddWithValue("@Status", status);
+            command.AddWithValue("@IdUsuario", id);
             command.ExecuteNonQuery();
         }
     }
@@ -563,9 +570,9 @@ public class AdministradorHandler : EntityHandler<Administrador>
     {
         string query = "DELETE FROM CorteCor_Administrador WHERE IdUsuario = @IdUsuario";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdUsuario", id);
+            command.AddWithValue("@IdUsuario", id);
             command.ExecuteNonQuery();
         }
     }
@@ -582,15 +589,15 @@ public class AdministradorHandler : EntityHandler<Administrador>
                     DataCriacao = @DataCriacao
                 WHERE IdUsuario = @IdUsuario";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", admin.Nome);
-            command.Parameters.AddWithValue("@Email", admin.Email);
-            command.Parameters.AddWithValue("@Senha", admin.Senha);
-            command.Parameters.AddWithValue("@Perfil", admin.Perfil);
-            command.Parameters.AddWithValue("@Status", admin.Status);
-            command.Parameters.AddWithValue("@DataCriacao", admin.DataCriacao);
-            command.Parameters.AddWithValue("@IdUsuario", admin.IdUsuario);
+            command.AddWithValue("@Nome", admin.Nome);
+            command.AddWithValue("@Email", admin.Email);
+            command.AddWithValue("@Senha", admin.Senha);
+            command.AddWithValue("@Perfil", admin.Perfil);
+            command.AddWithValue("@Status", admin.Status);
+            command.AddWithValue("@DataCriacao", admin.DataCriacao);
+            command.AddWithValue("@IdUsuario", admin.IdUsuario);
             command.ExecuteNonQuery();
         }
     }
@@ -606,6 +613,7 @@ public class AdministradorHandler : EntityHandler<Administrador>
 // ===============================
 public class PessoaFichaHandler : EntityHandler<PessoaFicha>
 {
+    public PessoaFichaHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     public int CadastrarPessoa(PessoaFicha pessoa)
     {
         int novoId = 0;
@@ -623,46 +631,46 @@ public class PessoaFichaHandler : EntityHandler<PessoaFicha>
                         @ConjugeProfissao, @ConjugeGrauInstrucao, @ConjugeIletrado, @ConjugeEmpresa, @ConjugeCarteiraAssinada, @ConjugeRendaMensal);
                         SELECT SCOPE_IDENTITY();";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@FichaID", pessoa.FichaID);
-            command.Parameters.AddWithValue("@Nome", (object)pessoa.Nome ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Filiacao", (object)pessoa.Filiacao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@RG", (object)pessoa.RG ?? DBNull.Value);
-            command.Parameters.AddWithValue("@CPF", (object)pessoa.CPF ?? DBNull.Value);
-            command.Parameters.AddWithValue("@DataNascimento", (object)pessoa.DataNascimento ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Nacionalidade", (object)pessoa.Nacionalidade ?? DBNull.Value);
-            command.Parameters.AddWithValue("@NIS", (object)pessoa.NIS ?? DBNull.Value);
-            command.Parameters.AddWithValue("@EstadoCivil", (object)pessoa.EstadoCivil ?? DBNull.Value);
-            command.Parameters.AddWithValue("@RegimeCasamento", (object)pessoa.RegimeCasamento ?? DBNull.Value);
-            command.Parameters.AddWithValue("@SituacaoProfissional", (object)pessoa.SituacaoProfissional ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Profissao", (object)pessoa.Profissao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@GrauInstrucao", (object)pessoa.GrauInstrucao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Iletrado", (object)pessoa.Iletrado ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Empresa", (object)pessoa.Empresa ?? DBNull.Value);
-            command.Parameters.AddWithValue("@CarteiraAssinada", (object)pessoa.CarteiraAssinada ?? DBNull.Value);
-            command.Parameters.AddWithValue("@RendaMensal", (object)pessoa.RendaMensal ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Endereco", (object)pessoa.Endereco ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Quadra", (object)pessoa.Quadra ?? DBNull.Value);
-            command.Parameters.AddWithValue("@PontoReferencia", (object)pessoa.PontoReferencia ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Bairro", (object)pessoa.Bairro ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Lote", (object)pessoa.Lote ?? DBNull.Value);
-            command.Parameters.AddWithValue("@MunicipioResidencia", pessoa.MunicipioResidencia);
-            command.Parameters.AddWithValue("@Telefone", (object)pessoa.Telefone ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Celular", (object)pessoa.Celular ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeNome", (object)pessoa.ConjugeNome ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeFiliacao", (object)pessoa.ConjugeFiliacao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeRG", (object)pessoa.ConjugeRG ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeCPF", (object)pessoa.ConjugeCPF ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeIdade", (object)pessoa.ConjugeIdade ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeNacionalidade", (object)pessoa.ConjugeNacionalidade ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeSituacaoProfissional", (object)pessoa.ConjugeSituacaoProfissional ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeProfissao", (object)pessoa.ConjugeProfissao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeGrauInstrucao", (object)pessoa.ConjugeGrauInstrucao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeIletrado", (object)pessoa.ConjugeIletrado ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeEmpresa", (object)pessoa.ConjugeEmpresa ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeCarteiraAssinada", (object)pessoa.ConjugeCarteiraAssinada ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeRendaMensal", (object)pessoa.ConjugeRendaMensal ?? DBNull.Value);
+            command.AddWithValue("@FichaID", pessoa.FichaID);
+            command.AddWithValue("@Nome", (object)pessoa.Nome ?? DBNull.Value);
+            command.AddWithValue("@Filiacao", (object)pessoa.Filiacao ?? DBNull.Value);
+            command.AddWithValue("@RG", (object)pessoa.RG ?? DBNull.Value);
+            command.AddWithValue("@CPF", (object)pessoa.CPF ?? DBNull.Value);
+            command.AddWithValue("@DataNascimento", (object)pessoa.DataNascimento ?? DBNull.Value);
+            command.AddWithValue("@Nacionalidade", (object)pessoa.Nacionalidade ?? DBNull.Value);
+            command.AddWithValue("@NIS", (object)pessoa.NIS ?? DBNull.Value);
+            command.AddWithValue("@EstadoCivil", (object)pessoa.EstadoCivil ?? DBNull.Value);
+            command.AddWithValue("@RegimeCasamento", (object)pessoa.RegimeCasamento ?? DBNull.Value);
+            command.AddWithValue("@SituacaoProfissional", (object)pessoa.SituacaoProfissional ?? DBNull.Value);
+            command.AddWithValue("@Profissao", (object)pessoa.Profissao ?? DBNull.Value);
+            command.AddWithValue("@GrauInstrucao", (object)pessoa.GrauInstrucao ?? DBNull.Value);
+            command.AddWithValue("@Iletrado", (object)pessoa.Iletrado ?? DBNull.Value);
+            command.AddWithValue("@Empresa", (object)pessoa.Empresa ?? DBNull.Value);
+            command.AddWithValue("@CarteiraAssinada", (object)pessoa.CarteiraAssinada ?? DBNull.Value);
+            command.AddWithValue("@RendaMensal", (object)pessoa.RendaMensal ?? DBNull.Value);
+            command.AddWithValue("@Endereco", (object)pessoa.Endereco ?? DBNull.Value);
+            command.AddWithValue("@Quadra", (object)pessoa.Quadra ?? DBNull.Value);
+            command.AddWithValue("@PontoReferencia", (object)pessoa.PontoReferencia ?? DBNull.Value);
+            command.AddWithValue("@Bairro", (object)pessoa.Bairro ?? DBNull.Value);
+            command.AddWithValue("@Lote", (object)pessoa.Lote ?? DBNull.Value);
+            command.AddWithValue("@MunicipioResidencia", pessoa.MunicipioResidencia);
+            command.AddWithValue("@Telefone", (object)pessoa.Telefone ?? DBNull.Value);
+            command.AddWithValue("@Celular", (object)pessoa.Celular ?? DBNull.Value);
+            command.AddWithValue("@ConjugeNome", (object)pessoa.ConjugeNome ?? DBNull.Value);
+            command.AddWithValue("@ConjugeFiliacao", (object)pessoa.ConjugeFiliacao ?? DBNull.Value);
+            command.AddWithValue("@ConjugeRG", (object)pessoa.ConjugeRG ?? DBNull.Value);
+            command.AddWithValue("@ConjugeCPF", (object)pessoa.ConjugeCPF ?? DBNull.Value);
+            command.AddWithValue("@ConjugeIdade", (object)pessoa.ConjugeIdade ?? DBNull.Value);
+            command.AddWithValue("@ConjugeNacionalidade", (object)pessoa.ConjugeNacionalidade ?? DBNull.Value);
+            command.AddWithValue("@ConjugeSituacaoProfissional", (object)pessoa.ConjugeSituacaoProfissional ?? DBNull.Value);
+            command.AddWithValue("@ConjugeProfissao", (object)pessoa.ConjugeProfissao ?? DBNull.Value);
+            command.AddWithValue("@ConjugeGrauInstrucao", (object)pessoa.ConjugeGrauInstrucao ?? DBNull.Value);
+            command.AddWithValue("@ConjugeIletrado", (object)pessoa.ConjugeIletrado ?? DBNull.Value);
+            command.AddWithValue("@ConjugeEmpresa", (object)pessoa.ConjugeEmpresa ?? DBNull.Value);
+            command.AddWithValue("@ConjugeCarteiraAssinada", (object)pessoa.ConjugeCarteiraAssinada ?? DBNull.Value);
+            command.AddWithValue("@ConjugeRendaMensal", (object)pessoa.ConjugeRendaMensal ?? DBNull.Value);
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
             {
@@ -683,7 +691,7 @@ public class PessoaFichaHandler : EntityHandler<PessoaFicha>
                         ORDER BY Nome";
         List<PessoaFicha> pessoas = new List<PessoaFicha>();
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
             using (var reader = command.ExecuteReader())
             {
@@ -741,9 +749,9 @@ public class PessoaFichaHandler : EntityHandler<PessoaFicha>
     {
         string query = "DELETE FROM CorteCor_PessoaFicha WHERE PessoaID = @PessoaID";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@PessoaID", id);
+            command.AddWithValue("@PessoaID", id);
             command.ExecuteNonQuery();
         }
     }
@@ -790,46 +798,46 @@ public class PessoaFichaHandler : EntityHandler<PessoaFicha>
                             ConjugeRendaMensal = @ConjugeRendaMensal
                             WHERE FichaID = @FichaID";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", (object)pessoa.Nome ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Filiacao", (object)pessoa.Filiacao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@RG", (object)pessoa.RG ?? DBNull.Value);
-            command.Parameters.AddWithValue("@CPF", (object)pessoa.CPF ?? DBNull.Value);
-            command.Parameters.AddWithValue("@DataNascimento", (object)pessoa.DataNascimento ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Nacionalidade", (object)pessoa.Nacionalidade ?? DBNull.Value);
-            command.Parameters.AddWithValue("@NIS", (object)pessoa.NIS ?? DBNull.Value);
-            command.Parameters.AddWithValue("@EstadoCivil", (object)pessoa.EstadoCivil ?? DBNull.Value);
-            command.Parameters.AddWithValue("@RegimeCasamento", (object)pessoa.RegimeCasamento ?? DBNull.Value);
-            command.Parameters.AddWithValue("@SituacaoProfissional", (object)pessoa.SituacaoProfissional ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Profissao", (object)pessoa.Profissao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@GrauInstrucao", (object)pessoa.GrauInstrucao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Iletrado", (object)pessoa.Iletrado ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Empresa", (object)pessoa.Empresa ?? DBNull.Value);
-            command.Parameters.AddWithValue("@CarteiraAssinada", (object)pessoa.CarteiraAssinada ?? DBNull.Value);
-            command.Parameters.AddWithValue("@RendaMensal", (object)pessoa.RendaMensal ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Endereco", (object)pessoa.Endereco ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Quadra", (object)pessoa.Quadra ?? DBNull.Value);
-            command.Parameters.AddWithValue("@PontoReferencia", (object)pessoa.PontoReferencia ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Bairro", (object)pessoa.Bairro ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Lote", (object)pessoa.Lote ?? DBNull.Value);
-            command.Parameters.AddWithValue("@MunicipioResidencia", (object)pessoa.MunicipioResidencia ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Telefone", (object)pessoa.Telefone ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Celular", (object)pessoa.Celular ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeNome", (object)pessoa.ConjugeNome ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeFiliacao", (object)pessoa.ConjugeFiliacao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeRG", (object)pessoa.ConjugeRG ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeCPF", (object)pessoa.ConjugeCPF ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeIdade", (object)pessoa.ConjugeIdade ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeNacionalidade", (object)pessoa.ConjugeNacionalidade ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeSituacaoProfissional", (object)pessoa.ConjugeSituacaoProfissional ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeProfissao", (object)pessoa.ConjugeProfissao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeGrauInstrucao", (object)pessoa.ConjugeGrauInstrucao ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeIletrado", (object)pessoa.ConjugeIletrado ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeEmpresa", (object)pessoa.ConjugeEmpresa ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeCarteiraAssinada", (object)pessoa.ConjugeCarteiraAssinada ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConjugeRendaMensal", (object)pessoa.ConjugeRendaMensal ?? DBNull.Value);
-            command.Parameters.AddWithValue("@FichaID", pessoa.FichaID);
+            command.AddWithValue("@Nome", (object)pessoa.Nome ?? DBNull.Value);
+            command.AddWithValue("@Filiacao", (object)pessoa.Filiacao ?? DBNull.Value);
+            command.AddWithValue("@RG", (object)pessoa.RG ?? DBNull.Value);
+            command.AddWithValue("@CPF", (object)pessoa.CPF ?? DBNull.Value);
+            command.AddWithValue("@DataNascimento", (object)pessoa.DataNascimento ?? DBNull.Value);
+            command.AddWithValue("@Nacionalidade", (object)pessoa.Nacionalidade ?? DBNull.Value);
+            command.AddWithValue("@NIS", (object)pessoa.NIS ?? DBNull.Value);
+            command.AddWithValue("@EstadoCivil", (object)pessoa.EstadoCivil ?? DBNull.Value);
+            command.AddWithValue("@RegimeCasamento", (object)pessoa.RegimeCasamento ?? DBNull.Value);
+            command.AddWithValue("@SituacaoProfissional", (object)pessoa.SituacaoProfissional ?? DBNull.Value);
+            command.AddWithValue("@Profissao", (object)pessoa.Profissao ?? DBNull.Value);
+            command.AddWithValue("@GrauInstrucao", (object)pessoa.GrauInstrucao ?? DBNull.Value);
+            command.AddWithValue("@Iletrado", (object)pessoa.Iletrado ?? DBNull.Value);
+            command.AddWithValue("@Empresa", (object)pessoa.Empresa ?? DBNull.Value);
+            command.AddWithValue("@CarteiraAssinada", (object)pessoa.CarteiraAssinada ?? DBNull.Value);
+            command.AddWithValue("@RendaMensal", (object)pessoa.RendaMensal ?? DBNull.Value);
+            command.AddWithValue("@Endereco", (object)pessoa.Endereco ?? DBNull.Value);
+            command.AddWithValue("@Quadra", (object)pessoa.Quadra ?? DBNull.Value);
+            command.AddWithValue("@PontoReferencia", (object)pessoa.PontoReferencia ?? DBNull.Value);
+            command.AddWithValue("@Bairro", (object)pessoa.Bairro ?? DBNull.Value);
+            command.AddWithValue("@Lote", (object)pessoa.Lote ?? DBNull.Value);
+            command.AddWithValue("@MunicipioResidencia", (object)pessoa.MunicipioResidencia ?? DBNull.Value);
+            command.AddWithValue("@Telefone", (object)pessoa.Telefone ?? DBNull.Value);
+            command.AddWithValue("@Celular", (object)pessoa.Celular ?? DBNull.Value);
+            command.AddWithValue("@ConjugeNome", (object)pessoa.ConjugeNome ?? DBNull.Value);
+            command.AddWithValue("@ConjugeFiliacao", (object)pessoa.ConjugeFiliacao ?? DBNull.Value);
+            command.AddWithValue("@ConjugeRG", (object)pessoa.ConjugeRG ?? DBNull.Value);
+            command.AddWithValue("@ConjugeCPF", (object)pessoa.ConjugeCPF ?? DBNull.Value);
+            command.AddWithValue("@ConjugeIdade", (object)pessoa.ConjugeIdade ?? DBNull.Value);
+            command.AddWithValue("@ConjugeNacionalidade", (object)pessoa.ConjugeNacionalidade ?? DBNull.Value);
+            command.AddWithValue("@ConjugeSituacaoProfissional", (object)pessoa.ConjugeSituacaoProfissional ?? DBNull.Value);
+            command.AddWithValue("@ConjugeProfissao", (object)pessoa.ConjugeProfissao ?? DBNull.Value);
+            command.AddWithValue("@ConjugeGrauInstrucao", (object)pessoa.ConjugeGrauInstrucao ?? DBNull.Value);
+            command.AddWithValue("@ConjugeIletrado", (object)pessoa.ConjugeIletrado ?? DBNull.Value);
+            command.AddWithValue("@ConjugeEmpresa", (object)pessoa.ConjugeEmpresa ?? DBNull.Value);
+            command.AddWithValue("@ConjugeCarteiraAssinada", (object)pessoa.ConjugeCarteiraAssinada ?? DBNull.Value);
+            command.AddWithValue("@ConjugeRendaMensal", (object)pessoa.ConjugeRendaMensal ?? DBNull.Value);
+            command.AddWithValue("@FichaID", pessoa.FichaID);
             command.ExecuteNonQuery();
         }
     }
@@ -848,6 +856,7 @@ public class PessoaFichaHandler : EntityHandler<PessoaFicha>
 
 public class FuncionarioHandler : EntityHandler<Funcionario>
 {
+    public FuncionarioHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     public int CadastrarFuncionario(Funcionario funcionario)
     {
         int novoId = 0;
@@ -876,39 +885,39 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
         SELECT SCOPE_IDENTITY();";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", funcionario.Nome ?? "");
+            command.AddWithValue("@Nome", funcionario.Nome ?? "");
 
-            command.Parameters.AddWithValue("@seg", funcionario.seg);
-            command.Parameters.AddWithValue("@seg_ini", (object?)funcionario.seg_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@seg_fim", (object?)funcionario.seg_fim ?? DBNull.Value);
+            command.AddWithValue("@seg", funcionario.seg);
+            command.AddWithValue("@seg_ini", (object?)funcionario.seg_ini ?? DBNull.Value);
+            command.AddWithValue("@seg_fim", (object?)funcionario.seg_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@ter", funcionario.ter);
-            command.Parameters.AddWithValue("@ter_ini", (object?)funcionario.ter_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ter_fim", (object?)funcionario.ter_fim ?? DBNull.Value);
+            command.AddWithValue("@ter", funcionario.ter);
+            command.AddWithValue("@ter_ini", (object?)funcionario.ter_ini ?? DBNull.Value);
+            command.AddWithValue("@ter_fim", (object?)funcionario.ter_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@qua", funcionario.qua);
-            command.Parameters.AddWithValue("@qua_ini", (object?)funcionario.qua_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@qua_fim", (object?)funcionario.qua_fim ?? DBNull.Value);
+            command.AddWithValue("@qua", funcionario.qua);
+            command.AddWithValue("@qua_ini", (object?)funcionario.qua_ini ?? DBNull.Value);
+            command.AddWithValue("@qua_fim", (object?)funcionario.qua_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@qui", funcionario.qui);
-            command.Parameters.AddWithValue("@qui_ini", (object?)funcionario.qui_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@qui_fim", (object?)funcionario.qui_fim ?? DBNull.Value);
+            command.AddWithValue("@qui", funcionario.qui);
+            command.AddWithValue("@qui_ini", (object?)funcionario.qui_ini ?? DBNull.Value);
+            command.AddWithValue("@qui_fim", (object?)funcionario.qui_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@sex", funcionario.sex);
-            command.Parameters.AddWithValue("@sex_ini", (object?)funcionario.sex_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@sex_fim", (object?)funcionario.sex_fim ?? DBNull.Value);
+            command.AddWithValue("@sex", funcionario.sex);
+            command.AddWithValue("@sex_ini", (object?)funcionario.sex_ini ?? DBNull.Value);
+            command.AddWithValue("@sex_fim", (object?)funcionario.sex_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@sab", funcionario.sab);
-            command.Parameters.AddWithValue("@sab_ini", (object?)funcionario.sab_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@sab_fim", (object?)funcionario.sab_fim ?? DBNull.Value);
+            command.AddWithValue("@sab", funcionario.sab);
+            command.AddWithValue("@sab_ini", (object?)funcionario.sab_ini ?? DBNull.Value);
+            command.AddWithValue("@sab_fim", (object?)funcionario.sab_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@dom", funcionario.dom);
-            command.Parameters.AddWithValue("@dom_ini", (object?)funcionario.dom_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@dom_fim", (object?)funcionario.dom_fim ?? DBNull.Value);
+            command.AddWithValue("@dom", funcionario.dom);
+            command.AddWithValue("@dom_ini", (object?)funcionario.dom_ini ?? DBNull.Value);
+            command.AddWithValue("@dom_fim", (object?)funcionario.dom_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@IdSalao", funcionario.IdSalao);
+            command.AddWithValue("@IdSalao", funcionario.IdSalao);
 
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
@@ -934,9 +943,9 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
         WHERE IdFuncionario = @IdFuncionario;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1000,9 +1009,9 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
         var funcionarios = new List<Funcionario>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@IdSalao", idSalao);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1066,40 +1075,40 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
         WHERE IdFuncionario = @IdFuncionario;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", funcionario.Nome ?? "");
+            command.AddWithValue("@Nome", funcionario.Nome ?? "");
 
-            command.Parameters.AddWithValue("@seg", funcionario.seg);
-            command.Parameters.AddWithValue("@seg_ini", (object?)funcionario.seg_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@seg_fim", (object?)funcionario.seg_fim ?? DBNull.Value);
+            command.AddWithValue("@seg", funcionario.seg);
+            command.AddWithValue("@seg_ini", (object?)funcionario.seg_ini ?? DBNull.Value);
+            command.AddWithValue("@seg_fim", (object?)funcionario.seg_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@ter", funcionario.ter);
-            command.Parameters.AddWithValue("@ter_ini", (object?)funcionario.ter_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ter_fim", (object?)funcionario.ter_fim ?? DBNull.Value);
+            command.AddWithValue("@ter", funcionario.ter);
+            command.AddWithValue("@ter_ini", (object?)funcionario.ter_ini ?? DBNull.Value);
+            command.AddWithValue("@ter_fim", (object?)funcionario.ter_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@qua", funcionario.qua);
-            command.Parameters.AddWithValue("@qua_ini", (object?)funcionario.qua_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@qua_fim", (object?)funcionario.qua_fim ?? DBNull.Value);
+            command.AddWithValue("@qua", funcionario.qua);
+            command.AddWithValue("@qua_ini", (object?)funcionario.qua_ini ?? DBNull.Value);
+            command.AddWithValue("@qua_fim", (object?)funcionario.qua_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@qui", funcionario.qui);
-            command.Parameters.AddWithValue("@qui_ini", (object?)funcionario.qui_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@qui_fim", (object?)funcionario.qui_fim ?? DBNull.Value);
+            command.AddWithValue("@qui", funcionario.qui);
+            command.AddWithValue("@qui_ini", (object?)funcionario.qui_ini ?? DBNull.Value);
+            command.AddWithValue("@qui_fim", (object?)funcionario.qui_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@sex", funcionario.sex);
-            command.Parameters.AddWithValue("@sex_ini", (object?)funcionario.sex_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@sex_fim", (object?)funcionario.sex_fim ?? DBNull.Value);
+            command.AddWithValue("@sex", funcionario.sex);
+            command.AddWithValue("@sex_ini", (object?)funcionario.sex_ini ?? DBNull.Value);
+            command.AddWithValue("@sex_fim", (object?)funcionario.sex_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@sab", funcionario.sab);
-            command.Parameters.AddWithValue("@sab_ini", (object?)funcionario.sab_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@sab_fim", (object?)funcionario.sab_fim ?? DBNull.Value);
+            command.AddWithValue("@sab", funcionario.sab);
+            command.AddWithValue("@sab_ini", (object?)funcionario.sab_ini ?? DBNull.Value);
+            command.AddWithValue("@sab_fim", (object?)funcionario.sab_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@dom", funcionario.dom);
-            command.Parameters.AddWithValue("@dom_ini", (object?)funcionario.dom_ini ?? DBNull.Value);
-            command.Parameters.AddWithValue("@dom_fim", (object?)funcionario.dom_fim ?? DBNull.Value);
+            command.AddWithValue("@dom", funcionario.dom);
+            command.AddWithValue("@dom_ini", (object?)funcionario.dom_ini ?? DBNull.Value);
+            command.AddWithValue("@dom_fim", (object?)funcionario.dom_fim ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@IdSalao", funcionario.IdSalao);
-            command.Parameters.AddWithValue("@IdFuncionario", funcionario.IdFuncionario);
+            command.AddWithValue("@IdSalao", funcionario.IdSalao);
+            command.AddWithValue("@IdFuncionario", funcionario.IdFuncionario);
 
             command.ExecuteNonQuery();
         }
@@ -1111,9 +1120,9 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
     {
         string query = "DELETE FROM CorteCor_Funcionario WHERE IdFuncionario = @IdFuncionario";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", id);
+            command.AddWithValue("@IdFuncionario", id);
             command.ExecuteNonQuery();
         }
     }
@@ -1131,26 +1140,29 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
 
 public class ServicoHandler : EntityHandler<Servico>
 {
+    public ServicoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler)
+    {
+    }
+
     public int CadastrarServico(Servico servico)
     {
         int novoId = 0;
 
         string query = @"
         INSERT INTO CorteCor_Servico
-            (Nome, Preco, Duracao, Cor, IdSalao)
+            (Nome, Preco, Duracao, IdSalao)
         VALUES
-            (@Nome, @Preco, @Duracao, @Cor, @IdSalao);
+            (@Nome, @Preco, @Duracao, @IdSalao);
         SELECT SCOPE_IDENTITY();
 ";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", servico.Nome ?? "");
-            command.Parameters.AddWithValue("@Preco", servico.Preco);
-            command.Parameters.AddWithValue("@Cor", servico.Cor ?? "");
-            command.Parameters.AddWithValue("@Duracao", servico.Duracao);
-            command.Parameters.AddWithValue("@IdSalao", servico.IdSalao);
+            command.AddWithValue("@Nome", servico.Nome ?? "");
+            command.AddWithValue("@Preco", servico.Preco);
+            command.AddWithValue("@Duracao", servico.Duracao);
+            command.AddWithValue("@IdSalao", servico.IdSalao);
 
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
@@ -1165,14 +1177,14 @@ public class ServicoHandler : EntityHandler<Servico>
     public Servico ObterPorId(int idServico)
     {
         string query = @"
-        SELECT IdServico, Nome, Preco, Duracao, Cor, IdSalao
+        SELECT IdServico, Nome, Preco, Duracao, IdSalao
         FROM CorteCor_Servico
         WHERE IdServico = @IdServico;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdServico", idServico);
+            command.AddWithValue("@IdServico", idServico);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1184,7 +1196,6 @@ public class ServicoHandler : EntityHandler<Servico>
                     Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
                     Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
                     Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
-                    Cor = reader["Cor"] is DBNull ? "" : reader["Cor"].ToString(),
                     IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"])
                 };
             }
@@ -1194,14 +1205,14 @@ public class ServicoHandler : EntityHandler<Servico>
     public override List<Servico> Listar()
     {
         string query = @"
-        SELECT IdServico, Nome, Preco, Duracao, Cor, IdSalao
+        SELECT IdServico, Nome, Preco, Duracao, IdSalao
         FROM CorteCor_Servico
         ORDER BY Nome;";
 
         var servicos = new List<Servico>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
@@ -1212,7 +1223,6 @@ public class ServicoHandler : EntityHandler<Servico>
                     Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
                     Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
                     Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
-                    Cor = reader["Cor"] is DBNull ? "" : reader["Cor"].ToString(),
                     IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"])
                 });
             }
@@ -1224,7 +1234,7 @@ public class ServicoHandler : EntityHandler<Servico>
     public List<Servico> ListarPorSalao(int idSalao)
     {
         string query = @"
-        SELECT IdServico, Nome, Preco, Duracao, Cor, IdSalao
+        SELECT IdServico, Nome, Preco, Duracao, IdSalao
         FROM CorteCor_Servico
         WHERE IdSalao = @IdSalao
         ORDER BY Nome;";
@@ -1232,9 +1242,9 @@ public class ServicoHandler : EntityHandler<Servico>
         var servicos = new List<Servico>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@IdSalao", idSalao);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1246,7 +1256,6 @@ public class ServicoHandler : EntityHandler<Servico>
                         Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
                         Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
                         Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
-                        Cor = reader["Cor"] is DBNull ? "" : reader["Cor"].ToString(),
                         IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"])
                     });
                 }
@@ -1263,19 +1272,17 @@ public class ServicoHandler : EntityHandler<Servico>
         SET Nome = @Nome,
             Preco = @Preco,
             Duracao = @Duracao,
-            Cor = @Cor,
             IdSalao = @IdSalao
         WHERE IdServico = @IdServico;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", servico.Nome ?? "");
-            command.Parameters.AddWithValue("@Preco", servico.Preco);
-            command.Parameters.AddWithValue("@Duracao", servico.Duracao);
-            command.Parameters.AddWithValue("@Cor", servico.Cor ?? "");
-            command.Parameters.AddWithValue("@IdSalao", servico.IdSalao);
-            command.Parameters.AddWithValue("@IdServico", servico.IdServico);
+            command.AddWithValue("@Nome", servico.Nome ?? "");
+            command.AddWithValue("@Preco", servico.Preco);
+            command.AddWithValue("@Duracao", servico.Duracao);
+            command.AddWithValue("@IdSalao", servico.IdSalao);
+            command.AddWithValue("@IdServico", servico.IdServico);
 
             command.ExecuteNonQuery();
         }
@@ -1286,17 +1293,17 @@ public class ServicoHandler : EntityHandler<Servico>
         string query = "DELETE FROM CorteCor_Servico WHERE IdServico = @IdServico";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdServico", id);
+            command.AddWithValue("@IdServico", id);
             command.ExecuteNonQuery();
         }
     }
 
-    // Esta tabela não tem Status. Mantive o método para bater com a base EntityHandler<T>.
+    // Esta tabela nÃ£o tem Status. Mantive o mÃ©todo para bater com a base EntityHandler<T>.
     public override void AtivarDesativar(int id, bool ativar)
     {
-        throw new NotSupportedException("CorteCor_Servico não possui campo Status.");
+        throw new NotSupportedException("CorteCor_Servico nÃ£o possui campo Status.");
     }
 
     public override void Cadastrar(Servico entity)
@@ -1308,6 +1315,7 @@ public class ServicoHandler : EntityHandler<Servico>
 
 public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
 {
+    public FuncionarioServicoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     /// <summary>
     /// Vincula um serviço a um funcionário (N:N).
     /// </summary>
@@ -1318,10 +1326,10 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         VALUES (@IdFuncionario, @IdServico);";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            command.Parameters.AddWithValue("@IdServico", idServico);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@IdServico", idServico);
             command.ExecuteNonQuery();
         }
     }
@@ -1336,10 +1344,10 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         WHERE IdFuncionario = @IdFuncionario AND IdServico = @IdServico;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            command.Parameters.AddWithValue("@IdServico", idServico);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@IdServico", idServico);
             command.ExecuteNonQuery();
         }
     }
@@ -1357,7 +1365,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         var itens = new List<FuncionarioServico>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
@@ -1387,9 +1395,9 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         var servicos = new List<int>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1417,9 +1425,9 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         var funcionarios = new List<int>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdServico", idServico);
+            command.AddWithValue("@IdServico", idServico);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1441,9 +1449,9 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         string query = "DELETE FROM CorteCor_Funcionario_Servico WHERE IdFuncionario = @IdFuncionario;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
             command.ExecuteNonQuery();
         }
     }
@@ -1456,9 +1464,9 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         string query = "DELETE FROM CorteCor_Funcionario_Servico WHERE IdServico = @IdServico;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdServico", idServico);
+            command.AddWithValue("@IdServico", idServico);
             command.ExecuteNonQuery();
         }
     }
@@ -1487,9 +1495,9 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
                 WHERE IdFuncionario = @IdFuncionario";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
             command.ExecuteNonQuery();
         }
     }
@@ -1505,9 +1513,9 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         var lista = new List<FuncionarioServico>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1532,10 +1540,10 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     //            VALUES (@IdFuncionario, @IdServico)";
 
     //    using (var connection = _dbHandler.GetConnection())
-    //    using (var command = new SqlCommand(query, connection))
+    //    using (var command = connection.CreateCommand(query))
     //    {
-    //        command.Parameters.AddWithValue("@IdFuncionario", entity.IdFuncionario);
-    //        command.Parameters.AddWithValue("@IdServico", entity.IdServico);
+    //        command.AddWithValue("@IdFuncionario", entity.IdFuncionario);
+    //        command.AddWithValue("@IdServico", entity.IdServico);
     //        command.ExecuteNonQuery();
     //    }
     //}
@@ -1546,6 +1554,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
 
 public class PessoaHandler : EntityHandler<Pessoa>
 {
+    public PessoaHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     public int CadastrarPessoa(Pessoa pessoa)
     {
         int novoId = 0;
@@ -1558,23 +1567,23 @@ public class PessoaHandler : EntityHandler<Pessoa>
         SELECT SCOPE_IDENTITY();";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", pessoa.Nome ?? "");
+            command.AddWithValue("@Nome", pessoa.Nome ?? "");
 
-            command.Parameters.AddWithValue("@Telefone", string.IsNullOrWhiteSpace(pessoa.Telefone)
+            command.AddWithValue("@Telefone", string.IsNullOrWhiteSpace(pessoa.Telefone)
                 ? (object)DBNull.Value
                 : pessoa.Telefone);
 
-            command.Parameters.AddWithValue("@Email", string.IsNullOrWhiteSpace(pessoa.Email)
+            command.AddWithValue("@Email", string.IsNullOrWhiteSpace(pessoa.Email)
                 ? (object)DBNull.Value
                 : pessoa.Email);
 
-            command.Parameters.AddWithValue("@DataNascimento", pessoa.DataNascimento.HasValue
+            command.AddWithValue("@DataNascimento", pessoa.DataNascimento.HasValue
                 ? (object)pessoa.DataNascimento.Value.Date
                 : DBNull.Value);
 
-            command.Parameters.AddWithValue("@IdSalao", pessoa.IdSalao);
+            command.AddWithValue("@IdSalao", pessoa.IdSalao);
 
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
@@ -1592,9 +1601,9 @@ public class PessoaHandler : EntityHandler<Pessoa>
         WHERE IdPessoa = @IdPessoa;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdPessoa", idPessoa);
+            command.AddWithValue("@IdPessoa", idPessoa);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1623,7 +1632,7 @@ public class PessoaHandler : EntityHandler<Pessoa>
         var pessoas = new List<Pessoa>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
@@ -1654,9 +1663,9 @@ public class PessoaHandler : EntityHandler<Pessoa>
         var pessoas = new List<Pessoa>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@IdSalao", idSalao);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1690,24 +1699,24 @@ public class PessoaHandler : EntityHandler<Pessoa>
         WHERE IdPessoa = @IdPessoa;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", pessoa.Nome ?? "");
+            command.AddWithValue("@Nome", pessoa.Nome ?? "");
 
-            command.Parameters.AddWithValue("@Telefone", string.IsNullOrWhiteSpace(pessoa.Telefone)
+            command.AddWithValue("@Telefone", string.IsNullOrWhiteSpace(pessoa.Telefone)
                 ? (object)DBNull.Value
                 : pessoa.Telefone);
 
-            command.Parameters.AddWithValue("@Email", string.IsNullOrWhiteSpace(pessoa.Email)
+            command.AddWithValue("@Email", string.IsNullOrWhiteSpace(pessoa.Email)
                 ? (object)DBNull.Value
                 : pessoa.Email);
 
-            command.Parameters.AddWithValue("@DataNascimento", pessoa.DataNascimento.HasValue
+            command.AddWithValue("@DataNascimento", pessoa.DataNascimento.HasValue
                 ? (object)pessoa.DataNascimento.Value.Date
                 : DBNull.Value);
 
-            command.Parameters.AddWithValue("@IdSalao", pessoa.IdSalao);
-            command.Parameters.AddWithValue("@IdPessoa", pessoa.IdPessoa);
+            command.AddWithValue("@IdSalao", pessoa.IdSalao);
+            command.AddWithValue("@IdPessoa", pessoa.IdPessoa);
 
             command.ExecuteNonQuery();
         }
@@ -1718,9 +1727,9 @@ public class PessoaHandler : EntityHandler<Pessoa>
         string query = "DELETE FROM CorteCor_Pessoa WHERE IdPessoa = @IdPessoa";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdPessoa", id);
+            command.AddWithValue("@IdPessoa", id);
             command.ExecuteNonQuery();
         }
     }
@@ -1738,6 +1747,7 @@ public class PessoaHandler : EntityHandler<Pessoa>
 
 public class AgendamentoHandler : EntityHandler<Agendamento>
 {
+    public AgendamentoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     public int CadastrarAgendamento(Agendamento agendamento)
     {
         int novoId = 0;
@@ -1750,13 +1760,13 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         SELECT SCOPE_IDENTITY();";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@DataHora", agendamento.DataHora);
-            command.Parameters.AddWithValue("@Status", agendamento.Status ?? "Agendado");
-            command.Parameters.AddWithValue("@IdServico", agendamento.IdServico);
-            command.Parameters.AddWithValue("@IdPessoa", agendamento.IdPessoa);
-            command.Parameters.AddWithValue("@IdFuncionario", agendamento.IdFuncionario);
+            command.AddWithValue("@DataHora", agendamento.DataHora);
+            command.AddWithValue("@Status", agendamento.Status ?? "Agendado");
+            command.AddWithValue("@IdServico", agendamento.IdServico);
+            command.AddWithValue("@IdPessoa", agendamento.IdPessoa);
+            command.AddWithValue("@IdFuncionario", agendamento.IdFuncionario);
 
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
@@ -1774,9 +1784,9 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         WHERE IdAgendamento = @IdAgendamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdAgendamento", idAgendamento);
+            command.AddWithValue("@IdAgendamento", idAgendamento);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1805,7 +1815,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         var agendamentos = new List<Agendamento>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
@@ -1839,11 +1849,11 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         var agendamentos = new List<Agendamento>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdSalao", idSalao);
-            command.Parameters.AddWithValue("@Inicio", inicio);
-            command.Parameters.AddWithValue("@Fim", fim);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@Inicio", inicio);
+            command.AddWithValue("@Fim", fim);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1879,11 +1889,11 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         var agendamentos = new List<Agendamento>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            command.Parameters.AddWithValue("@DataInicio", (object?)dataInicio ?? DBNull.Value);
-            command.Parameters.AddWithValue("@DataFim", (object?)dataFim ?? DBNull.Value);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@DataInicio", (object?)dataInicio ?? DBNull.Value);
+            command.AddWithValue("@DataFim", (object?)dataFim ?? DBNull.Value);
 
             using (var reader = command.ExecuteReader())
             {
@@ -1917,14 +1927,14 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         WHERE IdAgendamento = @IdAgendamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@DataHora", agendamento.DataHora);
-            command.Parameters.AddWithValue("@Status", agendamento.Status ?? "Agendado");
-            command.Parameters.AddWithValue("@IdServico", agendamento.IdServico);
-            command.Parameters.AddWithValue("@IdPessoa", agendamento.IdPessoa);
-            command.Parameters.AddWithValue("@IdFuncionario", agendamento.IdFuncionario);
-            command.Parameters.AddWithValue("@IdAgendamento", agendamento.IdAgendamento);
+            command.AddWithValue("@DataHora", agendamento.DataHora);
+            command.AddWithValue("@Status", agendamento.Status ?? "Agendado");
+            command.AddWithValue("@IdServico", agendamento.IdServico);
+            command.AddWithValue("@IdPessoa", agendamento.IdPessoa);
+            command.AddWithValue("@IdFuncionario", agendamento.IdFuncionario);
+            command.AddWithValue("@IdAgendamento", agendamento.IdAgendamento);
 
             command.ExecuteNonQuery();
         }
@@ -1945,12 +1955,12 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
               );";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            command.Parameters.AddWithValue("@Inicio", inicio);
-            command.Parameters.AddWithValue("@Fim", fim);
-            command.Parameters.AddWithValue("@IdAgendamentoIgnorar", (object?)idAgendamentoIgnorar ?? DBNull.Value);
+            command.AddWithValue("@IdFuncionario", idFuncionario);
+            command.AddWithValue("@Inicio", inicio);
+            command.AddWithValue("@Fim", fim);
+            command.AddWithValue("@IdAgendamentoIgnorar", (object?)idAgendamentoIgnorar ?? DBNull.Value);
 
             int count = (int)command.ExecuteScalar();
             return count == 0;
@@ -1968,10 +1978,10 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         string query = "UPDATE CorteCor_Agendamento SET Status = @Status WHERE IdAgendamento = @IdAgendamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Status", status);
-            command.Parameters.AddWithValue("@IdAgendamento", id);
+            command.AddWithValue("@Status", status);
+            command.AddWithValue("@IdAgendamento", id);
             command.ExecuteNonQuery();
         }
     }
@@ -1981,9 +1991,9 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         string query = "DELETE FROM CorteCor_Agendamento WHERE IdAgendamento = @IdAgendamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdAgendamento", id);
+            command.AddWithValue("@IdAgendamento", id);
             command.ExecuteNonQuery();
         }
     }
@@ -1992,10 +2002,10 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
     {
         string query = "UPDATE CorteCor_Agendamento SET Status = @Status WHERE IdAgendamento = @IdAgendamento;";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Status", status);
-            command.Parameters.AddWithValue("@IdAgendamento", id);
+            command.AddWithValue("@Status", status);
+            command.AddWithValue("@IdAgendamento", id);
             command.ExecuteNonQuery();
         }
     }
@@ -2006,8 +2016,10 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
     }
 }
 
+
 public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
 {
+    public MeioPagamentoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     public int CadastrarMeioPagamento(MeioPagamento meio)
     {
         int novoId = 0;
@@ -2024,23 +2036,23 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         SELECT SCOPE_IDENTITY();";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", meio.Nome ?? "");
-            command.Parameters.AddWithValue("@Tipo", meio.Tipo ?? "");
-            command.Parameters.AddWithValue("@Gateway", meio.Gateway ?? "");
+            command.AddWithValue("@Nome", meio.Nome ?? "");
+            command.AddWithValue("@Tipo", meio.Tipo ?? "");
+            command.AddWithValue("@Gateway", meio.Gateway ?? "");
 
-            command.Parameters.AddWithValue("@PermiteParcelamento", meio.PermiteParcelamento);
-            command.Parameters.AddWithValue("@ParcelasMax", (object?)meio.ParcelasMax ?? DBNull.Value);
+            command.AddWithValue("@PermiteParcelamento", meio.PermiteParcelamento);
+            command.AddWithValue("@ParcelasMax", (object?)meio.ParcelasMax ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@TaxaPercentual", meio.TaxaPercentual);
-            command.Parameters.AddWithValue("@TaxaFixa", meio.TaxaFixa);
-            command.Parameters.AddWithValue("@PrazoRecebimentoDias", meio.PrazoRecebimentoDias);
+            command.AddWithValue("@TaxaPercentual", meio.TaxaPercentual);
+            command.AddWithValue("@TaxaFixa", meio.TaxaFixa);
+            command.AddWithValue("@PrazoRecebimentoDias", meio.PrazoRecebimentoDias);
 
-            command.Parameters.AddWithValue("@Ativo", meio.Ativo);
+            command.AddWithValue("@Ativo", meio.Ativo);
 
-            command.Parameters.AddWithValue("@IdSalao", meio.IdSalao);
-            command.Parameters.AddWithValue("@DataCadastro", meio.DataCadastro == default ? DateTime.Now : meio.DataCadastro);
+            command.AddWithValue("@IdSalao", meio.IdSalao);
+            command.AddWithValue("@DataCadastro", meio.DataCadastro == default ? DateTime.Now : meio.DataCadastro);
 
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
@@ -2059,9 +2071,9 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         WHERE IdMeioPagamento = @IdMeioPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdMeioPagamento", idMeioPagamento);
+            command.AddWithValue("@IdMeioPagamento", idMeioPagamento);
 
             using (var reader = command.ExecuteReader())
             {
@@ -2101,7 +2113,7 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         var itens = new List<MeioPagamento>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
@@ -2144,10 +2156,10 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         var itens = new List<MeioPagamento>();
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdSalao", idSalao);
-            command.Parameters.AddWithValue("@SomenteAtivos", (object?)somenteAtivos ?? DBNull.Value);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@SomenteAtivos", (object?)somenteAtivos ?? DBNull.Value);
 
             using (var reader = command.ExecuteReader())
             {
@@ -2197,25 +2209,25 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         WHERE IdMeioPagamento = @IdMeioPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Nome", meio.Nome ?? "");
-            command.Parameters.AddWithValue("@Tipo", meio.Tipo ?? "");
-            command.Parameters.AddWithValue("@Gateway", meio.Gateway ?? "");
+            command.AddWithValue("@Nome", meio.Nome ?? "");
+            command.AddWithValue("@Tipo", meio.Tipo ?? "");
+            command.AddWithValue("@Gateway", meio.Gateway ?? "");
 
-            command.Parameters.AddWithValue("@PermiteParcelamento", meio.PermiteParcelamento);
-            command.Parameters.AddWithValue("@ParcelasMax", (object?)meio.ParcelasMax ?? DBNull.Value);
+            command.AddWithValue("@PermiteParcelamento", meio.PermiteParcelamento);
+            command.AddWithValue("@ParcelasMax", (object?)meio.ParcelasMax ?? DBNull.Value);
 
-            command.Parameters.AddWithValue("@TaxaPercentual", meio.TaxaPercentual);
-            command.Parameters.AddWithValue("@TaxaFixa", meio.TaxaFixa);
-            command.Parameters.AddWithValue("@PrazoRecebimentoDias", meio.PrazoRecebimentoDias);
+            command.AddWithValue("@TaxaPercentual", meio.TaxaPercentual);
+            command.AddWithValue("@TaxaFixa", meio.TaxaFixa);
+            command.AddWithValue("@PrazoRecebimentoDias", meio.PrazoRecebimentoDias);
 
-            command.Parameters.AddWithValue("@Ativo", meio.Ativo);
+            command.AddWithValue("@Ativo", meio.Ativo);
 
-            command.Parameters.AddWithValue("@IdSalao", meio.IdSalao);
-            command.Parameters.AddWithValue("@DataCadastro", meio.DataCadastro == default ? DateTime.Now : meio.DataCadastro);
+            command.AddWithValue("@IdSalao", meio.IdSalao);
+            command.AddWithValue("@DataCadastro", meio.DataCadastro == default ? DateTime.Now : meio.DataCadastro);
 
-            command.Parameters.AddWithValue("@IdMeioPagamento", meio.IdMeioPagamento);
+            command.AddWithValue("@IdMeioPagamento", meio.IdMeioPagamento);
 
             command.ExecuteNonQuery();
         }
@@ -2226,10 +2238,10 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         string query = "UPDATE CorteCor_MeioPagamento SET Ativo = @Ativo WHERE IdMeioPagamento = @IdMeioPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Ativo", ativar);
-            command.Parameters.AddWithValue("@IdMeioPagamento", id);
+            command.AddWithValue("@Ativo", ativar);
+            command.AddWithValue("@IdMeioPagamento", id);
             command.ExecuteNonQuery();
         }
     }
@@ -2239,9 +2251,9 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         string query = "DELETE FROM CorteCor_MeioPagamento WHERE IdMeioPagamento = @IdMeioPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@IdMeioPagamento", id);
+            command.AddWithValue("@IdMeioPagamento", id);
             command.ExecuteNonQuery();
         }
     }
@@ -2254,41 +2266,48 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
 
 public class PagamentoHandler : EntityHandler<Pagamento>
 {
+    public PagamentoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler)
+    {
+    }
+
     public void CadastrarPagamento(Pagamento pagamento)
     {
-        // Desativa pagamentos anteriores para evitar erro no índice único (UX_CorteCor_Pagamento_Agendamento_Ativo)
+        // Desativa pagamentos anteriores para evitar erro no Ã­ndice Ãºnico (UX_CorteCor_Pagamento_Agendamento_Ativo)
         string deactivateQuery = "UPDATE CorteCor_Pagamento SET Ativo = 0 WHERE IdAgendamento = @IdAgendamento AND Ativo = 1;";
         
         string insertQuery = @"
         INSERT INTO CorteCor_Pagamento
             (IdPagamento, IdAgendamento, Ativo, Status, Valor, Moeda, Descricao, 
-             MercadoPagoPreferenceId, MercadoPagoPaymentId, CheckoutUrl, MpStatus, MpStatusDetail)
+             MercadoPagoPreferenceId, MercadoPagoPaymentId, CheckoutUrl, MpStatus, MpStatusDetail, Tipo)
         VALUES
             (@IdPagamento, @IdAgendamento, @Ativo, @Status, @Valor, @Moeda, @Descricao, 
-             @MercadoPagoPreferenceId, @MercadoPagoPaymentId, @CheckoutUrl, @MpStatus, @MpStatusDetail);";
+             @MercadoPagoPreferenceId, @MercadoPagoPaymentId, @CheckoutUrl, @MpStatus, @MpStatusDetail, @Tipo);";
 
         using (var connection = _dbHandler.GetConnection())
         {
-            using (var commandDeactivate = new SqlCommand(deactivateQuery, connection))
+            using (var commandDeactivate = connection.CreateCommand())
             {
-                commandDeactivate.Parameters.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
+                commandDeactivate.CommandText = deactivateQuery;
+                commandDeactivate.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
                 commandDeactivate.ExecuteNonQuery();
             }
 
-            using (var command = new SqlCommand(insertQuery, connection))
+            using (var command = connection.CreateCommand())
             {
-                command.Parameters.AddWithValue("@IdPagamento", pagamento.IdPagamento == Guid.Empty ? Guid.NewGuid() : pagamento.IdPagamento);
-                command.Parameters.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
-                command.Parameters.AddWithValue("@Ativo", pagamento.Ativo);
-                command.Parameters.AddWithValue("@Status", pagamento.Status ?? "Pendente");
-                command.Parameters.AddWithValue("@Valor", pagamento.Valor);
-                command.Parameters.AddWithValue("@Moeda", pagamento.Moeda ?? "BRL");
-                command.Parameters.AddWithValue("@Descricao", (object?)pagamento.Descricao ?? DBNull.Value);
-                command.Parameters.AddWithValue("@MercadoPagoPreferenceId", (object?)pagamento.MercadoPagoPreferenceId ?? DBNull.Value);
-                command.Parameters.AddWithValue("@MercadoPagoPaymentId", (object?)pagamento.MercadoPagoPaymentId ?? DBNull.Value);
-                command.Parameters.AddWithValue("@CheckoutUrl", (object?)pagamento.CheckoutUrl ?? DBNull.Value);
-                command.Parameters.AddWithValue("@MpStatus", (object?)pagamento.MpStatus ?? DBNull.Value);
-                command.Parameters.AddWithValue("@MpStatusDetail", (object?)pagamento.MpStatusDetail ?? DBNull.Value);
+                command.CommandText = insertQuery;
+                command.AddWithValue("@IdPagamento", pagamento.IdPagamento == Guid.Empty ? Guid.NewGuid() : pagamento.IdPagamento);
+                command.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
+                command.AddWithValue("@Ativo", pagamento.Ativo);
+                command.AddWithValue("@Status", pagamento.Status ?? "Pendente");
+                command.AddWithValue("@Valor", pagamento.Valor);
+                command.AddWithValue("@Moeda", pagamento.Moeda ?? "BRL");
+                command.AddWithValue("@Descricao", (object?)pagamento.Descricao ?? DBNull.Value);
+                command.AddWithValue("@MercadoPagoPreferenceId", (object?)pagamento.MercadoPagoPreferenceId ?? DBNull.Value);
+                command.AddWithValue("@MercadoPagoPaymentId", (object?)pagamento.MercadoPagoPaymentId ?? DBNull.Value);
+                command.AddWithValue("@CheckoutUrl", (object?)pagamento.CheckoutUrl ?? DBNull.Value);
+                command.AddWithValue("@MpStatus", (object?)pagamento.MpStatus ?? DBNull.Value);
+                command.AddWithValue("@MpStatusDetail", (object?)pagamento.MpStatusDetail ?? DBNull.Value);
+                command.AddWithValue("@Tipo", (object?)pagamento.Tipo ?? DBNull.Value);
 
                 command.ExecuteNonQuery();
             }
@@ -2299,9 +2318,10 @@ public class PagamentoHandler : EntityHandler<Pagamento>
     {
         string query = "SELECT * FROM CorteCor_Pagamento WHERE IdAgendamento = @IdAgendamento AND Ativo = 1;";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand())
         {
-            command.Parameters.AddWithValue("@IdAgendamento", idAgendamento);
+            command.CommandText = query;
+            command.AddWithValue("@IdAgendamento", idAgendamento);
             using (var reader = command.ExecuteReader())
             {
                 if (!reader.Read()) return null;
@@ -2314,9 +2334,10 @@ public class PagamentoHandler : EntityHandler<Pagamento>
     {
         string query = "SELECT * FROM CorteCor_Pagamento WHERE MercadoPagoPreferenceId = @PreferenceId AND Ativo = 1;";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand())
         {
-            command.Parameters.AddWithValue("@PreferenceId", preferenceId);
+            command.CommandText = query;
+            command.AddWithValue("@PreferenceId", preferenceId);
             using (var reader = command.ExecuteReader())
             {
                 if (!reader.Read()) return null;
@@ -2329,9 +2350,10 @@ public class PagamentoHandler : EntityHandler<Pagamento>
     {
         string query = "SELECT * FROM CorteCor_Pagamento WHERE MercadoPagoPaymentId = @PaymentId;";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand())
         {
-            command.Parameters.AddWithValue("@PaymentId", paymentId);
+            command.CommandText = query;
+            command.AddWithValue("@PaymentId", paymentId);
             using (var reader = command.ExecuteReader())
             {
                 if (!reader.Read()) return null;
@@ -2354,21 +2376,21 @@ public class PagamentoHandler : EntityHandler<Pagamento>
         WHERE IdPagamento = @IdPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand(query))
         {
-            command.Parameters.AddWithValue("@Status", p.Status);
-            command.Parameters.AddWithValue("@MercadoPagoPaymentId", (object?)p.MercadoPagoPaymentId ?? DBNull.Value);
-            command.Parameters.AddWithValue("@MpStatus", (object?)p.MpStatus ?? DBNull.Value);
-            command.Parameters.AddWithValue("@MpStatusDetail", (object?)p.MpStatusDetail ?? DBNull.Value);
-            command.Parameters.AddWithValue("@PagoEm", (object?)p.PagoEm ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Ativo", p.Ativo);
-            command.Parameters.AddWithValue("@IdPagamento", p.IdPagamento);
+            command.AddWithValue("@Status", p.Status);
+            command.AddWithValue("@MercadoPagoPaymentId", (object?)p.MercadoPagoPaymentId ?? DBNull.Value);
+            command.AddWithValue("@MpStatus", (object?)p.MpStatus ?? DBNull.Value);
+            command.AddWithValue("@MpStatusDetail", (object?)p.MpStatusDetail ?? DBNull.Value);
+            command.AddWithValue("@PagoEm", (object?)p.PagoEm ?? DBNull.Value);
+            command.AddWithValue("@Ativo", p.Ativo);
+            command.AddWithValue("@IdPagamento", p.IdPagamento);
 
             command.ExecuteNonQuery();
         }
     }
 
-    private Pagamento Map(SqlDataReader reader)
+    private Pagamento Map(IDataReader reader)
     {
         return new Pagamento
         {
@@ -2388,13 +2410,28 @@ public class PagamentoHandler : EntityHandler<Pagamento>
             AtualizadoEm = reader["AtualizadoEm"] is DBNull ? null : (DateTime?)reader["AtualizadoEm"],
             PagoEm = reader["PagoEm"] is DBNull ? null : (DateTime?)reader["PagoEm"],
             
-            // Legacy mapping
-            IdMeioPagamento = reader["IdMeioPagamento"] is DBNull ? 0 : (int)reader["IdMeioPagamento"],
-            Tipo = reader["Tipo"]?.ToString(),
-            Data = reader["Data"] is DBNull ? (DateTime)reader["CriadoEm"] : (DateTime)reader["Data"],
-            Contos = reader["Contos"]?.ToString(),
-            Campos = reader["Campos"]?.ToString()
+            // Legacy mapping safely - Explicit check to avoid any evaluation risk
+            IdMeioPagamento = HasColumn(reader, "IdMeioPagamento") ? (reader["IdMeioPagamento"] is DBNull ? 0 : (int)reader["IdMeioPagamento"]) : 0,
+            Tipo = HasColumn(reader, "Tipo") ? reader["Tipo"]?.ToString() : null,
+            Data = HasColumn(reader, "Data") ? (reader["Data"] is DBNull ? (HasColumn(reader, "CriadoEm") ? (DateTime)reader["CriadoEm"] : DateTime.MinValue) : (DateTime)reader["Data"]) : (HasColumn(reader, "CriadoEm") ? (DateTime)reader["CriadoEm"] : DateTime.MinValue),
+            Contos = HasColumn(reader, "Contos") ? reader["Contos"]?.ToString() : null,
+            Campos = HasColumn(reader, "Campos") ? reader["Campos"]?.ToString() : null,
+            NomeCliente = HasColumn(reader, "NomeCliente") ? reader["NomeCliente"]?.ToString() : null,
+            NomeServico = HasColumn(reader, "NomeServico") ? reader["NomeServico"]?.ToString() : null,
+            DataAgendamento = HasColumn(reader, "DataAgendamento") ? (reader["DataAgendamento"] is DBNull ? (DateTime?)null : (DateTime)reader["DataAgendamento"]) : null
         };
+    }
+
+    private bool HasColumn(IDataReader reader, string columnName)
+    {
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            if (reader.GetName(i).Equals(columnName, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void Atualizar(Pagamento p)
@@ -2412,16 +2449,17 @@ public class PagamentoHandler : EntityHandler<Pagamento>
         WHERE IdPagamento = @IdPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand())
         {
-            command.Parameters.AddWithValue("@IdAgendamento", p.IdAgendamento);
-            command.Parameters.AddWithValue("@IdMeioPagamento", p.IdMeioPagamento == 0 ? (object)DBNull.Value : p.IdMeioPagamento);
-            command.Parameters.AddWithValue("@Tipo", p.Tipo ?? "");
-            command.Parameters.AddWithValue("@Valor", p.Valor);
-            command.Parameters.AddWithValue("@Data", p.Data == default ? DateTime.Now : p.Data);
-            command.Parameters.AddWithValue("@Contos", p.Contos ?? "");
-            command.Parameters.AddWithValue("@Campos", p.Campos ?? "");
-            command.Parameters.AddWithValue("@IdPagamento", p.IdPagamento);
+            command.CommandText = query;
+            command.AddWithValue("@IdAgendamento", p.IdAgendamento);
+            command.AddWithValue("@IdMeioPagamento", p.IdMeioPagamento == 0 ? (object)DBNull.Value : p.IdMeioPagamento);
+            command.AddWithValue("@Tipo", p.Tipo ?? "");
+            command.AddWithValue("@Valor", p.Valor);
+            command.AddWithValue("@Data", p.Data == default ? DateTime.Now : p.Data);
+            command.AddWithValue("@Contos", p.Contos ?? "");
+            command.AddWithValue("@Campos", p.Campos ?? "");
+            command.AddWithValue("@IdPagamento", p.IdPagamento);
 
             command.ExecuteNonQuery();
         }
@@ -2429,15 +2467,71 @@ public class PagamentoHandler : EntityHandler<Pagamento>
 
     public override List<Pagamento> Listar()
     {
-        string query = "SELECT * FROM CorteCor_Pagamento ORDER BY CriadoEm DESC;";
-        var list = new List<Pagamento>();
-        using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
-        using (var reader = command.ExecuteReader())
+        return Listar(new PagamentoFiltroDTO());
+    }
+
+    public List<Pagamento> Listar(PagamentoFiltroDTO filtro)
+    {
+        // Base query with possible joins if Name filter is needed
+        // If Filtering by Client Name (NomeCliente), we need to join with Agendamento and Pessoa
+        
+        var sb = new System.Text.StringBuilder();
+        sb.Append("SELECT P.*, Pe.Nome as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento ");
+        sb.Append("FROM CorteCor_Pagamento P ");
+        sb.Append("LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento ");
+        sb.Append("LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa ");
+        sb.Append("LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico ");
+        
+        sb.Append("WHERE 1=1 ");
+        sb.Append("AND P.Ativo = 1 ");
+
+        if (filtro.DataInicio.HasValue)
         {
-            while (reader.Read())
+            sb.Append("AND P.CriadoEm >= @DataInicio ");
+        }
+
+        if (filtro.DataFim.HasValue)
+        {
+            sb.Append("AND P.CriadoEm <= @DataFim ");
+        }
+
+        if (!string.IsNullOrEmpty(filtro.Status))
+        {
+            sb.Append("AND P.Status = @Status ");
+        }
+
+        if (!string.IsNullOrEmpty(filtro.NomeCliente))
+        {
+            sb.Append("AND Pe.Nome LIKE @NomeCliente ");
+        }
+
+        sb.Append("ORDER BY P.CriadoEm DESC;");
+
+        var list = new List<Pagamento>();
+        
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = sb.ToString();
+            
+            if (filtro.DataInicio.HasValue)
+                command.AddWithValue("@DataInicio", filtro.DataInicio.Value);
+                
+            if (filtro.DataFim.HasValue)
+                command.AddWithValue("@DataFim", filtro.DataFim.Value);
+                
+            if (!string.IsNullOrEmpty(filtro.Status))
+                command.AddWithValue("@Status", filtro.Status);
+                
+            if (!string.IsNullOrEmpty(filtro.NomeCliente))
+                command.AddWithValue("@NomeCliente", "%" + filtro.NomeCliente + "%");
+
+            using (var reader = command.ExecuteReader())
             {
-                list.Add(Map(reader));
+                while (reader.Read())
+                {
+                    list.Add(Map(reader));
+                }
             }
         }
         return list;
@@ -2445,11 +2539,19 @@ public class PagamentoHandler : EntityHandler<Pagamento>
 
     public Pagamento ObterPorId(Guid id)
     {
-        string query = "SELECT * FROM CorteCor_Pagamento WHERE IdPagamento = @Id;";
+        string query = @"
+            SELECT P.*, Pe.Nome as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento
+            FROM CorteCor_Pagamento P
+            LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
+            LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa
+            LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+            WHERE P.IdPagamento = @Id;";
+
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand())
         {
-            command.Parameters.AddWithValue("@Id", id);
+            command.CommandText = query;
+            command.AddWithValue("@Id", id);
             using (var reader = command.ExecuteReader())
             {
                 if (!reader.Read()) return null;
@@ -2464,13 +2566,51 @@ public class PagamentoHandler : EntityHandler<Pagamento>
     {
         string query = "DELETE FROM CorteCor_Pagamento WHERE IdPagamento = @Id;";
         using (var connection = _dbHandler.GetConnection())
-        using (var command = new SqlCommand(query, connection))
+        using (var command = connection.CreateCommand())
         {
-            command.Parameters.AddWithValue("@Id", id);
+            command.CommandText = query;
+            command.AddWithValue("@Id", id);
             command.ExecuteNonQuery();
         }
     }
 
     public override void AtivarDesativar(int id, bool ativar) => throw new NotSupportedException("CorteCor_Pagamento utiliza UNIQUEIDENTIFIER.");
+    public async Task<bool> SincronizarPagamento(Guid idPagamento, MercadoPagoService mpService)
+    {
+        var pagamento = ObterPorId(idPagamento);
+        if (pagamento == null || string.IsNullOrEmpty(pagamento.MercadoPagoPaymentId)) return false;
+
+        var mpPayment = await mpService.GetPaymentDetailsAsync(pagamento.MercadoPagoPaymentId);
+        if (mpPayment == null) return false;
+
+        pagamento.MpStatus = mpPayment.Status;
+        pagamento.MpStatusDetail = mpPayment.StatusDetail;
+        
+        // LÃ³gica de atualizaÃ§Ã£o de status baseada na resposta da API
+        if (mpPayment.Status == "approved")
+        {
+            pagamento.Status = "Pago";
+            pagamento.PagoEm = mpPayment.DateApproved ?? DateTime.UtcNow;
+            
+            // Atualiza tambÃ©m o agendamento
+            var agHandler = new AgendamentoHandler();
+            agHandler.AtualizarStatus(pagamento.IdAgendamento, "Pago");
+        }
+        else if (mpPayment.Status == "cancelled" || mpPayment.Status == "rejected")
+        {
+            // Se foi rejeitado ou cancelado, marcamos este pagamento como inativo/cancelado
+            // mas NÃƒO cancelamos o agendamento, permitindo nova tentativa.
+            pagamento.Status = "Cancelado";
+            pagamento.Ativo = false; 
+        }
+
+        AtualizarPagamento(pagamento);
+        return true;
+    }
+
     public override void Cadastrar(Pagamento entity) => throw new NotSupportedException("Use CadastrarPagamento(Pagamento pago).");
 }
+
+
+
+

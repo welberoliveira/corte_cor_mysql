@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+ï»¿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace CorteCor.Pages
             public int IdServico { get; set; }
             public string ServicoNome { get; set; }
             public decimal ServicoPreco { get; set; }
-            public string ServicoCor { get; set; }
+            
         }
 
         public List<FuncionarioServicoListaItem> Itens { get; set; } = new();
@@ -42,7 +42,7 @@ namespace CorteCor.Pages
                 .Where(s => s.IdSalao == idSalao)
                 .ToList();
 
-            // Relações N:N (todos) e filtra por funcionário/serviço do salão
+            // Relaï¿½ï¿½es N:N (todos) e filtra por funcionï¿½rio/serviï¿½o do salï¿½o
             var relacoes = fsHandler.Listar() ?? new List<FuncionarioServico>();
 
             var funcionariosDict = funcionariosSalao.ToDictionary(x => x.IdFuncionario, x => x);
@@ -63,7 +63,7 @@ namespace CorteCor.Pages
                         IdServico = s.IdServico,
                         ServicoNome = s.Nome,
                         ServicoPreco = s.Preco,
-                        ServicoCor = s.Cor
+                        
                     };
                 })
                 .OrderBy(x => x.FuncionarioNome)
@@ -71,7 +71,7 @@ namespace CorteCor.Pages
                 .ToList();
         }
 
-        // Opcional (se você colocar botões na tela):
+        // Opcional (se vocï¿½ colocar botï¿½es na tela):
         // action=remover precisa mandar idFuncionario e idServico no form.
         public void OnPost()
         {
@@ -91,14 +91,14 @@ namespace CorteCor.Pages
                 {
                     var fsHandler = new FuncionarioServicoHandler();
 
-                    // remove a relação (IdFuncionario, IdServico)
+                    // remove a relaï¿½ï¿½o (IdFuncionario, IdServico)
                     fsHandler.Desvincular(idFuncionario, idServico);
 
-                    Mensagem = "Vínculo removido com sucesso.";
+                    Mensagem = "Vï¿½nculo removido com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível remover o vínculo.";
+                    Mensagem = "Nï¿½o foi possï¿½vel remover o vï¿½nculo.";
                 }
             }
             else if (action == "alterar")

@@ -1,11 +1,11 @@
-Ôªø@page
+@page
 @model CorteCor.Pages.FuncionarioServicoCadastroModel
 @{
-    ViewData["Title"] = "Relacionar Funcion√°rio x Servi√ßos";
+    ViewData["Title"] = "Relacionar Funcion·rio x ServiÁos";
 }
 
 <div class="container">
-    <h4>Relacionar Funcion√°rio x Servi√ßos</h4>
+    <h4>Relacionar Funcion·rio x ServiÁos</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -16,7 +16,7 @@
 
     <form method="post">
         <div class="form-group">
-            <label for="idFuncionario">Funcion√°rio</label>
+            <label for="idFuncionario">Funcion·rio</label>
             <select id="idFuncionario" name="idFuncionario" class="form-control" required>
                 <option value="">Selecione</option>
                 @foreach (var f in Model.Funcionarios)
@@ -34,7 +34,7 @@
         </div>
 
         <div class="form-group">
-            <label>Servi√ßos</label>
+            <label>ServiÁos</label>
 
             <div class="border rounded p-3">
                 @foreach (var s in Model.Servicos)
@@ -62,17 +62,17 @@
                         }
 
                         <label for="servico_@s.IdServico" class="mb-0">
-                            @s.Nome ‚Äì R$ @s.Preco.ToString("0.00")
+                            @s.Nome ñ R$ @s.Preco.ToString("0.00")
                         </label>
                     </div>
                 }
             </div>
 
             <small class="form-text text-muted">
-                Marque todos os servi√ßos que este funcion√°rio poder√° executar.
+                Marque todos os serviÁos que este funcion·rio poder· executar.
             </small>
         </div>
 
-        <button type="submit" class="btn btn-primary">Salvar Rela√ß√£o</button>
+        <button type="submit" class="btn btn-primary">Salvar RelaÁ„o</button>
     </form>
 </div>

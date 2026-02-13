@@ -4,7 +4,14 @@ using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 
-public class DatabaseHandler
+using System.Data;
+
+public interface IDatabaseHandler
+{
+    IDbConnection GetConnection();
+}
+
+public class DatabaseHandler : IDatabaseHandler
 {
     private readonly string ConnectionString;
     private readonly Log _logger = new Log();
@@ -24,7 +31,7 @@ public class DatabaseHandler
                            ?? "Server=websql3.internetbrasil.net;Database=tonni;User Id=tonni;Password=bW3M*60ZccuD;";
     }
 
-    public SqlConnection GetConnection()
+    public IDbConnection GetConnection()
     {
         try
         {
@@ -42,12 +49,19 @@ public class DatabaseHandler
     public void ExecuteQuery(string query, params SqlParameter[] parameters)
     {
         using var connection = GetConnection();
-        using var command = new SqlCommand(query, connection);
+        using var command = connection.CreateCommand();
+        command.CommandText = query;
         try
         {
             if (parameters != null)
             {
-                command.Parameters.AddRange(parameters);
+                foreach (var p in parameters)
+                {
+                    var param = command.CreateParameter();
+                    param.ParameterName = p.ParameterName;
+                    param.Value = p.Value;
+                    command.Parameters.Add(param);
+                }
             }
             command.ExecuteNonQuery();
         }

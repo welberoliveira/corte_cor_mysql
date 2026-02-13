@@ -29,6 +29,10 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);CorteCor.Tests\**</DefaultItemExcludes>
+  </PropertyGroup>
+
   <ItemGroup>
     <Folder Include="Pages\API\" />
     <Folder Include="wwwroot\data\" />

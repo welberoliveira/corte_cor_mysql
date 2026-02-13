@@ -29,7 +29,6 @@
             <tr>
                 <th>Nome</th>
                 <th>Preço</th>
-                <th>Cor</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -39,9 +38,6 @@
                 <tr>
                     <td>@Servico.Nome</td>
                     <td>R$ @Servico.Preco.ToString("0.00")</td>
-                    <td>
-                        <div style="width: 30px; height: 30px; background-color: @Servico.Cor; border: 1px solid #ccc; border-radius: 4px;" title="@Servico.Cor"></div>
-                    </td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Servico.IdServico">
@@ -49,7 +45,7 @@
                             <button class="btn btn-info">Alterar</button>
                         </form>
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Serviço?');">
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Servi?o?');">
                             <input type="hidden" name="id" value="@Servico.IdServico">
                             <input type="hidden" name="action" value="excluir">
                             <button class="btn btn-danger">Excluir</button>

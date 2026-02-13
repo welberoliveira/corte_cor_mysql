@@ -1,11 +1,11 @@
-Ôªø@page
+@page
 @model CorteCor.Pages.SalaoCadastroModel
 @{
-    ViewData["Title"] = "Cadastro de Sal√µes";
+    ViewData["Title"] = "Cadastro de Salıes";
 }
 
 <div class="container">
-    <h4>@Model.ButtonText Sal√£o</h4>
+    <h4>@Model.ButtonText Sal„o</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -18,12 +18,12 @@
         <input type="hidden" name="id" value="@Model.Salao?.IdSalao">
 
         <div class="form-group">
-            <label for="nome">Nome do Sal√£o</label>
+            <label for="nome">Nome do Sal„o</label>
             <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Salao?.Nome">
         </div>
 
         <div class="form-group">
-            <label for="responsavel">Respons√°vel</label>
+            <label for="responsavel">Respons·vel</label>
             <input type="text" id="responsavel" name="responsavel" class="form-control" required value="@Model.Salao?.Responsavel">
         </div>
 
@@ -38,7 +38,7 @@
         </div>
 
         <div class="form-group">
-            <label for="endereco">Endere√ßo</label>
+            <label for="endereco">EndereÁo</label>
             <input type="text" id="endereco" name="endereco" class="form-control" value="@Model.Salao?.Endereco">
         </div>
 
@@ -48,7 +48,7 @@
         </div>
 
         <div class="form-group">
-            <label for="observacao">Observa√ß√£o</label>
+            <label for="observacao">ObservaÁ„o</label>
             <textarea id="observacao" name="observacao" class="form-control">@Model.Salao?.Observacao</textarea>
         </div>
 
@@ -65,7 +65,7 @@
 
 <script>
     $(document).ready(function () {
-        $("#telefone").inputmask("(99) 99999-9999"); // M√°scara para telefone
-        $("#cnpj").inputmask("99.999.999/9999-99");   // M√°scara para CNPJ
+        $("#telefone").inputmask("(99) 99999-9999"); // M·scara para telefone
+        $("#cnpj").inputmask("99.999.999/9999-99");   // M·scara para CNPJ
     });
 </script>

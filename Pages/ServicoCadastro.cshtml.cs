@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+ï»¿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using static CorteCor.Models;
 
@@ -62,7 +62,7 @@ namespace CorteCor.Pages
                 IdServico = id,
                 Nome = Request.Form["nome"],
                 Preco = preco,
-                Cor = Request.Form["cor"],
+                
                 Duracao = duracao,
                 IdSalao = idSalao
             };
@@ -72,12 +72,12 @@ namespace CorteCor.Pages
             if (id > 0)
             {
                 handler.Atualizar(servico);
-                Mensagem = "Serviço atualizado com sucesso!";
+                Mensagem = "Serviï¿½o atualizado com sucesso!";
             }
             else
             {
                 id = handler.CadastrarServico(servico);
-                Mensagem = "Serviço cadastrado com sucesso!";
+                Mensagem = "Serviï¿½o cadastrado com sucesso!";
             }
 
             OnGet(id > 0 ? id : (int?)null);

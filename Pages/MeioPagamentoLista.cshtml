@@ -1,4 +1,4 @@
-ï»¿@page
+@page
 @model CorteCor.Pages.MeioPagamentoListaModel
 
 <style>
@@ -37,7 +37,7 @@
                 <th>Parcelamento</th>
                 <th>Prazo (dias)</th>
                 <th>Ativo</th>
-                <th>AÃ§Ãµes</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -52,10 +52,10 @@
                     <td>
                         @(Meio.PermiteParcelamento
                             ? $"Sim ({(Meio.ParcelasMax.HasValue ? Meio.ParcelasMax.Value.ToString() : "-")}x)"
-                            : "NÃ£o")
+                            : "Não")
                     </td>
                     <td>@Meio.PrazoRecebimentoDias</td>
-                    <td>@(Meio.Ativo ? "Sim" : "NÃ£o")</td>
+                    <td>@(Meio.Ativo ? "Sim" : "Não")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Meio.IdMeioPagamento">

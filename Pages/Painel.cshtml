@@ -1,4 +1,4 @@
-Ôªø@page
+@page
 @model PainelModel
 
 <style>
@@ -31,21 +31,21 @@
     <div class="form-group col-md-4">
         <label for="estadoCivil">Selecione a Salao:</label>
         <select class="form-control" id="IdSalao" name="IdSalao">
-            <option value="11">Sal√£o de Beleza da Paula</option>
+            <option value="11">Sal„o de Beleza da Paula</option>
             <option value="1">Flor de Mulher Beauty</option>
-            <option value="2">Encanto Rosa Sal√£o</option>
+            <option value="2">Encanto Rosa Sal„o</option>
             <option value="3">Divina Bela Studio</option>
-            <option value="4">Bella Morena Espa√ßo de Beleza</option>
+            <option value="4">Bella Morena EspaÁo de Beleza</option>
             <option value="5">Luna Rosa Beauty</option>
-            <option value="6">Doce Brilho Sal√£o</option>
-            <option value="7">Ess√™ncia Feminina</option>
+            <option value="6">Doce Brilho Sal„o</option>
+            <option value="7">EssÍncia Feminina</option>
             <option value="8">Rainha do Espelho</option>
             <option value="9">Beleza Tropical</option>
             <option value="10">Linda & Leve Studio</option>
         </select>
     </div>
 
-    <button class="btn btn-info">Acessar como este Sal√£o</button>
+    <button class="btn btn-info">Acessar como este Sal„o</button>
 
 
     <!-- Carrega o Google Charts -->
@@ -55,8 +55,8 @@
         google.charts.setOnLoadCallback(drawAllCharts);
 
         function drawAllCharts() {
-            drawChart('chartDocumentacao', 'Documenta√ß√£o do Im√≥vel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'Documenta√ß√£o'));
-            drawChart('chartCondicaoOcupacaoLote', 'Condi√ß√£o de Ocupa√ß√£o do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'Condi√ß√£o de Ocupa√ß√£o do Lote'));
+            drawChart('chartDocumentacao', 'DocumentaÁ„o do ImÛvel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'DocumentaÁ„o'));
+            drawChart('chartCondicaoOcupacaoLote', 'CondiÁ„o de OcupaÁ„o do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'CondiÁ„o de OcupaÁ„o do Lote'));
             drawChart('chartPossuiIPTU', 'Possui IPTU', getDataArray(@Html.Raw(Json.Serialize(Model.PossuiIPTUChartData)), 'Possui IPTU'));
         }
 
@@ -72,7 +72,7 @@
             return arr;
         }
 
-        // Desenha um gr√°fico de pizza 3D
+        // Desenha um gr·fico de pizza 3D
         function drawChart(elementId, title, dataArray) {
             var data = google.visualization.arrayToDataTable(dataArray);
             var options = {

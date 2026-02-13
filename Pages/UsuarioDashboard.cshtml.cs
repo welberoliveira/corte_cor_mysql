@@ -57,9 +57,10 @@ namespace CorteCor.Pages
             // Buscar nome do cliente
             string queryNomeUsuario = "SELECT Nome FROM CorteCor_Usuario WHERE IdUsuario = @IdUsuario";
             using (var connection = dbHandler.GetConnection())
-            using (var command = new SqlCommand(queryNomeUsuario, connection))
+            using (var command = connection.CreateCommand())
             {
-                command.Parameters.AddWithValue("@IdUsuario", IdUsuario);
+                command.CommandText = queryNomeUsuario;
+                command.AddWithValue("@IdUsuario", IdUsuario);
                 NomeUsuario = command.ExecuteScalar()?.ToString() ?? "_";
             }
             

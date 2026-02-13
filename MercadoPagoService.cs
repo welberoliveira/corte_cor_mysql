@@ -16,7 +16,7 @@ public class MercadoPagoService
         _accessToken = _configuration["MercadoPago:AccessToken"] ?? "";
     }
 
-    public async Task<(MpPreferenceResponse? preference, string? errorMessage)> CreatePreferenceAsync(int idAgendamento, string title, decimal price, string emailCliente, string baseUrl)
+    public async Task<(MpPreferenceResponse? preference, string? errorMessage)> CreatePreferenceAsync(Guid idPagamento, string title, decimal price, string emailCliente, string baseUrl)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
@@ -37,7 +37,7 @@ public class MercadoPagoService
             {
                 email = emailCliente
             },
-            external_reference = idAgendamento.ToString(),
+            external_reference = idPagamento.ToString(),
             back_urls = new
             {
                 success = $"{baseUrl}/Agendamentos2",

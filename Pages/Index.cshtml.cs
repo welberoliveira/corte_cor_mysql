@@ -2,9 +2,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Data.SqlClient;
+using System.Data;
 using System.Security.Claims;
 using static CorteCor.Models;
+using CorteCor;
 
 namespace CorteCor.Pages
 {
@@ -38,8 +39,9 @@ namespace CorteCor.Pages
                     FROM CorteCor_Usuario 
                     WHERE Email = @Email;";
 
-                using var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Email", email);
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.AddWithValue("@Email", email);
                 var result = command.ExecuteScalar();
 
                 string IdUsuario = "";
@@ -54,7 +56,7 @@ namespace CorteCor.Pages
                 var Usuario = handler.Listar().FirstOrDefault(m => m.IdUsuario.ToString() == IdUsuario);
 
 
-                // Criar os claims do usu·rio autenticado
+                // Criar os claims do usu√°rio autenticado
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, email),
@@ -69,7 +71,7 @@ namespace CorteCor.Pages
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
 
-                // Redirecionar para a p·gina inicial ou outra p·gina protegida
+                // Redirecionar para a p√°gina inicial ou outra p√°gina protegida
                 return Redirect(HttpContext.Request.PathBase + "/Agendamentos2");
             }
             else
