@@ -139,5 +139,63 @@ namespace CorteCor.Tests
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce);
             _mockParameters.Verify(p => p.Add(It.IsAny<IDbDataParameter>()), Times.AtLeast(5)); 
         }
+        [Fact]
+        public void CadastrarPagamento_DeveDesativarAnterioresEInserirNovo()
+        {
+            // Arrange
+            var pagamento = new Pagamento
+            {
+                IdAgendamento = 10,
+                Valor = 50.0m,
+                Ativo = true
+            };
+
+            // Act
+            _handler.CadastrarPagamento(pagamento);
+
+            // Assert
+            // Verify two commands created (one for deactivate, one for insert) or one command used twice
+            // The handler uses: using (var commandDeactivate = connection.CreateCommand()) ... using (var command = connection.CreateCommand())
+            // So CreateCommand() is called twice.
+            _mockConnection.Verify(c => c.CreateCommand(), Times.AtLeast(2));
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeast(2));
+        }
+
+        [Fact]
+        public void AtualizarPagamento_DeveExecutarUpdate()
+        {
+            // Arrange
+            var pagamento = new Pagamento
+            {
+                IdPagamento = Guid.NewGuid(),
+                Status = "Pago",
+                Ativo = true
+            };
+
+            // Act
+            _handler.AtualizarPagamento(pagamento);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
+
+        [Fact]
+        public void ObterPorPreferenceId_DeveRetornarPagamento()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            
+            var seq = new MockSequence();
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(true);
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(false);
+            
+            SetupMockReaderRow(_mockReader);
+
+            // Act
+            var result = _handler.ObterPorPreferenceId("pref_123");
+
+            // Assert
+            Assert.NotNull(result);
+        }
     }
 }

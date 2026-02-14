@@ -142,5 +142,24 @@ namespace CorteCor.Tests
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
         }
+        [Fact]
+        public void CadastrarUsuario_ComCamposNulos_DeveTratarCorretamente()
+        {
+            // Arrange
+            var usuario = new Usuario 
+            { 
+                Nome = "User Null",
+                DataEntrada = DateTime.MinValue // Should be DBNull
+            };
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(99);
+
+            // Act
+            _handler.CadastrarUsuario(usuario);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteScalar(), Times.Once);
+             // Verify that DBNull.Value was used for @DataEntrada parameter if possible, 
+             // or just ensure no exception was thrown.
+        }
     }
 }

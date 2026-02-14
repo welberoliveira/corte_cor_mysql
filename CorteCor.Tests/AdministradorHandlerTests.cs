@@ -8,7 +8,7 @@ using System;
 
 namespace CorteCor.Tests
 {
-    public class ServicoHandlerTests
+    public class AdministradorHandlerTests
     {
         private readonly Mock<IDatabaseHandler> _mockDbHandler;
         private readonly Mock<IDbConnection> _mockConnection;
@@ -16,9 +16,9 @@ namespace CorteCor.Tests
         private readonly Mock<IDataParameterCollection> _mockParameters;
         private readonly Mock<IDbDataParameter> _mockParameter;
         private readonly Mock<IDataReader> _mockReader;
-        private readonly ServicoHandler _handler;
+        private readonly AdministradorHandler _handler;
 
-        public ServicoHandlerTests()
+        public AdministradorHandlerTests()
         {
             _mockDbHandler = new Mock<IDatabaseHandler>();
             _mockConnection = new Mock<IDbConnection>();
@@ -34,11 +34,34 @@ namespace CorteCor.Tests
             _mockCommand.Setup(cmd => cmd.CreateParameter()).Returns(_mockParameter.Object);
             _mockParameter.SetupAllProperties();
 
-            _handler = new ServicoHandler(_mockDbHandler.Object);
+            _handler = new AdministradorHandler(_mockDbHandler.Object);
         }
 
         [Fact]
-        public void ListarPorSalao_DeveRetornarServicos()
+        public void CadastrarAdministrador_DeveRetornarId()
+        {
+            // Arrange
+            var admin = new Administrador
+            {
+                Nome = "Admin",
+                Email = "admin@teste.com",
+                Senha = "123",
+                Perfil = "Master",
+                Status = "Ativo",
+                DataCriacao = DateTime.Now
+            };
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(5);
+
+            // Act
+            var result = _handler.CadastrarAdministrador(admin);
+
+            // Assert
+            Assert.Equal(5, result);
+            _mockCommand.Verify(cmd => cmd.ExecuteScalar(), Times.Once);
+        }
+
+        [Fact]
+        public void Listar_DeveRetornarAdmins()
         {
             // Arrange
             _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
@@ -47,65 +70,33 @@ namespace CorteCor.Tests
             _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(true);
             _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(false);
 
-            _mockReader.Setup(r => r["IdServico"]).Returns(1);
-            _mockReader.Setup(r => r["Nome"]).Returns("Corte");
-            _mockReader.Setup(r => r["Preco"]).Returns(50.0m);
-            _mockReader.Setup(r => r["Duracao"]).Returns(TimeSpan.FromMinutes(30));
-
-            _mockReader.Setup(r => r["IdSalao"]).Returns(1);
+            _mockReader.Setup(r => r["IdUsuario"]).Returns(1);
+            _mockReader.Setup(r => r["Nome"]).Returns("Admin 1");
+            _mockReader.Setup(r => r["Email"]).Returns("admin@test.com");
+            _mockReader.Setup(r => r["Senha"]).Returns("123");
+            _mockReader.Setup(r => r["Perfil"]).Returns("Master");
+            _mockReader.Setup(r => r["Status"]).Returns("Ativo");
+            _mockReader.Setup(r => r["DataCriacao"]).Returns(DateTime.Now);
 
             // Act
-            var result = _handler.ListarPorSalao(1);
+            var result = _handler.Listar();
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Corte", result[0].Nome);
+            Assert.Equal("Admin 1", result[0].Nome);
         }
 
         [Fact]
         public void Atualizar_DeveExecutarUpdate()
         {
             // Arrange
-            var servico = new Servico { IdServico = 1, Nome = "Novo Nome", Preco = 60m, Duracao = TimeSpan.FromMinutes(45), IdSalao = 1 };
+            var admin = new Administrador { IdUsuario = 1, Nome = "Novo Nome" };
 
             // Act
-            _handler.Atualizar(servico);
+            _handler.Atualizar(admin);
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
-        }
-        [Fact]
-        public void CadastrarServico_DeveRetornarId()
-        {
-            // Arrange
-            var servico = new Servico { Nome = "Servico Novo", Preco = 10m, Duracao = TimeSpan.FromHours(1), IdSalao = 1 };
-            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(88);
-
-            // Act
-            var result = _handler.CadastrarServico(servico);
-
-            // Assert
-            Assert.Equal(88, result);
-        }
-
-        [Fact]
-        public void ObterPorId_DeveRetornarServico()
-        {
-            // Arrange
-            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
-            _mockReader.Setup(r => r.Read()).Returns(true);
-            _mockReader.Setup(r => r["IdServico"]).Returns(1);
-            _mockReader.Setup(r => r["Nome"]).Returns("Servico 1");
-            _mockReader.Setup(r => r["Preco"]).Returns(50m);
-            _mockReader.Setup(r => r["Duracao"]).Returns(TimeSpan.FromMinutes(30));
-            _mockReader.Setup(r => r["IdSalao"]).Returns(1);
-
-            // Act
-            var result = _handler.ObterPorId(1);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal("Servico 1", result.Nome);
         }
 
         [Fact]
@@ -113,6 +104,16 @@ namespace CorteCor.Tests
         {
             // Act
             _handler.Excluir(1);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
+
+        [Fact]
+        public void AtivarDesativar_DeveExecutarUpdate()
+        {
+            // Act
+            _handler.AtivarDesativar(1, false);
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);

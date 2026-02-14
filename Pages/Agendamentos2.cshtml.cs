@@ -7,6 +7,32 @@ namespace CorteCor.Pages
 {
     public class Agendamentos2Model : PageModel
     {
+        private readonly ServicoHandler _servicoHandler;
+        private readonly PessoaHandler _pessoaHandler;
+        private readonly AgendamentoHandler _agendamentoHandler;
+        private readonly FuncionarioHandler _funcionarioHandler;
+        private readonly FuncionarioServicoHandler _fsHandler;
+        private readonly PagamentoHandler _pagamentoHandler;
+        private readonly MercadoPagoService _mpService;
+
+        public Agendamentos2Model(
+            ServicoHandler servicoHandler,
+            PessoaHandler pessoaHandler,
+            AgendamentoHandler agendamentoHandler,
+            FuncionarioHandler funcionarioHandler,
+            FuncionarioServicoHandler fsHandler,
+            PagamentoHandler pagamentoHandler,
+            MercadoPagoService mpService)
+        {
+            _servicoHandler = servicoHandler;
+            _pessoaHandler = pessoaHandler;
+            _agendamentoHandler = agendamentoHandler;
+            _funcionarioHandler = funcionarioHandler;
+            _fsHandler = fsHandler;
+            _pagamentoHandler = pagamentoHandler;
+            _mpService = mpService;
+        }
+
         public List<Servico> Servicos { get; set; } = new();
         public List<Pessoa> Clientes { get; set; } = new();
 
@@ -15,11 +41,8 @@ namespace CorteCor.Pages
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
-            var servicoHandler = new ServicoHandler();
-            Servicos = servicoHandler.ListarPorSalao(idSalao);
-
-            var pessoaHandler = new PessoaHandler();
-            Clientes = pessoaHandler.ListarPorSalao(idSalao);
+            Servicos = _servicoHandler.ListarPorSalao(idSalao);
+            Clientes = _pessoaHandler.ListarPorSalao(idSalao);
         }
 
         // FullCalendar espera: [{ id, title, start, end, color }]
@@ -29,23 +52,18 @@ namespace CorteCor.Pages
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
             // Carrega dados auxiliares para montar o objeto final
-            var servicoHandler = new ServicoHandler();
-            var servicos = servicoHandler.ListarPorSalao(idSalao);
+            var servicos = _servicoHandler.ListarPorSalao(idSalao);
             var dictServicos = servicos.ToDictionary(s => s.IdServico);
 
-            var pessoaHandler = new PessoaHandler();
-            var clientes = pessoaHandler.ListarPorSalao(idSalao);
+            var clientes = _pessoaHandler.ListarPorSalao(idSalao);
             var dictPessoas = clientes.ToDictionary(p => p.IdPessoa, p => p.Nome);
 
-            // Carrega agendamentos do banco
-            var agendamentoHandler = new AgendamentoHandler();
-            
             // Ajuste de datas para garantir cobertura (start/end do FullCalendar são exatos)
             var dataInicio = start.AddDays(-1);
             var dataFim = end.AddDays(1);
             
             // Agora usa o filtro de data no banco via ListarPorIntervalo
-            var allAgendamentos = agendamentoHandler.ListarPorIntervalo(idSalao, dataInicio, dataFim);
+            var allAgendamentos = _agendamentoHandler.ListarPorIntervalo(idSalao, dataInicio, dataFim);
 
             var items = allAgendamentos
                 .Where(a => a.Status != "Cancelado")
@@ -116,20 +134,13 @@ namespace CorteCor.Pages
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
             // Validações
-            var servicoHandler = new ServicoHandler();
-            var servico = servicoHandler.ObterPorId(req.IdServico);
+            var servico = _servicoHandler.ObterPorId(req.IdServico);
             if (servico == null) return BadRequest(new ErrorResponse { Message = "Serviço não encontrado" });
             if (servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Serviço inválido para este salão" });
 
-            var pessoaHandler = new PessoaHandler();
-            var pessoa = pessoaHandler.ObterPorId(req.IdPessoa);
+            var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
             if (pessoa == null) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
             if (pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inválido para este salão" });
-
-
-            var agendamentoHandler = new AgendamentoHandler();
-            var fsHandler = new FuncionarioServicoHandler();
-            var funcionarioHandler = new FuncionarioHandler();
 
             int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, start, idSalao);
 
@@ -145,7 +156,7 @@ namespace CorteCor.Pages
                 Status = "Agendado"
             };
 
-            int novoId = agendamentoHandler.CadastrarAgendamento(novoAgendamento);
+            int novoId = _agendamentoHandler.CadastrarAgendamento(novoAgendamento);
 
             return new JsonResult(new
             {
@@ -159,8 +170,7 @@ namespace CorteCor.Pages
         {
             if (id <= 0) return BadRequest(new ErrorResponse { Message = "ID inválido." });
 
-            var agendamentoHandler = new AgendamentoHandler();
-            var a = agendamentoHandler.ObterPorId(id);
+            var a = _agendamentoHandler.ObterPorId(id);
             if (a == null) return NotFound();
 
             return new JsonResult(new
@@ -189,20 +199,17 @@ namespace CorteCor.Pages
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
-            var agendamentoHandler = new AgendamentoHandler();
-            var agendamento = agendamentoHandler.ObterPorId(req.Id);
+            var agendamento = _agendamentoHandler.ObterPorId(req.Id);
             if (agendamento == null) return NotFound("Agendamento não encontrado.");
 
             if (agendamento.Status == "Pago")
                 return BadRequest(new ErrorResponse { Message = "Agendamentos pagos não podem ser alterados." });
 
             // Validações
-            var servicoHandler = new ServicoHandler();
-            var servico = servicoHandler.ObterPorId(req.IdServico);
+            var servico = _servicoHandler.ObterPorId(req.IdServico);
             if (servico == null || servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Serviço inválido" });
 
-            var pessoaHandler = new PessoaHandler();
-            var pessoa = pessoaHandler.ObterPorId(req.IdPessoa);
+            var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
             if (pessoa == null || pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inválido" });
 
             // Determina a data/hora (mantém a original se não enviada)
@@ -233,7 +240,7 @@ namespace CorteCor.Pages
             if (!string.IsNullOrEmpty(req.Status))
                 agendamento.Status = req.Status;
 
-            agendamentoHandler.Atualizar(agendamento);
+            _agendamentoHandler.Atualizar(agendamento);
 
             var primeiroNome = pessoa.Nome.Split(' ')[0];
             return new JsonResult(new
@@ -259,28 +266,24 @@ namespace CorteCor.Pages
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
-            var agendamentoHandler = new AgendamentoHandler();
-            var a = agendamentoHandler.ObterPorId(req.IdAgendamento);
+            var a = _agendamentoHandler.ObterPorId(req.IdAgendamento);
             if (a == null) return NotFound("Agendamento não encontrado");
 
             // Valida se pertence ao salão
-            var servicoHandler = new ServicoHandler();
-            var s = servicoHandler.ObterPorId(a.IdServico);
+            var s = _servicoHandler.ObterPorId(a.IdServico);
             if (s == null || s.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Acesso negado" });
 
             if (a.Status == "Pago") return BadRequest(new ErrorResponse { Message = "Este agendamento já foi pago" });
 
-            var pessoaHandler = new PessoaHandler();
-            var p = pessoaHandler.ObterPorId(a.IdPessoa);
+            var p = _pessoaHandler.ObterPorId(a.IdPessoa);
             if (p == null) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
 
             // Gera novo ID para o Pagamento
             var idPagamento = Guid.NewGuid();
 
             // Gera Preferência no Mercado Pago usando o ID do Pagamento
-            var mpService = new MercadoPagoService(HttpContext.RequestServices.GetRequiredService<IConfiguration>());
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var (pref, error) = await mpService.CreatePreferenceAsync(
+            var (pref, error) = await _mpService.CreatePreferenceAsync(
                 idPagamento, 
                 $"Serviço {s.Nome} - Corte & Cor", 
                 s.Preco, 
@@ -300,10 +303,9 @@ namespace CorteCor.Pages
             {
                 // Atualiza status do agendamento para Pendente (se não estiver pago)
                 if (a.Status != "Pago")
-                    agendamentoHandler.AtualizarStatus(a.IdAgendamento, "Pendente");
+                    _agendamentoHandler.AtualizarStatus(a.IdAgendamento, "Pendente");
 
                 // Registra o pagamento na tabela com o ID gerado
-                var pagHandler = new PagamentoHandler();
                 var novoPag = new Pagamento
                 {
                     IdPagamento = idPagamento,
@@ -319,7 +321,7 @@ namespace CorteCor.Pages
                     Tipo = "MercadoPago"
                 };
 
-                pagHandler.CadastrarPagamento(novoPag);
+                _pagamentoHandler.CadastrarPagamento(novoPag);
 
                 scope.Complete();
             }
@@ -330,22 +332,20 @@ namespace CorteCor.Pages
 
         public IActionResult OnPostDelete(int id)
         {
-            var agendamentoHandler = new AgendamentoHandler();
-            var agendamento = agendamentoHandler.ObterPorId(id);
+            var agendamento = _agendamentoHandler.ObterPorId(id);
             if (agendamento == null) return NotFound();
 
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
             // Validar se pertence ao salão
-            var servicoHandler = new ServicoHandler();
-            var s = servicoHandler.ObterPorId(agendamento.IdServico);
+            var s = _servicoHandler.ObterPorId(agendamento.IdServico);
             if (s == null || s.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Acesso negado" });
 
             if (agendamento.Status == "Pago")
                 return BadRequest(new ErrorResponse { Message = "Agendamentos pagos não podem ser excluídos." });
 
-            agendamentoHandler.Excluir(id);
+            _agendamentoHandler.Excluir(id);
             
             return new JsonResult(new { ok = true });
         }
@@ -355,8 +355,7 @@ namespace CorteCor.Pages
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
-            var servicoHandler = new ServicoHandler();
-            var allServicos = servicoHandler.ListarPorSalao(idSalao);
+            var allServicos = _servicoHandler.ListarPorSalao(idSalao);
 
             var available = allServicos
                 .Where(s => GetAvailableFuncionarioId(s.IdServico, start, idSalao) > 0)
@@ -373,22 +372,17 @@ namespace CorteCor.Pages
 
         private int GetAvailableFuncionarioId(int idServico, DateTime start, int idSalao, int? idAgendamentoIgnorar = null)
         {
-            var servicoHandler = new ServicoHandler();
-            var servico = servicoHandler.ObterPorId(idServico);
+            var servico = _servicoHandler.ObterPorId(idServico);
             if (servico == null || servico.IdSalao != idSalao) return 0;
 
-            var fsHandler = new FuncionarioServicoHandler();
-            var funcionarioHandler = new FuncionarioHandler();
-            var agendamentoHandler = new AgendamentoHandler();
-
-            var idsFuncionarios = fsHandler.ListarFuncionariosDoServico(idServico);
+            var idsFuncionarios = _fsHandler.ListarFuncionariosDoServico(idServico);
             
             // Calculamos o fim
             DateTime fim = start.Add(servico.Duracao);
 
             foreach (var idF in idsFuncionarios)
             {
-                var f = funcionarioHandler.ObterPorId(idF);
+                var f = _funcionarioHandler.ObterPorId(idF);
                 if (f == null || f.IdSalao != idSalao) continue;
 
                 bool trabalha = false;
@@ -415,7 +409,7 @@ namespace CorteCor.Pages
                     if (horaInicio >= ini.Value && horaFim <= f_fim.Value)
                     {
                         // Verifica colisão com outros agendamentos
-                        if (agendamentoHandler.VerificarDisponibilidade(f.IdFuncionario, start, fim, idAgendamentoIgnorar))
+                        if (_agendamentoHandler.VerificarDisponibilidade(f.IdFuncionario, start, fim, idAgendamentoIgnorar))
                         {
                             return f.IdFuncionario;
                         }
@@ -427,4 +421,3 @@ namespace CorteCor.Pages
         }
     }
 }
-

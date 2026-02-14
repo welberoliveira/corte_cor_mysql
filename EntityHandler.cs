@@ -153,13 +153,14 @@ public class UsuarioHandler : EntityHandler<Usuario>
 
 public class LoginManager
 {
-    private readonly DatabaseHandler _dbHandler = new DatabaseHandler();
+    private readonly IDatabaseHandler _dbHandler;
 
-    public LoginManager()
+    public LoginManager(IDatabaseHandler dbHandler = null)
     {
+        _dbHandler = dbHandler ?? new DatabaseHandler();
     }
 
-    public bool AutenticarAdministrador(string email, string senha)
+    public virtual bool AutenticarAdministrador(string email, string senha)
     {
         string query = @"
             SELECT Senha 
@@ -299,12 +300,12 @@ public class LoginManager
 public class Salaoervice
 {
     private readonly IMemoryCache _cache;
-    private readonly DatabaseHandler _dbHandler;
+    private readonly IDatabaseHandler _dbHandler;
 
-    public Salaoervice(IMemoryCache cache)
+    public Salaoervice(IMemoryCache cache, IDatabaseHandler dbHandler = null)
     {
         _cache = cache;
-        _dbHandler = new DatabaseHandler();
+        _dbHandler = dbHandler ?? new DatabaseHandler();
     }
 
     public Salao ObterSalao(int IdSalao)
@@ -857,7 +858,7 @@ public class PessoaFichaHandler : EntityHandler<PessoaFicha>
 public class FuncionarioHandler : EntityHandler<Funcionario>
 {
     public FuncionarioHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
-    public int CadastrarFuncionario(Funcionario funcionario)
+    public virtual int CadastrarFuncionario(Funcionario funcionario)
     {
         int novoId = 0;
 
@@ -927,7 +928,7 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
         return novoId;
     }
 
-    public Funcionario ObterPorId(int idFuncionario)
+    public virtual Funcionario ObterPorId(int idFuncionario)
     {
         string query = @"
         SELECT IdFuncionario, Nome,
@@ -990,7 +991,7 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
         }
     }
 
-    public List<Funcionario> ListarPorSalao(int idSalao)
+    public virtual List<Funcionario> ListarPorSalao(int idSalao)
     {
         string query = @"
         SELECT IdFuncionario, Nome,
@@ -1144,7 +1145,7 @@ public class ServicoHandler : EntityHandler<Servico>
     {
     }
 
-    public int CadastrarServico(Servico servico)
+    public virtual int CadastrarServico(Servico servico)
     {
         int novoId = 0;
 
@@ -1174,7 +1175,7 @@ public class ServicoHandler : EntityHandler<Servico>
         return novoId;
     }
 
-    public Servico ObterPorId(int idServico)
+    public virtual Servico ObterPorId(int idServico)
     {
         string query = @"
         SELECT IdServico, Nome, Preco, Duracao, IdSalao
@@ -1231,7 +1232,7 @@ public class ServicoHandler : EntityHandler<Servico>
         return servicos;
     }
 
-    public List<Servico> ListarPorSalao(int idSalao)
+    public virtual List<Servico> ListarPorSalao(int idSalao)
     {
         string query = @"
         SELECT IdServico, Nome, Preco, Duracao, IdSalao
@@ -1319,7 +1320,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     /// <summary>
     /// Vincula um serviço a um funcionário (N:N).
     /// </summary>
-    public void Vincular(int idFuncionario, int idServico)
+    public virtual void Vincular(int idFuncionario, int idServico)
     {
         string query = @"
         INSERT INTO CorteCor_Funcionario_Servico (IdFuncionario, IdServico)
@@ -1337,7 +1338,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     /// <summary>
     /// Remove o vínculo entre um funcionário e um serviço.
     /// </summary>
-    public void Desvincular(int idFuncionario, int idServico)
+    public virtual void Desvincular(int idFuncionario, int idServico)
     {
         string query = @"
         DELETE FROM CorteCor_Funcionario_Servico
@@ -1384,7 +1385,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     /// <summary>
     /// Lista os serviços vinculados a um funcionário (retorna apenas os IDs).
     /// </summary>
-    public List<int> ListarServicosDoFuncionario(int idFuncionario)
+    public virtual List<int> ListarServicosDoFuncionario(int idFuncionario)
     {
         string query = @"
         SELECT IdServico
@@ -1414,7 +1415,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     /// <summary>
     /// Lista os funcionários vinculados a um serviço (retorna apenas os IDs).
     /// </summary>
-    public List<int> ListarFuncionariosDoServico(int idServico)
+    public virtual List<int> ListarFuncionariosDoServico(int idServico)
     {
         string query = @"
         SELECT IdFuncionario
@@ -1555,7 +1556,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
 public class PessoaHandler : EntityHandler<Pessoa>
 {
     public PessoaHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
-    public int CadastrarPessoa(Pessoa pessoa)
+    public virtual int CadastrarPessoa(Pessoa pessoa)
     {
         int novoId = 0;
 
@@ -1593,7 +1594,7 @@ public class PessoaHandler : EntityHandler<Pessoa>
         return novoId;
     }
 
-    public Pessoa ObterPorId(int idPessoa)
+    public virtual Pessoa ObterPorId(int idPessoa)
     {
         string query = @"
         SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao
@@ -1652,7 +1653,7 @@ public class PessoaHandler : EntityHandler<Pessoa>
         return pessoas;
     }
 
-    public List<Pessoa> ListarPorSalao(int idSalao)
+    public virtual List<Pessoa> ListarPorSalao(int idSalao)
     {
         string query = @"
         SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao
@@ -1748,7 +1749,7 @@ public class PessoaHandler : EntityHandler<Pessoa>
 public class AgendamentoHandler : EntityHandler<Agendamento>
 {
     public AgendamentoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
-    public int CadastrarAgendamento(Agendamento agendamento)
+    public virtual int CadastrarAgendamento(Agendamento agendamento)
     {
         int novoId = 0;
 
@@ -1776,7 +1777,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         return novoId;
     }
 
-    public Agendamento ObterPorId(int idAgendamento)
+    public virtual Agendamento ObterPorId(int idAgendamento)
     {
         string query = @"
         SELECT IdAgendamento, DataHora, Status, IdServico, IdPessoa, IdFuncionario
@@ -1835,7 +1836,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         return agendamentos;
     }
 
-    public List<Agendamento> ListarPorIntervalo(int idSalao, DateTime inicio, DateTime fim)
+    public virtual List<Agendamento> ListarPorIntervalo(int idSalao, DateTime inicio, DateTime fim)
     {
         string query = @"
         SELECT a.IdAgendamento, a.DataHora, a.Status, a.IdServico, a.IdPessoa, a.IdFuncionario
@@ -1915,7 +1916,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         return agendamentos;
     }
 
-    public void Atualizar(Agendamento agendamento)
+    public virtual void Atualizar(Agendamento agendamento)
     {
         string query = @"
         UPDATE CorteCor_Agendamento
@@ -1940,7 +1941,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         }
     }
 
-    public bool VerificarDisponibilidade(int idFuncionario, DateTime inicio, DateTime fim, int? idAgendamentoIgnorar = null)
+    public virtual bool VerificarDisponibilidade(int idFuncionario, DateTime inicio, DateTime fim, int? idAgendamentoIgnorar = null)
     {
         string query = @"
         SELECT COUNT(1) 
@@ -1998,14 +1999,14 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         }
     }
 
-    public void AtualizarStatus(int id, string status)
+    public virtual void AtualizarStatus(int idAgendamento, string novoStatus)
     {
         string query = "UPDATE CorteCor_Agendamento SET Status = @Status WHERE IdAgendamento = @IdAgendamento;";
         using (var connection = _dbHandler.GetConnection())
         using (var command = connection.CreateCommand(query))
         {
-            command.AddWithValue("@Status", status);
-            command.AddWithValue("@IdAgendamento", id);
+            command.AddWithValue("@Status", novoStatus);
+            command.AddWithValue("@IdAgendamento", idAgendamento);
             command.ExecuteNonQuery();
         }
     }
@@ -2266,11 +2267,11 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
 
 public class PagamentoHandler : EntityHandler<Pagamento>
 {
-    public PagamentoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler)
+    public PagamentoHandler(IDatabaseHandler dbHandler = null)
     {
     }
 
-    public void CadastrarPagamento(Pagamento pagamento)
+    public virtual void CadastrarPagamento(Pagamento pagamento)
     {
         // Desativa pagamentos anteriores para evitar erro no Ã­ndice Ãºnico (UX_CorteCor_Pagamento_Agendamento_Ativo)
         string deactivateQuery = "UPDATE CorteCor_Pagamento SET Ativo = 0 WHERE IdAgendamento = @IdAgendamento AND Ativo = 1;";
@@ -2545,7 +2546,7 @@ public class PagamentoHandler : EntityHandler<Pagamento>
         return list;
     }
 
-    public Pagamento ObterPorId(Guid id)
+    public virtual Pagamento ObterPorId(Guid idPagamento)
     {
         string query = @"
             SELECT P.*, Pe.Nome as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento

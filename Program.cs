@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Globalization;
+using CorteCor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,7 +46,16 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IDatabaseHandler, DatabaseHandler>();
 builder.Services.AddScoped<Salaoervice>();
+builder.Services.AddScoped<ServicoHandler>();
+builder.Services.AddScoped<PessoaHandler>();
+builder.Services.AddScoped<AgendamentoHandler>();
+builder.Services.AddScoped<FuncionarioHandler>();
+builder.Services.AddScoped<FuncionarioServicoHandler>();
+builder.Services.AddScoped<PagamentoHandler>();
+builder.Services.AddScoped<MercadoPagoService>();
 
 // Configurar cultura para pt-BR
 var cultureInfo = new CultureInfo("pt-BR");

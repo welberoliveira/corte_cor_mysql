@@ -8,18 +8,21 @@ public class MercadoPagoService
 {
     private readonly string _accessToken;
     private readonly IConfiguration _configuration;
+    private readonly HttpClient _httpClient;
 
-    public MercadoPagoService(IConfiguration configuration)
+    public MercadoPagoService(IConfiguration configuration, HttpClient httpClient = null)
     {
         _configuration = configuration;
         // Pura conveniência para o teste, buscando do appsettings
         _accessToken = _configuration["MercadoPago:AccessToken"] ?? "";
+        _httpClient = httpClient ?? new HttpClient();
     }
 
-    public async Task<(MpPreferenceResponse? preference, string? errorMessage)> CreatePreferenceAsync(Guid idPagamento, string title, decimal price, string emailCliente, string baseUrl)
+    public virtual async Task<(MpPreferenceResponse? preference, string? errorMessage)> CreatePreferenceAsync(Guid idPagamento, string title, decimal price, string emailCliente, string baseUrl)
     {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+        var client = _httpClient; 
+        if (client.DefaultRequestHeaders.Authorization == null)
+             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
         var requestBody = new
         {
@@ -76,10 +79,11 @@ public class MercadoPagoService
         return (pref, null);
     }
 
-    public async Task<MpPaymentResponse?> GetPaymentDetailsAsync(string paymentId)
+    public virtual async Task<MpPaymentResponse?> GetPaymentDetailsAsync(string paymentId)
     {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+        var client = _httpClient;
+        if (client.DefaultRequestHeaders.Authorization == null)
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
         var response = await client.GetAsync($"https://api.mercadopago.com/v1/payments/{paymentId}");
         if (!response.IsSuccessStatusCode) return null;

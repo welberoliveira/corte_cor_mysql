@@ -104,5 +104,62 @@ namespace CorteCor.Tests
             Assert.Single(result);
             _mockCommand.Verify(cmd => cmd.ExecuteReader(), Times.Once);
         }
+        [Fact]
+        public void VerificarDisponibilidade_SemConflito_DeveRetornarTrue()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(0); // Count = 0
+
+            // Act
+            var result = _handler.VerificarDisponibilidade(1, DateTime.Now, DateTime.Now.AddHours(1));
+
+            // Assert
+            Assert.True(result);
+            _mockCommand.Verify(cmd => cmd.ExecuteScalar(), Times.Once);
+        }
+
+        [Fact]
+        public void VerificarDisponibilidade_ComConflito_DeveRetornarFalse()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(1); // Count = 1
+
+            // Act
+            var result = _handler.VerificarDisponibilidade(1, DateTime.Now, DateTime.Now.AddHours(1));
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void AtualizarStatus_DeveExecutarUpdate()
+        {
+            // Act
+            _handler.AtualizarStatus(1, "Cancelado");
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
+
+        [Fact]
+        public void Atualizar_DeveExecutarUpdateCompleto()
+        {
+            // Arrange
+            var agendamento = new Agendamento 
+            { 
+                IdAgendamento = 1,
+                DataHora = DateTime.Now,
+                IdServico = 2,
+                IdPessoa = 3,
+                IdFuncionario = 4,
+                Status = "Reagendado"
+            };
+
+            // Act
+            _handler.Atualizar(agendamento);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
     }
 }
