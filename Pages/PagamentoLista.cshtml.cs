@@ -26,6 +26,9 @@ namespace CorteCor.Pages
         [BindProperty(SupportsGet = true)]
         public string? NomeCliente { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataAgendamento { get; set; }
+
         public void OnGet()
         {
             var handler = new PagamentoHandler();
@@ -34,7 +37,8 @@ namespace CorteCor.Pages
                 DataInicio = DataInicio,
                 DataFim = DataFim,
                 Status = Status,
-                NomeCliente = NomeCliente
+                NomeCliente = NomeCliente,
+                DataAgendamento = DataAgendamento
             };
             Pagamentos = handler.Listar(filtro) ?? new List<Pagamento>();
         }

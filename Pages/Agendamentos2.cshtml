@@ -1,4 +1,4 @@
-@page
+Ôªø@page
 @model CorteCor.Pages.Agendamentos2Model
 @{
     ViewData["Title"] = "Agendamentos";
@@ -7,7 +7,7 @@
 @section Styles {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" />
     <style>
-        /* ====== Corte&Cor - FullCalendar (LIGHT / legÌvel) ====== */
+        /* ====== Corte&Cor - FullCalendar (LIGHT / leg√≠vel) ====== */
 
         :root {
             --cc-bg: #f5f7fb;
@@ -25,7 +25,7 @@
             background: var(--cc-bg);
         }
 
-        /* card do calend·rio */
+        /* card do calend√°rio */
         #calendar {
             max-width: 1220px;
             margin: 18px auto;
@@ -60,7 +60,7 @@
                 color: var(--cc-text) !important;
             }
 
-            /* botıes */
+            /* bot√µes */
             .fc .fc-button {
                 border: 1px solid var(--cc-border) !important;
                 background: #fff !important;
@@ -75,7 +75,7 @@
                     border-color: #d8deea !important;
                 }
 
-            /* bot„o ativo */
+            /* bot√£o ativo */
             .fc .fc-button-primary:not(:disabled).fc-button-active,
             .fc .fc-button-primary:not(:disabled):active {
                 background: var(--cc-accent) !important;
@@ -97,7 +97,7 @@
                 border-color: var(--cc-border) !important;
             }
 
-            /* cabeÁalho dos dias */
+            /* cabe√ßalho dos dias */
             .fc .fc-col-header {
                 background: #f1f5ff;
             }
@@ -133,7 +133,7 @@
                 background: var(--cc-accent-soft) !important;
             }
 
-            /* seleÁ„o */
+            /* sele√ß√£o */
             .fc .fc-highlight {
                 background: rgba(37,99,235,.18) !important;
             }
@@ -168,12 +168,12 @@
                 border-color: rgba(22,163,74,.9) !important;
             }
 
-            /* seu cabeÁalho roxo (mantive, mas se quiser eu harmonizo com o tema) */
+            /* seu cabe√ßalho roxo (mantive, mas se quiser eu harmonizo com o tema) */
             .fc th {
                 background: #767dff !important;
             }
 
-            /* bot„o "Semanas" como texto (n„o clic·vel) */
+            /* bot√£o "Semanas" como texto (n√£o clic√°vel) */
             .fc .fc-ccSemanas-button {
                 background: transparent !important;
                 border: 0 !important;
@@ -188,7 +188,7 @@
                 background: transparent !important;
             }
 
-            /* bot„o "Novo Agendamento" em destaque */
+            /* bot√£o "Novo Agendamento" em destaque */
             .fc .fc-novoAgendamento-button {
                 background: var(--cc-accent) !important;
                 border-color: var(--cc-accent) !important;
@@ -200,7 +200,7 @@
                 border-color: #1d4ed8 !important;
             }
 
-        /* ====== Responsividade MÛvel ====== */
+        /* ====== Responsividade M√≥vel ====== */
         @@media (max-width: 768px) {
             .fc .fc-toolbar {
                 flex-direction: column !important;
@@ -219,7 +219,7 @@
                 font-size: 1.1rem;
             }
 
-            /* Garante que o grupo "Semanas" e botıes nav fiquem bem no meio */
+            /* Garante que o grupo "Semanas" e bot√µes nav fiquem bem no meio */
             .fc .fc-button-group {
                 justify-content: center;
             }
@@ -236,12 +236,12 @@
     <div id="calendar"></div>
 </div>
 
-<!-- Anti-forgery (necess·rio para POST via fetch) -->
+<!-- Anti-forgery (necess√°rio para POST via fetch) -->
 <form method="post" id="antiForgeryForm" class="d-none">
     @Html.AntiForgeryToken()
 </form>
 
-<!-- Modal (Bootstrap 5) acionado ao clicar no calend·rio -->
+<!-- Modal (Bootstrap 5) acionado ao clicar no calend√°rio -->
 <div class="modal fade" id="agendamentoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -252,7 +252,7 @@
 
             <div class="modal-body">
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">InÌcio</label>
+                    <label class="form-label mb-0">In√≠cio</label>
                     <input id="inicio" class="form-control" type="datetime-local" />
                 </div>
 
@@ -274,7 +274,7 @@
 
 
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">ServiÁo</label>
+                    <label class="form-label mb-0">Servi√ßo</label>
                     <select id="idServico" class="form-select">
                         <option value="">Selecione...</option>
                         @foreach (var s in Model.Servicos)
@@ -316,7 +316,7 @@
 
 
 
-<!-- NOVO Modal (Bootstrap 5) - Novo Agendamento manual pelo bot„o -->
+<!-- NOVO Modal (Bootstrap 5) - Novo Agendamento manual pelo bot√£o -->
 <div class="modal fade" id="agendamentoNovoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -327,14 +327,14 @@
 
             <div class="modal-body">
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">InÌcio</label>
-                    <!-- habilitado com calend·rio (date/time picker do navegador) -->
+                    <label class="form-label mb-0">In√≠cio</label>
+                    <!-- habilitado com calend√°rio (date/time picker do navegador) -->
                     <input id="inicioNovo" class="form-control" type="datetime-local" />
                 </div>
 
                 <div class="cc-modal-row">
                     <label class="form-label mb-0">Fim</label>
-                    <!-- habilitado com calend·rio (date/time picker do navegador) -->
+                    <!-- habilitado com calend√°rio (date/time picker do navegador) -->
                     <input id="fimNovo" class="form-control" type="datetime-local" readonly/>
                 </div>
 
@@ -350,7 +350,7 @@
                 </div>
 
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">ServiÁo</label>
+                    <label class="form-label mb-0">Servi√ßo</label>
                     <select id="idServicoNovo" class="form-select">
                         <option value="">Selecione...</option>
                         @foreach (var s in Model.Servicos)
@@ -363,7 +363,7 @@
                 </div>
 
                 <div class="text-muted small">
-                    Obs: escolha InÌcio pelo calend·rio. Ao trocar o serviÁo, o sistema inclui o fim pela duraÁ„o do serviÁo.
+                    Obs: escolha In√≠cio pelo calend√°rio. Ao trocar o servi√ßo, o sistema inclui o fim pela dura√ß√£o do servi√ßo.
                 </div>
             </div>
 
@@ -420,9 +420,9 @@
             const services = await resp.json();
             const select = document.getElementById(selectId);
             
-            // Se o serviÁo atual n„o estiver no retorno (por indisponibilidade), 
-            // no modo de ediÁ„o È bom manter a opÁ„o dele se quisermos apenas visualiz·-lo.
-            // Mas o requisito pede para "somente mostrar os disponÌveis".
+            // Se o servi√ßo atual n√£o estiver no retorno (por indisponibilidade), 
+            // no modo de edi√ß√£o √© bom manter a op√ß√£o dele se quisermos apenas visualiz√°-lo.
+            // Mas o requisito pede para "somente mostrar os dispon√≠veis".
             
             select.innerHTML = '<option value="">Selecione...</option>';
             services.forEach(s => {
@@ -439,20 +439,20 @@
             selectionStart = start;
             selectionEnd = end;
 
-            // TÌtulo din‚mico
+            // T√≠tulo din√¢mico
             document.querySelector('#agendamentoModal .modal-title').textContent = 'Novo agendamento';
 
             document.getElementById('idAgendamento').value = '';
             document.getElementById('inicio').value = toDateTimeLocalValue(start);
 
-            // Fetch serviÁos disponÌveis
+            // Fetch servi√ßos dispon√≠veis
             await atualizarServicosDisponiveis(start, 'idServico');
 
             // limpa campos
             document.getElementById('idPessoa').value = '';
             document.getElementById('idServico').value = '';
 
-            // Toggle botıes
+            // Toggle bot√µes
             document.getElementById('btnSalvar').classList.remove('d-none');
             document.getElementById('btnAlterar').classList.add('d-none');
             document.getElementById('btnExcluir').classList.add('d-none');
@@ -461,7 +461,7 @@
             document.getElementById('rowStatus').classList.add('d-none');
             document.getElementById('idStatus').value = 'Agendado';
 
-            // fim passa a ser calculado pelo serviÁo (fallback 30min)
+            // fim passa a ser calculado pelo servi√ßo (fallback 30min)
             recalcularFimPeloServico();
 
             modal.show();
@@ -471,7 +471,7 @@
         function getDuracaoServicoMinutos() {
             const opt = document.querySelector('#idServico option:checked');
             const min = parseInt(opt?.dataset?.duracaoMin || '0', 10);
-            // fallback: 30 min se n„o tiver duraÁ„o v·lida
+            // fallback: 30 min se n√£o tiver dura√ß√£o v√°lida
             return (!min || isNaN(min) || min <= 0) ? 30 : min;
         }
 
@@ -483,7 +483,7 @@
             
             // Se for datetime-local
             // document.getElementById('fim').value = toDateTimeLocalValue(selectionEnd); 
-            // Mas o fim È texto readonly na modal principal? N„o, È "text" readonly. 
+            // Mas o fim √© texto readonly na modal principal? N√£o, √© "text" readonly. 
             // Vamos manter padrao de exibicao texto para Fim, ou mudar para datetime-local readonly.
             // O original era: input type="text" readonly. formatLocal(end).
             document.getElementById('fim').value = formatLocal(selectionEnd);
@@ -503,7 +503,7 @@
             recalcularFimPeloServico();
 
             if (!idPessoaStr || !idServicoStr) {
-                Swal.fire('AtenÁ„o', 'Informe Cliente e ServiÁo.', 'warning');
+                Swal.fire('Aten√ß√£o', 'Informe Cliente e Servi√ßo.', 'warning');
                 return;
             }
 
@@ -550,7 +550,7 @@
             const idServicoStr = document.getElementById('idServico').value;
 
             if (!id || !idPessoaStr || !idServicoStr) {
-                Swal.fire('AtenÁ„o', 'Dados incompletos.', 'warning');
+                Swal.fire('Aten√ß√£o', 'Dados incompletos.', 'warning');
                 return;
             }
 
@@ -612,7 +612,7 @@
             if (resp.ok) {
                 calendar.getEventById(id)?.remove();
                 modal.hide();
-                Swal.fire('ExcluÌdo', 'Agendamento removido.', 'success');
+                Swal.fire('Exclu√≠do', 'Agendamento removido.', 'success');
             } else {
                 await showError(resp, 'Erro ao excluir.');
             }
@@ -637,14 +637,14 @@
                     window.open(data.checkoutUrl, '_blank');
                     modal.hide();
                     calendar.refetchEvents();
-                    Swal.fire('Pagamento Iniciado', 'Aguardando confirmaÁ„o do Mercado Pago.', 'info');
+                    Swal.fire('Pagamento Iniciado', 'Aguardando confirma√ß√£o do Mercado Pago.', 'info');
                 }
             } else {
                 await showError(resp, 'Erro ao iniciar pagamento.');
             }
         }
 
-        /* funÁıes do modal novo - acionado pelo bot„o*/
+        /* fun√ß√µes do modal novo - acionado pelo bot√£o*/
         function toDateTimeLocalValue(dt) {
             const pad = n => String(n).padStart(2, '0');
             return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
@@ -677,11 +677,11 @@
         }
 
         async function abrirModalNovoAgendamento() {
-            // default: prÛximo bloco de 30 min
+            // default: pr√≥ximo bloco de 30 min
             const start = roundToNext30Min(new Date());
             document.getElementById('inicioNovo').value = toDateTimeLocalValue(start);
 
-            // Fetch serviÁos disponÌveis
+            // Fetch servi√ßos dispon√≠veis
             await atualizarServicosDisponiveis(start, 'idServicoNovo');
 
             // limpa selects
@@ -705,23 +705,23 @@
             const end = fromDateTimeLocalValue(document.getElementById('fimNovo').value);
 
             if (!start || !end) {
-                Swal.fire('AtenÁ„o', 'Informe InÌcio e Fim.', 'warning');
+                Swal.fire('Aten√ß√£o', 'Informe In√≠cio e Fim.', 'warning');
                 return;
             }
 
             if (end <= start) {
-                Swal.fire('AtenÁ„o', 'O Fim deve ser maior que o InÌcio.', 'warning');
+                Swal.fire('Aten√ß√£o', 'O Fim deve ser maior que o In√≠cio.', 'warning');
                 return;
             }
 
             if (!idPessoaStr || !idServicoStr) {
-                Swal.fire('AtenÁ„o', 'Informe Cliente e ServiÁo.', 'warning');
+                Swal.fire('Aten√ß√£o', 'Informe Cliente e Servi√ßo.', 'warning');
                 return;
             }
 
             const payload = {
                 start: start.toISOString(),
-                end: end.toISOString(),               // <-- novo (back-end aceitar·)
+                end: end.toISOString(),               // <-- novo (back-end aceitar√°)
                 idPessoa: parseInt(idPessoaStr, 10),
                 idServico: parseInt(idServicoStr, 10)
             };
@@ -776,7 +776,7 @@
                 customButtons: {
                     ccSemanas: {
                         text: 'Semanas',
-                        click: function () { /* n„o faz nada */ }
+                        click: function () { /* n√£o faz nada */ }
                     },
                     novoAgendamento: {     
                         text: 'Novo Agendamento',
@@ -821,14 +821,14 @@
                     
                     selectionStart = new Date(data.start);
 
-                    // TÌtulo din‚mico
+                    // T√≠tulo din√¢mico
                     document.querySelector('#agendamentoModal .modal-title').textContent = 'Alterar Agendamento';
 
                     document.getElementById('idAgendamento').value = data.id;
                     document.getElementById('inicio').value = toDateTimeLocalValue(selectionStart);
                     document.getElementById('idPessoa').value = data.idPessoa;
                     
-                    // Fetch serviÁos disponÌveis para este hor·rio antes de setar o valor
+                    // Fetch servi√ßos dispon√≠veis para este hor√°rio antes de setar o valor
                     await atualizarServicosDisponiveis(selectionStart, 'idServico', data.idServico);
                     
                     document.getElementById('idServico').value = data.idServico;
@@ -845,7 +845,7 @@
                     document.getElementById('idServico').disabled = isPago;
                     document.getElementById('idStatus').disabled = isPago;
 
-                    // Toggle botıes
+                    // Toggle bot√µes
                     document.getElementById('btnSalvar').classList.add('d-none');
                     
                     if (isPago) {
@@ -889,7 +889,7 @@
             document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
             document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
 
-            // Listener para mudanÁa de hor·rio na ediÁ„o
+            // Listener para mudan√ßa de hor√°rio na edi√ß√£o
             document.getElementById('inicio').addEventListener('change', function() {
                 const val = this.value;
                 if(val) {

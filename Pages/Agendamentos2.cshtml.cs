@@ -54,12 +54,7 @@ namespace CorteCor.Pages
                    var nomeCliente = dictPessoas.ContainsKey(a.IdPessoa) ? dictPessoas[a.IdPessoa] : "Cliente Removido";
                    
                    var duracao = servico?.Duracao ?? TimeSpan.FromMinutes(30);
-                   var cor = "#3788d8";
-                   if (string.IsNullOrEmpty(cor)) cor = "#3788d8";
-
-                   // Cores por status
-                   if (a.Status == "Pago") cor = "green";
-                   else if (a.Status == "Pendente") cor = "orange";
+                   var cor = GetCorPorStatus(a.Status);
 
                     var primeiroNome = nomeCliente.Split(' ')[0];
                     var titulo = $"{primeiroNome} - {servico?.Nome ?? "Serviço Removido"}";
@@ -77,6 +72,18 @@ namespace CorteCor.Pages
                 .ToList();
 
             return new JsonResult(items);
+        }
+
+        private string GetCorPorStatus(string status)
+        {
+            return status switch
+            {
+                "Agendado" => "#3788d8", // Azul Claro
+                "Pendente" => "#ffc107", // Amarelo Claro (Bootstrap warning)
+                "Pago" => "#28a745",     // Verde Claro (Bootstrap success)
+                "Cancelado" => "#dc3545", // Vermelho (Bootstrap danger)
+                _ => "#3788d8"           // Default Azul
+            };
         }
 
         public class CreateRequest
@@ -144,7 +151,7 @@ namespace CorteCor.Pages
             {
                 id = novoId,
                 servicoNome = servico.Nome,
-                servicoCor = "#3788d8"
+                servicoCor = GetCorPorStatus("Agendado")
             });
         }
 
@@ -233,7 +240,7 @@ namespace CorteCor.Pages
             {
                 id = agendamento.IdAgendamento,
                 title = $"{primeiroNome} - {servico.Nome}",
-                color = "#3788d8",
+                color = GetCorPorStatus(agendamento.Status),
                 start = agendamento.DataHora, // Return new start
                 end = agendamento.DataHora.Add(servico.Duracao)
             });

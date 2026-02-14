@@ -34,13 +34,18 @@ namespace CorteCor.Pages
                 {
                     var servicoHandler = new ServicoHandler();
                     var servico = servicoHandler.ObterPorId(agendamento.IdServico);
+
+                    var pessoaHandler = new PessoaHandler();
+                    var pessoa = pessoaHandler.ObterPorId(agendamento.IdPessoa);
                     
                     Pagamento = new Pagamento
                     {
                         IdAgendamento = idAgendamento.Value,
                         Valor = servico?.Preco ?? 0,
                         Descricao = servico != null ? $"Pagamento Ref. Serviço {servico.Nome}" : "",
-                        Data = DateTime.Now
+                        Data = DateTime.Now,
+                        NomeCliente = pessoa?.Nome,
+                        NomeServico = servico?.Nome
                     };
                 }
             }
@@ -89,6 +94,7 @@ namespace CorteCor.Pages
 
             decimal valor = ParseDecimalBR(Request.Form["valor"]);
             DateTime data = ParseDateTimeLocal(Request.Form["data"]);
+            DateTime? pagoEm = string.IsNullOrWhiteSpace(Request.Form["pagoEm"]) ? null : DateTime.Parse(Request.Form["pagoEm"]);
 
             var pagamento = new Pagamento
             {
@@ -99,6 +105,7 @@ namespace CorteCor.Pages
                 Tipo = Request.Form["tipo"],
                 Valor = valor,
                 Data = data,
+                PagoEm = pagoEm,
 
                 Contos = Request.Form["contos"],
                 Campos = Request.Form["campos"],

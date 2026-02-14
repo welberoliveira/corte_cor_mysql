@@ -2505,7 +2505,12 @@ public class PagamentoHandler : EntityHandler<Pagamento>
             sb.Append("AND Pe.Nome LIKE @NomeCliente ");
         }
 
-        sb.Append("ORDER BY P.CriadoEm DESC;");
+        if (filtro.DataAgendamento.HasValue)
+        {
+            sb.Append("AND CAST(A.DataHora AS DATE) = CAST(@DataAgendamento AS DATE) ");
+        }
+
+        sb.Append("ORDER BY A.DataHora DESC, P.CriadoEm DESC;");
 
         var list = new List<Pagamento>();
         
@@ -2525,6 +2530,9 @@ public class PagamentoHandler : EntityHandler<Pagamento>
                 
             if (!string.IsNullOrEmpty(filtro.NomeCliente))
                 command.AddWithValue("@NomeCliente", "%" + filtro.NomeCliente + "%");
+
+            if (filtro.DataAgendamento.HasValue)
+                command.AddWithValue("@DataAgendamento", filtro.DataAgendamento.Value);
 
             using (var reader = command.ExecuteReader())
             {
@@ -2606,6 +2614,67 @@ public class PagamentoHandler : EntityHandler<Pagamento>
 
         AtualizarPagamento(pagamento);
         return true;
+    }
+
+    public void AtualizarStatusWebhook(Guid idPagamento, string status, long? mercadoPagoPaymentId, string mpStatus, string mpStatusDetail, DateTime? pagoEm)
+    {
+        Console.WriteLine($"[Webhook] Atualizando pagamento {idPagamento} no banco. Status: {status}, MP_PaymentId: {mercadoPagoPaymentId}");
+
+        using (var connection = _dbHandler.GetConnection())
+        {
+            // 1. Atualizar Tabela de Pagamento
+            string queryPagamento = @"
+            UPDATE CorteCor_Pagamento
+            SET Status = @Status,
+                MercadoPagoPaymentId = @MercadoPagoPaymentId,
+                MpStatus = @MpStatus,
+                MpStatusDetail = @MpStatusDetail,
+                AtualizadoEm = GETUTCDATE(),
+                PagoEm = @PagoEm 
+            WHERE IdPagamento = @IdPagamento;";
+
+            using (var command = connection.CreateCommand(queryPagamento))
+            {
+                command.AddWithValue("@Status", status);
+                command.AddWithValue("@MercadoPagoPaymentId", mercadoPagoPaymentId.HasValue ? (object)mercadoPagoPaymentId.Value.ToString() : DBNull.Value);
+                command.AddWithValue("@MpStatus", (object?)mpStatus ?? DBNull.Value);
+                command.AddWithValue("@MpStatusDetail", (object?)mpStatusDetail ?? DBNull.Value);
+                command.AddWithValue("@PagoEm", (object?)pagoEm ?? DBNull.Value);
+                command.AddWithValue("@IdPagamento", idPagamento);
+
+                command.ExecuteNonQuery();
+            }
+
+            // 2. Cascata para Agendamento
+            string novoStatusAgendamento = null;
+            if (status.Equals("Pago", StringComparison.OrdinalIgnoreCase) || status.Equals("approved", StringComparison.OrdinalIgnoreCase))
+            {
+                novoStatusAgendamento = "Confirmado"; 
+                Console.WriteLine($"[Sync] Pagamento {idPagamento} aprovado. Agendamento vinculado atualizado para Confirmado.");
+            }
+            else if (status.Equals("Cancelado", StringComparison.OrdinalIgnoreCase) || status.Equals("rejected", StringComparison.OrdinalIgnoreCase) || status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+            {
+                novoStatusAgendamento = "Pendente";
+                Console.WriteLine($"[Sync] Pagamento {idPagamento} cancelado. Agendamento vinculado voltando para Pendente.");
+            }
+
+            if (!string.IsNullOrEmpty(novoStatusAgendamento))
+            {
+                string queryAgendamento = @"
+                UPDATE A
+                SET Status = @StatusAg
+                FROM CorteCor_Agendamento A
+                INNER JOIN CorteCor_Pagamento P ON A.IdAgendamento = P.IdAgendamento
+                WHERE P.IdPagamento = @IdPagamento;";
+
+                using (var commandAg = connection.CreateCommand(queryAgendamento))
+                {
+                    commandAg.AddWithValue("@StatusAg", novoStatusAgendamento);
+                    commandAg.AddWithValue("@IdPagamento", idPagamento);
+                    commandAg.ExecuteNonQuery();
+                }
+            }
+        }
     }
 
     public override void Cadastrar(Pagamento entity) => throw new NotSupportedException("Use CadastrarPagamento(Pagamento pago).");

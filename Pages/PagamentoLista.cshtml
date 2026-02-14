@@ -44,6 +44,10 @@
                     <label asp-for="NomeCliente" class="form-label">Cliente</label>
                     <input asp-for="NomeCliente" class="form-control" placeholder="Nome...">
                 </div>
+                <div class="col-md-3">
+                    <label asp-for="DataAgendamento" class="form-label">Data do Agendamento</label>
+                    <input asp-for="DataAgendamento" type="date" class="form-control">
+                </div>
                 <div class="col-12 text-end">
                     <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrar</button>
                     <a asp-page="/PagamentoLista" class="btn btn-secondary">Limpar</a>
@@ -126,7 +130,7 @@
                                 <input type="hidden" name="id" value="@p.IdPagamento">
                                 <input type="hidden" name="action" value="sincronizar">
                                 <button type="submit" class="btn btn-sm btn-primary" title="Sincronizar Status">
-                                    <i class="fas fa-sync-alt"></i>
+                                    <i class="fas fa-sync-alt"></i> Sincronizar
                                 </button>
                             </form>
                             
@@ -134,7 +138,7 @@
                                 <input type="hidden" name="id" value="@p.IdPagamento">
                                 <input type="hidden" name="action" value="alterar">
                                 <button type="submit" class="btn btn-sm btn-info" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="fas fa-edit"></i> Editar
                                 </button>
                             </form>
 
@@ -142,7 +146,7 @@
                                 <input type="hidden" name="id" value="@p.IdPagamento">
                                 <input type="hidden" name="action" value="excluir">
                                 <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash"></i> Excluir
                                 </button>
                             </form>
                         </td>

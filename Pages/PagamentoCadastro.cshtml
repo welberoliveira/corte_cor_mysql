@@ -27,7 +27,7 @@
                 {
                     <div class="row mb-4 bg-light p-3 rounded border">
                         <div class="col-md-4">
-                            <label class="form-label fw-bold">Criado em</label>
+                            <label class="form-label fw-bold">Transação criada em</label>
                             <div class="form-control-plaintext">@Model.Pagamento.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
                         </div>
                         <div class="col-md-4">
@@ -43,20 +43,43 @@
 
                 <div class="row g-3">
                     <div class="col-md-6">
+                        <label class="form-label">Nome do Cliente</label>
+                        <input type="text" class="form-control" readonly value="@Model.Pagamento?.NomeCliente">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Serviço</label>
+                        <input type="text" class="form-control" readonly value="@Model.Pagamento?.NomeServico">
+                    </div>
+
+                    <div class="col-md-6">
                         <label for="idAgendamento" class="form-label">Código do Agendamento</label>
-                        <input type="number" id="idAgendamento" name="idAgendamento" class="form-control" required
+                        <input type="number" id="idAgendamento" name="idAgendamento" class="form-control" readonly
                                value="@(Model.Pagamento?.IdAgendamento ?? 0)">
                     </div>
 
                     <div class="col-md-6">
+                         <label class="form-label">MercadoPago Preference ID</label>
+                         <input type="text" class="form-control" readonly value="@Model.Pagamento?.MercadoPagoPreferenceId">
+                    </div>
+
+                    <div class="col-md-6">
+                         <label class="form-label">MercadoPago Payment ID</label>
+                         <input type="text" class="form-control" readonly value="@Model.Pagamento?.MercadoPagoPaymentId">
+                    </div>
+
+                    <div class="col-md-6">
                         <label for="idMeioPagamento" class="form-label">Meio de Pagamento</label>
-                        <input type="number" id="idMeioPagamento" name="idMeioPagamento" class="form-control" required
+                        <input type="number" id="idMeioPagamento" name="idMeioPagamento" class="form-control" readonly
                                value="@(Model.Pagamento?.IdMeioPagamento ?? 0)">
                     </div>
 
                     <div class="col-md-6">
                         <label for="tipo" class="form-label">Tipo de Transação</label>
-                        <select id="tipo" name="tipo" class="form-select" required>
+                        @{
+                            var isPago = (Model.Pagamento?.Status == "Pago" || Model.Pagamento?.Status == "approved");
+                            var disabledAttr = isPago ? "disabled" : "";
+                        }
+                        <select id="tipo" name="tipo" class="form-select" required @disabledAttr>
                             @{
                                 var tipoAtual = Model.Pagamento?.Tipo ?? "";
                             }
@@ -67,20 +90,27 @@
                             <option value="BOLETO" selected="@(tipoAtual == "BOLETO")">Boleto</option>
                             <option value="OUTROS" selected="@(tipoAtual == "OUTROS")">Outros</option>
                         </select>
+                        @if(isPago) { <input type="hidden" name="tipo" value="@(Model.Pagamento?.Tipo)"> }
                     </div>
 
                     <div class="col-md-3">
                         <label for="valor" class="form-label">Valor (R$)</label>
-                        <input type="text" id="valor" name="valor" class="form-control fw-bold" required
+                        <input type="text" id="valor" name="valor" class="form-control fw-bold" required @(isPago ? "readonly" : "")
                                value="@(Model.Pagamento != null ? Model.Pagamento.Valor.ToString("0.00").Replace('.', ',') : "")">
                     </div>
 
                     <div class="col-md-3">
                         <label for="data" class="form-label">Data de Referncia</label>
-                        <input type="datetime-local" id="data" name="data" class="form-control" required
+                        <input type="datetime-local" id="data" name="data" class="form-control" required @(isPago ? "readonly" : "")
                                value="@((Model.Pagamento != null && Model.Pagamento.Data != default(DateTime))
                                 ? Model.Pagamento.Data.ToString("yyyy-MM-ddTHH:mm")
                                 : DateTime.Now.ToString("yyyy-MM-ddTHH:mm"))">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="pagoEm" class="form-label">Data do Pagamento</label>
+                        <input type="datetime-local" id="pagoEm" name="pagoEm" class="form-control" @(isPago ? "readonly" : "")
+                               value="@(Model.Pagamento?.PagoEm?.ToString("yyyy-MM-ddTHH:mm"))">
                     </div>
 
                     <div class="col-12">

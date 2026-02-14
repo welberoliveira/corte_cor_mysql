@@ -82,9 +82,9 @@ namespace CorteCor.Pages.Webhooks
 
                             if (p != null)
                             {
-                                p.MercadoPagoPaymentId = payment.Id.ToString();
                                 p.MpStatus = payment.Status;
                                 p.MpStatusDetail = payment.StatusDetail;
+
                                 
                                 if (payment.Status == "approved")
                                 {
@@ -103,7 +103,7 @@ namespace CorteCor.Pages.Webhooks
                                     // agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Agendado");
                                 }
 
-                                pagHandler.AtualizarPagamento(p);
+                                pagHandler.AtualizarStatusWebhook(p.IdPagamento, p.Status, payment.Id, p.MpStatus, p.MpStatusDetail, p.PagoEm);
                             }
                         }
                     }

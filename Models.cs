@@ -237,5 +237,6 @@ public class Models
         public DateTime? DataFim { get; set; }
         public string? Status { get; set; }
         public string? NomeCliente { get; set; }
+        public DateTime? DataAgendamento { get; set; }
     }
 }
