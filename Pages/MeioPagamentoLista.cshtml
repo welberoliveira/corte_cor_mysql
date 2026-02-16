@@ -17,7 +17,10 @@
 </style>
 
 <div class="container">
-    <h4>Lista de Meios de Pagamento</h4>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>Lista de Meios de Pagamento</h4>
+        <a href="/MeioPagamentoCadastro" class="btn btn-primary">Cadastrar Novo</a>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -37,7 +40,7 @@
                 <th>Parcelamento</th>
                 <th>Prazo (dias)</th>
                 <th>Ativo</th>
-                <th>Ações</th>
+                <th>AÃ§Ãµes</th>
             </tr>
         </thead>
         <tbody>
@@ -52,10 +55,10 @@
                     <td>
                         @(Meio.PermiteParcelamento
                             ? $"Sim ({(Meio.ParcelasMax.HasValue ? Meio.ParcelasMax.Value.ToString() : "-")}x)"
-                            : "Não")
+                            : "NÃ£o")
                     </td>
                     <td>@Meio.PrazoRecebimentoDias</td>
-                    <td>@(Meio.Ativo ? "Sim" : "Não")</td>
+                    <td>@(Meio.Ativo ? "Sim" : "NÃ£o")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Meio.IdMeioPagamento">

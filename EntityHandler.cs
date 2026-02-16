@@ -2109,6 +2109,62 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
 
         return agendamentos;
     }
+
+    public virtual List<Agendamento> ListarFiltrado(int idSalao, DateTime? inicio, DateTime? fim, string status, int? idServico, int? idPessoa, int? idFuncionario, bool mostrarExcluidos)
+    {
+        var sql = @"
+        SELECT a.IdAgendamento, a.DataHora, a.Status, a.IdServico, a.IdPessoa, a.IdFuncionario, a.Excluido
+        FROM CorteCor_Agendamento a
+        INNER JOIN CorteCor_Servico s ON s.IdServico = a.IdServico
+        WHERE s.IdSalao = @IdSalao
+        ";
+
+        if (inicio.HasValue) sql += " AND a.DataHora >= @Inicio";
+        if (fim.HasValue) sql += " AND a.DataHora <= @Fim";
+        if (!string.IsNullOrEmpty(status)) sql += " AND a.Status = @Status";
+        if (idServico.HasValue) sql += " AND a.IdServico = @IdServico";
+        if (idPessoa.HasValue) sql += " AND a.IdPessoa = @IdPessoa";
+        if (idFuncionario.HasValue) sql += " AND a.IdFuncionario = @IdFuncionario";
+        
+        if (!mostrarExcluidos)
+        {
+            sql += " AND (a.Excluido = 0 OR a.Excluido IS NULL)";
+        }
+        
+        sql += " ORDER BY a.DataHora DESC";
+
+        var agendamentos = new List<Agendamento>();
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(sql))
+        {
+            command.AddWithValue("@IdSalao", idSalao);
+            if (inicio.HasValue) command.AddWithValue("@Inicio", inicio.Value);
+            if (fim.HasValue) command.AddWithValue("@Fim", fim.Value);
+            if (!string.IsNullOrEmpty(status)) command.AddWithValue("@Status", status);
+            if (idServico.HasValue) command.AddWithValue("@IdServico", idServico.Value);
+            if (idPessoa.HasValue) command.AddWithValue("@IdPessoa", idPessoa.Value);
+            if (idFuncionario.HasValue) command.AddWithValue("@IdFuncionario", idFuncionario.Value);
+
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    agendamentos.Add(new Agendamento
+                    {
+                        IdAgendamento = reader["IdAgendamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdAgendamento"]),
+                        DataHora = reader["DataHora"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataHora"]),
+                        Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
+                        IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
+                        IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
+                        IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                        Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
+                    });
+                }
+            }
+        }
+        return agendamentos;
+    }
 }
 
 
@@ -2123,11 +2179,15 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
         INSERT INTO CorteCor_MeioPagamento
             (Nome, Tipo, Gateway, PermiteParcelamento, ParcelasMax,
              TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo,
-             IdSalao, DataCadastro)
+             IdSalao, DataCadastro,
+             MpAccessTokenProd, MpAccessTokenSandbox, MpPublicKeyProd, MpPublicKeySandbox,
+             MpProduction)
         VALUES
             (@Nome, @Tipo, @Gateway, @PermiteParcelamento, @ParcelasMax,
              @TaxaPercentual, @TaxaFixa, @PrazoRecebimentoDias, @Ativo,
-             @IdSalao, @DataCadastro);
+             @IdSalao, @DataCadastro,
+             @MpAccessTokenProd, @MpAccessTokenSandbox, @MpPublicKeyProd, @MpPublicKeySandbox,
+             @MpProduction);
         SELECT SCOPE_IDENTITY();";
 
         using (var connection = _dbHandler.GetConnection())
@@ -2149,6 +2209,12 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
             command.AddWithValue("@IdSalao", meio.IdSalao);
             command.AddWithValue("@DataCadastro", meio.DataCadastro == default ? DateTime.Now : meio.DataCadastro);
 
+            command.AddWithValue("@MpAccessTokenProd", (object?)meio.MpAccessTokenProd ?? DBNull.Value);
+            command.AddWithValue("@MpAccessTokenSandbox", (object?)meio.MpAccessTokenSandbox ?? DBNull.Value);
+            command.AddWithValue("@MpPublicKeyProd", (object?)meio.MpPublicKeyProd ?? DBNull.Value);
+            command.AddWithValue("@MpPublicKeySandbox", (object?)meio.MpPublicKeySandbox ?? DBNull.Value);
+            command.AddWithValue("@MpProduction", meio.MpProduction);
+
             object result = command.ExecuteScalar();
             if (result != null && int.TryParse(result.ToString(), out int id))
                 novoId = id;
@@ -2161,7 +2227,9 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
     {
         string query = @"
         SELECT IdMeioPagamento, Nome, Tipo, Gateway, PermiteParcelamento, ParcelasMax,
-               TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo, IdSalao, DataCadastro
+               TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo, IdSalao, DataCadastro,
+               MpAccessTokenProd, MpAccessTokenSandbox, MpPublicKeyProd, MpPublicKeySandbox,
+               MpProduction
         FROM CorteCor_MeioPagamento
         WHERE IdMeioPagamento = @IdMeioPagamento;";
 
@@ -2191,7 +2259,12 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
                     Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
 
                     IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
-                    DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"])
+                    DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"]),
+                    MpAccessTokenProd = reader["MpAccessTokenProd"] as string,
+                    MpAccessTokenSandbox = reader["MpAccessTokenSandbox"] as string,
+                    MpPublicKeyProd = reader["MpPublicKeyProd"] as string,
+                    MpPublicKeySandbox = reader["MpPublicKeySandbox"] as string,
+                    MpProduction = reader["MpProduction"] is DBNull ? false : Convert.ToBoolean(reader["MpProduction"])
                 };
             }
         }
@@ -2201,7 +2274,9 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
     {
         string query = @"
         SELECT IdMeioPagamento, Nome, Tipo, Gateway, PermiteParcelamento, ParcelasMax,
-               TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo, IdSalao, DataCadastro
+               TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo, IdSalao, DataCadastro,
+               MpAccessTokenProd, MpAccessTokenSandbox, MpPublicKeyProd, MpPublicKeySandbox,
+               MpProduction
         FROM CorteCor_MeioPagamento
         ORDER BY Nome;";
 
@@ -2230,7 +2305,12 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
                     Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
 
                     IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
-                    DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"])
+                    DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"]),
+                    MpAccessTokenProd = reader["MpAccessTokenProd"] as string,
+                    MpAccessTokenSandbox = reader["MpAccessTokenSandbox"] as string,
+                    MpPublicKeyProd = reader["MpPublicKeyProd"] as string,
+                    MpPublicKeySandbox = reader["MpPublicKeySandbox"] as string,
+                    MpProduction = reader["MpProduction"] is DBNull ? false : Convert.ToBoolean(reader["MpProduction"])
                 });
             }
         }
@@ -2242,7 +2322,9 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
     {
         string query = @"
         SELECT IdMeioPagamento, Nome, Tipo, Gateway, PermiteParcelamento, ParcelasMax,
-               TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo, IdSalao, DataCadastro
+               TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo, IdSalao, DataCadastro,
+               MpAccessTokenProd, MpAccessTokenSandbox, MpPublicKeyProd, MpPublicKeySandbox,
+               MpProduction
         FROM CorteCor_MeioPagamento
         WHERE IdSalao = @IdSalao
           AND (@SomenteAtivos IS NULL OR Ativo = @SomenteAtivos)
@@ -2277,7 +2359,12 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
                         Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
 
                         IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
-                        DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"])
+                        DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"]),
+                        MpAccessTokenProd = reader["MpAccessTokenProd"] as string,
+                        MpAccessTokenSandbox = reader["MpAccessTokenSandbox"] as string,
+                        MpPublicKeyProd = reader["MpPublicKeyProd"] as string,
+                        MpPublicKeySandbox = reader["MpPublicKeySandbox"] as string,
+                        MpProduction = reader["MpProduction"] is DBNull ? false : Convert.ToBoolean(reader["MpProduction"])
                     });
                 }
             }
@@ -2300,7 +2387,12 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
             PrazoRecebimentoDias = @PrazoRecebimentoDias,
             Ativo = @Ativo,
             IdSalao = @IdSalao,
-            DataCadastro = @DataCadastro
+            DataCadastro = @DataCadastro,
+            MpAccessTokenProd = @MpAccessTokenProd,
+            MpAccessTokenSandbox = @MpAccessTokenSandbox,
+            MpPublicKeyProd = @MpPublicKeyProd,
+            MpPublicKeySandbox = @MpPublicKeySandbox,
+            MpProduction = @MpProduction
         WHERE IdMeioPagamento = @IdMeioPagamento;";
 
         using (var connection = _dbHandler.GetConnection())
@@ -2317,10 +2409,17 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
             command.AddWithValue("@TaxaFixa", meio.TaxaFixa);
             command.AddWithValue("@PrazoRecebimentoDias", meio.PrazoRecebimentoDias);
 
+            command.AddWithValue("@MpProduction", meio.MpProduction);
+
             command.AddWithValue("@Ativo", meio.Ativo);
 
             command.AddWithValue("@IdSalao", meio.IdSalao);
             command.AddWithValue("@DataCadastro", meio.DataCadastro == default ? DateTime.Now : meio.DataCadastro);
+
+            command.AddWithValue("@MpAccessTokenProd", (object?)meio.MpAccessTokenProd ?? DBNull.Value);
+            command.AddWithValue("@MpAccessTokenSandbox", (object?)meio.MpAccessTokenSandbox ?? DBNull.Value);
+            command.AddWithValue("@MpPublicKeyProd", (object?)meio.MpPublicKeyProd ?? DBNull.Value);
+            command.AddWithValue("@MpPublicKeySandbox", (object?)meio.MpPublicKeySandbox ?? DBNull.Value);
 
             command.AddWithValue("@IdMeioPagamento", meio.IdMeioPagamento);
 
@@ -2361,7 +2460,7 @@ public class MeioPagamentoHandler : EntityHandler<MeioPagamento>
 
 public class PagamentoHandler : EntityHandler<Pagamento>
 {
-    public PagamentoHandler(IDatabaseHandler dbHandler = null)
+    public PagamentoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler)
     {
     }
 
@@ -2773,6 +2872,147 @@ public class PagamentoHandler : EntityHandler<Pagamento>
     }
 
     public override void Cadastrar(Pagamento entity) => throw new NotSupportedException("Use CadastrarPagamento(Pagamento pago).");
+}
+
+public class ModeloEmailHandler : EntityHandler<ModeloEmail>
+{
+    public ModeloEmailHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
+
+    public override void Cadastrar(ModeloEmail entity)
+    {
+        string query = @"
+        INSERT INTO CorteCor_ModeloEmail (IdSalao, TipoEvento, Assunto, CorpoHTML, Ativo, DataAtualizacao)
+        VALUES (@IdSalao, @TipoEvento, @Assunto, @CorpoHTML, @Ativo, GETDATE());";
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdSalao", entity.IdSalao);
+            command.AddWithValue("@TipoEvento", entity.TipoEvento);
+            command.AddWithValue("@Assunto", entity.Assunto);
+            command.AddWithValue("@CorpoHTML", entity.CorpoHTML);
+            command.AddWithValue("@Ativo", entity.Ativo);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    public virtual void Atualizar(ModeloEmail entity)
+    {
+        string query = @"
+        UPDATE CorteCor_ModeloEmail
+        SET TipoEvento = @TipoEvento,
+            Assunto = @Assunto,
+            CorpoHTML = @CorpoHTML,
+            Ativo = @Ativo,
+            DataAtualizacao = GETDATE()
+        WHERE IdModelo = @IdModelo AND IdSalao = @IdSalao;";
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@TipoEvento", entity.TipoEvento);
+            command.AddWithValue("@Assunto", entity.Assunto);
+            command.AddWithValue("@CorpoHTML", entity.CorpoHTML);
+            command.AddWithValue("@Ativo", entity.Ativo);
+            command.AddWithValue("@IdModelo", entity.IdModelo);
+            command.AddWithValue("@IdSalao", entity.IdSalao);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    public override List<ModeloEmail> Listar() => throw new NotSupportedException("Use ListarPorSalao.");
+
+    public virtual List<ModeloEmail> ListarPorSalao(int idSalao)
+    {
+        string query = "SELECT * FROM CorteCor_ModeloEmail WHERE IdSalao = @IdSalao ORDER BY TipoEvento";
+        var lista = new List<ModeloEmail>();
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdSalao", idSalao);
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    lista.Add(MapReader(reader));
+                }
+            }
+        }
+        return lista;
+    }
+
+    public virtual ModeloEmail ObterPorId(int idModelo, int idSalao)
+    {
+        string query = "SELECT * FROM CorteCor_ModeloEmail WHERE IdModelo = @IdModelo AND IdSalao = @IdSalao";
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdModelo", idModelo);
+            command.AddWithValue("@IdSalao", idSalao);
+            using (var reader = command.ExecuteReader())
+            {
+                if (reader.Read()) return MapReader(reader);
+            }
+        }
+        return null;
+    }
+
+    public virtual ModeloEmail ObterPorEvento(int idSalao, string tipoEvento)
+    {
+        string query = "SELECT TOP 1 * FROM CorteCor_ModeloEmail WHERE IdSalao = @IdSalao AND TipoEvento = @TipoEvento AND Ativo = 1";
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@TipoEvento", tipoEvento);
+            using (var reader = command.ExecuteReader())
+            {
+                if (reader.Read()) return MapReader(reader);
+            }
+        }
+        return null;
+    }
+
+    public override void Excluir(int id)
+    {
+        // Physical delete for templates? Or logical? 
+        // Let's assume physical delete is fine for configuration, or just deactive.
+        // Implementing physical delete for now as per "Excluir" name.
+        string query = "DELETE FROM CorteCor_ModeloEmail WHERE IdModelo = @IdModelo"; 
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdModelo", id);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    public override void AtivarDesativar(int id, bool ativar)
+    {
+         string query = "UPDATE CorteCor_ModeloEmail SET Ativo = @Ativo WHERE IdModelo = @IdModelo";
+         using (var connection = _dbHandler.GetConnection())
+         using (var command = connection.CreateCommand(query))
+         {
+             command.AddWithValue("@Ativo", ativar);
+             command.AddWithValue("@IdModelo", id);
+             command.ExecuteNonQuery();
+         }
+    }
+
+    private ModeloEmail MapReader(System.Data.IDataReader reader)
+    {
+        return new ModeloEmail
+        {
+            IdModelo = Convert.ToInt32(reader["IdModelo"]),
+            IdSalao = Convert.ToInt32(reader["IdSalao"]),
+            TipoEvento = reader["TipoEvento"].ToString(),
+            Assunto = reader["Assunto"].ToString(),
+            CorpoHTML = reader["CorpoHTML"].ToString(),
+            Ativo = Convert.ToBoolean(reader["Ativo"]),
+            DataAtualizacao = Convert.ToDateTime(reader["DataAtualizacao"])
+        };
+    }
 }
 
 

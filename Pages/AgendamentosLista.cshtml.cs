@@ -19,11 +19,32 @@ namespace CorteCor.Pages
         public List<Agendamento> Agendamentos { get; set; } = new List<Agendamento>();
         public string Mensagem { get; set; }
 
-        // Cache local para nao consultar banco excessivamente no loop, 
-        // ou poderia fazer JOIN na query. Para simplicidade e consistencia com o projeto atual,
-        // vou carregar listas de apoio ou buscar por ID se o cache nao for viavel.
-        // Dado o volume, o ideal seria JOIN no Handler. Mas vou seguir o padrao simples.
-        
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataInicio { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataFim { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string Status { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? IdServico { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? IdPessoa { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? IdFuncionario { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool MostrarExcluidos { get; set; }
+
+        public List<Servico> ServicosOptions { get; set; }
+        public List<Pessoa> PessoasOptions { get; set; }
+        public List<Funcionario> FuncionariosOptions { get; set; }
+        public List<string> StatusOptions { get; set; } = new List<string> { "Agendado", "Concluído", "Cancelado" };
+
         private Dictionary<int, string> _servicosCache = new Dictionary<int, string>();
         private Dictionary<int, string> _pessoasCache = new Dictionary<int, string>();
         private Dictionary<int, string> _funcionariosCache = new Dictionary<int, string>();
@@ -46,8 +67,8 @@ namespace CorteCor.Pages
                 var idSalaoClaim = User.FindFirst("IdSalao");
                 if (idSalaoClaim != null && int.TryParse(idSalaoClaim.Value, out int idSalao))
                 {
-                    Agendamentos = _handler.ListarTodos(idSalao);
                     CarregarDadosApoio(idSalao);
+                    Agendamentos = _handler.ListarFiltrado(idSalao, DataInicio, DataFim, Status, IdServico, IdPessoa, IdFuncionario, MostrarExcluidos);
                 }
                 else
                 {
@@ -62,21 +83,20 @@ namespace CorteCor.Pages
 
         private void CarregarDadosApoio(int idSalao)
         {
-            // Otimizacao basica: carregar todos do salao para dicionarios
-            var servicos = _servicoHandler.Listar().Where(s => s.IdSalao == idSalao).ToList();
-            foreach(var s in servicos) _servicosCache[s.IdServico] = s.Nome;
+            ServicosOptions = _servicoHandler.Listar().Where(s => s.IdSalao == idSalao).OrderBy(s => s.Nome).ToList();
+            foreach(var s in ServicosOptions) _servicosCache[s.IdServico] = s.Nome;
 
-            var pessoas = _pessoaHandler.ListarPorSalao(idSalao); // Pega apenas ativos por padrao
-            // Mas precisamos dos excluidos tambem para exibir o nome!
-            // PessoaHandler deveria ter ListarTodos? Ou usar ListarExcluidos + Listar?
-            // Vou usar Listar + ListarExcluidos e unir.
+            var pessoas = _pessoaHandler.ListarPorSalao(idSalao); 
             foreach(var p in pessoas) _pessoasCache[p.IdPessoa] = p.Nome;
             
             var excluidos = _pessoaHandler.ListarExcluidos(idSalao);
             foreach(var p in excluidos) _pessoasCache[p.IdPessoa] = p.Nome + " (Excluído)";
 
-            var funcionarios = _funcionarioHandler.Listar().Where(f => f.IdSalao == idSalao).ToList();
-             foreach(var f in funcionarios) _funcionariosCache[f.IdFuncionario] = f.Nome;
+            // Combine for dropdown
+            PessoasOptions = pessoas.Concat(excluidos).OrderBy(p => p.Nome).ToList();
+
+            FuncionariosOptions = _funcionarioHandler.Listar().Where(f => f.IdSalao == idSalao).OrderBy(f => f.Nome).ToList();
+             foreach(var f in FuncionariosOptions) _funcionariosCache[f.IdFuncionario] = f.Nome;
         }
 
         public string GetServicoNome(int id) => _servicosCache.ContainsKey(id) ? _servicosCache[id] : "N/D";

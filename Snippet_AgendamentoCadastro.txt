@@ -1,0 +1,53 @@
+// EXEMPLO DE INTEGRAÇÃO NO AgendamentoCadastro.cshtml.cs
+
+// 1. Injete o serviço no construtor da PageModel
+private readonly BrevoEmailService _emailService;
+
+public AgendamentoCadastroModel(AgendamentoHandler handler, BrevoEmailService emailService, ...)
+{
+    _handler = handler;
+    _emailService = emailService;
+    // ...
+}
+
+// 2. No método OnPost, após salvar o agendamento com sucesso:
+public async Task<IActionResult> OnPostAsync()
+{
+    // ... lógica de salvamento ...
+    _handler.Cadastrar(Agendamento);
+
+    // --- BLOCO DE DISPARO DE E-MAIL ---
+    try 
+    {
+        // Exemplo: Disparar e-mail de "BoasVindas" ou "ConfirmacaoAgendamento"
+        var variaveis = new Dictionary<string, string>
+        {
+            { "NomeCliente", "Nome do Cliente Aqui" }, // Você precisa obter o nome da pessoa
+            { "DataAgendamento", Agendamento.DataHora.ToString("dd/MM/yyyy HH:mm") },
+            { "NomeServico", "Corte de Cabelo" }, // Obter nome do serviço
+            { "NomeFuncionario", "João" } // Obter nome do funcionário
+        };
+
+        // Fire and forget (não await) para não travar a tela se demorar, 
+        // OU use await se quiser garantir o envio antes de responder.
+        // Recomendado usar await se for crítico, ou BackgroundService se for pesado.
+        // Aqui usamos await simples para validar:
+        
+        bool enviado = await _emailService.EnviarEmailTemplateAsync(
+            idSalao: 1, // Pegar do User.Claims
+            tipoEvento: "ConfirmacaoAgendamento", 
+            emailDestino: "cliente@email.com", // Pegar do cadastro da pessoa
+            variaveis: variaveis
+        );
+
+        if (enviado) Console.WriteLine("E-mail enviado com sucesso!");
+        else Console.WriteLine("Falha ao enviar e-mail.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro ao tentar enviar e-mail: {ex.Message}");
+    }
+    // -----------------------------------
+
+    return RedirectToPage("/AgendamentosLista");
+}

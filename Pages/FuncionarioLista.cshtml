@@ -15,7 +15,14 @@
 </style>
 
 <div class="container">
-    <h4>Lista de Funcion·rios</h4>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>Lista de Funcion√°rios</h4>
+        <div>
+            <a href="/FuncionarioCadastro" class="btn btn-primary">Cadastrar Novo</a>
+            <a href="/ServicoCadastro" class="btn btn-secondary">Cadastrar Servi√ßos</a>
+            <a href="/FuncionarioServicoLista" class="btn btn-info">Listar todos servi√ßos</a>
+        </div>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -35,7 +42,7 @@
                 <th>Sex</th>
                 <th>Sab</th>
                 <th>Dom</th>
-                <th>AÁıes</th>
+                <th>A√ß√µes</th>
             </tr>
         </thead>
         <tbody>
@@ -43,13 +50,13 @@
             {
                 <tr>
                     <td>@Funcionario.Nome</td>
-                    <td>@(Funcionario.seg ? "Sim" : "N„o")</td>
-                    <td>@(Funcionario.ter ? "Sim" : "N„o")</td>
-                    <td>@(Funcionario.qua ? "Sim" : "N„o")</td>
-                    <td>@(Funcionario.qui ? "Sim" : "N„o")</td>
-                    <td>@(Funcionario.sex ? "Sim" : "N„o")</td>
-                    <td>@(Funcionario.sab ? "Sim" : "N„o")</td>
-                    <td>@(Funcionario.dom ? "Sim" : "N„o")</td>
+                    <td>@(Funcionario.seg ? "Sim" : "N√£o")</td>
+                    <td>@(Funcionario.ter ? "Sim" : "N√£o")</td>
+                    <td>@(Funcionario.qua ? "Sim" : "N√£o")</td>
+                    <td>@(Funcionario.qui ? "Sim" : "N√£o")</td>
+                    <td>@(Funcionario.sex ? "Sim" : "N√£o")</td>
+                    <td>@(Funcionario.sab ? "Sim" : "N√£o")</td>
+                    <td>@(Funcionario.dom ? "Sim" : "N√£o")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
@@ -57,7 +64,9 @@
                             <button class="btn btn-info">Alterar</button>
                         </form>
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Funcion·rio?');">
+                        <a href="/FuncionarioServicoCadastro?idFuncionario=@Funcionario.IdFuncionario" class="btn btn-warning">Vincular Servi√ßos</a>
+
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Funcion√°rio?');">
                             <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
                             <input type="hidden" name="action" value="excluir">
                             <button class="btn btn-danger">Excluir</button>

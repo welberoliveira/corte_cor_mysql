@@ -767,17 +767,18 @@
                 locale: 'pt-br',
                 timeZone: 'local',
 
-                initialView: 'timeGridWeek',
+                initialView: 'timeGridDay',
                 headerToolbar: {
-                    left: 'prev,ccSemanas,next',
+                    left: 'prev,next today',
                     center: 'title',
-                    right: 'novoAgendamento'
+                    right: 'timeGridWeek,timeGridDay novoAgendamento'
+                },
+                buttonText: {
+                    today: 'Hoje',
+                    week: 'Semana',
+                    day: 'Dia'
                 },
                 customButtons: {
-                    ccSemanas: {
-                        text: 'Semanas',
-                        click: function () { /* não faz nada */ }
-                    },
                     novoAgendamento: {     
                         text: 'Novo Agendamento',
                         click: abrirModalNovoAgendamento

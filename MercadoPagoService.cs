@@ -18,11 +18,17 @@ public class MercadoPagoService
         _httpClient = httpClient ?? new HttpClient();
     }
 
-    public virtual async Task<(MpPreferenceResponse? preference, string? errorMessage)> CreatePreferenceAsync(Guid idPagamento, string title, decimal price, string emailCliente, string baseUrl)
+    public virtual async Task<(MpPreferenceResponse? preference, string? errorMessage)> CreatePreferenceAsync(
+        string accessToken, 
+        Guid idPagamento, 
+        string title, 
+        decimal price, 
+        string emailCliente, 
+        string baseUrl)
     {
         var client = _httpClient; 
-        if (client.DefaultRequestHeaders.Authorization == null)
-             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+        // Se já tiver header de auth, remove para garantir que usaremos o token passado ou limpa
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var requestBody = new
         {

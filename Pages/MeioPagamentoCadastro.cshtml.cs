@@ -79,7 +79,13 @@ namespace CorteCor.Pages
                 Ativo = GetBool("ativo", form, true),
 
                 IdSalao = idSalao,
-                DataCadastro = dataCadastro
+                DataCadastro = dataCadastro,
+
+                MpAccessTokenProd = form["mpAccessTokenProd"],
+                MpAccessTokenSandbox = form["mpAccessTokenSandbox"],
+                MpPublicKeyProd = form["mpPublicKeyProd"],
+                MpPublicKeySandbox = form["mpPublicKeySandbox"],
+                MpProduction = GetBool("mpProduction", form, false)
             };
 
             var handler = new MeioPagamentoHandler();

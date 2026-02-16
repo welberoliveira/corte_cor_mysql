@@ -1,0 +1,43 @@
+@page
+@model CorteCor.Pages.ModeloEmailListaModel
+@{
+    ViewData["Title"] = "Modelos de E-mail";
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h4>Modelos de E-mail</h4>
+    </div>
+    <div class="col-md-6 text-right">
+        <a href="/ModeloEmailCadastro" class="btn btn-success">Cadastrar Novo</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Mensagem))
+{
+    <div class="alert alert-warning">@Model.Mensagem</div>
+}
+
+<table class="">
+    <thead>
+        <tr>
+            <th>Evento</th>
+            <th>Assunto</th>
+            <th>Ativo</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var m in Model.Modelos)
+        {
+            <tr>
+                <td>@m.TipoEvento</td>
+                <td>@m.Assunto</td>
+                <td>@(m.Ativo ? "Sim" : "Não")</td>
+                <td>
+                    <a href="/ModeloEmailCadastro?id=@m.IdModelo" class="btn btn-primary btn-sm">Editar</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

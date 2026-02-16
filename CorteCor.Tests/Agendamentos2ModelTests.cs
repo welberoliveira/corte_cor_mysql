@@ -42,7 +42,8 @@ namespace CorteCor.Tests
                 _mockFuncionarioHandler.Object,
                 _mockFsHandler.Object,
                 _mockPagamentoHandler.Object,
-                _mockMpService.Object
+                _mockMpService.Object,
+                config
             );
 
             // Setup User Context

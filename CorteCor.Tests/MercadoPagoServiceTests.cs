@@ -50,7 +50,7 @@ namespace CorteCor.Tests
                 });
 
             // Act
-            var result = await _service.CreatePreferenceAsync(Guid.NewGuid(), "Titulo", 10.0m, "email@test.com", "http://base");
+            var result = await _service.CreatePreferenceAsync("TEST_TOKEN", Guid.NewGuid(), "Titulo", 10.0m, "email@test.com", "http://base");
 
             // Assert
             Assert.NotNull(result.preference);
@@ -76,7 +76,7 @@ namespace CorteCor.Tests
                 });
 
             // Act
-            var result = await _service.CreatePreferenceAsync(Guid.NewGuid(), "Titulo", 10.0m, "email@test.com", "http://base");
+            var result = await _service.CreatePreferenceAsync("TEST_TOKEN", Guid.NewGuid(), "Titulo", 10.0m, "email@test.com", "http://base");
 
             // Assert
             Assert.Null(result.preference);

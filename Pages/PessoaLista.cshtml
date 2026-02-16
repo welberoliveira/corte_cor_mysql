@@ -17,7 +17,10 @@
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h4>Lista de Pessoas</h4>
-        <a href="/PessoaExcluidos" class="btn btn-secondary">Clientes Excluídos</a>
+        <div>
+            <a href="/PessoaCadastro" class="btn btn-primary">Cadastrar Novo</a>
+            <a href="/PessoaExcluidos" class="btn btn-secondary">Clientes Excluídos</a>
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))

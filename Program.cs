@@ -56,6 +56,8 @@ builder.Services.AddScoped<FuncionarioHandler>();
 builder.Services.AddScoped<FuncionarioServicoHandler>();
 builder.Services.AddScoped<PagamentoHandler>();
 builder.Services.AddScoped<MercadoPagoService>();
+builder.Services.AddScoped<ModeloEmailHandler>();
+builder.Services.AddScoped<BrevoEmailService>();
 
 // Configurar cultura para pt-BR
 var cultureInfo = new CultureInfo("pt-BR");

@@ -188,6 +188,15 @@ public class Models
 
         public int IdSalao { get; set; }
         public DateTime DataCadastro { get; set; }
+
+        // Mercado Pago Config
+        public string? MpAccessTokenProd { get; set; }
+        public string? MpAccessTokenSandbox { get; set; }
+        public string? MpPublicKeyProd { get; set; }
+        public string? MpPublicKeySandbox { get; set; }
+        
+        // True = Produção, False = Sandbox
+        public bool MpProduction { get; set; }
     }
 
     public class Pagamento
@@ -240,5 +249,16 @@ public class Models
         public string? Status { get; set; }
         public string? NomeCliente { get; set; }
         public DateTime? DataAgendamento { get; set; }
+    }
+
+    public class ModeloEmail
+    {
+        public int IdModelo { get; set; }
+        public int IdSalao { get; set; }
+        public string TipoEvento { get; set; } // 'BoasVindas', 'ConfirmacaoAgendamento', etc.
+        public string Assunto { get; set; }
+        public string CorpoHTML { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime DataAtualizacao { get; set; }
     }
 }

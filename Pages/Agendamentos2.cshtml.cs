@@ -14,6 +14,7 @@ namespace CorteCor.Pages
         private readonly FuncionarioServicoHandler _fsHandler;
         private readonly PagamentoHandler _pagamentoHandler;
         private readonly MercadoPagoService _mpService;
+        private readonly IConfiguration _configuration;
 
         public Agendamentos2Model(
             ServicoHandler servicoHandler,
@@ -22,7 +23,8 @@ namespace CorteCor.Pages
             FuncionarioHandler funcionarioHandler,
             FuncionarioServicoHandler fsHandler,
             PagamentoHandler pagamentoHandler,
-            MercadoPagoService mpService)
+            MercadoPagoService mpService,
+            IConfiguration configuration)
         {
             _servicoHandler = servicoHandler;
             _pessoaHandler = pessoaHandler;
@@ -31,6 +33,7 @@ namespace CorteCor.Pages
             _fsHandler = fsHandler;
             _pagamentoHandler = pagamentoHandler;
             _mpService = mpService;
+            _configuration = configuration;
         }
 
         public List<Servico> Servicos { get; set; } = new();
@@ -278,12 +281,31 @@ namespace CorteCor.Pages
             var p = _pessoaHandler.ObterPorId(a.IdPessoa);
             if (p == null) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
 
+            // 1. Identificar se é produção ou sandbox baseado no Config do Banco
+            
+            // 2. Buscar configurações de Meio de Pagamento do Salão
+            var meios = new MeioPagamentoHandler().ListarPorSalao(idSalao, somenteAtivos: true);
+            var mpConfig = meios.FirstOrDefault(m => m.Gateway == "MercadoPago");
+
+            if (mpConfig == null)
+                return BadRequest(new ErrorResponse { Message = "Meio de pagamento Mercado Pago não configurado para este salão." });
+
+            bool isProduction = mpConfig.MpProduction;
+
+            string accessToken = isProduction ? mpConfig.MpAccessTokenProd : mpConfig.MpAccessTokenSandbox;
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+                return BadRequest(new ErrorResponse { Message = isProduction 
+                    ? "Token de Produção do Mercado Pago não configurado." 
+                    : "Token de Sandbox do Mercado Pago não configurado." });
+
             // Gera novo ID para o Pagamento
             var idPagamento = Guid.NewGuid();
 
-            // Gera Preferência no Mercado Pago usando o ID do Pagamento
+            // Gera Preferência no Mercado Pago usando o ID do Pagamento e o Token do Banco
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var (pref, error) = await _mpService.CreatePreferenceAsync(
+                accessToken,
                 idPagamento, 
                 $"Serviço {s.Nome} - Corte & Cor", 
                 s.Preco, 

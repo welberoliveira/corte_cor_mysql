@@ -1,0 +1,44 @@
+@page
+@model CorteCor.Pages.ModeloEmailCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Modelo de E-mail";
+}
+
+<div class="container">
+    <h4>Cadastro de Modelo de E-mail</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info">@Model.Mensagem</div>
+    }
+
+    <form method="post">
+        <input type="hidden" asp-for="Modelo.IdModelo" />
+        <input type="hidden" asp-for="Modelo.IdSalao" />
+
+        <div class="form-group">
+            <label asp-for="Modelo.TipoEvento">Tipo de Evento</label>
+            <select asp-for="Modelo.TipoEvento" class="form-control" asp-items="Model.EventosOptions"></select>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Modelo.Assunto">Assunto</label>
+            <input asp-for="Modelo.Assunto" class="form-control" required />
+            <small class="form-text text-muted">Variáveis disponíveis: {NomeCliente}, {DataAgendamento}, {NomeServico}, {NomeFuncionario}</small>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Modelo.CorpoHTML">Corpo do E-mail (HTML)</label>
+            <textarea asp-for="Modelo.CorpoHTML" class="form-control" rows="10" required></textarea>
+            <small class="form-text text-muted">Use HTML para formatar. Variáveis: {NomeCliente}, {DataAgendamento}, {NomeServico}, {NomeFuncionario}</small>
+        </div>
+
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" asp-for="Modelo.Ativo" />
+            <label class="form-check-label" asp-for="Modelo.Ativo">Ativo</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="/ModeloEmailLista" class="btn btn-secondary">Voltar</a>
+    </form>
+</div>

@@ -291,41 +291,13 @@
                         <ul class="navbar-nav flex-grow-1">
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Clientes
+                                    Principal
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="PessoaCadastro/">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="PessoaLista/">Listar</a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Funcionários
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioCadastro">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioLista">Listar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioServicoCadastro">Vincular Serviços para Funcionários</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioServicoLista">Listar Serviços de Funcionários</a></li>
-                                </ul>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Serviços
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoCadastro">Serviços Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoLista">Serviços Listar </a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Pagamentos
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Lista de Pagamentos/Pendências</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="PessoaLista/">Clientes</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioLista">Funcionários</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoLista">Serviços</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Pagamentos/Pendências</a></li>
                                 </ul>
                             </li>
 
@@ -334,11 +306,17 @@
                                     Agendamentos
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/Agendamentos2">Agendamentos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Agendamentos2">Calendário</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/AgendamentosLista">Lista de Agendamentos</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Realizados**</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Pendentes**</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Cancelados**</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Automação
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ModeloEmailLista">Modelo de e-mail</a></li>
                                 </ul>
                             </li>
 
@@ -352,8 +330,7 @@
 
                                     <li><hr class="dropdown-divider"></li>
 
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoCadastro">Cadastrar Meio de Pagamento</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoLista">Ver Meios de Pagamentos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoLista">Meios de Pagamentos</a></li>
                                 </ul>
                             </li>
 

@@ -13,7 +13,9 @@ namespace CorteCor.Pages
         public List<Funcionario> Funcionarios { get; set; }
         public List<Servico> Servicos { get; set; }
 
-        // Para manter selecionado após post/edição
+        public bool IsLockedEmployee { get; set; }
+
+        // Para manter selecionado apÃ³s post/ediÃ§Ã£o
         public int? IdFuncionarioSelecionado { get; set; }
         public List<int> ServicosSelecionadosIds { get; set; } = new List<int>();
 
@@ -33,8 +35,9 @@ namespace CorteCor.Pages
             if (idFuncionario.HasValue)
             {
                 IdFuncionarioSelecionado = idFuncionario.Value;
+                IsLockedEmployee = true;
 
-                // Carrega os serviços já relacionados (tabela N:N)
+                // Carrega os serviÃ§os jÃ¡ relacionados (tabela N:N)
                 var fsHandler = new FuncionarioServicoHandler();
                 var relacoes = fsHandler.ListarPorFuncionario(idFuncionario.Value) ?? new List<FuncionarioServico>();
 
@@ -42,8 +45,10 @@ namespace CorteCor.Pages
             }
         }
 
-        public void OnPost()
+        public void OnPost(bool? locked)
         {
+            if (locked == true) IsLockedEmployee = true;
+
             int idFuncionario = 0;
             int.TryParse(Request.Form["idFuncionario"], out idFuncionario);
 
@@ -59,7 +64,7 @@ namespace CorteCor.Pages
 
             var fsHandler = new FuncionarioServicoHandler();
 
-            // Estratégia simples: limpa e regrava (ok, porque você quer salvar "o conjunto")
+            // EstratÃ©gia simples: limpa e regrava (ok, porque vocÃª quer salvar "o conjunto")
             fsHandler.ExcluirPorFuncionario(idFuncionario);
 
             foreach (var idServico in idsSelecionados.Distinct())
@@ -71,9 +76,9 @@ namespace CorteCor.Pages
                 });
             }
 
-            Mensagem = "Serviços vinculados ao funcionário com sucesso!";
+            Mensagem = "ServiÃ§os vinculados ao funcionÃ¡rio com sucesso!";
 
-            // Recarrega mantendo seleção
+            // Recarrega mantendo seleÃ§Ã£o
             OnGet(idFuncionario);
         }
     }

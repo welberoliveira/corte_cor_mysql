@@ -1,11 +1,11 @@
 @page
 @model CorteCor.Pages.FuncionarioServicoCadastroModel
 @{
-    ViewData["Title"] = "Relacionar Funcion·rio x ServiÁos";
+    ViewData["Title"] = "Relacionar Funcion√°rio x Servi√ßos";
 }
 
 <div class="container">
-    <h4>Relacionar Funcion·rio x ServiÁos</h4>
+    <h4>Relacionar Funcion√°rio x Servi√ßos</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -15,9 +15,15 @@
     }
 
     <form method="post">
+        @if (Model.IsLockedEmployee)
+        {
+            <input type="hidden" name="idFuncionario" value="@Model.IdFuncionarioSelecionado" />
+            <input type="hidden" name="locked" value="true" />
+        }
+
         <div class="form-group">
-            <label for="idFuncionario">Funcion·rio</label>
-            <select id="idFuncionario" name="idFuncionario" class="form-control" required>
+            <label for="idFuncionario">Funcion√°rio</label>
+            <select id="idFuncionario" name="idFuncionario" class="form-control" required @(Model.IsLockedEmployee ? "disabled" : "")>
                 <option value="">Selecione</option>
                 @foreach (var f in Model.Funcionarios)
                 {
@@ -34,7 +40,7 @@
         </div>
 
         <div class="form-group">
-            <label>ServiÁos</label>
+            <label>Servi√ßos</label>
 
             <div class="border rounded p-3">
                 @foreach (var s in Model.Servicos)
@@ -62,17 +68,17 @@
                         }
 
                         <label for="servico_@s.IdServico" class="mb-0">
-                            @s.Nome ñ R$ @s.Preco.ToString("0.00")
+                            @s.Nome - R$ @s.Preco.ToString("0.00")
                         </label>
                     </div>
                 }
             </div>
 
             <small class="form-text text-muted">
-                Marque todos os serviÁos que este funcion·rio poder· executar.
+                Marque todos os servi√ßos que este funcion√°rio poder√° executar.
             </small>
         </div>
 
-        <button type="submit" class="btn btn-primary">Salvar RelaÁ„o</button>
+        <button type="submit" class="btn btn-primary">Salvar Rela√ß√£o</button>
     </form>
 </div>
