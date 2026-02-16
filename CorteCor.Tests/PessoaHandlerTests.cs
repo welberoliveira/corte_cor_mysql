@@ -71,5 +71,122 @@ namespace CorteCor.Tests
             Assert.NotNull(result);
             Assert.Equal("Maria", result.Nome);
         }
+
+
+    [Fact]
+    public void Excluir_DeveRealizarSoftDelete()
+    {
+        // Arrange
+        int idPessoa = 1;
+        var mockDbHandler = new Mock<IDatabaseHandler>();
+        var mockConnection = new Mock<IDbConnection>();
+        var mockCommand = new Mock<IDbCommand>();
+        var mockParameter = new Mock<IDbDataParameter>();
+        var parameters = new Mock<IDataParameterCollection>();
+
+        mockDbHandler.Setup(db => db.GetConnection()).Returns(mockConnection.Object);
+        mockConnection.Setup(conn => conn.CreateCommand()).Returns(mockCommand.Object);
+        mockCommand.Setup(cmd => cmd.Parameters).Returns(parameters.Object);
+        mockCommand.Setup(cmd => cmd.CreateParameter()).Returns(mockParameter.Object);
+
+        var handler = new PessoaHandler(mockDbHandler.Object);
+
+        // Act
+        handler.Excluir(idPessoa);
+
+        // Assert
+        mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(s => s.Contains("UPDATE CorteCor_Pessoa SET Excluido = 1")), Times.Once);
+        mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
     }
+
+    [Fact]
+    public void Listar_DeveFiltrarExcluidos()
+    {
+        // Arrange
+        var mockDbHandler = new Mock<IDatabaseHandler>();
+        var mockConnection = new Mock<IDbConnection>();
+        var mockCommand = new Mock<IDbCommand>();
+        var mockReader = new Mock<IDataReader>();
+
+        mockDbHandler.Setup(db => db.GetConnection()).Returns(mockConnection.Object);
+        mockConnection.Setup(conn => conn.CreateCommand()).Returns(mockCommand.Object);
+        mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(mockReader.Object);
+        
+        // Simular 2 registros, assumindo que a query já filtra
+        mockReader.SetupSequence(r => r.Read())
+            .Returns(true)
+            .Returns(true)
+            .Returns(false);
+            
+        // Mocking validation logic for columns if necessary
+        mockReader.Setup(r => r["IdPessoa"]).Returns(1);
+        mockReader.Setup(r => r["Nome"]).Returns("Teste");
+        mockReader.Setup(r => r["Telefone"]).Returns("11999999999");
+        mockReader.Setup(r => r["Email"]).Returns("teste@email.com");
+        mockReader.Setup(r => r["DataNascimento"]).Returns(DateTime.Now);
+        mockReader.Setup(r => r["IdSalao"]).Returns(1);
+        mockReader.Setup(r => r["Excluido"]).Returns(false);
+
+        var handler = new PessoaHandler(mockDbHandler.Object);
+
+        // Act
+        handler.Listar();
+
+        // Assert
+        mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(s => s.Contains("Excluido = 0") || s.Contains("Excluido IS NULL")), Times.Once);
+    }
+
+    [Fact]
+    public void ListarExcluidos_DeveRetornarApenasExcluidos()
+    {
+        // Arrange
+        int idSalao = 1;
+        var mockDbHandler = new Mock<IDatabaseHandler>();
+        var mockConnection = new Mock<IDbConnection>();
+        var mockCommand = new Mock<IDbCommand>();
+        var mockReader = new Mock<IDataReader>();
+        var parameters = new Mock<IDataParameterCollection>();
+        var mockParameter = new Mock<IDbDataParameter>();
+
+        mockDbHandler.Setup(db => db.GetConnection()).Returns(mockConnection.Object);
+        mockConnection.Setup(conn => conn.CreateCommand()).Returns(mockCommand.Object);
+        mockCommand.Setup(cmd => cmd.Parameters).Returns(parameters.Object);
+        mockCommand.Setup(cmd => cmd.CreateParameter()).Returns(mockParameter.Object);
+        mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(mockReader.Object);
+
+        var handler = new PessoaHandler(mockDbHandler.Object);
+
+        // Act
+        handler.ListarExcluidos(idSalao);
+
+        // Assert
+        mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(s => s.Contains("Excluido = 1")), Times.Once);
+    }
+
+    [Fact]
+    public void Restaurar_DeveAtualizarExcluidoParaZero()
+    {
+        // Arrange
+        int idPessoa = 1;
+        var mockDbHandler = new Mock<IDatabaseHandler>();
+        var mockConnection = new Mock<IDbConnection>();
+        var mockCommand = new Mock<IDbCommand>();
+        var mockParameter = new Mock<IDbDataParameter>();
+        var parameters = new Mock<IDataParameterCollection>();
+
+        mockDbHandler.Setup(db => db.GetConnection()).Returns(mockConnection.Object);
+        mockConnection.Setup(conn => conn.CreateCommand()).Returns(mockCommand.Object);
+        mockCommand.Setup(cmd => cmd.Parameters).Returns(parameters.Object);
+        mockCommand.Setup(cmd => cmd.CreateParameter()).Returns(mockParameter.Object);
+
+        var handler = new PessoaHandler(mockDbHandler.Object);
+
+        // Act
+        handler.Restaurar(idPessoa);
+
+        // Assert
+        mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(s => s.Contains("UPDATE CorteCor_Pessoa SET Excluido = 0")), Times.Once);
+        mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+    }
+}
 }

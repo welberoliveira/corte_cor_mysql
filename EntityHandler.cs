@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Net.Mail;
@@ -1597,7 +1597,7 @@ public class PessoaHandler : EntityHandler<Pessoa>
     public virtual Pessoa ObterPorId(int idPessoa)
     {
         string query = @"
-        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido
         FROM CorteCor_Pessoa
         WHERE IdPessoa = @IdPessoa;";
 
@@ -1617,7 +1617,8 @@ public class PessoaHandler : EntityHandler<Pessoa>
                     Telefone = reader["Telefone"] is DBNull ? "" : reader["Telefone"].ToString(),
                     Email = reader["Email"] is DBNull ? "" : reader["Email"].ToString(),
                     DataNascimento = reader["DataNascimento"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataNascimento"]),
-                    IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"])
+                    IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                    Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
                 };
             }
         }
@@ -1626,8 +1627,9 @@ public class PessoaHandler : EntityHandler<Pessoa>
     public override List<Pessoa> Listar()
     {
         string query = @"
-        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido
         FROM CorteCor_Pessoa
+        WHERE (Excluido = 0 OR Excluido IS NULL)
         ORDER BY Nome;";
 
         var pessoas = new List<Pessoa>();
@@ -1656,9 +1658,9 @@ public class PessoaHandler : EntityHandler<Pessoa>
     public virtual List<Pessoa> ListarPorSalao(int idSalao)
     {
         string query = @"
-        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido
         FROM CorteCor_Pessoa
-        WHERE IdSalao = @IdSalao
+        WHERE IdSalao = @IdSalao AND (Excluido = 0 OR Excluido IS NULL)
         ORDER BY Nome;";
 
         var pessoas = new List<Pessoa>();
@@ -1725,7 +1727,55 @@ public class PessoaHandler : EntityHandler<Pessoa>
 
     public override void Excluir(int id)
     {
-        string query = "DELETE FROM CorteCor_Pessoa WHERE IdPessoa = @IdPessoa";
+        string query = "UPDATE CorteCor_Pessoa SET Excluido = 1 WHERE IdPessoa = @IdPessoa";
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdPessoa", id);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    public List<Pessoa> ListarExcluidos(int idSalao)
+    {
+        string query = @"
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido
+        FROM CorteCor_Pessoa
+        WHERE IdSalao = @IdSalao AND Excluido = 1
+        ORDER BY Nome;";
+
+        var pessoas = new List<Pessoa>();
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdSalao", idSalao);
+
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    pessoas.Add(new Pessoa
+                    {
+                        IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
+                        Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                        Telefone = reader["Telefone"] is DBNull ? "" : reader["Telefone"].ToString(),
+                        Email = reader["Email"] is DBNull ? "" : reader["Email"].ToString(),
+                        DataNascimento = reader["DataNascimento"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataNascimento"]),
+                        IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                        Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
+                    });
+                }
+            }
+        }
+
+        return pessoas;
+    }
+
+    public void Restaurar(int id)
+    {
+        string query = "UPDATE CorteCor_Pessoa SET Excluido = 0 WHERE IdPessoa = @IdPessoa";
 
         using (var connection = _dbHandler.GetConnection())
         using (var command = connection.CreateCommand(query))
@@ -1780,7 +1830,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
     public virtual Agendamento ObterPorId(int idAgendamento)
     {
         string query = @"
-        SELECT IdAgendamento, DataHora, Status, IdServico, IdPessoa, IdFuncionario
+        SELECT IdAgendamento, DataHora, Status, IdServico, IdPessoa, IdFuncionario, Excluido
         FROM CorteCor_Agendamento
         WHERE IdAgendamento = @IdAgendamento;";
 
@@ -1800,7 +1850,8 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
                     Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
                     IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                     IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
-                    IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"])
+                    IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                    Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
                 };
             }
         }
@@ -1809,8 +1860,9 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
     public override List<Agendamento> Listar()
     {
         string query = @"
-        SELECT IdAgendamento, DataHora, Status, IdServico, IdPessoa, IdFuncionario
+        SELECT IdAgendamento, DataHora, Status, IdServico, IdPessoa, IdFuncionario, Excluido
         FROM CorteCor_Agendamento
+        WHERE (Excluido = 0 OR Excluido IS NULL)
         ORDER BY DataHora;";
 
         var agendamentos = new List<Agendamento>();
@@ -1828,7 +1880,8 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
                     Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
                     IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                     IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
-                    IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"])
+                    IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                    Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
                 });
             }
         }
@@ -1839,12 +1892,13 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
     public virtual List<Agendamento> ListarPorIntervalo(int idSalao, DateTime inicio, DateTime fim)
     {
         string query = @"
-        SELECT a.IdAgendamento, a.DataHora, a.Status, a.IdServico, a.IdPessoa, a.IdFuncionario
+        SELECT a.IdAgendamento, a.DataHora, a.Status, a.IdServico, a.IdPessoa, a.IdFuncionario, a.Excluido
         FROM CorteCor_Agendamento a
         INNER JOIN CorteCor_Servico s ON s.IdServico = a.IdServico
         WHERE s.IdSalao = @IdSalao
           AND a.DataHora >= @Inicio
           AND a.DataHora < @Fim
+          AND (a.Excluido = 0 OR a.Excluido IS NULL)
         ORDER BY a.DataHora;";
 
         var agendamentos = new List<Agendamento>();
@@ -1867,7 +1921,8 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
                         Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
                         IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                         IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
-                        IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"])
+                        IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                        Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
                     });
                 }
             }
@@ -1880,11 +1935,12 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
     public List<Agendamento> ListarPorFuncionario(int idFuncionario, DateTime? dataInicio = null, DateTime? dataFim = null)
     {
         string query = @"
-        SELECT IdAgendamento, DataHora, Status, IdServico, IdPessoa, IdFuncionario
+        SELECT IdAgendamento, DataHora, Status, IdServico, IdPessoa, IdFuncionario, Excluido
         FROM CorteCor_Agendamento
         WHERE IdFuncionario = @IdFuncionario
           AND (@DataInicio IS NULL OR DataHora >= @DataInicio)
           AND (@DataFim    IS NULL OR DataHora <  @DataFim)
+          AND (Excluido = 0 OR Excluido IS NULL)
         ORDER BY DataHora;";
 
         var agendamentos = new List<Agendamento>();
@@ -1907,7 +1963,8 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
                         Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
                         IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                         IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
-                        IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"])
+                        IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                        Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
                     });
                 }
             }
@@ -1989,7 +2046,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
 
     public override void Excluir(int id)
     {
-        string query = "DELETE FROM CorteCor_Agendamento WHERE IdAgendamento = @IdAgendamento;";
+        string query = "UPDATE CorteCor_Agendamento SET Excluido = 1 WHERE IdAgendamento = @IdAgendamento";
 
         using (var connection = _dbHandler.GetConnection())
         using (var command = connection.CreateCommand(query))
@@ -2014,6 +2071,43 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
     public override void Cadastrar(Agendamento entity)
     {
         throw new NotImplementedException();
+    }
+
+    public virtual List<Agendamento> ListarTodos(int idSalao)
+    {
+        string query = @"
+        SELECT a.IdAgendamento, a.DataHora, a.Status, a.IdServico, a.IdPessoa, a.IdFuncionario, a.Excluido
+        FROM CorteCor_Agendamento a
+        INNER JOIN CorteCor_Servico s ON s.IdServico = a.IdServico
+        WHERE s.IdSalao = @IdSalao
+        ORDER BY a.DataHora DESC;";
+
+        var agendamentos = new List<Agendamento>();
+
+        using (var connection = _dbHandler.GetConnection())
+        using (var command = connection.CreateCommand(query))
+        {
+            command.AddWithValue("@IdSalao", idSalao);
+
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    agendamentos.Add(new Agendamento
+                    {
+                        IdAgendamento = reader["IdAgendamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdAgendamento"]),
+                        DataHora = reader["DataHora"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataHora"]),
+                        Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
+                        IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
+                        IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
+                        IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                        Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
+                    });
+                }
+            }
+        }
+
+        return agendamentos;
     }
 }
 
@@ -2560,7 +2654,7 @@ public class PagamentoHandler : EntityHandler<Pagamento>
         using (var command = connection.CreateCommand())
         {
             command.CommandText = query;
-            command.AddWithValue("@Id", id);
+            command.AddWithValue("@Id", idPagamento);
             using (var reader = command.ExecuteReader())
             {
                 if (!reader.Read()) return null;

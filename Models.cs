@@ -155,6 +155,7 @@ public class Models
         public string Email { get; set; }
         public DateTime? DataNascimento { get; set; }
         public int IdSalao { get; set; }
+        public bool Excluido { get; set; }
     }
 
     public class Agendamento
@@ -166,6 +167,7 @@ public class Models
         public int IdServico { get; set; }
         public int IdPessoa { get; set; }
         public int IdFuncionario { get; set; }
+        public bool Excluido { get; set; }
     }
 
     public class MeioPagamento

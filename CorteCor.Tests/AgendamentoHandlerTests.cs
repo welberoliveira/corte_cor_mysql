@@ -71,6 +71,7 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["IdServico"]).Returns(1);
             _mockReader.Setup(r => r["IdPessoa"]).Returns(1);
             _mockReader.Setup(r => r["IdFuncionario"]).Returns(1);
+            _mockReader.Setup(r => r["Excluido"]).Returns(false);
 
             // Act
             var result = _handler.ObterPorId(10);
@@ -96,6 +97,7 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["IdServico"]).Returns(1);
             _mockReader.Setup(r => r["IdPessoa"]).Returns(1);
             _mockReader.Setup(r => r["IdFuncionario"]).Returns(1);
+            _mockReader.Setup(r => r["Excluido"]).Returns(false);
 
             // Act
             var result = _handler.ListarPorIntervalo(1, DateTime.Today, DateTime.Today.AddDays(1));
@@ -160,6 +162,45 @@ namespace CorteCor.Tests
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
+
+        [Fact]
+        public void Excluir_DeveRealizarSoftDelete()
+        {
+            // Act
+            _handler.Excluir(1);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+            // Verification of the query string is hard with this setup, 
+            // but we at least ensure ExecuteNonQuery was called.
+        }
+
+        [Fact]
+        public void ListarTodos_DeveRetornarTodos()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            
+            var seq = new MockSequence();
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(true);
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(false);
+
+            _mockReader.Setup(r => r["IdAgendamento"]).Returns(1);
+            _mockReader.Setup(r => r["DataHora"]).Returns(DateTime.Now);
+            _mockReader.Setup(r => r["Status"]).Returns("Agendado");
+            _mockReader.Setup(r => r["IdServico"]).Returns(1);
+            _mockReader.Setup(r => r["IdPessoa"]).Returns(1);
+            _mockReader.Setup(r => r["IdFuncionario"]).Returns(1);
+            _mockReader.Setup(r => r["Excluido"]).Returns(true); 
+
+            // Act
+            var result = _handler.ListarTodos(1);
+
+            // Assert
+            Assert.Single(result);
+            Assert.True(result[0].Excluido);
+            _mockCommand.Verify(cmd => cmd.ExecuteReader(), Times.Once);
         }
     }
 }

@@ -1,5 +1,5 @@
 @page
-@model CorteCor.Pages.PessoaListaModel
+@model CorteCor.Pages.PessoaExcluidosModel
 
 <style>
     @@media (max-width: 768px) {
@@ -16,8 +16,8 @@
 
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h4>Lista de Pessoas</h4>
-        <a href="/PessoaExcluidos" class="btn btn-secondary">Clientes Excluídos</a>
+        <h4>Clientes Excluídos</h4>
+        <a href="/PessoaLista" class="btn btn-primary">Voltar</a>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
@@ -46,16 +46,10 @@
                     <td>@Pessoa.Email</td>
                     <td>@(Pessoa.DataNascimento.HasValue ? Pessoa.DataNascimento.Value.ToShortDateString() : "")</td>
                     <td class="actions">
-                        <form method="post" style="display: inline;">
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja restaurar este Cliente?');">
                             <input type="hidden" name="id" value="@Pessoa.IdPessoa">
-                            <input type="hidden" name="action" value="alterar">
-                            <button class="btn btn-info">Alterar</button>
-                        </form>
-
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta Pessoa?');">
-                            <input type="hidden" name="id" value="@Pessoa.IdPessoa">
-                            <input type="hidden" name="action" value="excluir">
-                            <button class="btn btn-danger">Excluir</button>
+                            <input type="hidden" name="action" value="restaurar">
+                            <button class="btn btn-success">Restaurar</button>
                         </form>
                     </td>
                 </tr>
