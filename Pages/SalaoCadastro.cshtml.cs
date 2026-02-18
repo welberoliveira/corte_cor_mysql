@@ -37,7 +37,10 @@ namespace CorteCor.Pages
                 CNPJ = Request.Form["cnpj"],
                 Status = "Ativo",
                 DataCadastro = DateTime.Parse(Request.Form["dataCadastro"]),
-                Observacao = Request.Form["observacao"]
+                Observacao = Request.Form["observacao"],
+                LimiteEnvioEmail = int.Parse(Request.Form["limiteEnvioEmail"]),
+                LimiteEnvioSMS = int.Parse(Request.Form["limiteEnvioSMS"]),
+                LimiteEnvioWhatsapp = int.Parse(Request.Form["limiteEnvioWhatsapp"])
             };
 
             var handler = new SalaoHandler();

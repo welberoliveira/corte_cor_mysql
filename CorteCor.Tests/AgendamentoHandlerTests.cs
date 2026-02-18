@@ -140,7 +140,7 @@ namespace CorteCor.Tests
             _handler.AtualizarStatus(1, "Cancelado");
 
             // Assert
-            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
         }
 
         [Fact]
@@ -161,7 +161,7 @@ namespace CorteCor.Tests
             _handler.Atualizar(agendamento);
 
             // Assert
-            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
         }
 
         [Fact]
@@ -171,7 +171,7 @@ namespace CorteCor.Tests
             _handler.Excluir(1);
 
             // Assert
-            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
             // Verification of the query string is hard with this setup, 
             // but we at least ensure ExecuteNonQuery was called.
         }

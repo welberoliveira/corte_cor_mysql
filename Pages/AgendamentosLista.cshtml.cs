@@ -16,7 +16,7 @@ namespace CorteCor.Pages
         private readonly PessoaHandler _pessoaHandler;
         private readonly FuncionarioHandler _funcionarioHandler;
 
-        public List<Agendamento> Agendamentos { get; set; } = new List<Agendamento>();
+        public PagedResult<Agendamento> Agendamentos { get; set; } = new PagedResult<Agendamento>();
         public string Mensagem { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -40,10 +40,13 @@ namespace CorteCor.Pages
         [BindProperty(SupportsGet = true)]
         public bool MostrarExcluidos { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int p { get; set; } = 1;
+
         public List<Servico> ServicosOptions { get; set; }
         public List<Pessoa> PessoasOptions { get; set; }
         public List<Funcionario> FuncionariosOptions { get; set; }
-        public List<string> StatusOptions { get; set; } = new List<string> { "Agendado", "Concluído", "Cancelado" };
+        public List<string> StatusOptions { get; set; } = new List<string> { "Agendado", "Pago", "Pendente", "Cancelado" };
 
         private Dictionary<int, string> _servicosCache = new Dictionary<int, string>();
         private Dictionary<int, string> _pessoasCache = new Dictionary<int, string>();
@@ -68,7 +71,13 @@ namespace CorteCor.Pages
                 if (idSalaoClaim != null && int.TryParse(idSalaoClaim.Value, out int idSalao))
                 {
                     CarregarDadosApoio(idSalao);
-                    Agendamentos = _handler.ListarFiltrado(idSalao, DataInicio, DataFim, Status, IdServico, IdPessoa, IdFuncionario, MostrarExcluidos);
+                    Agendamentos = _handler.ListarFiltrado(idSalao, DataInicio, DataFim, Status, IdServico, IdPessoa, IdFuncionario, MostrarExcluidos, p > 0 ? p : 1, 10);
+                    
+                    // Display Fix: Map "Confirmado" to "Pago"
+                    foreach (var ag in Agendamentos.Items)
+                    {
+                        if (ag.Status == "Confirmado") ag.Status = "Pago";
+                    }
                 }
                 else
                 {

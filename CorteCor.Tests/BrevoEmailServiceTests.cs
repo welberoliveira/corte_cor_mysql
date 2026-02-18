@@ -16,6 +16,7 @@ namespace CorteCor.Tests
     {
         private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
         private readonly Mock<ModeloEmailHandler> _mockModeloHandler;
+        private readonly Mock<Microsoft.Extensions.Configuration.IConfiguration> _mockConfiguration;
         private readonly BrevoEmailService _service;
 
         public BrevoEmailServiceTests()
@@ -24,8 +25,10 @@ namespace CorteCor.Tests
             var httpClient = new HttpClient(_mockHttpMessageHandler.Object);
             
             _mockModeloHandler = new Mock<ModeloEmailHandler>((IDatabaseHandler)null);
+            _mockConfiguration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
+            _mockConfiguration.Setup(c => c["Brevo:ApiKey"]).Returns("test-key");
 
-            _service = new BrevoEmailService(httpClient, _mockModeloHandler.Object);
+            _service = new BrevoEmailService(httpClient, _mockModeloHandler.Object, _mockConfiguration.Object);
         }
 
         [Fact]
@@ -113,6 +116,28 @@ namespace CorteCor.Tests
 
             // Assert
             Assert.False(result);
+        }
+
+        [Fact]
+        public async Task EnviarEmailGenericoAsync_Success_ReturnsTrue()
+        {
+            // Arrange
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK
+                });
+
+            // Act
+            var result = await _service.EnviarEmailGenericoAsync("test@test.com", "User", "Subject", "<p>Body</p>");
+
+            // Assert
+            Assert.True(result);
         }
     }
 }

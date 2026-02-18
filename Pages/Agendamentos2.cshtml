@@ -233,6 +233,14 @@
         <h3 class="mb-0">Agendamentos</h3>
     </div>
 
+    @if (TempData["AvisoLimite"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show mt-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["AvisoLimite"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div id="calendar"></div>
 </div>
 

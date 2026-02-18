@@ -70,6 +70,20 @@ namespace CorteCor.Pages
 
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
+                // ---- Verificação de Limite de Emails ----
+                try {
+                    var lembreteHandler = new LembreteHandler(dbHandler);
+                    if (lembreteHandler.VerificarLimiteEmail(Usuario.IdSalao, out int enviados, out int limite))
+                    {
+                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de emails para seu salão foi alcançado ({enviados}/{limite}). Adquira mais créditos para continuar enviando lembretes.";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Não impedir login por erro aqui, apenas logar ou ignorar
+                    Console.WriteLine("Erro ao verificar limite: " + ex.Message);
+                }
+                // -----------------------------------------
 
                 // Redirecionar para a página inicial ou outra página protegida
                 return Redirect(HttpContext.Request.PathBase + "/Agendamentos2");

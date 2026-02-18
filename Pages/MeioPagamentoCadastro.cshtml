@@ -72,8 +72,15 @@
 
         <div class="form-group">
             <label for="gateway">Gateway</label>
-            <input type="text" id="gateway" name="gateway" class="form-control" required value="@Model.MeioPagamento?.Gateway">
-            <small class="form-text text-muted">Ex: MercadoPago, PagSeguro, Stripe, Pagarme</small>
+            <select id="gateway" name="gateway" class="form-control" required>
+                @{
+                    var gatewayAtual = Model.MeioPagamento?.Gateway ?? "";
+                }
+                <option value="">Selecione</option>
+                <option value="MercadoPago" selected="@(gatewayAtual == "MercadoPago")">Mercado Pago</option>
+                <option value="Outros" selected="@(gatewayAtual == "Outros")">Outros</option>
+            </select>
+            <small class="form-text text-muted">Selecione o gateway de pagamento.</small>
         </div>
 
         <!-- Campos do Mercado Pago -->

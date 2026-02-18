@@ -21,6 +21,7 @@ namespace CorteCor.Tests
         private readonly Mock<FuncionarioHandler> _mockFuncionarioHandler;
         private readonly Mock<FuncionarioServicoHandler> _mockFsHandler;
         private readonly Mock<PagamentoHandler> _mockPagamentoHandler;
+        private readonly Mock<MeioPagamentoHandler> _mockMeioPagamentoHandler; // Added
         private readonly Mock<MercadoPagoService> _mockMpService;
         private readonly Agendamentos2Model _pageModel;
 
@@ -32,6 +33,8 @@ namespace CorteCor.Tests
             _mockFuncionarioHandler = new Mock<FuncionarioHandler>((IDatabaseHandler)null);
             _mockFsHandler = new Mock<FuncionarioServicoHandler>((IDatabaseHandler)null);
             _mockPagamentoHandler = new Mock<PagamentoHandler>((IDatabaseHandler)null);
+            _mockMeioPagamentoHandler = new Mock<MeioPagamentoHandler>((IDatabaseHandler)null); // Init
+            
             var config = new FakeConfiguration();
             _mockMpService = new Mock<MercadoPagoService>(config, (System.Net.Http.HttpClient)null);
 
@@ -41,6 +44,7 @@ namespace CorteCor.Tests
                 _mockAgendamentoHandler.Object,
                 _mockFuncionarioHandler.Object,
                 _mockFsHandler.Object,
+                _mockMeioPagamentoHandler.Object, // Pass it
                 _mockPagamentoHandler.Object,
                 _mockMpService.Object,
                 config
@@ -131,7 +135,7 @@ namespace CorteCor.Tests
 
     public class FakeConfiguration : IConfiguration
     {
-        public string this[string key] { get => "mock-token"; set { } }
+        public string? this[string key] { get => "mock-token"; set { } }
         public IEnumerable<IConfigurationSection> GetChildren() => throw new NotImplementedException();
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() => throw new NotImplementedException();
         public IConfigurationSection GetSection(string key) => throw new NotImplementedException();

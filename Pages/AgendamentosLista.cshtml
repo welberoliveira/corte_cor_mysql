@@ -1,80 +1,63 @@
 @page
 @model CorteCor.Pages.AgendamentosListaModel
 @{
-    ViewData["Title"] = "Lista de Agendamentos";
+    ViewData["Title"] = "Consulta de Agendamentos";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>@ViewData["Title"]</h2>
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h2>@ViewData["Title"]</h2>
+        </div>
     </div>
 
+    <!-- Filtros -->
     <div class="card mb-3">
         <div class="card-header">
             Filtros
         </div>
         <div class="card-body">
             <form method="get">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label asp-for="DataInicio">Data Início</label>
-                            <input asp-for="DataInicio" class="form-control" type="date" />
-                        </div>
+                <div class="form-row">
+                    <div class="form-group col-md-2">
+                        <label>Data Início</label>
+                        <input type="date" class="form-control" asp-for="DataInicio">
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label asp-for="DataFim">Data Fim</label>
-                            <input asp-for="DataFim" class="form-control" type="date" />
-                        </div>
+                    <div class="form-group col-md-2">
+                        <label>Data Fim</label>
+                        <input type="date" class="form-control" asp-for="DataFim">
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label asp-for="Status">Status</label>
-                            <select asp-for="Status" class="form-control">
-                                <option value="">Todos</option>
-                                @foreach (var s in Model.StatusOptions)
-                                {
-                                    <option value="@s">@s</option>
-                                }
-                            </select>
-                        </div>
+                    <div class="form-group col-md-2">
+                        <label>Status</label>
+                        <select class="form-control" asp-for="Status" asp-items="@(new SelectList(Model.StatusOptions))">
+                            <option value="">Todos</option>
+                        </select>
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label asp-for="IdServico">Serviço</label>
-                            <select asp-for="IdServico" class="form-control" asp-items="@(new SelectList(Model.ServicosOptions, "IdServico", "Nome"))">
-                                <option value="">Todos</option>
-                            </select>
-                        </div>
+                    <div class="form-group col-md-2">
+                        <label>Serviço</label>
+                        <select class="form-control" asp-for="IdServico" asp-items="@(new SelectList(Model.ServicosOptions, "IdServico", "Nome"))">
+                            <option value="">Todos</option>
+                        </select>
                     </div>
-                 </div>
-                 <div class="row mt-2">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label asp-for="IdPessoa">Cliente</label>
-                            <select asp-for="IdPessoa" class="form-control" asp-items="@(new SelectList(Model.PessoasOptions, "IdPessoa", "Nome"))">
-                                <option value="">Todos</option>
-                            </select>
-                        </div>
+                    <div class="form-group col-md-2">
+                        <label>Cliente</label>
+                        <select class="form-control" asp-for="IdPessoa" asp-items="@(new SelectList(Model.PessoasOptions, "IdPessoa", "Nome"))">
+                            <option value="">Todos</option>
+                        </select>
                     </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label asp-for="IdFuncionario">Funcionário</label>
-                            <select asp-for="IdFuncionario" class="form-control" asp-items="@(new SelectList(Model.FuncionariosOptions, "IdFuncionario", "Nome"))">
-                                <option value="">Todos</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                         <div class="form-check mb-2 mr-3">
-                            <input asp-for="MostrarExcluidos" class="form-check-input" />
-                            <label asp-for="MostrarExcluidos" class="form-check-label">Mostrar Excluídos</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary mr-2">Filtrar</button>
-                        <a href="/AgendamentosLista" class="btn btn-secondary">Limpar</a>
+                     <div class="form-group col-md-2">
+                        <label>Funcionário</label>
+                        <select class="form-control" asp-for="IdFuncionario" asp-items="@(new SelectList(Model.FuncionariosOptions, "IdFuncionario", "Nome"))">
+                            <option value="">Todos</option>
+                        </select>
                     </div>
                 </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" asp-for="MostrarExcluidos">
+                    <label class="form-check-label" asp-for="MostrarExcluidos">Mostrar Excluídos</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="/AgendamentosLista" class="btn btn-secondary">Limpar</a>
             </form>
         </div>
     </div>
@@ -84,9 +67,10 @@
         <div class="alert alert-info">@Model.Mensagem</div>
     }
 
+    <!-- Tabela -->
     <div class="table-responsive">
         <table class="table table-striped table-hover">
-            <thead class="table-dark">
+            <thead>
                 <tr>
                     <th>Data/Hora</th>
                     <th>Status</th>
@@ -97,7 +81,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model.Agendamentos)
+                @foreach (var item in Model.Agendamentos.Items)
                 {
                     <tr class="@(item.Excluido ? "table-danger text-decoration-line-through" : "")">
                         <td>@item.DataHora.ToString("dd/MM/yyyy HH:mm")</td>
@@ -108,7 +92,49 @@
                         <td>@(item.Excluido ? "Sim" : "Não")</td>
                     </tr>
                 }
+                 @if (!Model.Agendamentos.Items.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Ainda não há agendamentos com estes filtros.</td>
+                    </tr>
+                }
             </tbody>
         </table>
     </div>
+    
+    <!-- Pagination Controls -->
+    @if (Model.Agendamentos.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-3">
+            <ul class="pagination justify-content-center">
+                @{
+                    var queryParams = new Dictionary<string, string>();
+                    if (Model.DataInicio.HasValue) queryParams.Add("DataInicio", Model.DataInicio.Value.ToString("yyyy-MM-dd"));
+                    if (Model.DataFim.HasValue) queryParams.Add("DataFim", Model.DataFim.Value.ToString("yyyy-MM-dd"));
+                    if (!string.IsNullOrEmpty(Model.Status)) queryParams.Add("Status", Model.Status);
+                    if (Model.IdServico.HasValue) queryParams.Add("IdServico", Model.IdServico.Value.ToString());
+                    if (Model.IdPessoa.HasValue) queryParams.Add("IdPessoa", Model.IdPessoa.Value.ToString());
+                    if (Model.IdFuncionario.HasValue) queryParams.Add("IdFuncionario", Model.IdFuncionario.Value.ToString());
+                    if (Model.MostrarExcluidos) queryParams.Add("MostrarExcluidos", "true");
+                    
+                    string GetLink(int page)
+                    {
+                        var dict = new Dictionary<string, string>(queryParams);
+                        dict["p"] = page.ToString();
+                        return "?" + string.Join("&", dict.Select(kv => $"{kv.Key}={System.Net.WebUtility.UrlEncode(kv.Value)}"));
+                    }
+                }
+
+                <li class="page-item @(Model.Agendamentos.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex - 1)" tabindex="-1">Anterior</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Página @Model.Agendamentos.PageIndex de @Model.Agendamentos.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.Agendamentos.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex + 1)">Próxima</a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

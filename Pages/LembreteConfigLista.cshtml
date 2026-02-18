@@ -1,0 +1,53 @@
+@page
+@model CorteCor.Pages.LembreteConfigListaModel
+@{
+    ViewData["Title"] = "Regras de Lembretes";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Regras de Lembretes</h2>
+        <a href="/LembreteConfigCadastro" class="btn btn-primary">Nova Regra</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info">@Model.Mensagem</div>
+    }
+
+    <table class="table-striped table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>Antecedência</th>
+                <th>Unidade</th>
+                <th>Modelo</th>
+                <th>Status</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Configs)
+            {
+                <tr>
+                    <td>@item.AntecedenciaValor</td>
+                    <td>@item.AntecedenciaUnidade</td>
+                    <td>@item.AssuntoModelo</td>
+                    <td>
+                        <span class="badge @(item.Ativo ? "bg-success" : "bg-danger")">
+                            @(item.Ativo ? "Ativo" : "Inativo")
+                        </span>
+                    </td>
+                    <td>@item.DataInicio.ToString("dd/MM/yyyy")</td>
+                    <td>@(item.DataFim?.ToString("dd/MM/yyyy") ?? "Eterna")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Excluir" asp-route-id="@item.IdConfig" onsubmit="return confirm('Tem certeza que deseja excluir esta regra?');" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

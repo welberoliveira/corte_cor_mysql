@@ -1,11 +1,11 @@
 @page
 @model CorteCor.Pages.SalaoCadastroModel
 @{
-    ViewData["Title"] = "Cadastro de Salıes";
+    ViewData["Title"] = "Cadastro de Sal√µes";
 }
 
 <div class="container">
-    <h4>@Model.ButtonText Sal„o</h4>
+    <h4>@Model.ButtonText Sal√£o</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -18,12 +18,12 @@
         <input type="hidden" name="id" value="@Model.Salao?.IdSalao">
 
         <div class="form-group">
-            <label for="nome">Nome do Sal„o</label>
+            <label for="nome">Nome do Sal√£o</label>
             <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Salao?.Nome">
         </div>
 
         <div class="form-group">
-            <label for="responsavel">Respons·vel</label>
+            <label for="responsavel">Respons√°vel</label>
             <input type="text" id="responsavel" name="responsavel" class="form-control" required value="@Model.Salao?.Responsavel">
         </div>
 
@@ -38,7 +38,7 @@
         </div>
 
         <div class="form-group">
-            <label for="endereco">EndereÁo</label>
+            <label for="endereco">Endere√ßo</label>
             <input type="text" id="endereco" name="endereco" class="form-control" value="@Model.Salao?.Endereco">
         </div>
 
@@ -48,10 +48,30 @@
         </div>
 
         <div class="form-group">
-            <label for="observacao">ObservaÁ„o</label>
+            <label for="observacao">Observa√ß√£o</label>
             <textarea id="observacao" name="observacao" class="form-control">@Model.Salao?.Observacao</textarea>
         </div>
 
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="limiteEnvioEmail">Limite Envio E-mail</label>
+                    <input type="number" id="limiteEnvioEmail" name="limiteEnvioEmail" class="form-control" value="@(Model.Salao?.LimiteEnvioEmail ?? 0)" min="0">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="limiteEnvioSMS">Limite Envio SMS</label>
+                    <input type="number" id="limiteEnvioSMS" name="limiteEnvioSMS" class="form-control" value="@(Model.Salao?.LimiteEnvioSMS ?? 0)" min="0">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="limiteEnvioWhatsapp">Limite Envio Whatsapp</label>
+                    <input type="number" id="limiteEnvioWhatsapp" name="limiteEnvioWhatsapp" class="form-control" value="@(Model.Salao?.LimiteEnvioWhatsapp ?? 0)" min="0">
+                </div>
+            </div>
+        </div>
 
         <div class="form-group">
             <label for="dataCadastro">Data de Cadastro</label>
@@ -65,7 +85,7 @@
 
 <script>
     $(document).ready(function () {
-        $("#telefone").inputmask("(99) 99999-9999"); // M·scara para telefone
-        $("#cnpj").inputmask("99.999.999/9999-99");   // M·scara para CNPJ
+        $("#telefone").inputmask("(99) 99999-9999"); // M√°scara para telefone
+        $("#cnpj").inputmask("99.999.999/9999-99");   // M√°scara para CNPJ
     });
 </script>

@@ -45,6 +45,9 @@ public class Models
         public string Status { get; set; }
         public string Observacao { get; set; }
         public DateTime DataCadastro { get; set; }
+        public int LimiteEnvioEmail { get; set; }
+        public int LimiteEnvioSMS { get; set; }
+        public int LimiteEnvioWhatsapp { get; set; }
 
     }
 
@@ -249,6 +252,8 @@ public class Models
         public string? Status { get; set; }
         public string? NomeCliente { get; set; }
         public DateTime? DataAgendamento { get; set; }
+        public int PageIndex { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 
     public class ModeloEmail
@@ -260,5 +265,45 @@ public class Models
         public string CorpoHTML { get; set; }
         public bool Ativo { get; set; }
         public DateTime DataAtualizacao { get; set; }
+    }
+
+    public class LembreteConfig
+    {
+        public int IdConfig { get; set; }
+        public int IdSalao { get; set; }
+        public int AntecedenciaValor { get; set; } // 1, 2, 24
+        public string AntecedenciaUnidade { get; set; } // "Horas", "Dias"
+        public int? IdModeloEmail { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime DataCriacao { get; set; }
+        public DateTime DataInicio { get; set; }
+        public DateTime? DataFim { get; set; }
+
+        [NotMapped]
+        public string? AssuntoModelo { get; set; }
+    }
+
+    public class LembreteAgendado
+    {
+        public int IdLembrete { get; set; }
+        public int IdAgendamento { get; set; }
+        public int IdConfig { get; set; }
+        public DateTime DataEnvioProgramada { get; set; }
+        public string Status { get; set; } // Pendente, Enviado, Erro
+        public int Tentativas { get; set; }
+        public string? UltimoErro { get; set; }
+        public DateTime? DataEnvioReal { get; set; }
+        public DateTime DataCriacao { get; set; }
+    }
+
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; } = new List<T>();
+        public int TotalCount { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
+        public bool HasPreviousPage => PageIndex > 1;
+        public bool HasNextPage => PageIndex < TotalPages;
     }
 }

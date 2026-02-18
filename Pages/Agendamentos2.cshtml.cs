@@ -12,6 +12,7 @@ namespace CorteCor.Pages
         private readonly AgendamentoHandler _agendamentoHandler;
         private readonly FuncionarioHandler _funcionarioHandler;
         private readonly FuncionarioServicoHandler _fsHandler;
+        private readonly MeioPagamentoHandler _meioPagamentoHandler;
         private readonly PagamentoHandler _pagamentoHandler;
         private readonly MercadoPagoService _mpService;
         private readonly IConfiguration _configuration;
@@ -22,6 +23,7 @@ namespace CorteCor.Pages
             AgendamentoHandler agendamentoHandler,
             FuncionarioHandler funcionarioHandler,
             FuncionarioServicoHandler fsHandler,
+            MeioPagamentoHandler meioPagamentoHandler,
             PagamentoHandler pagamentoHandler,
             MercadoPagoService mpService,
             IConfiguration configuration)
@@ -31,6 +33,7 @@ namespace CorteCor.Pages
             _agendamentoHandler = agendamentoHandler;
             _funcionarioHandler = funcionarioHandler;
             _fsHandler = fsHandler;
+            _meioPagamentoHandler = meioPagamentoHandler;
             _pagamentoHandler = pagamentoHandler;
             _mpService = mpService;
             _configuration = configuration;
@@ -75,11 +78,16 @@ namespace CorteCor.Pages
                    var nomeCliente = dictPessoas.ContainsKey(a.IdPessoa) ? dictPessoas[a.IdPessoa] : "Cliente Removido";
                    
                    var duracao = servico?.Duracao ?? TimeSpan.FromMinutes(30);
-                   var cor = GetCorPorStatus(a.Status);
+                   
+                   // Map legacy "Confirmado" to "Pago" for display
+                   var statusExibicao = a.Status;
+                   if (statusExibicao == "Confirmado") statusExibicao = "Pago";
+
+                   var cor = GetCorPorStatus(statusExibicao);
 
                     var primeiroNome = nomeCliente.Split(' ')[0];
                     var titulo = $"{primeiroNome} - {servico?.Nome ?? "Serviço Removido"}";
-                    if (a.Status == "Pago") titulo = "✅ " + titulo;
+                    if (statusExibicao == "Pago") titulo = "✅ " + titulo;
 
                     return new
                     {
@@ -176,13 +184,16 @@ namespace CorteCor.Pages
             var a = _agendamentoHandler.ObterPorId(id);
             if (a == null) return NotFound();
 
+            var status = a.Status;
+            if (status == "Confirmado") status = "Pago";
+
             return new JsonResult(new
             {
                 id = a.IdAgendamento,
                 idPessoa = a.IdPessoa,
                 idServico = a.IdServico,
                 start = a.DataHora,
-                status = a.Status
+                status = status
             });
         }
 
@@ -282,10 +293,12 @@ namespace CorteCor.Pages
             if (p == null) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
 
             // 1. Identificar se é produção ou sandbox baseado no Config do Banco
-            
+
             // 2. Buscar configurações de Meio de Pagamento do Salão
-            var meios = new MeioPagamentoHandler().ListarPorSalao(idSalao, somenteAtivos: true);
-            var mpConfig = meios.FirstOrDefault(m => m.Gateway == "MercadoPago");
+            // Using injected handler
+            var meios = _meioPagamentoHandler.ListarPorSalao(idSalao, somenteAtivos: true);
+            var mpConfig = meios.FirstOrDefault(m => 
+                (m.Gateway != null && m.Gateway.Replace(" ", "").Equals("MercadoPago", StringComparison.OrdinalIgnoreCase)));
 
             if (mpConfig == null)
                 return BadRequest(new ErrorResponse { Message = "Meio de pagamento Mercado Pago não configurado para este salão." });

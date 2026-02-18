@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Mvc; 
 using static CorteCor.Models;
 
 namespace CorteCor.Pages
@@ -10,13 +11,17 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class PessoaListaModel : PageModel
     {
-        public List<Pessoa> Pessoas { get; set; }
+        public PagedResult<Pessoa> Pessoas { get; set; } = new PagedResult<Pessoa>();
         public string Mensagem { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int p { get; set; } = 1;
 
         public void OnGet()
         {
             var handler = new PessoaHandler();
-            Pessoas = handler.Listar() ?? new List<Pessoa>();
+            Pessoas = handler.Listar(p > 0 ? p : 1, 10);
+            if (Pessoas == null) Pessoas = new PagedResult<Pessoa>();
         }
 
         public void OnPost()
@@ -31,11 +36,11 @@ namespace CorteCor.Pages
                 try
                 {
                     handler.Excluir(id);
-                    Mensagem = "Pessoa excluÌda com sucesso.";
+                    Mensagem = "Pessoa exclu√≠da com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir esta Pessoa porque ela est· associada a outros registros.";
+                    Mensagem = "N√£o foi poss√≠vel excluir esta Pessoa porque ela est√° associada a outros registros.";
                 }
             }
             else if (action == "alterar")

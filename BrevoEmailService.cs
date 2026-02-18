@@ -22,7 +22,7 @@ namespace CorteCor
             _modeloEmailHandler = modeloEmailHandler;
         }
 
-        public async Task<bool> EnviarEmailTemplateAsync(int idSalao, string tipoEvento, string emailDestino, Dictionary<string, string> variaveis)
+        public virtual async Task<bool> EnviarEmailTemplateAsync(int idSalao, string tipoEvento, string emailDestino, Dictionary<string, string> variaveis)
         {
             try
             {
@@ -61,6 +61,45 @@ namespace CorteCor
                 request.Content = content;
 
                 // 4. Send
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[BrevoEmailService] Error sending email: {response.StatusCode} - {error}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BrevoEmailService] Exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        public virtual async Task<bool> EnviarEmailGenericoAsync(string emailDestino, string nomeDestino, string assunto, string corpoHtml)
+        {
+            try
+            {
+                var payload = new
+                {
+                    sender = new { name = "CorteCor", email = "no-reply@cortecor.com.br" },
+                    to = new[] { new { email = emailDestino, name = nomeDestino } },
+                    subject = assunto,
+                    htmlContent = corpoHtml
+                };
+
+                var jsonPayload = JsonSerializer.Serialize(payload);
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
+                request.Headers.Add("api-key", _apiKey);
+                request.Content = content;
+
                 var response = await _httpClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)

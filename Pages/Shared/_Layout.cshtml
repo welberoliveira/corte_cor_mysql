@@ -250,6 +250,7 @@
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Gráficos</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Analíticos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios de E-mail</a></li>
                                 </ul>
                             </li>
 
@@ -308,15 +309,12 @@
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Agendamentos2">Calendário</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/AgendamentosLista">Lista de Agendamentos</a></li>
-                                </ul>
-                            </li>
+                                
+                                    <li><hr class="dropdown-divider"></li>
 
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Automação
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="/ModeloEmailLista">Modelo de e-mail</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/LembreteConfigLista">Regras de Lembretes</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios e-mails/SMS/Whatsapp</a></li>
                                 </ul>
                             </li>
 
@@ -326,11 +324,10 @@
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLeitura">Dados do Salão</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Configurar Mensagens**</a></li>
-
                                     <li><hr class="dropdown-divider"></li>
 
                                     <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoLista">Meios de Pagamentos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoLista">Plataforma de Email/SMS/Whatsapp</a></li>
                                 </ul>
                             </li>
 

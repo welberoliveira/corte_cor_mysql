@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Configuration; // Added for IConfiguration
+using Microsoft.Extensions.DependencyInjection; // Added for GetRequiredService
+using System.Threading.Tasks; // Added for Task
 using static CorteCor.Models;
 
 namespace CorteCor.Pages
@@ -11,7 +14,7 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class PagamentoListaModel : PageModel
     {
-        public List<Pagamento> Pagamentos { get; set; }
+        public PagedResult<Pagamento> Pagamentos { get; set; }
         public string Mensagem { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -29,6 +32,9 @@ namespace CorteCor.Pages
         [BindProperty(SupportsGet = true)]
         public DateTime? DataAgendamento { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int p { get; set; } = 1;
+
         public void OnGet()
         {
             var handler = new PagamentoHandler();
@@ -38,9 +44,12 @@ namespace CorteCor.Pages
                 DataFim = DataFim,
                 Status = Status,
                 NomeCliente = NomeCliente,
-                DataAgendamento = DataAgendamento
+                DataAgendamento = DataAgendamento,
+                PageIndex = p > 0 ? p : 1,
+                PageSize = 10
             };
-            Pagamentos = handler.Listar(filtro) ?? new List<Pagamento>();
+            Pagamentos = handler.Listar(filtro);
+            if (Pagamentos == null) Pagamentos = new PagedResult<Pagamento>();
         }
 
         public async Task<IActionResult> OnPostAsync()

@@ -1,0 +1,24 @@
+USE CorteCor;
+GO
+
+-- Adicionar colunas de limites de envio na tabela de Salão
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'CorteCor_Salao' AND COLUMN_NAME = 'LimiteEnvioEmail')
+BEGIN
+    ALTER TABLE CorteCor_Salao
+    ADD LimiteEnvioEmail INT NOT NULL DEFAULT 0;
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'CorteCor_Salao' AND COLUMN_NAME = 'LimiteEnvioSMS')
+BEGIN
+    ALTER TABLE CorteCor_Salao
+    ADD LimiteEnvioSMS INT NOT NULL DEFAULT 0;
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'CorteCor_Salao' AND COLUMN_NAME = 'LimiteEnvioWhatsapp')
+BEGIN
+    ALTER TABLE CorteCor_Salao
+    ADD LimiteEnvioWhatsapp INT NOT NULL DEFAULT 0;
+END
+GO

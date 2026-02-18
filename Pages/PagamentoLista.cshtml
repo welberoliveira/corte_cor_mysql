@@ -1,158 +1,136 @@
 ﻿@page
 @model CorteCor.Pages.PagamentoListaModel
-
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="fas fa-file-invoice-dollar"></i> Gestão de Pagamentos</h2>
-        <a asp-page="/PagamentoCadastro" class="btn btn-success"><i class="fas fa-plus"></i> Novo Pagamento</a>
-    </div>
-
-    @if (!string.IsNullOrEmpty(Model.Mensagem))
+@{
+    ViewData["Title"] = "Pagamentos";
+    var statusClass = new Func<string, string>(s => s switch
     {
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
-            @Model.Mensagem
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+        "approved" => "success",
+        "pending" => "warning",
+        "failure" => "danger",
+        _ => "secondary"
+    });
+}
 
-    <!-- Filtros -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light">
-            <i class="fas fa-filter"></i> Filtros
-        </div>
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label asp-for="DataInicio" class="form-label">Data Início</label>
-                    <input asp-for="DataInicio" type="date" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="DataFim" class="form-label">Data Fim</label>
-                    <input asp-for="DataFim" type="date" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Status" class="form-label">Status</label>
-                    <select asp-for="Status" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="Pago">Pago</option>
-                        <option value="Pendente">Pendente</option>
-                        <option value="Cancelado">Cancelado</option>
-                    </select>
-                </div>
-                <!-- O filtro de nome requer Joins que implementamos no backend -->
-                <div class="col-md-3">
-                    <label asp-for="NomeCliente" class="form-label">Cliente</label>
-                    <input asp-for="NomeCliente" class="form-control" placeholder="Nome...">
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="DataAgendamento" class="form-label">Data do Agendamento</label>
-                    <input asp-for="DataAgendamento" type="date" class="form-control">
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrar</button>
-                    <a asp-page="/PagamentoLista" class="btn btn-secondary">Limpar</a>
-                </div>
-            </form>
-        </div>
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h2>@ViewData["Title"]</h2>
     </div>
+    <div class="col-md-6 text-right">
+        <a class="btn btn-primary" href="/PagamentoCadastro">
+            <i class="fas fa-plus"></i> Novo Pagamento
+        </a>
+    </div>
+</div>
 
-    <!-- Tabela -->
-    <div class="table-responsive shadow-sm">
-        <table class="table table-hover align-middle">
-            <thead class="table-dark">
+@if (!string.IsNullOrEmpty(Model.Mensagem))
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        @Model.Mensagem
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="fas fa-filter"></i> Filtros</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="form-inline">
+            <label class="mr-2">De:</label>
+            <input type="date" name="DataInicio" class="form-control mr-3" value="@Model.DataInicio?.ToString("yyyy-MM-dd")" />
+            
+            <label class="mr-2">Até:</label>
+            <input type="date" name="DataFim" class="form-control mr-3" value="@Model.DataFim?.ToString("yyyy-MM-dd")" />
+            
+            <label class="mr-2">Status:</label>
+            <select name="Status" class="form-control mr-3">
+                <option value="">Todos</option>
+                <option value="approved" selected="@(Model.Status == "approved")">Aprovado</option>
+                <option value="pending" selected="@(Model.Status == "pending")">Pendente</option>
+                <option value="failure" selected="@(Model.Status == "failure")">Falha</option>
+            </select>
+
+            <label class="mr-2">Cliente:</label>
+            <input type="text" name="NomeCliente" class="form-control mr-3" value="@Model.NomeCliente" placeholder="Nome do Cliente" />
+
+            <label class="mr-2">Data Agend.:</label>
+            <input type="date" name="DataAgendamento" class="form-control mr-3" value="@Model.DataAgendamento?.ToString("yyyy-MM-dd")" />
+
+            <button type="submit" class="btn btn-secondary">Filtrar</button>
+            <a href="/PagamentoLista" class="btn btn-link">Limpar</a>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="thead-light">
                 <tr>
-                    <th>Criação</th>
-                    <th>Pagamento</th>
-                    <th>Agendamento</th>
-                    <th>Valor</th>
-                    <th>Status</th>
-                    <th>Descrição / Ref.</th>
+                    <th>Data</th>
                     <th>Cliente</th>
                     <th>Serviço</th>
+                    <th>Agendamento</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Status MP</th>
                     <th>Tipo</th>
-                    <th class="text-end">Ações</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var p in Model.Pagamentos)
+                @foreach (var p in Model.Pagamentos.Items)
                 {
                     <tr>
-                        <td>
-                            @p.CriadoEm.ToString("dd/MM/yyyy")<br>
-                            <small class="text-muted">@p.CriadoEm.ToString("HH:mm")</small>
-                        </td>
-                        <td>
-                            @if (p.PagoEm.HasValue)
-                            {
-                                @p.PagoEm.Value.ToString("dd/MM/yyyy")<br>
-                                <small class="text-muted">@p.PagoEm.Value.ToString("HH:mm")</small>
-                            }
-                            else
-                            {
-                                <span class="text-muted">-</span>
-                            }
-                        </td>
-                        <td>
-                            @if (p.DataAgendamento.HasValue)
-                            {
-                                @p.DataAgendamento.Value.ToString("dd/MM/yyyy")<br>
-                                <small class="text-muted">@p.DataAgendamento.Value.ToString("HH:mm")</small>
-                            }
-                            else
-                            {
-                                <span class="text-muted">-</span>
-                            }
-                        </td>
-                        <td class="fw-bold">
-                            @p.Moeda @p.Valor.ToString("N2")
-                        </td>
-                        <td>
-                            @{
-                                var badgeClass = "bg-secondary";
-                                var status = p.Status ?? "Pendente";
-                                if (status.Equals("Pago", StringComparison.OrdinalIgnoreCase) || status.Equals("approved", StringComparison.OrdinalIgnoreCase)) badgeClass = "bg-success";
-                                else if (status.Equals("Pendente", StringComparison.OrdinalIgnoreCase) || status.Equals("pending", StringComparison.OrdinalIgnoreCase)) badgeClass = "bg-warning text-dark";
-                                else if (status.Equals("Cancelado", StringComparison.OrdinalIgnoreCase) || status.Equals("rejected", StringComparison.OrdinalIgnoreCase)) badgeClass = "bg-danger";
-                            }
-                            <span class="badge @badgeClass">@status</span>
-                        </td>
-                        <td>
-                            @p.Descricao
-                            @if(p.IdAgendamento > 0) {
-                                <br><small class="text-muted">Agendamento: #@p.IdAgendamento</small>
-                            }
-                        </td>
+                        <td>@p.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@p.NomeCliente</td>
                         <td>@p.NomeServico</td>
+                        <td>@(p.DataAgendamento?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                        <td>@p.Descricao</td>
+                        <td>@p.Moeda @p.Valor.ToString("N2")</td>
+                        <td>
+                            <span class="badge badge-@statusClass(p.MpStatus)">
+                                @(p.MpStatus ?? "N/A")
+                            </span>
+                            @if(!string.IsNullOrEmpty(p.MpStatusDetail))
+                            {
+                                <small class="d-block text-muted">@p.MpStatusDetail</small>
+                            }
+                        </td>
                         <td>@p.Tipo</td>
-                        <td class="text-end">
-                            <form method="post" class="d-inline">
-                                <input type="hidden" name="id" value="@p.IdPagamento">
-                                <input type="hidden" name="action" value="sincronizar">
-                                <button type="submit" class="btn btn-sm btn-primary" title="Sincronizar Status">
-                                    <i class="fas fa-sync-alt"></i> Sincronizar
-                                </button>
-                            </form>
+                        <td>
+                            @if (!string.IsNullOrEmpty(p.CheckoutUrl) && p.Status == "pending")
+                            {
+                                <a href="@p.CheckoutUrl" target="_blank" class="btn btn-sm btn-success" title="Pagar">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </a>
+                            }
                             
                             <form method="post" class="d-inline">
                                 <input type="hidden" name="id" value="@p.IdPagamento">
-                                <input type="hidden" name="action" value="alterar">
-                                <button type="submit" class="btn btn-sm btn-info" title="Editar">
-                                    <i class="fas fa-edit"></i> Editar
+                                <input type="hidden" name="action" value="sincronizar">
+                                <button type="submit" class="btn btn-sm btn-info" title="Sincronizar Status">
+                                    <i class="fas fa-sync"></i>
                                 </button>
                             </form>
+
+                            <a href="/PagamentoCadastro?id=@p.IdPagamento" class="btn btn-sm btn-primary" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
 
                             <form method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir?');">
                                 <input type="hidden" name="id" value="@p.IdPagamento">
                                 <input type="hidden" name="action" value="excluir">
                                 <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
-                                    <i class="fas fa-trash"></i> Excluir
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </form>
                         </td>
                     </tr>
                 }
-                @if (!Model.Pagamentos.Any())
+                @if (!Model.Pagamentos.Items.Any())
                 {
                     <tr>
                         <td colspan="9" class="text-center py-4 text-muted">Ainda não há pagamentos registrados com estes filtros.</td>
@@ -162,3 +140,37 @@
         </table>
     </div>
 </div>
+
+<!-- Pagination Controls -->
+@if (Model.Pagamentos.TotalPages > 1)
+{
+    <nav aria-label="Page navigation" class="mt-3">
+        <ul class="pagination justify-content-center">
+            @{
+                var queryParams = new Dictionary<string, string>();
+                if (Model.DataInicio.HasValue) queryParams.Add("DataInicio", Model.DataInicio.Value.ToString("yyyy-MM-dd"));
+                if (Model.DataFim.HasValue) queryParams.Add("DataFim", Model.DataFim.Value.ToString("yyyy-MM-dd"));
+                if (!string.IsNullOrEmpty(Model.Status)) queryParams.Add("Status", Model.Status);
+                if (!string.IsNullOrEmpty(Model.NomeCliente)) queryParams.Add("NomeCliente", Model.NomeCliente);
+                if (Model.DataAgendamento.HasValue) queryParams.Add("DataAgendamento", Model.DataAgendamento.Value.ToString("yyyy-MM-dd"));
+                
+                string GetLink(int page)
+                {
+                    var dict = new Dictionary<string, string>(queryParams);
+                    dict["p"] = page.ToString();
+                    return "?" + string.Join("&", dict.Select(kv => $"{kv.Key}={System.Net.WebUtility.UrlEncode(kv.Value)}"));
+                }
+            }
+
+            <li class="page-item @(Model.Pagamentos.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" href="@GetLink(Model.Pagamentos.PageIndex - 1)" tabindex="-1">Anterior</a>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">Página @Model.Pagamentos.PageIndex de @Model.Pagamentos.TotalPages</span>
+            </li>
+            <li class="page-item @(Model.Pagamentos.HasNextPage ? "" : "disabled")">
+                <a class="page-link" href="@GetLink(Model.Pagamentos.PageIndex + 1)">Próxima</a>
+            </li>
+        </ul>
+    </nav>
+}

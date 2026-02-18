@@ -1,0 +1,69 @@
+@page
+@model CorteCor.Pages.LembreteConfigCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Regra de Lembrete";
+}
+
+<div class="container">
+    <h4>Cadastro de Regra de Lembrete</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info">@Model.Mensagem</div>
+    }
+
+    <form method="post">
+        <input type="hidden" asp-for="Config.IdConfig" />
+        <input type="hidden" asp-for="Config.IdSalao" />
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Config.AntecedenciaValor">Antecedência (Tempo)</label>
+                    <input asp-for="Config.AntecedenciaValor" class="form-control" type="number" required min="1" step="1" />
+                    <span asp-validation-for="Config.AntecedenciaValor" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Config.AntecedenciaUnidade">Unidade</label>
+                    <select asp-for="Config.AntecedenciaUnidade" class="form-control" asp-items="Model.UnidadeOptions"></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Config.IdModeloEmail">Modelo de E-mail (Opcional)</label>
+            <select asp-for="Config.IdModeloEmail" class="form-control" asp-items="Model.ModeloOptions">
+                <option value="">-- Padrão (Sem Modelo Específico) --</option>
+            </select>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Config.DataInicio">Data de Início da Regra</label>
+                    <input asp-for="Config.DataInicio" class="form-control" type="date" required />
+                    <small class="text-muted">A regra passará a valer para agendamentos a partir desta data.</small>
+                    <span asp-validation-for="Config.DataInicio" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Config.DataFim">Data de Fim (Opcional)</label>
+                    <input asp-for="Config.DataFim" class="form-control" type="date" />
+                    <small class="text-muted">Deixe em branco para uma regra "Eterna".</small>
+                    <span asp-validation-for="Config.DataFim" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" asp-for="Config.Ativo" />
+            <label class="form-check-label" asp-for="Config.Ativo">Ativo</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="/LembreteConfigLista" class="btn btn-secondary">Voltar</a>
+    </form>
+</div>
