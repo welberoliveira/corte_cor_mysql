@@ -1,4 +1,4 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Localization;
@@ -11,16 +11,16 @@ using CorteCor.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Adiciona serviÁos ao container.
+// Adiciona servi√ßos ao container.
 builder.Services.AddRazorPages();
 
-// Configura autenticaÁ„o baseada em cookies.
+// Configura autentica√ß√£o baseada em cookies.
 builder.Services.AddAuthentication("CookieAuth")
     .AddCookie("CookieAuth", config =>
     {
-        config.LoginPath = "/Index"; // Redireciona para a p·gina de login
+        config.LoginPath = "/Index"; // Redireciona para a p√°gina de login
         config.LogoutPath = "/Logout"; // Define a rota de logout
-        //config.AccessDeniedPath = "/AccessDenied"; // P·gina para acesso negado (opcional)
+        //config.AccessDeniedPath = "/AccessDenied"; // P√°gina para acesso negado (opcional)
     });
 
 builder.Services.AddAuthorization(options =>
@@ -64,12 +64,19 @@ builder.Services.AddScoped<ModeloEmailHandler>();
 builder.Services.AddScoped<ModeloSMSHandler>();
 builder.Services.AddScoped<MeioPagamentoHandler>();
 builder.Services.AddHttpClient<BrevoEmailService>();
-//builder.Services.AddScoped<BrevoEmailService>(); // Removido pois AddHttpClient j· registra
+//builder.Services.AddScoped<BrevoEmailService>(); // Removido pois AddHttpClient j√° registra
 builder.Services.AddHttpClient<SMSMarketService>();
 builder.Services.AddScoped<ILembreteHandler, LembreteHandler>();
 builder.Services.AddScoped<LembreteService>();
 builder.Services.AddScoped<FornecedoresHandler>();
 builder.Services.AddHostedService<LembreteBackgroundService>();
+
+
+// Servi√ßos Fiscais
+builder.Services.AddSingleton<ICriptografiaService, CriptografiaService>();
+builder.Services.AddTransient<CertificadoFiscalFactory>();
+builder.Services.AddTransient<NFCeEmissorService>();
+builder.Services.AddHostedService<NFSeVerificadorRetornoJob>();
 
 // Configurar cultura para pt-BR
 var cultureInfo = new CultureInfo("pt-BR");
@@ -90,7 +97,7 @@ app.UseRequestLocalization(localizationOptions);
 
 var currentPath = AppDomain.CurrentDomain.BaseDirectory;
 
-//>>> incluido para ter duas aplicaÁıes ao mesmo tempo Verifica se o PathBase precisa ser definido automaticamente
+//>>> incluido para ter duas aplica√ß√µes ao mesmo tempo Verifica se o PathBase precisa ser definido automaticamente
 var pathBase = AppDomain.CurrentDomain.BaseDirectory.Contains("CorteCor") ? "/CorteCor" :
                AppDomain.CurrentDomain.BaseDirectory.Contains("CorteCor_hml") ? "/CorteCor_hml" : "";
 
@@ -99,11 +106,11 @@ if (!string.IsNullOrEmpty(pathBase))
     app.UsePathBase(pathBase);
 }
 
-// Certifica que cada aplicaÁ„o usa seu prÛprio diretÛrio de logs e dados tempor·rios
+// Certifica que cada aplica√ß√£o usa seu pr√≥prio diret√≥rio de logs e dados tempor√°rios
 var tempPath = Path.Combine(Path.GetTempPath(), pathBase.TrimStart('/'));
 Directory.CreateDirectory(tempPath);
 Environment.SetEnvironmentVariable("DOTNET_BUNDLE_EXTRACT_BASE_DIR", tempPath);
-//<<< incluido para ter duas aplicaÁıes ao mesmo tempo 
+//<<< incluido para ter duas aplica√ß√µes ao mesmo tempo 
 
 
 //inserido para o portalde cartas contempladas 
@@ -112,18 +119,18 @@ app.Use(async (context, next) =>
     var origin = context.Request.Headers["Origin"].ToString();
     var path = context.Request.Path.ToString();
 
-    // Verifica se a requisiÁ„o È para "/axe/API/PortalContempladas"
+    // Verifica se a requisi√ß√£o √© para "/axe/API/PortalContempladas"
     if (path.StartsWith("/CorteCor/API/PortalContempladas", StringComparison.OrdinalIgnoreCase))
     {
         if (string.IsNullOrEmpty(origin) || origin != "https://portalcontempladas.com.br")
         {
             context.Response.StatusCode = 403; // Proibido
-            await context.Response.WriteAsync("? Acesso n„o autorizado.");
+            await context.Response.WriteAsync("? Acesso n√£o autorizado.");
             return;
         }
     }
 
-    await next(); // Permite a requisiÁ„o continuar se n„o for bloqueada
+    await next(); // Permite a requisi√ß√£o continuar se n√£o for bloqueada
 });
 
 
@@ -136,7 +143,7 @@ app.UseCors(MyAllowSpecificOrigins);
 
 
 
-// ConfiguraÁ„o do pipeline de requisiÁıes.
+// Configura√ß√£o do pipeline de requisi√ß√µes.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -161,7 +168,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Middleware de autenticaÁ„o e autorizaÁ„o
+// Middleware de autentica√ß√£o e autoriza√ß√£o
 app.UseAuthentication();
 app.UseAuthorization();
 

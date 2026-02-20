@@ -79,7 +79,7 @@ namespace CorteCor.Models;
         public string? Telefone { get; set; }
         public string? Celular { get; set; }
         
-        // Campos do cônjuge
+        // Campos do cÃ´njuge
         public string? ConjugeNome { get; set; }
         public string? ConjugeFiliacao { get; set; }
         public string? ConjugeRG { get; set; }
@@ -196,7 +196,7 @@ namespace CorteCor.Models;
         public string? MpPublicKeyProd { get; set; }
         public string? MpPublicKeySandbox { get; set; }
         
-        // True = Produção, False = Sandbox
+        // True = ProduÃ§Ã£o, False = Sandbox
         public bool MpProduction { get; set; }
     }
 
@@ -386,3 +386,57 @@ namespace CorteCor.Models;
         public DateTime DataCriacao { get; set; }
         public DateTime? DataAtualizacao { get; set; }
     }
+
+    public class SalaoConfigFiscal
+    {
+        [Key]
+        public Guid IdConfigFiscal { get; set; }
+        public int IdSalao { get; set; }
+        public string Cnpj { get; set; }
+        public string RazaoSocial { get; set; }
+        public string? InscricaoEstadual { get; set; }
+        public string? InscricaoMunicipal { get; set; }
+        public int Ambiente { get; set; }
+        public int CodigoMunicipioIBGE { get; set; }
+        public int CodigoUFIBGE { get; set; }
+        public int RegimeTributario { get; set; }
+        public byte[]? CertificadoPfx { get; set; }
+        public byte[]? CertificadoSenha { get; set; }
+        public DateTime? CertificadoValidade { get; set; }
+        public DateTime DataAtualizacao { get; set; }
+    }
+
+    public class NotaFiscal
+    {
+        [Key]
+        public Guid IdNotaFiscal { get; set; }
+        public int IdSalao { get; set; }
+        public int? IdAgendamento { get; set; }
+        public int? IdVendaProduto { get; set; }
+        public string TipoNota { get; set; }
+        public int Ambiente { get; set; }
+        public int Numero { get; set; }
+        public int Serie { get; set; }
+        public decimal ValorTotal { get; set; }
+        public string Status { get; set; }
+        public string? ChaveAcesso { get; set; }
+        public string? NumeroRecibo { get; set; }
+        public string? ProtocoloAutorizacao { get; set; }
+        public string? JustificativaRejeicao { get; set; }
+        public string? XmlEnvio { get; set; }
+        public string? XmlRetorno { get; set; }
+        public DateTime DataEmissao { get; set; }
+        public DateTime DataAtualizacao { get; set; }
+    }
+
+    public class RetornoEmissaoDto
+    {
+        public bool Autorizada { get; set; }
+        public string? ChaveAcesso { get; set; }
+        public string? Protocolo { get; set; }
+        public string? XmlEnvio { get; set; }
+        public string? XmlRetorno { get; set; }
+        public string? Motivo { get; set; }
+        public int? CodigoStatusSefaz { get; set; }
+    }
+
