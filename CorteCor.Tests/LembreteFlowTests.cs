@@ -73,10 +73,13 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["AntecedenciaUnidade"]).Returns("Horas");
             _mockReader.Setup(r => r["Ativo"]).Returns(true);
             _mockReader.Setup(r => r["IdModeloEmail"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["IdModeloSMS"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["TipoLembrete"]).Returns("Email");
+            _mockReader.Setup(r => r["AssuntoModeloEmail"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["ConteudoModeloSMS"]).Returns(DBNull.Value);
             _mockReader.Setup(r => r["DataCriacao"]).Returns(DateTime.Now);
             _mockReader.Setup(r => r["DataInicio"]).Returns(DateTime.Now.AddDays(-30));
             _mockReader.Setup(r => r["DataFim"]).Returns(DBNull.Value);
-            _mockReader.Setup(r => r["AssuntoModelo"]).Returns("Lembrete");
             _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(false);
 
             // Act
@@ -124,10 +127,13 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["AntecedenciaUnidade"]).Returns("Horas"); // Hora
             _mockReader.Setup(r => r["Ativo"]).Returns(true);
             _mockReader.Setup(r => r["IdModeloEmail"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["IdModeloSMS"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["TipoLembrete"]).Returns("Email");
+            _mockReader.Setup(r => r["AssuntoModeloEmail"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["ConteudoModeloSMS"]).Returns(DBNull.Value);
             _mockReader.Setup(r => r["DataCriacao"]).Returns(DateTime.Now);
             _mockReader.Setup(r => r["DataInicio"]).Returns(DateTime.Now.AddDays(-30));
             _mockReader.Setup(r => r["DataFim"]).Returns(DBNull.Value);
-            _mockReader.Setup(r => r["AssuntoModelo"]).Returns("Lembrete");
             _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(false);
 
             // Act

@@ -1,21 +1,24 @@
-@page
+Ôªø@page
 @model UsuarioListaModel
 
 <style>
     @@media (max-width: 768px) {
-        table th:nth-child(2), /* Oculta o cabeÁalho da coluna Email */
-        table td:nth-child(2), /* Oculta as cÈlulas da coluna Email */
-        table th:nth-child(3), /* Oculta o cabeÁalho da coluna Telefone */
-        table td:nth-child(3), /* Oculta as cÈlulas da coluna Email */
-        table th:nth-child(4), /* Oculta o cabeÁalho da coluna Telefone */
-        table td:nth-child(4) /* Oculta as cÈlulas da coluna Telefone */ {
+        table th:nth-child(2), /* Oculta o cabe√ßalho da coluna Email */
+        table td:nth-child(2), /* Oculta as c√©lulas da coluna Email */
+        table th:nth-child(3), /* Oculta o cabe√ßalho da coluna Telefone */
+        table td:nth-child(3), /* Oculta as c√©lulas da coluna Email */
+        table th:nth-child(4), /* Oculta o cabe√ßalho da coluna Telefone */
+        table td:nth-child(4) /* Oculta as c√©lulas da coluna Telefone */ {
             display: none;
         }
     }
 </style>
 
 <div class="container">
-    <h4>Lista de Usu·rios</h4>
+    <div class="d-flex justify-content-between align-items-center">
+        <h4>Lista de Usu√°rios</h4>
+        <a href="/UsuarioCadastro" class="btn btn-primary">Novo Usu√°rio</a>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -41,7 +44,7 @@
                 <th>Salao</th>
                 <th>Data de Entrada</th>
                 <th>Status</th>
-                <th>AÁıes</th>
+                <th>A√ß√µes</th>
             </tr>
         </thead>
         <tbody>
@@ -60,7 +63,7 @@
                             }
                             else
                             {
-                                @("N„o definido");
+                                @("N√£o definido");
                             }
                         }
                     </td>
@@ -99,3 +102,5 @@
         </tbody>
     </table>
 </div>
+
+

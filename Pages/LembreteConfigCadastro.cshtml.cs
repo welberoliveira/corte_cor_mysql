@@ -11,21 +11,31 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class LembreteConfigCadastroModel : PageModel
     {
-        private readonly LembreteHandler _handler;
-        private readonly ModeloEmailHandler _modeloHandler;
+        private readonly ILembreteHandler _handler;
+        private readonly ModeloEmailHandler _modeloEmailHandler;
+        private readonly ModeloSMSHandler _modeloSmsHandler;
 
         [BindProperty]
         public Models.LembreteConfig Config { get; set; } = new Models.LembreteConfig();
 
         public List<SelectListItem> UnidadeOptions { get; set; }
-        public List<SelectListItem> ModeloOptions { get; set; }
+        public List<SelectListItem> ModeloEmailOptions { get; set; }
+        public List<SelectListItem> ModeloSmsOptions { get; set; }
+        
+        public List<SelectListItem> TipoOptions { get; set; } = new List<SelectListItem> 
+        { 
+            new SelectListItem { Value = "Email", Text = "E-mail" },
+            new SelectListItem { Value = "SMS", Text = "SMS" }
+        };
 
         public string Mensagem { get; set; }
 
-        public LembreteConfigCadastroModel(LembreteHandler handler, ModeloEmailHandler modeloHandler)
+        public LembreteConfigCadastroModel(ILembreteHandler handler, ModeloEmailHandler modeloEmailHandler, ModeloSMSHandler modeloSmsHandler)
         {
             _handler = handler;
-            _modeloHandler = modeloHandler;
+            _modeloEmailHandler = modeloEmailHandler;
+            _modeloSmsHandler = modeloSmsHandler;
+            
             UnidadeOptions = new List<SelectListItem>
             {
                 new SelectListItem { Value = "Minutos", Text = "Minutos" },
@@ -42,13 +52,23 @@ namespace CorteCor.Pages
                 Config.IdSalao = idSalao;
                 Config.Ativo = true; // Default for new
                 Config.DataInicio = DateTime.Today; // Default starting today
+                Config.TipoLembrete = "Email"; // Default
+                Config.AntecedenciaValor = 30; // Default: 30 minutes
 
                 // Load Email Models
-                var modelos = _modeloHandler.ListarPorSalao(idSalao);
-                ModeloOptions = modelos.Select(m => new SelectListItem
+                var modeloEmails = _modeloEmailHandler.ListarPorSalao(idSalao);
+                ModeloEmailOptions = modeloEmails.Select(m => new SelectListItem
                 {
                     Value = m.IdModelo.ToString(),
                     Text = m.Assunto
+                }).ToList();
+
+                // Load SMS Models
+                var modeloSms = _modeloSmsHandler.ListarPorSalao(idSalao);
+                ModeloSmsOptions = modeloSms.Select(m => new SelectListItem
+                {
+                    Value = m.IdModelo.ToString(),
+                    Text = m.TipoEvento + " - " + (m.Conteudo.Length > 20 ? m.Conteudo.Substring(0, 20) + "..." : m.Conteudo)
                 }).ToList();
             }
 
@@ -86,11 +106,18 @@ namespace CorteCor.Pages
                 var idSalaoClaim = User.FindFirst("IdSalao");
                 if (idSalaoClaim != null && int.TryParse(idSalaoClaim.Value, out int idS))
                 {
-                    var modelos = _modeloHandler.ListarPorSalao(idS);
-                    ModeloOptions = modelos.Select(m => new SelectListItem
+                    var modeloEmails = _modeloEmailHandler.ListarPorSalao(idS);
+                    ModeloEmailOptions = modeloEmails.Select(m => new SelectListItem
                     {
                         Value = m.IdModelo.ToString(),
                         Text = m.Assunto
+                    }).ToList();
+
+                    var modeloSms = _modeloSmsHandler.ListarPorSalao(idS);
+                    ModeloSmsOptions = modeloSms.Select(m => new SelectListItem
+                    {
+                        Value = m.IdModelo.ToString(),
+                        Text = m.TipoEvento + " - " + (m.Conteudo.Length > 20 ? m.Conteudo.Substring(0, 20) + "..." : m.Conteudo)
                     }).ToList();
                 }
                 return Page();
@@ -102,7 +129,22 @@ namespace CorteCor.Pages
                 Config.IdSalao = idSalao;
             }
 
+            Config.Ativo = true; // Forçar sempre como ativa conforme solicitação
             _handler.SalvarConfig(Config);
+
+            // Aplicar regra retroativamente para agendamentos já existentes
+            if (Config.Ativo)
+            {
+                try
+                {
+                    _handler.AplicarRegraRetroativa(Config.IdConfig);
+                }
+                catch (System.Exception ex)
+                {
+                    // Logar erro mas não impedir o fluxo, pois a regra foi salva
+                    System.Console.WriteLine($"Erro ao aplicar regra retroativa: {ex.Message}");
+                }
+            }
 
             return RedirectToPage("/LembreteConfigLista");
         }

@@ -1,0 +1,1236 @@
+﻿FORMAT: 1A
+HOST: https://api.smsmarket.com.br/
+
+# SMSMarket - IntegraÃ§Ã£o
+
+Bem vindo!. EstÃ¡ pÃ¡gina Ã© exclusivamente dedicada Ã  desenvolvedores de software e profissionais da Ã¡rea. Aqui vocÃª encontra todas informaÃ§Ãµes necessÃ¡rias para integrar seu sistema com nosso gateway, para enviar mensagens e receber status de entrega e respostas dos usuÃ¡rios de forma automÃ¡tica.
+
+<br>
+<br>
+
+<p><br>Nesta pÃ¡gina vocÃª encontra documentaÃ§Ã£o para as seguintes formas:</p>
+<ul>
+<li>
+<p>API REST</p>
+<ul>
+<li>Seu sistema deve realizar uma chamada para a URL <a href="https://api.smsmarket.com.br/webservice-rest/">https://api.smsmarket.com.br/webservice-rest/</a>,
+enviando os parÃ¢metros por meio de GET ou POST. O retorno para cada chamada serÃ¡ um
+JSON cujo formato Ã© detalhado ao longo desta documentaÃ§Ã£o.</li>
+</ul>
+</li>
+</ul>
+# AutenticaÃ§Ã£o
+
+<p>Ã recomendado que todas as requisiÃ§Ãµes a API HTTP utilize para autenticaÃ§Ã£o cabeÃ§alhos <strong>Basic Authorization</strong> em vez de parÃ¢metros query string.
+Neste campo deve ser informado seu usuÃ¡rio e senha cadastrados em nosso site.
+Caso haja erro na autenticaÃ§Ã£o, o respectivo cÃ³digo de erro serÃ¡ retornado.</p>
+<pre><code>Authorization: Basic dXN1YXJpbzpzZW5oYQ=
+</code></pre>
+<p>O valor apÃ³s a palavra <code>Basic</code> Ã© uma chave Base64 de seu usuÃ¡rio e senha.
+Para obter o valor, utilize o comando base64 do linux:</p>
+<pre><code>$ echo -n conta:senha | base64 
+dXN1YXJpbzpzZW5oYQ=
+</code></pre>
+<p>O site <a href="https://www.base64encode.org">base64Encode</a> tambÃ©m faz essa codificaÃ§Ã£o gratuitamente.</p>
+
+# Headers
+<p>Chamadas realizadas exclusivamente para API HTTP <code>Envio em Lote</code> devem incluir, alÃ©m do cabeÃ§alho de autenticaÃ§Ã£o, os seguintes headers:</p>
+
+<pre><code>Content-Type:application/json
+Accept:application/json
+</code></pre>
+
+<p>Restantes API HTTP, alÃ©m do cabeÃ§alho de autenticaÃ§Ã£o devem incluir os seguintes headers:</p>
+
+<pre><code>Content-Type:application/x-www-form-urlencoded
+</code></pre>
+# ParÃ¢metro campaign_id
+
+`campaign_id`
+
+<p>Ao enviar uma requisiÃ§Ã£o, recomendamos que vocÃª utilize este parÃ¢metro.
+Ele serve como um identificador de sua mensagem em nossa plataforma e
+pode ser utilizado para consulta de status. Este parÃ¢metro tambÃ©m possui a funcionalidade de proteÃ§Ã£o contra
+envios duplicados (habilite esta funÃ§Ã£o com nosso suporte).</p>
+<br>
+
+# ParÃ¢metro type
+
+`type`
+
+<p>Ao enviar uma requisiÃ§Ã£o, Ã© necessÃ¡rio que vocÃª utilize este parÃ¢metro. Ele serve para identificar o tipo do serviÃ§o da mensagem.</p>
+<br>
+<p>Veja abaixo a tabela contendo os valores aceitos para este parÃ¢metro:</p>
+
+<table>
+<thead>
+<tr>
+<th align="left"><code>type</code></th>
+<th>Tipo do ServiÃ§o</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">0</td>
+<td>SMS nÃ£o Interativo</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td>SMS Interativo(Modo Flash)</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td>SMS Interativo</td>
+</tr>
+</tbody>
+</table>
+
+# LimitaÃ§Ãµes
+
+<p>Restringimos em 20 conexÃµes simultÃ¢neas por usuÃ¡rio.</p>
+
+# Tabela de Caracteres
+
+## Caracteres BÃ¡sico
+<p>Mensagens que possuem <strong>somente</strong> caracteres que estÃ£o na tabela abaixo, sÃ£o cobradas a cada 160 caracteres. Caso a mensagem possua <strong>um ou mais</strong> caracteres que nÃ£o estÃ£o na tabela abaixo, a cobranÃ§a Ã© feita a cada 70 caracteres, conforme especificaÃ§Ã£o do protocolo na rede das operadoras.</p>
+
+<table><thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Space</td>
+<td>(</td>
+<td>0</td>
+<td>8</td>
+<td>@</td>
+<td>H</td>
+<td>P</td>
+<td>X</td>
+<td>`</td>
+<td>h</td>
+<td>p</td>
+<td>x</td>
+</tr>
+<tr>
+<td>!</td>
+<td>)</td>
+<td>1</td>
+<td>9</td>
+<td>A</td>
+<td>I</td>
+<td>Q</td>
+<td>Y</td>
+<td>a</td>
+<td>i</td>
+<td>q</td>
+<td>y</td>
+</tr>
+<tr>
+<td>â</td>
+<td>*</td>
+<td>2</td>
+<td>:</td>
+<td>B</td>
+<td>J</td>
+<td>R</td>
+<td>Z</td>
+<td>b</td>
+<td>j</td>
+<td>r</td>
+<td>z</td>
+</tr>
+<tr>
+<td>#</td>
+<td>+</td>
+<td>3</td>
+<td>;</td>
+<td>C</td>
+<td>K</td>
+<td>S</td>
+<td>c</td>
+<td>k</td>
+<td>s</td>
+<td>$</td>
+<td>,</td>
+</tr>
+<tr>
+<td>4</td>
+<td>&lt;</td>
+<td>D</td>
+<td>L</td>
+<td>T</td>
+<td>d</td>
+<td>l</td>
+<td>t</td>
+<td>%</td>
+<td>-</td>
+<td>5</td>
+<td>=</td>
+</tr>
+<tr>
+<td>E</td>
+<td>M</td>
+<td>U</td>
+<td>e</td>
+<td>m</td>
+<td>u</td>
+<td>&amp;</td>
+<td>.</td>
+<td>6</td>
+<td>&gt;</td>
+<td>F</td>
+<td>N</td>
+</tr>
+<tr>
+<td>V</td>
+<td>f</td>
+<td>n</td>
+<td>v</td>
+<td>â</td>
+<td>/</td>
+<td>7</td>
+<td>?</td>
+<td>G</td>
+<td>O</td>
+<td>W</td>
+<td>_</td>
+</tr>
+<tr>
+<td>g</td>
+<td>o</td>
+<td>w</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+
+<p>ObservaÃ§Ãµes:</p>
+<p>1 - Para habilitar do uso de acentos e caracteres especiais adicione na chamada o parÃ¢metro <strong>utf8=1</strong>.</p>
+<p>2 - No caso em que a operadora destino nÃ£o aceita acentos e caracteres (Sercomtel), nossa plataforma faz automaticamente para os nossos clientes, a substituiÃ§Ã£o dos mesmos, por exemplo: Ã¡ para a, Ã© para e, etc.</p>
+
+## Caracteres Estendido
+
+<p>Os seguintes caracteres tambÃ©m estÃ£o disponÃ­veis, mas sÃ£o contados como dois caracteres na mensagem SMS em vez de um:</p>
+<table><thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead><tbody>
+<tr>
+<td>^</td>
+<td>{</td>
+<td>}</td>
+<td>\</td>
+<td>[</td>
+<td>]</td>
+<td>~</td>
+<td>|</td>
+<td>â¬</td>
+</tr>
+</tbody></table>
+
+# Textos grandes (concatenaÃ§Ã£o)
+
+<p>O protocolo utilizado na rede das operadoras possui os limites de 70 ou 160 caracteres, para mensagens com ou sem <strong>caracteres especiais</strong>, respectivamente. Mas Ã© possÃ­vel enviar mensagens maiores com a utilizaÃ§Ã£o de concatenaÃ§Ã£o, onde o aparelho reagrupa as mensagens ao recebÃª-las.</p>
+<p>Para para ativar a concatenaÃ§Ã£o, basta enviar juntamente com a chamada o parÃ¢metro <strong>concatenation=1</strong>.</p>
+<p>Ã importante notar que, apesar de aparecerem no aparelho como uma Ãºnica mensagem grande, as mensagens continuam trafegando na rede das operadoras individualmente, e neste caso, continuamos sendo cobrados e cobrando individualmente, a cada 63 ou 160 (dependendo dos <strong>caracteres</strong> utilizados). Lembrando que ao utilizar concatenaÃ§Ã£o parte dos caracteres (70 ou 160) sÃ£o utilizados pelo header.</p>
+<p>ObservaÃ§Ã£o: Nos casos de operadoras que nÃ£o suportam a funcionalidade de concatenaÃ§Ã£o (Exemplos: Sercomtel), nÃ³s enviaremos as mensagens separadamente, sem concatenar, e inclui indicadores de ordem automaticamente para nossos clientes. Ex:</p>
+<p>Inicio do textoâ¦. (Â½)</p>
+<p>â¦â¦fim do texto (2/2)</p>
+
+# Tabela de Status
+<p>Existem dois tipos de status, um obtido atravÃ©s da chamada Ã  API (Cliente->Gateway), denominado <code>Status de Chamada</code> e outro atravÃ©s da obtenÃ§Ã£o do status da mensagem em nosso servidor (Gateway->Operadora), denominado <code>Status de Envio</code>.</p>
+
+## Status de Chamada
+<p>As chamadas Ã  API irÃ£o retornar dois parÃ¢metros de status, um numÃ©rico denominado <code>responseCode</code> e o outro alfanumÃ©rico denominado <code>responseDescription</code>, os dois correspondem a mesma informaÃ§Ã£o.</p>
+<p>A seguir, veja a lista de status suportados pela nossa API:</p>
+
+<table>
+<tr bgcolor="#E0F2F7">
+<td align="left">API de Envio</td>
+</tr>
+<tr bgcolor="#F5ECCE">
+<td align="left">API de Consulta</td>
+</tr>
+<tr bgcolor="#E0F8E0">
+<td align="left">Todas API</td>
+</tr>
+</table>
+<table>
+<thead>
+<tr>
+<th align="left">responseCode</th>
+<th>responseDescription</th>
+<th>success</th>
+</tr>
+</thead>
+<tbody>
+<tr bgcolor="#E0F2F7">
+<td align="left">000</td>
+<td>Success queued</td>
+<td>true</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">001</td>
+<td>Batch processed</td>
+<td>true</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">002</td>
+<td>Scheduled</td>
+<td>true</td>
+</tr>
+<tr bgcolor="#E0F8E0">
+<td align="left">010</td>
+<td>User or password is invalid</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F8E0">
+<td align="left">020</td>
+<td>Empty or invalid type</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">030</td>
+<td>Empty message content</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">040</td>
+<td>Scheduling date invalid or incorrect</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">050</td>
+<td>Empty or invalid number</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">060</td>
+<td>International sending not allowed</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">070</td>
+<td>Message rejected by server</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">080</td>
+<td>Insufficient or expired balance</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F8E0">
+<td align="left">090</td>
+<td>Blocked account - Please contact support</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">100</td>
+<td>This service is currently under maintenance</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F8E0">
+<td align="left">110</td>
+<td>There was an error processing, please try again, or contact us</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">120</td>
+<td>Message array cannot exceed 5000</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">130</td>
+<td>Message array is empty</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F8E0">
+<td align="left">140</td>
+<td>Incorrect time zone</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F2F7">
+<td align="left">150</td>
+<td>File extension not allowed</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#E0F8E0">
+<td align="left">160</td>
+<td>Unknown method or unknown parameter</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#F5ECCE">
+<td align="left">170</td>
+<td>Invalid search attributes</td>
+<td>false</td>
+</tr>
+<tr bgcolor="#F5ECCE">
+<td align="left">200</td>
+<td>Successful search</td>
+<td>true</td>
+</tr>
+</tr>
+</tbody>
+</table>
+## Status de Envio
+<p>Status obtidos atravÃ©s da API de Consulta ou Callback podem possuir trÃªs nÃ­veis, conforme a seguir:</p>
+<p><b>Status de preparaÃ§Ã£o da mensagem para envio</b>, este status e nÃ£o Ã© retornado por Callback:</p>
+
+<table>
+<thead>
+<tr>
+<th align="left">Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">-1</td>
+<td>Message Queued</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td>Preparing message to send</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td>Paused Message</td>
+</tr>
+</tbody>
+</table>
+
+<p><b>Status de entrega na operadora</b>, este Ã© o primeiro status que retornamos por Callback:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">-9</td>
+<td>Blocked - No Coverage</td>
+</tr>
+<tr>
+<td align="left">-8</td>
+<td>Blocked - Content not allowed</td>
+</tr>
+<tr>
+<td align="left">-6</td>
+<td>Message successfully canceled</td>
+</tr>
+<tr>
+<td align="left">-5</td>
+<td>Blocked - Black listed</td>
+</tr>
+<tr>
+<td align="left">-4</td>
+<td>Blocked - landline Number</td>
+</tr>
+<tr>
+<td align="left">-3</td>
+<td>Blocked - Invalid Number</td>
+</tr>
+<tr>
+<td align="left">0</td>
+<td>Message received to operator</td>
+</tr>
+<tr>
+<td align="left">7</td>
+<td>Message expired by operator</td>
+</tr>
+<tr>
+<td align="left">8</td>
+<td>Message Rejected by operator</td>
+</tr>
+</tbody>
+</table>
+
+<p><b>Status de entrega no aparelho</b>, este Ã© o segundo status que retornamos por Callback e sÃ³ existe para os casos em que o primeiro status acima foi de sucesso, ou seja, a mensagem foi entregue na operadora com sucesso. Para SMS, as operadoras Oi e Sercomtel nÃ£o possuem este segundo nÃ­vel de status, para estas operadoras, o mÃ¡ximo de informaÃ§Ã£o que existe, Ã© o primeiro status, ou seja, se a operadora aceitou a mensagem ou nÃ£o.:</p>
+
+<table>
+<thead>
+<tr>
+<th align="left">Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">-2</td>
+<td>Operator network error</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td>Message received by mobile</td>
+</tr>
+<tr>
+<td align="left">9</td>
+<td>Message not received by mobile</td>
+</tr>
+</tbody>
+</table>
+# Group ServiÃ§os da API
+
+## Envio Individual [/webservice-rest/send-single?user={user}&password={password}&country_code={country_code}&number={number}&content={content}&campaign_id={campaign_id}&type={type}&schedule={schedule}&timezone={timezone}]
+
+<p><br>Este mÃ©todo Ã© indicado para clientes que realizÃ£o requisiÃ§Ãµes contendo apenas um destinatÃ¡rio. Ele utiliza protocolos HTTP e HTTPS, aceita os mÃ©todos GET e POST com parÃ¢metros query string.</p>
+
+<h4>- URL para envio individual</h4>
+<code> https://api.smsmarket.com.br/webservice-rest/send-single</code>
+<h4>- InstruÃ§Ãµes para chamada</h4>
+<p>A requisiÃ§Ã£o precisa conter parÃ¢metros Query String com as informaÃ§Ãµes conforme campos abaixo:</p>
+<p>* Campo obrigatÃ³rio</p>
+
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th>Detalhes</th>
+<th>Tipo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>user</code>*</td>
+<td>Nome do usuÃ¡rio cadastrado em nosso site, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>password</code>*</td>
+<td>Senha de acesso do usuÃ¡rio, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td><code>type</code>*</td>
+<td>Tipo do serviÃ§o, consulte o menu "ParÃ¢metro type".</td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td align="left"><code>country_code</code></td>
+<td>DDI do paÃ­s de destino. (PadrÃ£o: 55)</td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td align="left"><code>number</code>*</td>
+<td>NÃºmero do telefone do destinatÃ¡rio sem DDI (55).</td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td align="left"><code>content</code>*</td>
+<td>Texto da mensagem a ser enviada.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>campaign_id</code></td>
+<td>Identificador da mensagem no sistema do cliente.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>schedule</code></td>
+<td>Data e hora em que a mensagem deve ser enviada no formato ISO 8691 (2020-11-01 15:00:00).</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>timezone</code></td>
+<td>Fuso horÃ¡rio em formato UTC (-03:00).</td>
+<td><code>string</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>Clique abaixo e veja exemplos em vÃ¡rias linguagens de programaÃ§Ã£o:</p>
+
+### Testar Envio Individual [GET]
+
+<p>Em resposta Ã  chamada, a API retornarÃ¡ um arquivo JSON com as informaÃ§Ãµes necessÃ¡rias para rastreio, serÃ¡ gerado um id e status do processo:</p>
+
+<pre><code class="json">    <span class="token punctuation">{</span>
+            <span class="token string oneLine">"success"</span> <span class="token punctuation">:</span> <span class="token string oneLine">true</span><span class="token punctuation">,</span>
+            <span class="token string oneLine">"responseCode"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"000"</span><span class="token punctuation">,</span>
+            <span class="token string oneLine">"responseDescription"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"Success queued"</span><span class="token punctuation">,</span>
+            <span class="token string oneLine">"credit"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"0"</span>
+            <span class="token string oneLine">"balance"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"99984"</span>
+            <span class="token string oneLine">"id"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"813831"</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>Outro exemplo de retorno sÃ­ncrono da chamada:</p>
+<pre><code class="json">    <span class="token punctuation">{</span>
+            <span class="token string oneLine">"success"</span> <span class="token punctuation">:</span> <span class="token string oneLine">false</span><span class="token punctuation">,</span>
+            <span class="token string oneLine">"responseCode"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"080"</span><span class="token punctuation">,</span>
+            <span class="token string oneLine">"responseDescription"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"Insufficient or expired balance"</span><span class="token punctuation">,</span>
+            <span class="token string oneLine">"credit"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"0"</span>
+            <span class="token string oneLine">"balance"</span> <span class="token punctuation">:</span> <span class="token string oneLine">"0"</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th>Detalhes</th>
+<th>Tipo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>success</code></td>
+<td>Este campo indica se a requisiÃ§Ã£o obteve sucesso ou nÃ£o.</td>
+<td><code>boolean</code></td>
+</tr>
+<tr>
+<td align="left"><code>responseCode</code></td>
+<td>Este campo indica o cÃ³digo do status da requisiÃ§Ã£o.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>responseDescription</code></td>
+<td>Este campo indica a descriÃ§Ã£o do status da requisiÃ§Ã£o.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>credit</code></td>
+<td>Este campo indica quantos crÃ©ditos foram debitados em sua conta.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>balance</code></td>
+<td>Este campo indica o saldo atual de crÃ©ditos em sua conta.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>id</code></td>
+<td>Caso a mensagem seja aceita, Ã© retornado um cÃ³digo id Ãºnico para rastreio.</td>
+<td><code>string</code></td>
+</tr>
+</tbody>
+</table>
+
+<p><em>Para receber retornos assÃ­ncronos, consulte o menu "Callbacks da API".</em></p>
+
++ Request 
+    + Headers
+
+            Content-Type: application/x-www-form-urlencoded       
++ Parameters 
+
+    + user: `SeuUsuario` (string, required) - Nome do usuÃ¡rio cadastrado em nosso site, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + password: `SuaSenha` (string, required) - Senha de acesso do usuÃ¡rio, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + country_code: 55 (number, optional) - DDI do paÃ­s de destino.
+        + Default: 55
+    + number: 14999999999 (number, required) - NÃºmero do telefone do destinatÃ¡rio sem DDI (55).
+    + content: `Mensagem de teste` (string, required) - ConteÃºdo a ser enviado.
+    + campaign_id: `abc123` (string, optional) - Identificador da mensagem no sistema do cliente.
+    + type: 2 (number, required) - Tipo do ServiÃ§o.
+        + Members
+            + 0 - SMS
+            + 1 - SMS Interativo(Modo Flash)
+            + 2 - SMS Interativo
+
++ Response 200 (application/json)
+
+        
+
+        {
+            "success": true,
+            "responseCode": "000",
+            "responseDescription": "Success queued",
+            "credit": "1",
+            "balance": "99984",
+            "id": "813831"
+        }        
+
+## Envio em Lote [/webservice-rest/send-multiple]
+<br>
+<p>Permite o envio de mensagens em lote ou individuais passando os parÃ¢metros por POST em um objeto JSON</p>
+
+<h4>- URL para envio em Lote</h4>
+<code> https://api.smsmarket.com.br/webservice-rest/send-multiple</code>
+<h4>- InstruÃ§Ãµes para chamada</h4>
+<p>O corpo da requisiÃ§Ã£o precisa conter o objeto JSON com as informaÃ§Ãµes conforme campos abaixo:</p>
+<p>* Campo obrigatÃ³rio</p>
+
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th>Detalhes</th>
+<th>Tipo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code>*</td>
+<td>Tipo do serviÃ§o, consulte o menu "ParÃ¢metro type".</td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td align="left"><code>country_code</code></td>
+<td>DDI do paÃ­s de destino. (PadrÃ£o: 55)</td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td align="left"><code>number</code>*</td>
+<td>NÃºmero do telefone do destinatÃ¡rio sem DDI (55).</td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td align="left"><code>content</code>*</td>
+<td>Texto da mensagem a ser enviada.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>campaign_id</code></td>
+<td>Identificador da mensagem no sistema do cliente.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>schedule</code></td>
+<td>Data e hora em que a mensagem deve ser enviada no formato ISO 8691 (2020-11-01 15:00:00).</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>timezone</code></td>
+<td>Fuso horÃ¡rio em formato UTC (-03:00).</td>
+<td><code>string</code></td>
+</tr>
+</tbody>
+</table>
+<p><b>Importante:</b> NÃ£o Ã© permitido o envio de mais de 5000 mensagens por requisiÃ§Ã£o.</p>
+
+<p>Clique abaixo e veja exemplos em vÃ¡rias linguagens de programaÃ§Ã£o:</p>
+### Testar Envio em Lote [POST]
+
+<div class="actionDescription markdown formalTheme">
+<p>Veja a seguir o exemplo da chamada acima:</p>
+<pre><code class="json">
+    <span class="token punctuation">{</span>
+  <span class="token punctuation">"defaultValues":{</span>
+                   <span class="token string oneLine">"type"</span><span class="token punctuation">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"schedule"</span><span class="token punctuation">:</span> <span class="token string oneLine">"2025-08-22 14:55:00"</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"timezone"</span><span class="token punctuation">:</span> <span class="token string oneLine">"-03:00"</span>
+              <span class="token punctuation">},</span>
+     <span class="token punctuation">"messages":[</span>
+                 <span class="token punctuation">{</span>
+                   <span class="token string oneLine">"country_code"</span><span class="token punctuation">:</span> <span class="token number">55</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"number"</span><span class="token punctuation">:</span> <span class="token number">14999999999</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"content"</span><span class="token punctuation">:</span> <span class="token string oneLine">"Mensagem de teste"</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"campaign_id"</span><span class="token punctuation">:</span> <span class="token string oneLine">"001"</span>
+                 <span class="token punctuation">},</span>
+                 <span class="token punctuation">{</span>
+                   <span class="token string oneLine">"country_code"</span><span class="token punctuation">:</span> <span class="token number">55</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"number"</span><span class="token punctuation">:</span> <span class="token number">14999999999</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"content"</span><span class="token punctuation">:</span> <span class="token string oneLine">"Mensagem de teste"</span><span class="token punctuation">,</span>
+                   <span class="token string oneLine">"campaign_id"</span><span class="token punctuation">:</span> <span class="token string oneLine">"002"</span>
+                  <span class="token punctuation">}</span>
+              <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span>              
+</code></pre>
+<p>Em resposta Ã  chamada, a API retornarÃ¡ informaÃ§Ãµes do processo conforme abaixo:</p>
+<pre><code class="json">
+{
+    "success": true,
+    "responseCode": "001",
+    "responseDescription": "Batch processed",
+    "credit": "2",
+    "balance": "87018",
+    "totalProcessed": "2",
+    "totalSuccess": "2",
+    "messages": [
+        {
+            "success": true,
+            "responseCode": "000",
+            "responseDescription": "Success queued",
+            "credit": "1"
+        },
+        {
+            "success": true,
+            "responseCode": "000",
+            "responseDescription": "Success queued",
+            "credit": "1"
+        }
+    ]
+}
+</code></pre>
+<p>Outro exemplo de retorno sÃ­ncrono da chamada:</p>
+<pre><code class="json">
+{
+    "success": true,
+    "responseCode": "001",
+    "responseDescription": "Batch processed",
+    "credit": "1",
+    "balance": "87018",
+    "totalProcessed": "2",
+    "totalSuccess": "1",
+    "messages": [
+        {
+            "success": true,
+            "responseCode": "000",
+            "responseDescription": "Success queued",
+            "credit": "1"
+        },
+        {
+            "success": true,
+            "responseCode": "050",
+            "responseDescription": "Empty or invalid number",
+            "credit": "0"
+        }
+    ]
+}
+</code></pre>
+<p><em>Para receber retornos assÃ­ncronos, consulte o menu "Callbacks da API".</em></p>
+</div>
+
++ Request 
+    + Headers
+
+            Content-Type: application/json
+            Authorization: Basic dXN1YXJpbzpzZW5oYQ=
+            Accept: application/json
+            
+    + Attributes (object)
+        + country_code: 55 (number, required) - DDI do paÃ­s de destino.
+        + number: 14999999999 (number, required) - NÃºmero do telefone do destinatÃ¡rio sem DDI (55).
+        + content: `Mensagem de teste` (string, required) - Texto da mensagem a ser enviada.
+        + campaign_id: `123` (string) - Identificador da mensagem no sistema do cliente.
+        + type: 2 (enum[number], required) - Tipo do ServiÃ§o.
+            + Members
+                + 0 - SMS
+                + 1 - SMS Interativo(Modo Flash)
+                + 2 - SMS Interativo
+        
+    + Body
+
+            {
+               "messages":[
+                  {
+                     "country_code":"55", 
+                     "number":"14999999999",
+                     "campaign_id":"001",
+                     "content":"Mensagem de teste"
+                  },
+                  {
+                     "country_code":"55",
+                     "number":"14999999999",
+                     "campaign_id":"002",
+                     "content":"Mensagem de teste"
+                  }
+               ],
+               "defaultValues":{
+                  "type":"0"
+               }
+            }            
++ Response 200 (application/json)
+
+        
+
+        {
+            "success": true,
+            "responseCode": "001",
+            "responseDescription": "Batch processed",
+            "credit": "2",
+            "balance": "87018",
+            "totalProcessed": "2",
+            "totalSuccess": "2",
+            "messages": [
+                {
+                    "success": true,
+                    "responseCode": "000",
+                    "responseDescription": "Success queued",
+                    "credit": "1"
+                },
+                {
+                    "success": true,
+                    "responseCode": "000",
+                    "responseDescription": "Success queued",
+                    "credit": "1"
+                }
+            ]
+        }
+## Consulta de Status por Identificador [/webservice-rest/mt_id?user={user}&password={password}&campaign_id={campaign_id}&timezone={timezone}]
+
+<p>Para consultar o status das mensagens enviadas Ã© necessÃ¡rio fazer uma requisiÃ§Ã£o GET OU POST na URL abaixo passando como parÃ¢metro o <code>id</code> ou o <code>campaign_id</code> obtido na resposta do envio</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mt_id</font></code>
+
+<p><b>Importante:</b> a consulta fica disponÃ­vel por atÃ© 32 dias apÃ³s seu envio.</p>
+
+<p>Abaixo exemplo de requisiÃ§Ãµes realizando a consulta por <code>id</code> e por <code>campaign_id</code>, Ã© possivel tambÃ©m realizar a consulta em lote, para isso basta separar os identificadores com vÃ­rgulas</p>
+
+<p><b>Consulta id:</b></p>
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mt_id?user={user}&password={password}&id=1,2</font></code>
+
+<p><b>Consulta campaign_id:</b></p>
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mt_id?user={user}&password={password}&campaign_id=abc1,abc2</font></code>
+
+<p>Clique abaixo e veja exemplos em vÃ¡rias linguagens de programaÃ§Ã£o:</p>
+### Testar Consulta de Status por Identificador [GET]
+
++ Request 
+    + Headers
+
+            Content-Type: application/x-www-form-urlencoded       
++ Parameters 
+
+    + user: `SeuUsuario` (string, required) - Nome do usuÃ¡rio cadastrado em nosso site, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + password: `SuaSenha` (string, required) - Senha de acesso do usuÃ¡rio, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + campaign_id: `abc123` (string, required) - Identificador da mensagem no sistema do cliente.
+    + timezone: `-03:00` (string, optional) - Fuso horÃ¡rio em formato UTC (-03:00).
+
++ Response 200 (application/json)
+
+        
+
+        {
+            "success": true,
+            "responseCode": "200",
+            "responseDescription": "Successful search",
+            "messageCount": 2,
+            "messages": [
+                {
+                    "id": "7",
+                    "number": "5511999999999",
+                    "content": "Mensagem de teste 1",
+                    "campaign_id": "01",
+                    "schedule": "2017-12-01 17:58:23",
+                    "sent_date": "2017-12-01 17:58:25",
+                    "status": "1",
+                    "carrier_name": "VIVO - Celular"
+                },
+                {
+                    "id": "8",
+                    "number": "5514999999999",
+                    "content": "Mensagem de teste 2",
+                    "campaign_id": "02",
+                    "schedule": "2017-12-01 16:58:23",
+                    "sent_date": "2017-12-01 16:58:24",
+                    "status": "0",
+                    "carrier_name": "OI - Celular"
+                }
+            ]
+        }
+        
+## Consulta de Status por PerÃ­odo [/webservice-rest/mt_date?user={user}&password={password}&start_date={start_date}&end_date={end_date}&type={type}&status={status}&timezone={timezone}]
+
+<p>EstÃ¡ requisiÃ§Ã£o de busca irÃ¡ retornar cada mensagem enviada num determinado perÃ­odo de tempo. VocÃª precisa definir os parÃ¢metros <code>start_date</code> e <code>end_date</code> para especificar um perÃ­odo de tempo, deverÃ¡ ser utilizado o formato ISO-8601.</p>
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mt_date</font></code>
+
+<p><b>Importante:</b> a consulta fica disponÃ­vel por atÃ© 32 dias apÃ³s seu envio.</p>
+
+<p>Abaixo exemplo de requisiÃ§Ã£o de consulta por perÃ­odo de tempo e tipo de serviÃ§o, atravÃ©s do parÃ¢metro <code>type</code>.</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mt_date?user={user}&password={password}&start_date=2016-09-12T00:00:00&end_date=2016-09-15T23:59:59&type=2</font></code>
+
+<p>Abaixo exemplo de requisiÃ§Ã£o de consulta por perÃ­odo de tempo, tipo de serviÃ§o e status, atravÃ©s do parÃ¢metro <code>type</code> e <code>status</code>.</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mt_date?user={user}&password={password}&start_date=2016-09-12T00:00:00&end_date=2016-09-15T23:59:59&type=2&status=0,1</font></code>
+
+<p>Clique abaixo e veja exemplos em vÃ¡rias linguagens de programaÃ§Ã£o:</p>
+### Testar Consulta de Status por PerÃ­odo [GET]
+
++ Request 
+    + Headers
+
+            Content-Type: application/x-www-form-urlencoded       
++ Parameters 
+
+    + user: `SeuUsuario` (string, required) - Nome do usuÃ¡rio cadastrado em nosso site, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + password: `SuaSenha` (string, required) - Senha de acesso do usuÃ¡rio, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + start_date: `2017-07-01 00:00:00` (string, required) - Data e hora de inÃ­cio para busca no formato ISO 8691.
+    + end_date: `2017-07-30 23:59:59` (string, required) - Data e hora de tÃ©rmino para busca no formato ISO 8691.
+    + type: 2 (number, optional) - Tipo do ServiÃ§o.
+        + Members
+            + 0 - SMS
+            + 1 - SMS Interativo(Modo Flash)
+            + 2 - SMS Interativo
+    + status: `0,1` (number, optional) - Tipo especÃ­fico de status para busca. Para consulta com mÃºltiplos status, separe por vÃ­rgulas. Consulte o menu "Status de Envio".
+    + timezone: `-03:00` (string, optional) - Fuso horÃ¡rio em formato UTC (-03:00).
+
++ Response 200 (application/json)
+
+        
+
+        {
+            "success": true,
+            "responseCode": "200",
+            "responseDescription": "Successful search",
+            "messageCount": 2,
+            "messages": [
+                {
+                    "id": "7",
+                    "number": "5511999999999",
+                    "content": "Mensagem de teste 1",
+                    "campaign_id": "01",
+                    "schedule": "2017-12-01 17:58:23",
+                    "sent_date": "2017-12-01 17:58:25",
+                    "status": "1",
+                    "carrier_name": "VIVO - Celular"
+                },
+                {
+                    "id": "8",
+                    "number": "5514999999999",
+                    "content": "Mensagem de teste 2",
+                    "campaign_id": "02",
+                    "schedule": "2017-12-01 16:58:23",
+                    "sent_date": "2017-12-01 16:58:24",
+                    "status": "0",
+                    "carrier_name": "OI - Celular"
+                }
+            ]
+        }
+## Consulta por Novas Mensagens Recebidas [/webservice-rest/mo_new?user={user}&password={password}&type={type}&timezone={timezone}]
+<p>Retorna a lista de novas mensagens recebidas. Uma vez cosultada, a mensagem nÃ£o irÃ¡ mais ser retornada na chamada deste serviÃ§o.</p>
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mo_new</font></code>
+
+<p><b>Importante:</b> a consulta fica disponÃ­vel por atÃ© 32 dias apÃ³s o recebimento.</p>
+
+<p>Abaixo exemplo de requisiÃ§Ã£o com definiÃ§Ã£o do tipo de serviÃ§o, atravÃ©s do parÃ¢metro <code>type</code>.</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mo_new?user={user}&password={password}&type=2</font></code>
+
+<p>Clique abaixo e veja exemplos em vÃ¡rias linguagens de programaÃ§Ã£o:</p>
+
+### Testar Consulta por Novas Mensagens Recebidas [GET]
+
++ Request 
+    + Headers
+
+            Content-Type: application/x-www-form-urlencoded       
++ Parameters 
+
+    + user: `SeuUsuario` (string, required) - Nome do usuÃ¡rio cadastrado em nosso site, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + password: `SuaSenha` (string, required) - Senha de acesso do usuÃ¡rio, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + type: 2 (number, optional) - Tipo do ServiÃ§o.
+        + Members
+            + 0 - SMS
+            + 1 - SMS Interativo(Modo Flash)
+            + 2 - SMS Interativo
+    + timezone: `-03:00` (string, optional) - Fuso horÃ¡rio em formato UTC (-03:00).
+
++ Response 200 (application/json)
+
+        
+
+        {
+            "success": true,
+            "responseCode": "200",
+            "responseDescription": "Successful search",
+            "messageCount": 2,
+            "messages": [
+                {
+                    "id": "7",
+                    "number": "5511999999999",
+                    "content": "Recebido 1",
+                    "campaign_id": "01",
+                    "schedule": "2017-12-01 17:58:27",
+                    "carrier_name": "VIVO - Celular"
+                },
+                {
+                    "id": "8",
+                    "number": "5514999999999",
+                    "content": "Recebido 2",
+                    "campaign_id": "02",
+                    "schedule": "2017-12-01 16:58:28",
+                    "carrier_name": "OI - Celular"
+                }
+            ]
+        }
+        
+## Consulta de Mensagens Recebidas por PerÃ­odo [/webservice-rest/mo?user={user}&password={password}&start_date={start_date}&end_date={end_date}&campaign_id={campaign_id}&type={type}&timezone={timezone}]
+<p>EstÃ¡ requisiÃ§Ã£o de busca irÃ¡ retornar cada MO recebido num determinado perÃ­odo de tempo. VocÃª precisa definir os parÃ¢metros <code>start_date</code> e <code>end_date</code> para especificar um perÃ­odo de tempo, deverÃ¡ ser utilizado o formato ISO-8601.</p>
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mo</font></code>
+
+<p><b>Importante:</b> a consulta fica disponÃ­vel por atÃ© 32 dias apÃ³s o recebimento.</p>
+
+<p>Abaixo exemplo de requisiÃ§Ã£o de consulta por perÃ­odo de tempo e tipo de serviÃ§o, atravÃ©s do parÃ¢metro <code>type</code>.</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mo?user={user}&password={password}&start_date=2016-09-12T00:00:00&end_date=2016-09-15T23:59:59&type=2</font></code>
+
+<p>Abaixo exemplo de requisiÃ§Ã£o de consulta por perÃ­odo de tempo e identificador da mensagem no sistema do cliente, atravÃ©s do parÃ¢metro <code>campaign_id</code>.</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/mo?user={user}&password={password}&start_date=2016-09-12T00:00:00&end_date=2016-09-15T23:59:59&campaign_id=abc123</font></code>
+
+<p>Clique abaixo e veja exemplos em vÃ¡rias linguagens de programaÃ§Ã£o:</p>
+### Testar Consulta de Mensagens Recebidas por PerÃ­odo [GET]
+
++ Request 
+    + Headers
+
+            Content-Type: application/x-www-form-urlencoded       
++ Parameters 
+
+    + user: `SeuUsuario` (string, required) - Nome do usuÃ¡rio cadastrado em nosso site, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + password: `SuaSenha` (string, required) - Senha de acesso do usuÃ¡rio, obrigatÃ³rio caso nÃ£o utilize cabeÃ§alho de autenticaÃ§Ã£o.
+    + start_date: `2017-07-01 00:00:00` (string, required) - Data e hora de inÃ­cio para busca no formato ISO 8691.
+    + end_date: `2017-07-30 23:59:59` (string, required) - Data e hora de tÃ©rmino para busca no formato ISO 8691.
+    + campaign_id: `abc123` (string, optional) - Identificador da mensagem no sistema do cliente.
+    + type: 2 (number, optional) - Tipo do ServiÃ§o.
+        + Members
+            + 0 - SMS
+            + 1 - SMS Interativo(Modo Flash)
+            + 2 - SMS Interativo
+    + timezone: `-03:00` (string, optional) - Fuso horÃ¡rio em formato UTC (-03:00).
+
++ Response 200 (application/json)
+
+        
+
+        {
+            "success": true,
+            "responseCode": "200",
+            "responseDescription": "Successful search",
+            "messageCount": 2,
+            "messages": [
+                {
+                    "id": "7",
+                    "number": "5511999999999",
+                    "content": "Recebido 1",
+                    "campaign_id": "01",
+                    "schedule": "2017-12-01 17:58:27",
+                    "carrier_name": "VIVO - Celular"
+                },
+                {
+                    "id": "8",
+                    "number": "5514999999999",
+                    "content": "Recebido 2",
+                    "campaign_id": "02",
+                    "schedule": "2017-12-01 16:58:28",
+                    "carrier_name": "OI - Celular"
+                }
+            ]
+        }
+        
+## Consulta de Saldo [/webservice-rest/balance?user={user}&password={password}]
+<p>EstÃ¡ requisiÃ§Ã£o de busca irÃ¡ retornar o saldo atual de todos os serviÃ§os, incluindo a data da Ãºltima ativaÃ§Ã£o de crÃ©ditos e o vencimento.</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/balance</font></code>
+
+<p>Abaixo exemplo de requisiÃ§Ã£o de consulta de saldo realizando a autenticaÃ§Ã£o por parÃ¢metros query string.</p>
+
+<code><font size="2px">GET https://api.smsmarket.com.br/webservice-rest/balance?user={user}&password={password}</font></code>
+
+<p>Em resposta Ã  chamada, a API retornarÃ¡ informaÃ§Ãµes conforme abaixo:</p>
+<pre><code class="json">
+        {
+            "success": true,
+            "responseCode": "200",
+            "responseDescription": "Successful search",
+            "balance_1": "10",
+            "balance_2": "10",
+            "activation": "2017-12-01 17:58:23",
+            "expiration": "2018-12-01 23:59:59"
+        }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th>Detalhes</th>
+<th>Tipo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>success</code></td>
+<td>Este campo indica se requisiÃ§Ã£o obteve sucesso ou nÃ£o.</td>
+<td><code>boolean</code></td>
+</tr>
+<tr>
+<td align="left"><code>responseCode</code></td>
+<td>Este campo indica o cÃ³digo do status da requisiÃ§Ã£o.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>responseDescription</code></td>
+<td>Este campo indica a descriÃ§Ã£o do status da requisiÃ§Ã£o.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>balance_1</code></td>
+<td>Este campo indica o saldo atual do serviÃ§o SMS</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>balance_2</code></td>
+<td>Este campo indica o saldo atual do serviÃ§o SMS Interativo e Flash.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>activation</code></td>
+<td>Este campo indica a data da Ãºltima ativaÃ§Ã£o de crÃ©ditos.</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td align="left"><code>expiration</code></td>
+<td>Este campo indica a data de vencimento dos crÃ©ditos.</td>
+<td><code>string</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>Clique abaixo e veja exemplos em vÃ¡rias linguagens de programaÃ§Ã£o:</p>
+### Testar Consulta de Saldo [GET]
+
++ Request 
+    + Headers
+
+            Content-Type: application/x-www-form-urlencoded       
++ Parameters 
+
+    + user: `SeuUsuario` (string, required) - Nome do usuÃ¡rio cadastrado em nosso site.
+    + password: `SuaSenha` (string, required) - Senha de acesso do usuÃ¡rio.
+
++ Response 200 (application/json)
+
+        
+
+        {
+            "success": true,
+            "responseCode": "200",
+            "responseDescription": "Successful search",
+            "balance_1": "10",
+            "balance_2": "10",
+            "activation": "2017-12-01 17:58:23",
+            "expiration": "2018-12-01 23:59:59"
+        }
+          
+# Group Callbacks da API
+
+<p>Nossa API pode realizar callbacks diretamente para o seu sistema, enviando status de entrega das mensagens enviadas ou informaÃ§Ãµes sobre mensagens recebidas de seus clientes/contatos.</p>
+<h2>Callback de Status de Entrega</h2>
+<p>Nossa plataforma envia ao sistema do cliente o status das mensagens enviadas, requisiÃ§Ãµes via GET com parÃ¢metros Query String.</p><p>Para receber o status, Ã© necessÃ¡rio configurar uma URL de notificaÃ§Ã£o na plataforma, solicite para nosso suporte esta configuraÃ§Ã£o.</p><p>Veja abaixo um exemplo do que vocÃª receberÃ¡ em seu sistema:</p>
+<code>http://suaUrl.com/callback.php?campaign_id=abc123&id=150&status=0&date=2017-01-01+15:00:00&carrier=Vivo+-+Celular</code>
+
+<h2>Callback de Mensagem Recebida</h2>
+<p>Nossa plataforma envia ao sistema do cliente uma requisiÃ§Ã£o para cada mensagem recebida de um celular, requisiÃ§Ãµes via GET com parÃ¢metros Query String. (esta funcionalidade Ã© utilizada, por exemplo, para enquetes, SAC, pesquisas, confirmaÃ§Ãµes de visita etc).</p><p>Para receber estÃ¡ requisiÃ§Ã£o em seu sistema, Ã© necessÃ¡rio configurar uma URL de notificaÃ§Ã£o na plataforma, solicite para nosso suporte esta configuraÃ§Ã£o.</p><p>Veja abaixo um exemplo do que vocÃª receberÃ¡ em seu sistema:</p>
+<code>http://suaUrl.com/callback.php?number=551499999999&content=Recebido&campaign_id=abc123&id=150&status=4&date=2017-01-02+15:00:00&carrier=Vivo+-+Celular</code>

@@ -1,21 +1,21 @@
 using System.Collections.Generic;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
+using CorteCor;
+using static CorteCor.Models;
 
 namespace CorteCor.Pages
 {
     [Authorize(Policy = "UsuarioPolicy")]
-    public class LembreteConfigListaModel : PageModel
+    public class ModeloSMSListaModel : PageModel
     {
-        private readonly ILembreteHandler _handler;
+        private readonly ModeloSMSHandler _handler;
 
-        public List<Models.LembreteConfig> Configs { get; set; } = new List<Models.LembreteConfig>();
-        [TempData]
+        public List<ModeloSMS> Modelos { get; set; } = new List<ModeloSMS>();
         public string Mensagem { get; set; }
 
-        public LembreteConfigListaModel(ILembreteHandler handler)
+        public ModeloSMSListaModel(ModeloSMSHandler handler)
         {
             _handler = handler;
         }
@@ -25,19 +25,12 @@ namespace CorteCor.Pages
             var idSalaoClaim = User.FindFirst("IdSalao");
             if (idSalaoClaim != null && int.TryParse(idSalaoClaim.Value, out int idSalao))
             {
-                Configs = _handler.ListarConfig(idSalao);
+                Modelos = _handler.ListarPorSalao(idSalao);
             }
             else
             {
                 Mensagem = "Erro ao identificar o salão do usuário.";
             }
-        }
-
-        public IActionResult OnPostExcluir(int id)
-        {
-            _handler.ExcluirConfig(id);
-            Mensagem = "Regra excluída com sucesso!";
-            return RedirectToPage();
         }
     }
 }

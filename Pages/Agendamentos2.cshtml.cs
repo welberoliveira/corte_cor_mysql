@@ -126,55 +126,66 @@ namespace CorteCor.Pages
 
         public IActionResult OnPostCreate([FromBody] CreateRequest req)
         {
-            if (req == null) return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
-
-            if (string.IsNullOrWhiteSpace(req.Start)) return BadRequest(new ErrorResponse { Message = "Início é obrigatório." });
-            
-            if (!DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var start))
-                return BadRequest(new ErrorResponse { Message = "Formato de data de início inválido." });
-
-            if (start.Kind == DateTimeKind.Utc)
+            try
             {
-                start = start.ToLocalTime();
+                if (req == null) return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
+
+                if (string.IsNullOrWhiteSpace(req.Start)) return BadRequest(new ErrorResponse { Message = "Início é obrigatório." });
+
+                if (!DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var start))
+                    return BadRequest(new ErrorResponse { Message = "Formato de data de início inválido." });
+
+                if (start.Kind == DateTimeKind.Utc)
+                {
+                    start = start.ToLocalTime();
+                }
+
+                if (req.IdServico <= 0) return BadRequest(new ErrorResponse { Message = "Serviço é obrigatório." });
+                if (req.IdPessoa <= 0) return BadRequest(new ErrorResponse { Message = "Cliente é obrigatório." });
+
+                int idSalao = 0;
+                int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+                // Validações
+                var servico = _servicoHandler.ObterPorId(req.IdServico);
+                if (servico == null) return BadRequest(new ErrorResponse { Message = "Serviço não encontrado" });
+                if (servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Serviço inválido para este salão" });
+
+                var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
+                if (pessoa == null) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
+                if (pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inválido para este salão" });
+
+                int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, start, idSalao);
+
+                if (idFuncionarioSelecionado == 0)
+                    return BadRequest(new ErrorResponse { Message = "Não há profissionais disponíveis para este serviço no horário selecionado." });
+
+                var novoAgendamento = new Agendamento
+                {
+                    DataHora = start,
+                    IdServico = req.IdServico,
+                    IdPessoa = req.IdPessoa,
+                    IdFuncionario = idFuncionarioSelecionado,
+                    Status = "Agendado"
+                };
+
+                int novoId = _agendamentoHandler.CadastrarAgendamento(novoAgendamento);
+
+                return new JsonResult(new
+                {
+                    id = novoId,
+                    servicoNome = servico.Nome,
+                    servicoCor = GetCorPorStatus("Agendado")
+                });
             }
-
-            if (req.IdServico <= 0) return BadRequest(new ErrorResponse { Message = "Serviço é obrigatório." });
-            if (req.IdPessoa <= 0) return BadRequest(new ErrorResponse { Message = "Cliente é obrigatório." });
-
-            int idSalao = 0;
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
-
-            // Validações
-            var servico = _servicoHandler.ObterPorId(req.IdServico);
-            if (servico == null) return BadRequest(new ErrorResponse { Message = "Serviço não encontrado" });
-            if (servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Serviço inválido para este salão" });
-
-            var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
-            if (pessoa == null) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
-            if (pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inválido para este salão" });
-
-            int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, start, idSalao);
-
-            if (idFuncionarioSelecionado == 0)
-                return BadRequest(new ErrorResponse { Message = "Não há profissionais disponíveis para este serviço no horário selecionado." });
-
-            var novoAgendamento = new Agendamento
+            catch (Exception ex)
             {
-                DataHora = start,
-                IdServico = req.IdServico,
-                IdPessoa = req.IdPessoa,
-                IdFuncionario = idFuncionarioSelecionado,
-                Status = "Agendado"
-            };
-
-            int novoId = _agendamentoHandler.CadastrarAgendamento(novoAgendamento);
-
-            return new JsonResult(new
-            {
-                id = novoId,
-                servicoNome = servico.Nome,
-                servicoCor = GetCorPorStatus("Agendado")
-            });
+                return StatusCode(500, new ErrorResponse 
+                { 
+                    Message = "Erro ao salvar agendamento: " + ex.Message, 
+                    Detail = ex.StackTrace 
+                });
+            }
         }
 
         public IActionResult OnGetDetails(int id)
@@ -187,11 +198,14 @@ namespace CorteCor.Pages
             var status = a.Status;
             if (status == "Confirmado") status = "Pago";
 
+            var servico = _servicoHandler.ObterPorId(a.IdServico);
+
             return new JsonResult(new
             {
                 id = a.IdAgendamento,
                 idPessoa = a.IdPessoa,
                 idServico = a.IdServico,
+                servicoNome = servico?.Nome ?? "Serviço não encontrado", 
                 start = a.DataHora,
                 status = status
             });
@@ -208,63 +222,74 @@ namespace CorteCor.Pages
 
         public IActionResult OnPostUpdate([FromBody] UpdateRequest req)
         {
-            if (req == null || req.Id <= 0) return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
-
-            int idSalao = 0;
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
-
-            var agendamento = _agendamentoHandler.ObterPorId(req.Id);
-            if (agendamento == null) return NotFound("Agendamento não encontrado.");
-
-            if (agendamento.Status == "Pago")
-                return BadRequest(new ErrorResponse { Message = "Agendamentos pagos não podem ser alterados." });
-
-            // Validações
-            var servico = _servicoHandler.ObterPorId(req.IdServico);
-            if (servico == null || servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Serviço inválido" });
-
-            var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
-            if (pessoa == null || pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inválido" });
-
-            // Determina a data/hora (mantém a original se não enviada)
-            DateTime dataHora = agendamento.DataHora;
-            if (!string.IsNullOrWhiteSpace(req.Start))
+            try
             {
-                if (DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+                if (req == null || req.Id <= 0) return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
+
+                int idSalao = 0;
+                int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+                var agendamento = _agendamentoHandler.ObterPorId(req.Id);
+                if (agendamento == null) return NotFound("Agendamento não encontrado.");
+
+                if (agendamento.Status == "Pago")
+                    return BadRequest(new ErrorResponse { Message = "Agendamentos pagos não podem ser alterados." });
+
+                // Validações
+                var servico = _servicoHandler.ObterPorId(req.IdServico);
+                if (servico == null || servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Serviço inválido" });
+
+                var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
+                if (pessoa == null || pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inválido" });
+
+                // Determina a data/hora (mantém a original se não enviada)
+                DateTime dataHora = agendamento.DataHora;
+                if (!string.IsNullOrWhiteSpace(req.Start))
                 {
-                    dataHora = parsed;
-                    if (dataHora.Kind == DateTimeKind.Utc) dataHora = dataHora.ToLocalTime();
+                    if (DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+                    {
+                        dataHora = parsed;
+                        if (dataHora.Kind == DateTimeKind.Utc) dataHora = dataHora.ToLocalTime();
+                    }
+                    else
+                    {
+                        return BadRequest(new ErrorResponse { Message = "Formato de data inválido." });
+                    }
                 }
-                else
+
+                // Re-calcula funcionário se necessário (passando o próprio ID para ignorar colisão consigo mesmo)
+                int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, dataHora, idSalao, agendamento.IdAgendamento);
+
+                if (idFuncionarioSelecionado == 0)
+                    return BadRequest(new ErrorResponse { Message = "Não há profissionais disponíveis para este serviço no horário selecionado (ou há conflito de agenda)." });
+
+                agendamento.IdPessoa = req.IdPessoa;
+                agendamento.IdServico = req.IdServico;
+                agendamento.IdFuncionario = idFuncionarioSelecionado;
+                agendamento.DataHora = dataHora; // Atualiza data
+                if (!string.IsNullOrEmpty(req.Status))
+                    agendamento.Status = req.Status;
+
+                _agendamentoHandler.Atualizar(agendamento);
+
+                var primeiroNome = pessoa.Nome.Split(' ')[0];
+                return new JsonResult(new
                 {
-                    return BadRequest(new ErrorResponse { Message = "Formato de data inválido." });
-                }
+                    id = agendamento.IdAgendamento,
+                    title = $"{primeiroNome} - {servico.Nome}",
+                    color = GetCorPorStatus(agendamento.Status),
+                    start = agendamento.DataHora, // Return new start
+                    end = agendamento.DataHora.Add(servico.Duracao)
+                });
             }
-
-            // Re-calcula funcionário se necessário (passando o próprio ID para ignorar colisão consigo mesmo)
-            int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, dataHora, idSalao, agendamento.IdAgendamento);
-
-            if (idFuncionarioSelecionado == 0)
-                return BadRequest(new ErrorResponse { Message = "Não há profissionais disponíveis para este serviço no horário selecionado (ou há conflito de agenda)." });
-
-            agendamento.IdPessoa = req.IdPessoa;
-            agendamento.IdServico = req.IdServico;
-            agendamento.IdFuncionario = idFuncionarioSelecionado;
-            agendamento.DataHora = dataHora; // Atualiza data
-            if (!string.IsNullOrEmpty(req.Status))
-                agendamento.Status = req.Status;
-
-            _agendamentoHandler.Atualizar(agendamento);
-
-            var primeiroNome = pessoa.Nome.Split(' ')[0];
-            return new JsonResult(new
+            catch (Exception ex)
             {
-                id = agendamento.IdAgendamento,
-                title = $"{primeiroNome} - {servico.Nome}",
-                color = GetCorPorStatus(agendamento.Status),
-                start = agendamento.DataHora, // Return new start
-                end = agendamento.DataHora.Add(servico.Duracao)
-            });
+                return StatusCode(500, new ErrorResponse 
+                { 
+                    Message = "Erro ao atualizar agendamento: " + ex.Message, 
+                    Detail = ex.StackTrace 
+                });
+            }
         }
 
 

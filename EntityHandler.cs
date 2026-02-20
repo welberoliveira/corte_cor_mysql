@@ -2069,6 +2069,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
         INNER JOIN CorteCor_Servico s ON s.IdServico = a.IdServico
         WHERE a.IdFuncionario = @IdFuncionario
           AND a.Status <> 'Cancelado'
+          AND (a.Excluido = 0 OR a.Excluido IS NULL)
           AND (@IdAgendamentoIgnorar IS NULL OR a.IdAgendamento <> @IdAgendamentoIgnorar)
           AND (
                 (a.DataHora < @Fim) AND 
@@ -3125,22 +3126,161 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
     }
 }
 
-public class LembreteHandler
-{
-    private readonly IDatabaseHandler _dbHandler;
-
-    public LembreteHandler(IDatabaseHandler dbHandler = null)
+    public interface ILembreteHandler
     {
-        _dbHandler = dbHandler ?? new DatabaseHandler();
+        List<LembreteConfig> ListarConfig(int idSalao);
+        void SalvarConfig(LembreteConfig config);
+        void ExcluirConfig(int idConfig);
+        void ExcluirLembretesPendentes(int idAgendamento);
+        void GerarLembretes(int idAgendamento);
+        void AplicarRegraRetroativa(int idConfig);
+        bool VerificarLimiteEmail(int idSalao, out int enviados, out int limite);
+        
+        // Methods moved from LembreteService for better encapsulation - Optimized with Types
+        List<LembreteAgendado> ObterLembretesPendentes();
+        LembreteEnvioDTO ObterDadosEnvio(int idLembrete);
+        void AtualizarStatusLembrete(int idLembrete, string status);
+        void RegistrarLogEnvio(int idLembrete, int idAgendamento, string destinatario, string assunto, string status, string? mensagemErro, string tipoLembrete, string? telefone);
     }
+
+    public class LembreteHandler : ILembreteHandler
+    {
+        private readonly IDatabaseHandler _dbHandler;
+
+        public LembreteHandler(IDatabaseHandler dbHandler = null)
+        {
+            _dbHandler = dbHandler ?? new DatabaseHandler();
+        }
+
+        public List<LembreteAgendado> ObterLembretesPendentes()
+        {
+            var lista = new List<LembreteAgendado>();
+            string query = @"SELECT IdLembrete, IdAgendamento FROM CorteCor_LembreteAgendado 
+                             WHERE Status = 'Pendente' AND DataEnvioProgramada <= @Agora";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Agora", DateTime.Now);
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        lista.Add(new LembreteAgendado 
+                        { 
+                            IdLembrete = (int)reader["IdLembrete"], 
+                            IdAgendamento = (int)reader["IdAgendamento"] 
+                        });
+                    }
+                }
+            }
+            return lista;
+        }
+
+        public LembreteEnvioDTO ObterDadosEnvio(int idLembrete)
+        {
+            string query = @"
+                SELECT 
+                    P.Nome AS NomeCliente, P.Email AS EmailCliente, P.Telefone AS TelefoneCliente,
+                    A.DataHora AS DataHoraAgendamento,
+                    S.Nome AS NomeServico,
+                    F.Nome AS NomeProfissional,
+                    TS.Nome AS NomeSalao, TS.IdSalao,
+                    M.Assunto AS AssuntoEmail, M.CorpoHTML AS CorpoEmail,
+                    MS.Conteudo AS ConteudoSMS,
+                    C.TipoLembrete
+                FROM CorteCor_LembreteAgendado LA
+                JOIN CorteCor_Agendamento A ON LA.IdAgendamento = A.IdAgendamento
+                JOIN CorteCor_Pessoa P ON A.IdPessoa = P.IdPessoa
+                JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+                JOIN CorteCor_Funcionario F ON A.IdFuncionario = F.IdFuncionario
+                JOIN CorteCor_LembreteConfig C ON LA.IdConfig = C.IdConfig
+                LEFT JOIN CorteCor_ModeloEmail M ON C.IdModeloEmail = M.IdModelo
+                LEFT JOIN CorteCor_ModeloSMS MS ON C.IdModeloSMS = MS.IdModelo
+                LEFT JOIN CorteCor_Salao TS ON S.IdSalao = TS.IdSalao
+                WHERE LA.IdLembrete = @IdLembrete";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdLembrete", idLembrete);
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        var dto = new LembreteEnvioDTO
+                        {
+                            NomeCliente = reader["NomeCliente"].ToString(),
+                            EmailCliente = reader["EmailCliente"].ToString(),
+                            TelefoneCliente = reader["TelefoneCliente"] is DBNull ? "" : reader["TelefoneCliente"].ToString(),
+                            DataHoraAgendamento = Convert.ToDateTime(reader["DataHoraAgendamento"]),
+                            NomeServico = reader["NomeServico"].ToString(),
+                            NomeProfissional = reader["NomeProfissional"].ToString(),
+                            NomeSalao = reader["NomeSalao"] is DBNull ? "Salão" : reader["NomeSalao"].ToString(),
+                            IdSalao = Convert.ToInt32(reader["IdSalao"]),
+                            TipoLembrete = reader["TipoLembrete"] is DBNull ? "Email" : reader["TipoLembrete"].ToString()
+                        };
+
+                        if (dto.TipoLembrete == "Email")
+                        {
+                            dto.AssuntoModelo = reader["AssuntoEmail"] is DBNull ? null : reader["AssuntoEmail"].ToString();
+                            dto.CorpoModelo = reader["CorpoEmail"] is DBNull ? null : reader["CorpoEmail"].ToString();
+                        }
+                        else
+                        {
+                            dto.AssuntoModelo = "SMS"; // SMS doesn't use subject
+                            dto.CorpoModelo = reader["ConteudoSMS"] is DBNull ? null : reader["ConteudoSMS"].ToString();
+                        }
+
+                        return dto;
+                    }
+                }
+            }
+            return null;
+        }
+
+        public void AtualizarStatusLembrete(int idLembrete, string status)
+        {
+            string query = @"UPDATE CorteCor_LembreteAgendado SET Status = @Status, DataEnvioReal = @Data WHERE IdLembrete = @Id";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Status", status);
+                command.AddWithValue("@Data", DateTime.Now);
+                command.AddWithValue("@Id", idLembrete);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void RegistrarLogEnvio(int idLembrete, int idAgendamento, string destinatario, string assunto, string status, string? mensagemErro, string tipoLembrete, string? telefone)
+        {
+            string query = @"INSERT INTO CorteCor_LogEnvioEmail (IdLembrete, IdAgendamento, DataEnvio, Destinatario, Assunto, Status, MensagemErro, TipoLembrete, Telefone)
+                             VALUES (@IdLembrete, @IdAgendamento, @DataEnvio, @Destinatario, @Assunto, @Status, @MensagemErro, @TipoLembrete, @Telefone)";
+            
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdLembrete", idLembrete);
+                command.AddWithValue("@IdAgendamento", idAgendamento);
+                command.AddWithValue("@DataEnvio", DateTime.Now);
+                command.AddWithValue("@Destinatario", destinatario ?? "");
+                command.AddWithValue("@Assunto", assunto ?? "");
+                command.AddWithValue("@Status", status);
+                command.AddWithValue("@MensagemErro", mensagemErro ?? (object)DBNull.Value);
+                command.AddWithValue("@TipoLembrete", tipoLembrete);
+                command.AddWithValue("@Telefone", telefone ?? (object)DBNull.Value);
+                command.ExecuteNonQuery();
+            }
+        }
 
     public List<LembreteConfig> ListarConfig(int idSalao)
     {
         var lista = new List<LembreteConfig>();
         string query = @"
-            SELECT C.*, M.Assunto AS AssuntoModelo
+            SELECT C.*, M.Assunto AS AssuntoModeloEmail, S.Conteudo AS ConteudoModeloSMS
             FROM CorteCor_LembreteConfig C
             LEFT JOIN CorteCor_ModeloEmail M ON C.IdModeloEmail = M.IdModelo
+            LEFT JOIN CorteCor_ModeloSMS S ON C.IdModeloSMS = S.IdModelo
             WHERE C.IdSalao = @IdSalao";
         
         using (var connection = _dbHandler.GetConnection())
@@ -3151,19 +3291,33 @@ public class LembreteHandler
             {
                 while (reader.Read())
                 {
-                    lista.Add(new LembreteConfig
-                    {
-                        IdConfig = Convert.ToInt32(reader["IdConfig"]),
-                        IdSalao = Convert.ToInt32(reader["IdSalao"]),
-                        AntecedenciaValor = Convert.ToInt32(reader["AntecedenciaValor"]),
-                        AntecedenciaUnidade = reader["AntecedenciaUnidade"].ToString(),
-                        IdModeloEmail = reader["IdModeloEmail"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdModeloEmail"]),
-                        Ativo = Convert.ToBoolean(reader["Ativo"]),
-                        DataCriacao = Convert.ToDateTime(reader["DataCriacao"]),
-                        DataInicio = Convert.ToDateTime(reader["DataInicio"]),
-                        DataFim = reader["DataFim"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataFim"]),
-                        AssuntoModelo = reader["AssuntoModelo"] is DBNull ? "Padrão" : reader["AssuntoModelo"].ToString()
-                    });
+                var config = new LembreteConfig
+                {
+                    IdConfig = (reader["IdConfig"] == null || reader["IdConfig"] is DBNull) ? 0 : Convert.ToInt32(reader["IdConfig"]),
+                    IdSalao = (reader["IdSalao"] == null || reader["IdSalao"] is DBNull) ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                    AntecedenciaValor = (reader["AntecedenciaValor"] == null || reader["AntecedenciaValor"] is DBNull) ? 0 : Convert.ToInt32(reader["AntecedenciaValor"]),
+                    AntecedenciaUnidade = reader["AntecedenciaUnidade"]?.ToString() ?? "Horas",
+                    IdModeloEmail = (reader["IdModeloEmail"] == null || reader["IdModeloEmail"] is DBNull) ? (int?)null : Convert.ToInt32(reader["IdModeloEmail"]),
+                    IdModeloSMS = (reader["IdModeloSMS"] == null || reader["IdModeloSMS"] is DBNull) ? (int?)null : Convert.ToInt32(reader["IdModeloSMS"]),
+                    TipoLembrete = reader["TipoLembrete"]?.ToString() ?? "Email",
+                    Ativo = (reader["Ativo"] == null || reader["Ativo"] is DBNull) ? false : Convert.ToBoolean(reader["Ativo"]),
+                    DataCriacao = (reader["DataCriacao"] == null || reader["DataCriacao"] is DBNull) ? DateTime.MinValue : Convert.ToDateTime(reader["DataCriacao"]),
+                    DataInicio = (reader["DataInicio"] == null || reader["DataInicio"] is DBNull) ? DateTime.MinValue : Convert.ToDateTime(reader["DataInicio"]),
+                    DataFim = (reader["DataFim"] == null || reader["DataFim"] is DBNull) ? (DateTime?)null : Convert.ToDateTime(reader["DataFim"])
+                };
+                    
+                    if (config.TipoLembrete == "Email")
+                {
+                    var val = reader["AssuntoModeloEmail"];
+                    config.AssuntoModelo = (val == null || val is DBNull) ? "Padrão" : val.ToString() ?? "Padrão";
+                }
+                else
+                {
+                    var val = reader["ConteudoModeloSMS"];
+                    config.AssuntoModelo = (val == null || val is DBNull) ? "Padrão" : "SMS Personalizado";
+                }
+
+                    lista.Add(config);
                 }
             }
         }
@@ -3179,6 +3333,8 @@ public class LembreteHandler
                       SET AntecedenciaValor = @AntecedenciaValor, 
                           AntecedenciaUnidade = @AntecedenciaUnidade, 
                           IdModeloEmail = @IdModeloEmail, 
+                          IdModeloSMS = @IdModeloSMS,
+                          TipoLembrete = @TipoLembrete,
                           Ativo = @Ativo,
                           DataInicio = @DataInicio,
                           DataFim = @DataFim
@@ -3186,8 +3342,8 @@ public class LembreteHandler
         }
         else
         {
-            query = @"INSERT INTO CorteCor_LembreteConfig (IdSalao, AntecedenciaValor, AntecedenciaUnidade, IdModeloEmail, Ativo, DataInicio, DataFim)
-                      VALUES (@IdSalao, @AntecedenciaValor, @AntecedenciaUnidade, @IdModeloEmail, @Ativo, @DataInicio, @DataFim);
+            query = @"INSERT INTO CorteCor_LembreteConfig (IdSalao, AntecedenciaValor, AntecedenciaUnidade, IdModeloEmail, IdModeloSMS, TipoLembrete, Ativo, DataInicio, DataFim)
+                      VALUES (@IdSalao, @AntecedenciaValor, @AntecedenciaUnidade, @IdModeloEmail, @IdModeloSMS, @TipoLembrete, @Ativo, @DataInicio, @DataFim);
                       SELECT SCOPE_IDENTITY();";
         }
         
@@ -3202,6 +3358,8 @@ public class LembreteHandler
             command.AddWithValue("@AntecedenciaValor", config.AntecedenciaValor);
             command.AddWithValue("@AntecedenciaUnidade", config.AntecedenciaUnidade);
             command.AddWithValue("@IdModeloEmail", (object)config.IdModeloEmail ?? DBNull.Value);
+            command.AddWithValue("@IdModeloSMS", (object)config.IdModeloSMS ?? DBNull.Value);
+            command.AddWithValue("@TipoLembrete", config.TipoLembrete);
             command.AddWithValue("@Ativo", config.Ativo);
             command.AddWithValue("@DataInicio", config.DataInicio == DateTime.MinValue ? DateTime.Now : config.DataInicio);
             command.AddWithValue("@DataFim", (object)config.DataFim ?? DBNull.Value);
@@ -3436,19 +3594,9 @@ public class LembreteHandler
         }
     }
 
-    public class LogEnvioEmail
-    {
-        public int IdLog { get; set; }
-        public int IdLembrete { get; set; }
-        public int IdAgendamento { get; set; }
-        public DateTime DataEnvio { get; set; }
-        public string Destinatario { get; set; }
-        public string Assunto { get; set; }
-        public string Status { get; set; }
-        public string MensagemErro { get; set; }
-    }
 
-    public PagedResult<LogEnvioEmail> ListarLogsEnvio(DateTime? inicio, DateTime? fim, string destinatario, string assunto, string status, int page = 1, int pageSize = 10)
+
+    public PagedResult<LogEnvioEmail> ListarLogsEnvio(DateTime? inicio, DateTime? fim, string destinatario, string assunto, string status, int page = 1, int pageSize = 10, string tipoLembrete = null)
     {
         var result = new PagedResult<LogEnvioEmail>
         {
@@ -3464,6 +3612,7 @@ public class LembreteHandler
         if (!string.IsNullOrEmpty(destinatario)) sb.Append("AND Destinatario LIKE @Destinatario ");
         if (!string.IsNullOrEmpty(assunto)) sb.Append("AND Assunto LIKE @Assunto ");
         if (!string.IsNullOrEmpty(status)) sb.Append("AND Status = @Status ");
+        if (!string.IsNullOrEmpty(tipoLembrete)) sb.Append("AND TipoLembrete = @TipoLembrete ");
 
         string baseQuery = sb.ToString();
 
@@ -3472,18 +3621,18 @@ public class LembreteHandler
             // Count
             using (var countCmd = connection.CreateCommand("SELECT COUNT(*) " + baseQuery))
             {
-                AddLogParams(countCmd, inicio, fim, destinatario, assunto, status);
+                AddLogParams(countCmd, inicio, fim, destinatario, assunto, status, tipoLembrete);
                 result.TotalCount = Convert.ToInt32(countCmd.ExecuteScalar());
             }
 
             // Data
-            string dataQuery = "SELECT IdLog, IdLembrete, IdAgendamento, DataEnvio, Destinatario, Assunto, Status, MensagemErro " + 
+            string dataQuery = "SELECT * " + 
                                baseQuery + 
                                "ORDER BY DataEnvio DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             using (var command = connection.CreateCommand(dataQuery))
             {
-                AddLogParams(command, inicio, fim, destinatario, assunto, status);
+                AddLogParams(command, inicio, fim, destinatario, assunto, status, tipoLembrete);
                 command.AddWithValue("@Offset", (page - 1) * pageSize);
                 command.AddWithValue("@PageSize", pageSize);
 
@@ -3491,7 +3640,7 @@ public class LembreteHandler
                 {
                     while (reader.Read())
                     {
-                        result.Items.Add(new LogEnvioEmail
+                        var log = new LogEnvioEmail
                         {
                             IdLog = Convert.ToInt32(reader["IdLog"]),
                             IdLembrete = Convert.ToInt32(reader["IdLembrete"]),
@@ -3501,7 +3650,14 @@ public class LembreteHandler
                             Assunto = reader["Assunto"].ToString(),
                             Status = reader["Status"].ToString(),
                             MensagemErro = reader["MensagemErro"] is DBNull ? null : reader["MensagemErro"].ToString()
-                        });
+                        };
+
+                        // Check columns existence for backward compatibility or simple check
+                        // Assuming migration script applied
+                        try { log.TipoLembrete = reader["TipoLembrete"] is DBNull ? "Email" : reader["TipoLembrete"].ToString(); } catch { }
+                        try { log.Telefone = reader["Telefone"] is DBNull ? null : reader["Telefone"].ToString(); } catch { }
+
+                        result.Items.Add(log);
                     }
                 }
             }
@@ -3509,54 +3665,76 @@ public class LembreteHandler
         return result;
     }
 
-    private void AddLogParams(IDbCommand cmd, DateTime? inicio, DateTime? fim, string destinatario, string assunto, string status)
+    private void AddLogParams(IDbCommand cmd, DateTime? inicio, DateTime? fim, string destinatario, string assunto, string status, string tipoLembrete)
     {
         if (inicio.HasValue) cmd.AddWithValue("@Inicio", inicio.Value);
         if (fim.HasValue) cmd.AddWithValue("@Fim", fim.Value);
         if (!string.IsNullOrEmpty(destinatario)) cmd.AddWithValue("@Destinatario", "%" + destinatario + "%");
         if (!string.IsNullOrEmpty(assunto)) cmd.AddWithValue("@Assunto", "%" + assunto + "%");
         if (!string.IsNullOrEmpty(status)) cmd.AddWithValue("@Status", status);
+        if (!string.IsNullOrEmpty(tipoLembrete)) cmd.AddWithValue("@TipoLembrete", tipoLembrete);
     }
 
-    public bool VerificarLimiteEmail(int idSalao, out int enviados, out int limite)
-    {
-        enviados = 0;
-        limite = 0;
-
-        using (var connection = _dbHandler.GetConnection())
+        public bool VerificarLimiteEmail(int idSalao, out int enviados, out int limite)
         {
-            // 1. Get Limit
-            string queryLimit = "SELECT LimiteEnvioEmail FROM CorteCor_Salao WHERE IdSalao = @IdSalao";
-            using (var cmd = connection.CreateCommand(queryLimit))
+            return VerificarLimite(idSalao, "Email", out enviados, out limite);
+        }
+
+        public bool VerificarLimiteSMS(int idSalao, out int enviados, out int limite)
+        {
+            return VerificarLimite(idSalao, "SMS", out enviados, out limite);
+        }
+
+        private bool VerificarLimite(int idSalao, string tipo, out int enviados, out int limite)
+        {
+            enviados = 0;
+            limite = 0;
+
+            using (var connection = _dbHandler.GetConnection())
             {
-                cmd.AddWithValue("@IdSalao", idSalao);
-                var result = cmd.ExecuteScalar();
-                if (result != null && result != DBNull.Value)
+                // 1. Get Limit
+                string columnName = tipo == "Email" ? "LimiteEnvioEmail" : "LimiteEnvioSMS";
+                string queryLimit = $"SELECT {columnName} FROM CorteCor_Salao WHERE IdSalao = @IdSalao";
+                using (var cmd = connection.CreateCommand(queryLimit))
                 {
-                    limite = Convert.ToInt32(result);
+                    cmd.AddWithValue("@IdSalao", idSalao);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                    {
+                        limite = Convert.ToInt32(result);
+                    }
+                }
+
+                // If limit is not set or 0, we still count against it (showing 0/0 reached)
+                // but we might want a way to disable the check entirely (e.g. -1).
+                // For now, if it's 0, it behaves like they reached it.
+
+                // 2. Count Sent for CURRENT MONTH
+                // We use ISNULL(L.TipoLembrete, 'Email') for backward compatibility
+                string queryCount = @"
+                    SELECT COUNT(*)
+                    FROM CorteCor_LogEnvioEmail L
+                    JOIN CorteCor_LembreteAgendado LA ON L.IdLembrete = LA.IdLembrete
+                    JOIN CorteCor_Agendamento A ON LA.IdAgendamento = A.IdAgendamento
+                    JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+                    WHERE S.IdSalao = @IdSalao
+                      AND ISNULL(L.TipoLembrete, 'Email') = @Tipo
+                      AND (L.Status = 'Sucesso' OR L.Status = 'Enviado')
+                      AND MONTH(L.DataEnvio) = @Mes AND YEAR(L.DataEnvio) = @Ano";
+
+                using (var cmd = connection.CreateCommand(queryCount))
+                {
+                    cmd.AddWithValue("@IdSalao", idSalao);
+                    cmd.AddWithValue("@Tipo", tipo);
+                    cmd.AddWithValue("@Mes", DateTime.Now.Month);
+                    cmd.AddWithValue("@Ano", DateTime.Now.Year);
+                    enviados = Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
-
-            // 2. Count Sent Emails (Status = 'Sucesso' or 'Enviado')
-            string queryCount = @"
-                SELECT COUNT(*)
-                FROM CorteCor_LogEnvioEmail L
-                JOIN CorteCor_LembreteAgendado LA ON L.IdLembrete = LA.IdLembrete
-                JOIN CorteCor_Agendamento A ON LA.IdAgendamento = A.IdAgendamento
-                JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
-                WHERE S.IdSalao = @IdSalao
-                  AND (L.Status = 'Sucesso' OR L.Status = 'Enviado')";
-
-            using (var cmd = connection.CreateCommand(queryCount))
-            {
-                cmd.AddWithValue("@IdSalao", idSalao);
-                enviados = Convert.ToInt32(cmd.ExecuteScalar());
-            }
+            
+            return enviados >= limite;
         }
-        
-        return enviados >= limite;
     }
-}
 
 
 

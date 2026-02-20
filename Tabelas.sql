@@ -315,6 +315,8 @@ CREATE TABLE CorteCor_LembreteConfig (
     IdModeloEmail INT NULL, -- Opcional: qual template usar
     Ativo BIT NOT NULL DEFAULT 1,
     DataCriacao DATETIME DEFAULT GETDATE(),
+    TipoLembrete NVARCHAR(20) NOT NULL DEFAULT 'Email', -- 'Email' or 'SMS'
+    IdModeloSMS INT NULL,
     CONSTRAINT FK_LembreteConfig_Salao FOREIGN KEY (IdSalao) REFERENCES CorteCor_Salao(IdSalao)
     -- CONSTRAINT FK_LembreteConfig_ModeloEmail FOREIGN KEY (IdModeloEmail) REFERENCES CorteCor_ModeloEmail(IdModelo) -- Uncomment if ModeloEmail table exists and you want FK
 );
@@ -347,5 +349,62 @@ CREATE TABLE CorteCor_LogEnvioEmail (
     Assunto VARCHAR(200) NOT NULL,
     Status VARCHAR(50) NOT NULL, -- 'Sucesso' ou 'ErroEnvio'
     MensagemErro VARCHAR(MAX) NULL,
+    Telefone NVARCHAR(20) NULL,
+    TipoLembrete NVARCHAR(20) NOT NULL DEFAULT 'Email',
     INDEX IX_LogEnvioEmail_DataEnvio (DataEnvio)
+);
+
+-- Create table for SMS Templates
+CREATE TABLE CorteCor_ModeloSMS (
+    IdModelo INT IDENTITY(1,1) PRIMARY KEY,
+    IdSalao INT NOT NULL,
+    TipoEvento NVARCHAR(50) NOT NULL, -- e.g. 'Lembrete', 'BoasVindas'
+    Conteudo NVARCHAR(160) NOT NULL, -- SMS limit usually 160 chars
+    Ativo BIT NOT NULL DEFAULT 1,
+    DataAtualizacao DATETIME NOT NULL DEFAULT GETDATE()
+);
+
+
+
+
+
+-- Tabela para Fornecedores de Email
+CREATE TABLE CorteCor_FornecedoresEmail (
+    IdFornecedor INT IDENTITY(1,1) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL, -- Ex: Brevo, SendGrid, Amazon SES
+    ApiKey VARCHAR(255),
+    ApiSecret VARCHAR(255),
+    Endpoint VARCHAR(255),
+    RemetenteNome VARCHAR(100),
+    RemetenteEmail VARCHAR(100),
+    Ativo BIT DEFAULT 0, -- Apenas um pode estar ativo por vez
+    DataCriacao DATETIME DEFAULT GETDATE(),
+    DataAtualizacao DATETIME
+);
+
+-- Tabela para Fornecedores de SMS
+CREATE TABLE CorteCor_FornecedoresSMS (
+    IdFornecedor INT IDENTITY(1,1) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL, -- Ex: Twilio, Brevo, Zenvia
+    ApiKey VARCHAR(255),
+    ApiSecret VARCHAR(255),
+    Endpoint VARCHAR(255),
+    Remetente VARCHAR(50), -- Sender ID ou número
+    Ativo BIT DEFAULT 0,
+    DataCriacao DATETIME DEFAULT GETDATE(),
+    DataAtualizacao DATETIME
+);
+
+-- Tabela para Fornecedores de Whatsapp
+CREATE TABLE CorteCor_FornecedoresWhatsapp (
+    IdFornecedor INT IDENTITY(1,1) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL, -- Ex: Twilio, WppConnect, Z-API
+    ApiKey VARCHAR(255),
+    ApiSecret VARCHAR(255),
+    Endpoint VARCHAR(255),
+    InstanceId VARCHAR(100), -- Específico de algumas APIs de Whataspp
+    Token VARCHAR(255),      -- Token adicional se necessário
+    Ativo BIT DEFAULT 0,
+    DataCriacao DATETIME DEFAULT GETDATE(),
+    DataAtualizacao DATETIME
 );

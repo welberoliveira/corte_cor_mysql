@@ -70,20 +70,28 @@ namespace CorteCor.Pages
 
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
-                // ---- Verificação de Limite de Emails ----
+                // ---- Verificação de Limites (Email e SMS) ----
                 try {
                     var lembreteHandler = new LembreteHandler(dbHandler);
-                    if (lembreteHandler.VerificarLimiteEmail(Usuario.IdSalao, out int enviados, out int limite))
+                    
+                    // Email
+                    if (lembreteHandler.VerificarLimiteEmail(Usuario.IdSalao, out int envEmail, out int limEmail))
                     {
-                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de emails para seu salão foi alcançado ({enviados}/{limite}). Adquira mais créditos para continuar enviando lembretes.";
+                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de emails para seu salão foi alcançado ({envEmail}/{limEmail}). Adquira mais créditos para continuar enviando lembretes por email.";
+                    }
+
+                    // SMS
+                    if (lembreteHandler.VerificarLimiteSMS(Usuario.IdSalao, out int envSms, out int limSms))
+                    {
+                        TempData["AvisoLimiteSMS"] = $"Atenção: O limite de disparos de SMS para seu salão foi alcançado ({envSms}/{limSms}). Adquira mais créditos para continuar enviando lembretes por SMS.";
                     }
                 }
                 catch (Exception ex)
                 {
                     // Não impedir login por erro aqui, apenas logar ou ignorar
-                    Console.WriteLine("Erro ao verificar limite: " + ex.Message);
+                    Console.WriteLine("Erro ao verificar limites: " + ex.Message);
                 }
-                // -----------------------------------------
+                // ----------------------------------------------
 
                 // Redirecionar para a página inicial ou outra página protegida
                 return Redirect(HttpContext.Request.PathBase + "/Agendamentos2");

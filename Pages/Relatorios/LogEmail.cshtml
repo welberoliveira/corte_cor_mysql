@@ -13,88 +13,192 @@
     <br />
 
     <!-- Filtros -->
-    <div class="card mb-3">
-        <div class="card-header">Filtros</div>
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-white font-weight-bold text-primary">
+            <i class="fas fa-filter"></i> Filtros
+        </div>
         <div class="card-body">
-            <form method="get" class="form-inlines">
-                <div class="form-row">
-                    <div class="form-group col-md-2">
-                        <label>De:</label>
+            <form method="get">
+                <!-- Linha 1: Datas -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="font-weight-bold">De:</label>
                         <input type="date" name="DataInicio" class="form-control" value="@Model.DataInicio?.ToString("yyyy-MM-dd")" />
                     </div>
-                    <div class="form-group col-md-2">
-                        <label>Até:</label>
+                    <div class="col-md-6">
+                        <label class="font-weight-bold">Até:</label>
                         <input type="date" name="DataFim" class="form-control" value="@Model.DataFim?.ToString("yyyy-MM-dd")" />
                     </div>
-                    <div class="form-group col-md-3">
-                        <label>Destinatário:</label>
-                        <input type="text" name="Destinatario" class="form-control" value="@Model.Destinatario" placeholder="E-mail do destinatário" />
+                </div>
+
+                <!-- Linha 2: Destinatário e Assunto -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="font-weight-bold">Destinatário:</label>
+                        <input type="text" name="Destinatario" class="form-control" value="@Model.Destinatario" placeholder="E-mail..." />
                     </div>
-                    <div class="form-group col-md-3">
-                        <label>Assunto:</label>
-                        <input type="text" name="Assunto" class="form-control" value="@Model.Assunto" placeholder="Assunto do e-mail" />
+                    <div class="col-md-6">
+                        <label class="font-weight-bold">Assunto:</label>
+                        <input type="text" name="Assunto" class="form-control" value="@Model.Assunto" placeholder="Assunto..." />
                     </div>
-                    <div class="form-group col-md-2">
-                        <label>Status:</label>
+                </div>
+
+                <!-- Linha 3: Status, Tipo e Botões -->
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="font-weight-bold">Status:</label>
                         <select name="Status" class="form-control">
                             <option value="">Todos</option>
                             <option value="Sucesso" selected="@(Model.Status == "Sucesso")">Sucesso</option>
                             <option value="Erro" selected="@(Model.Status == "Erro")">Erro</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="col-md-12 text-right">
-                        <a href="/Relatorios/LogEmail" class="btn btn-secondary">Limpar</a>
-                        <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <div class="col-md-3">
+                        <label class="font-weight-bold">Tipo:</label>
+                        <select name="TipoLembrete" class="form-control">
+                            <option value="">Todos</option>
+                            <option value="Email" selected="@(Model.TipoLembrete == "Email")">E-mail</option>
+                            <option value="SMS" selected="@(Model.TipoLembrete == "SMS")">SMS</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 text-right mt-3 mt-md-0">
+                        <a href="/Relatorios/LogEmail" class="btn btn-outline-secondary mr-2">
+                            <i class="fas fa-eraser"></i> Limpar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Filtrar
+                        </button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Tabela Customizada -->
     <div class="row">
         <div class="col-md-12">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Data Envio</th>
-                        <th>Destinatário</th>
-                        <th>Assunto</th>
-                        <th>Status</th>
-                        <th>Erro</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var log in Model.Logs.Items)
-                    {
+            <div class="table-container">
+                <table class="cc-table">
+                    <thead>
                         <tr>
-                            <td>@log.DataEnvio.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                            <td>@log.Destinatario</td>
-                            <td>@log.Assunto</td>
-                            <td>
-                                @if (log.Status == "Sucesso")
-                                {
-                                    <span class="badge badge-success">Enviado</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-danger">Erro</span>
-                                }
-                            </td>
-                            <td>@log.MensagemErro</td>
+                            <th>Data Envio</th>
+                            <th>Tipo</th>
+                            <th>Destinatário / Telefone</th>
+                            <th>Assunto / Conteúdo</th>
+                            <th>Status</th>
+                            <th>Mensagem</th>
                         </tr>
-                    }
-                    @if (!Model.Logs.Items.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">Nenhum registro encontrado com estes filtros.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model.Logs.Items)
+                        {
+                            <tr>
+                                <td>@log.DataEnvio.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <span class="badge badge-pill @(log.TipoLembrete == "SMS" ? "badge-warning" : "badge-secondary")">
+                                        @(string.IsNullOrEmpty(log.TipoLembrete) ? "Email" : log.TipoLembrete)
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(log.Destinatario))
+                                    {
+                                        <i class="fas fa-envelope text-muted"></i> @log.Destinatario
+                                    }
+                                    @if (!string.IsNullOrEmpty(log.Telefone))
+                                    {
+                                        <i class="fas fa-phone text-muted"></i> @log.Telefone
+                                    }
+                                </td>
+                                <td>
+                                    <span title="@log.Assunto">@log.Assunto</span>
+                                </td>
+                                <td>
+                                    @if (log.Status == "Sucesso")
+                                    {
+                                        <span class="badge badge-pill badge-success">Enviado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-pill badge-danger">Erro</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">@log.MensagemErro</td>
+                            </tr>
+                        }
+                        @if (!Model.Logs.Items.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fas fa-inbox fa-3x mb-3"></i><br>
+                                    Nenhum registro encontrado.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+    <style>
+        /* Card e Filtros */
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 10px 15px;
+        }
+        .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Tabela Premium customizada (cc-table) */
+        .table-container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .cc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Inter', sans-serif; /* Assumindo font do sistema */
+        }
+
+        .cc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Inter', sans-serif; /* Assumindo font do sistema */
+        }
+
+        .cc-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #1f2937;
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        .cc-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cc-table tbody tr:hover {
+            background-color: #f9fafb;
+            transition: background-color 0.2s ease;
+        }
+
+        .cc-table tbody tr:hover {
+            background-color: #f9fafb;
+            transition: background-color 0.2s ease;
+        }
+    </style>
     
     <!-- Pagination Controls -->
     @if (Model.Logs.TotalPages > 1)

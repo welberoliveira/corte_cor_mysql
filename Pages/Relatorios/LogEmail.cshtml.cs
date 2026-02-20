@@ -37,6 +37,9 @@ namespace CorteCor.Pages.Relatorios
         public string Status { get; set; }
 
         [BindProperty(SupportsGet = true)]
+        public string TipoLembrete { get; set; }
+
+        [BindProperty(SupportsGet = true)]
         public int p { get; set; } = 1;
 
         public void OnGet()
@@ -54,7 +57,7 @@ namespace CorteCor.Pages.Relatorios
             // DataFim: Final do dia (23:59:59)
             DateTime? filtroFim = DataFim?.Date.AddDays(1).AddSeconds(-1);
 
-            Logs = _handler.ListarLogsEnvio(filtroInicio, filtroFim, Destinatario, Assunto, Status, p > 0 ? p : 1, 10);
+            Logs = _handler.ListarLogsEnvio(filtroInicio, filtroFim, Destinatario, Assunto, Status, p > 0 ? p : 1, 10, TipoLembrete);
             if (Logs == null) Logs = new PagedResult<LogEnvioEmail>();
         }
     }

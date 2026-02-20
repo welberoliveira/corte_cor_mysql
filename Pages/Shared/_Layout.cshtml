@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CorteCor.styles.css" asp-append-version="true" />
 
@@ -91,13 +92,14 @@
             overflow: hidden;
         }
 
-            table th {
-                background: #4e54c8;
-                color: white;
+            .table thead th, table th {
+                background-color: #0d6efd !important;
+                color: #ffffff !important;
                 text-transform: uppercase;
                 font-weight: bold;
-                padding: 1rem;
+                padding: 0.75rem 1rem;
                 text-align: left;
+                border: none;
             }
 
             table td {
@@ -105,6 +107,20 @@
                 border-bottom: 1px solid #ddd;
                 color: #555;
             }
+
+            /* Badge Pills Global Styles */
+            .badge-pill {
+                padding: 0.4em 0.8em;
+                font-weight: 500;
+                border-radius: 9999px;
+                color: #fff !important;
+                display: inline-block;
+            }
+            .badge-success { background-color: #10b981 !important; }
+            .badge-danger { background-color: #ef4444 !important; }
+            .badge-warning { background-color: #f59e0b !important; }
+            .badge-secondary { background-color: #6b7280 !important; }
+            .badge-info { background-color: #3b82f6 !important; }
 
             table tr:nth-child(even) {
                 background: #f9f9f9;
@@ -225,21 +241,11 @@
                         <ul class="navbar-nav flex-grow-1">
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Salao
+                                    Principal
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="SalaoDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoCadastro">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLista">Listar</a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Usuários
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioCadastro">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioLista">Listar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLista">Salão</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioLista">Usuário</a></li>
                                 </ul>
                             </li>
 
@@ -248,8 +254,6 @@
                                     Relatórios
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Gráficos</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Analíticos</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios de E-mail</a></li>
                                 </ul>
                             </li>
@@ -265,6 +269,17 @@
 
                             <li class="nav-item m-2">
                                 <div style="width:200px"></div>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="ConfiguracoesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Configurações
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="ConfiguracoesDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresEmail">Fornecedores de Email</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresSMS">Fornecedores de SMS</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresWhatsapp">Fornecedores de Whatsapp</a></li>
+                                </ul>
                             </li>
                            
                             <li class="nav-item m-2">
@@ -313,6 +328,7 @@
                                     <li><hr class="dropdown-divider"></li>
 
                                     <li><a class="dropdown-item" asp-area="" asp-page="/ModeloEmailLista">Modelo de e-mail</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ModeloSMSLista">Modelo de SMS</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/LembreteConfigLista">Regras de Lembretes</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios e-mails/SMS/Whatsapp</a></li>
                                 </ul>
@@ -364,24 +380,33 @@
 
     <script>
         // ---- Global Error Handling Helper
+        // ---- Global Error Handling Helper
         async function showError(resp, defaultMsg) {
             let msg = defaultMsg;
             let detail = '';
+
             try {
-                const errorData = await resp.json();
-                msg = errorData.message || defaultMsg;
-                detail = errorData.detail || '';
-            } catch (e) {
+                // Clone the response so we can read it twice if needed (json then text)
+                const clone = resp.clone();
+                
                 try {
+                    const errorData = await clone.json();
+                    // Handle both camelCase and PascalCase
+                    msg = errorData.message || errorData.Message || defaultMsg;
+                    detail = errorData.detail || errorData.Detail || '';
+                } catch (eJson) {
+                    // Not JSON, try text
                     msg = await resp.text() || defaultMsg;
-                } catch (e2) { }
+                }
+            } catch (e) {
+                console.error("Erro ao processar resposta de erro:", e);
             }
 
             await Swal.fire({
                 icon: 'error',
                 title: 'Oops...',
                 text: msg,
-                footer: detail ? `<div style="color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: .75rem 1.25rem; border: 1px solid transparent; border-radius: .25rem; font-size: 0.8em;"><b>Dica/Detalhe:</b> ${detail}</div>` : null,
+                footer: detail ? `<div style="color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: .75rem 1.25rem; border: 1px solid transparent; border-radius: .25rem; font-size: 0.8em; text-align: left; max-height: 200px; overflow: auto;"><b>Detalhe Técnico:</b> ${detail}</div>` : null,
                 confirmButtonColor: '#3085d6'
             });
         }

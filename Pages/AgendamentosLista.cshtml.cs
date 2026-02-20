@@ -104,12 +104,26 @@ namespace CorteCor.Pages
             // Combine for dropdown
             PessoasOptions = pessoas.Concat(excluidos).OrderBy(p => p.Nome).ToList();
 
-            FuncionariosOptions = _funcionarioHandler.Listar().Where(f => f.IdSalao == idSalao).OrderBy(f => f.Nome).ToList();
-             foreach(var f in FuncionariosOptions) _funcionariosCache[f.IdFuncionario] = f.Nome;
+            FuncionariosOptions = _funcionarioHandler.ListarPorSalao(idSalao).OrderBy(f => f.Nome).ToList();
+            foreach(var f in FuncionariosOptions) _funcionariosCache[f.IdFuncionario] = f.Nome;
         }
 
         public string GetServicoNome(int id) => _servicosCache.ContainsKey(id) ? _servicosCache[id] : "N/D";
         public string GetPessoaNome(int id) => _pessoasCache.ContainsKey(id) ? _pessoasCache[id] : "N/D";
-        public string GetFuncionarioNome(int id) => _funcionariosCache.ContainsKey(id) ? _funcionariosCache[id] : "N/D";
+        public string GetFuncionarioNome(int id) 
+        {
+            if (_funcionariosCache.ContainsKey(id)) return _funcionariosCache[id];
+            
+            // Fallback: Tenta buscar individualmente (pode ser funcionário deletado ou de outro contexto)
+            try {
+                var f = _funcionarioHandler.ObterPorId(id);
+                if (f != null) {
+                    _funcionariosCache[id] = f.Nome;
+                    return f.Nome;
+                }
+            } catch {}
+            
+            return "N/D";
+        }
     }
 }

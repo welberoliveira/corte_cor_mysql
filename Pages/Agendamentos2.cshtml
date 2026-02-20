@@ -241,6 +241,14 @@
         </div>
     }
 
+    @if (TempData["AvisoLimiteSMS"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show mt-2" role="alert">
+            <i class="bi bi-chat-left-dots-fill me-2"></i> @TempData["AvisoLimiteSMS"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div id="calendar"></div>
 </div>
 
@@ -421,26 +429,42 @@
                 failureCallback(e);
             }
         }
-        async function atualizarServicosDisponiveis(start, selectId, currentValue) {
+        async function atualizarServicosDisponiveis(start, selectId, currentValue, currentName) {
             const resp = await fetch(`?handler=AvailableServices&start=${encodeURIComponent(start.toISOString())}`);
             if (!resp.ok) return;
 
             const services = await resp.json();
             const select = document.getElementById(selectId);
             
-            // Se o serviço atual não estiver no retorno (por indisponibilidade), 
-            // no modo de edição é bom manter a opção dele se quisermos apenas visualizá-lo.
-            // Mas o requisito pede para "somente mostrar os disponíveis".
-            
             select.innerHTML = '<option value="">Selecione...</option>';
+            
+            let found = false;
             services.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s.id;
                 opt.textContent = s.nome;
                 opt.dataset.duracaoMin = s.duracaoMin;
-                if (currentValue && parseInt(currentValue) === s.id) opt.selected = true;
+                if (currentValue && parseInt(currentValue) === s.id) {
+                    opt.selected = true;
+                    found = true;
+                }
                 select.appendChild(opt);
             });
+
+            // Se temos um valor atual (edição) e ele não veio na lista de disponíveis (pq já está ocupado por este agendamento ou outro motivo),
+            // forçamos a inclusão dele para não ficar em branco.
+            if (currentValue && !found && currentName) {
+                const opt = document.createElement('option');
+                opt.value = currentValue;
+                opt.textContent = currentName; 
+                // Precisariamos da duracao, mas se for so visualizacao, ok. 
+                // Se for alterar horario, pode dar problema no calculo de fim.
+                // Ideal seria o EndPoint retornar a duracao tambem ou a gente buscar.
+                // Por hora, assumimos 30min ou tentamos pegar de algum cache se possivel, ou deixamos 0.
+                opt.dataset.duracaoMin = 30; 
+                opt.selected = true;
+                select.appendChild(opt);
+            }
         }
 
         async function abrirModal(start, end) {
@@ -464,6 +488,7 @@
             document.getElementById('btnSalvar').classList.remove('d-none');
             document.getElementById('btnAlterar').classList.add('d-none');
             document.getElementById('btnExcluir').classList.add('d-none');
+            document.getElementById('btnPagar').classList.add('d-none');
 
             // Status no novo agendamento
             document.getElementById('rowStatus').classList.add('d-none');
@@ -838,7 +863,7 @@
                     document.getElementById('idPessoa').value = data.idPessoa;
                     
                     // Fetch serviços disponíveis para este horário antes de setar o valor
-                    await atualizarServicosDisponiveis(selectionStart, 'idServico', data.idServico);
+                    await atualizarServicosDisponiveis(selectionStart, 'idServico', data.idServico, data.servicoNome);
                     
                     document.getElementById('idServico').value = data.idServico;
                     

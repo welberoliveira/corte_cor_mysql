@@ -57,11 +57,14 @@ builder.Services.AddScoped<FuncionarioServicoHandler>();
 builder.Services.AddScoped<PagamentoHandler>();
 builder.Services.AddScoped<MercadoPagoService>();
 builder.Services.AddScoped<ModeloEmailHandler>();
+builder.Services.AddScoped<ModeloSMSHandler>();
 builder.Services.AddScoped<MeioPagamentoHandler>();
 builder.Services.AddHttpClient<BrevoEmailService>();
 //builder.Services.AddScoped<BrevoEmailService>(); // Removido pois AddHttpClient já registra
-builder.Services.AddScoped<LembreteHandler>();
+builder.Services.AddHttpClient<SMSMarketService>();
+builder.Services.AddScoped<ILembreteHandler, LembreteHandler>();
 builder.Services.AddScoped<LembreteService>();
+builder.Services.AddScoped<FornecedoresHandler>();
 builder.Services.AddHostedService<CorteCor.Pages.Webhooks.LembreteBackgroundService>();
 
 // Configurar cultura para pt-BR

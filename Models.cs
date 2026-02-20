@@ -267,6 +267,16 @@ public class Models
         public DateTime DataAtualizacao { get; set; }
     }
 
+    public class ModeloSMS
+    {
+        public int IdModelo { get; set; }
+        public int IdSalao { get; set; }
+        public string TipoEvento { get; set; } // 'BoasVindas', 'ConfirmacaoAgendamento', etc.
+        public string Conteudo { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime DataAtualizacao { get; set; }
+    }
+
     public class LembreteConfig
     {
         public int IdConfig { get; set; }
@@ -274,6 +284,8 @@ public class Models
         public int AntecedenciaValor { get; set; } // 1, 2, 24
         public string AntecedenciaUnidade { get; set; } // "Horas", "Dias"
         public int? IdModeloEmail { get; set; }
+        public int? IdModeloSMS { get; set; }
+        public string TipoLembrete { get; set; } = "Email"; // Email, SMS
         public bool Ativo { get; set; }
         public DateTime DataCriacao { get; set; }
         public DateTime DataInicio { get; set; }
@@ -281,6 +293,20 @@ public class Models
 
         [NotMapped]
         public string? AssuntoModelo { get; set; }
+    }
+
+    public class LogEnvioEmail
+    {
+        public int IdLog { get; set; }
+        public int IdLembrete { get; set; }
+        public int IdAgendamento { get; set; }
+        public DateTime DataEnvio { get; set; }
+        public string Destinatario { get; set; }
+        public string Assunto { get; set; }
+        public string Status { get; set; }
+        public string? MensagemErro { get; set; }
+        public string TipoLembrete { get; set; } = "Email";
+        public string? Telefone { get; set; }
     }
 
     public class LembreteAgendado
@@ -296,6 +322,21 @@ public class Models
         public DateTime DataCriacao { get; set; }
     }
 
+    public class LembreteEnvioDTO
+    {
+        public string NomeCliente { get; set; }
+        public string EmailCliente { get; set; }
+        public string TelefoneCliente { get; set; }
+        public DateTime DataHoraAgendamento { get; set; }
+        public string NomeServico { get; set; }
+        public string NomeProfissional { get; set; }
+        public string NomeSalao { get; set; }
+        public int IdSalao { get; set; }
+        public string? AssuntoModelo { get; set; }
+        public string? CorpoModelo { get; set; }
+        public string TipoLembrete { get; set; } // "Email" or "SMS"
+    }
+
     public class PagedResult<T>
     {
         public List<T> Items { get; set; } = new List<T>();
@@ -305,5 +346,46 @@ public class Models
         public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
+    }
+
+    public class FornecedorEmail
+    {
+        public int IdFornecedor { get; set; }
+        public string Nome { get; set; }
+        public string ApiKey { get; set; }
+        public string? ApiSecret { get; set; }
+        public string Endpoint { get; set; }
+        public string RemetenteNome { get; set; }
+        public string RemetenteEmail { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime DataCriacao { get; set; }
+        public DateTime? DataAtualizacao { get; set; }
+    }
+
+    public class FornecedorSMS
+    {
+        public int IdFornecedor { get; set; }
+        public string Nome { get; set; }
+        public string ApiKey { get; set; }
+        public string? ApiSecret { get; set; }
+        public string Endpoint { get; set; }
+        public string Remetente { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime DataCriacao { get; set; }
+        public DateTime? DataAtualizacao { get; set; }
+    }
+
+    public class FornecedorWhatsapp
+    {
+        public int IdFornecedor { get; set; }
+        public string Nome { get; set; }
+        public string? ApiKey { get; set; }
+        public string? ApiSecret { get; set; }
+        public string Endpoint { get; set; }
+        public string? InstanceId { get; set; }
+        public string? Token { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime DataCriacao { get; set; }
+        public DateTime? DataAtualizacao { get; set; }
     }
 }

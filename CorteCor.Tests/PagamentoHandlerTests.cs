@@ -56,8 +56,8 @@ namespace CorteCor.Tests
             var result = _handler.Listar(new PagamentoFiltroDTO());
 
             // Assert
-            Assert.Single(result);
-            Assert.Equal("Pago", result[0].Status);
+            Assert.Single(result.Items);
+            Assert.Equal("Pago", result.Items[0].Status);
             _mockCommand.Verify(cmd => cmd.ExecuteReader(), Times.Once);
         }
 

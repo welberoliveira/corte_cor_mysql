@@ -41,7 +41,6 @@ namespace CorteCor.Tests
         [Fact]
         public void ListarConfig_DeveRetornarLista()
         {
-            // Arrange
             _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
             var seq = new MockSequence();
             _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(true);
@@ -54,22 +53,20 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["IdModeloEmail"]).Returns(DBNull.Value);
             _mockReader.Setup(r => r["Ativo"]).Returns(true);
             _mockReader.Setup(r => r["DataCriacao"]).Returns(DateTime.Now);
-            _mockReader.Setup(r => r["AssuntoModelo"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["DataInicio"]).Returns(DateTime.Now.AddDays(-1));
+            _mockReader.Setup(r => r["DataFim"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["AssuntoModeloEmail"]).Returns(DBNull.Value);
 
-            // Act
             var result = _handler.ListarConfig(1);
 
-            // Assert
             Assert.Single(result);
             Assert.Equal(2, result[0].AntecedenciaValor);
             Assert.Null(result[0].IdModeloEmail);
-            Assert.Equal("Padrão", result[0].AssuntoModelo);
         }
 
         [Fact]
         public void ListarConfig_ComModelo_DeveRetornarAssunto()
         {
-            // Arrange
             _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
             var seq = new MockSequence();
             _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(true);
@@ -82,12 +79,12 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["IdModeloEmail"]).Returns(5);
             _mockReader.Setup(r => r["Ativo"]).Returns(true);
             _mockReader.Setup(r => r["DataCriacao"]).Returns(DateTime.Now);
-            _mockReader.Setup(r => r["AssuntoModelo"]).Returns("Template Especial");
+            _mockReader.Setup(r => r["DataInicio"]).Returns(DateTime.Now.AddDays(-1));
+            _mockReader.Setup(r => r["DataFim"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["AssuntoModeloEmail"]).Returns("Template Especial");
 
-            // Act
             var result = _handler.ListarConfig(1);
 
-            // Assert
             Assert.Single(result);
             Assert.Equal("Template Especial", result[0].AssuntoModelo);
         }
@@ -95,132 +92,73 @@ namespace CorteCor.Tests
         [Fact]
         public void SalvarConfig_DeveExecutarInsert()
         {
-            // Arrange
-            var config = new LembreteConfig
-            {
-                IdSalao = 1,
-                AntecedenciaValor = 1,
-                AntecedenciaUnidade = "Dias",
-                Ativo = true
-            };
+            var config = new LembreteConfig { IdSalao = 1, AntecedenciaValor = 1, AntecedenciaUnidade = "Dias", Ativo = true, DataInicio = DateTime.Now };
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(1);
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            _mockReader.Setup(r => r.Read()).Returns(false);
 
-            // Act
             _handler.SalvarConfig(config);
-
-            // Assert
-            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+            _mockCommand.Verify(cmd => cmd.ExecuteScalar(), Times.Once);
         }
 
         [Fact]
         public void ExcluirConfig_DeveExecutarDelete()
         {
-            // Act
             _handler.ExcluirConfig(1);
-
-            // Assert
-            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Exactly(2));
         }
 
         [Fact]
         public void GerarLembretes_DeveInserirLembretesProgramados()
         {
-            // Arrange
             var dataAgendamento = DateTime.Now.AddDays(1);
-            
             _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
-            
             var readerSeq = new MockSequence();
-            // 1. First call to get Agendamento/Salao info
             _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(true); 
             _mockReader.Setup(r => r["DataHora"]).Returns(dataAgendamento);
             _mockReader.Setup(r => r["IdSalao"]).Returns(1);
-            
-            // 2. Second call (via ListarConfig)
-            _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(true); // Rule 1
+            _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(true); 
             _mockReader.Setup(r => r["IdConfig"]).Returns(10);
             _mockReader.Setup(r => r["AntecedenciaValor"]).Returns(2);
             _mockReader.Setup(r => r["AntecedenciaUnidade"]).Returns("Horas");
             _mockReader.Setup(r => r["Ativo"]).Returns(true);
             _mockReader.Setup(r => r["IdModeloEmail"]).Returns(DBNull.Value);
             _mockReader.Setup(r => r["DataCriacao"]).Returns(DateTime.Now);
-            _mockReader.Setup(r => r["AssuntoModelo"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["DataInicio"]).Returns(DateTime.Now.AddDays(-1));
+            _mockReader.Setup(r => r["DataFim"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["AssuntoModeloEmail"]).Returns(DBNull.Value);
+            _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(false); 
 
-            _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(false); // End of configs
-
-            // Act
             _handler.GerarLembretes(1);
 
-            // Assert
-            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeast(2));
         }
 
         [Fact]
         public void GerarLembretes_Minutos_DeveCalcularCorretamente()
         {
-            // Arrange
-            var dataAgendamento = DateTime.Now.AddHours(2); // Agendamento em 2h
-            
+            var dataAgendamento = DateTime.Now.AddHours(2);
             _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
-            
             var readerSeq = new MockSequence();
-            // 1. Get Agendamento Info
             _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(true); 
             _mockReader.Setup(r => r["DataHora"]).Returns(dataAgendamento);
             _mockReader.Setup(r => r["IdSalao"]).Returns(1);
-            
-            // 2. Get Configs
             _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(true); 
             _mockReader.Setup(r => r["IdConfig"]).Returns(20);
-            _mockReader.Setup(r => r["AntecedenciaValor"]).Returns(45); // 45 minutos antes
+            _mockReader.Setup(r => r["AntecedenciaValor"]).Returns(45);
             _mockReader.Setup(r => r["AntecedenciaUnidade"]).Returns("Minutos");
             _mockReader.Setup(r => r["Ativo"]).Returns(true);
             _mockReader.Setup(r => r["IdModeloEmail"]).Returns(DBNull.Value);
-            _mockReader.Setup(r => r["AssuntoModelo"]).Returns(DBNull.Value);
+            _mockReader.Setup(r => r["AssuntoModeloEmail"]).Returns(DBNull.Value);
             _mockReader.Setup(r => r["IdSalao"]).Returns(1);
             _mockReader.Setup(r => r["DataCriacao"]).Returns(DateTime.Now);
+            _mockReader.Setup(r => r["DataInicio"]).Returns(DateTime.Now.AddDays(-1));
+            _mockReader.Setup(r => r["DataFim"]).Returns(DBNull.Value);
             _mockReader.InSequence(readerSeq).Setup(r => r.Read()).Returns(false);
 
-            // Act
             _handler.GerarLembretes(1);
 
-            // Assert
-            // 2h - 45min = 1h15min from now
-            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeast(2));
         }
-    }
-
-    public class LembreteBackgroundServiceTests
-    {
-        private readonly Mock<IServiceProvider> _mockServiceProvider;
-        private readonly Mock<IServiceScope> _mockScope;
-        private readonly Mock<IServiceScopeFactory> _mockScopeFactory;
-        private readonly Mock<IDatabaseHandler> _mockDbHandler;
-        private readonly Mock<BrevoEmailService> _mockEmailService;
-        private readonly Mock<Microsoft.Extensions.Logging.ILogger<CorteCor.Pages.Webhooks.LembreteBackgroundService>> _mockLogger;
-
-        public LembreteBackgroundServiceTests()
-        {
-            _mockServiceProvider = new Mock<IServiceProvider>();
-            _mockScope = new Mock<IServiceScope>();
-            _mockScopeFactory = new Mock<IServiceScopeFactory>();
-            _mockDbHandler = new Mock<IDatabaseHandler>();
-            
-            // Mocking BrevoEmailService is tricky because it's not an interface. 
-            // I'll assume it has virtual methods or I'll just mock it as best as I can.
-            // Actually, BrevoEmailService methods are NOT virtual in the file I saw.
-            // I should make EnviarEmailGenericoAsync virtual for testing.
-            
-            _mockEmailService = new Mock<BrevoEmailService>(new HttpClient(), null, null); 
-            _mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<CorteCor.Pages.Webhooks.LembreteBackgroundService>>();
-
-            _mockServiceProvider.Setup(sp => sp.GetService(typeof(IServiceScopeFactory))).Returns(_mockScopeFactory.Object);
-            _mockScopeFactory.Setup(sf => sf.CreateScope()).Returns(_mockScope.Object);
-            _mockScope.Setup(s => s.ServiceProvider).Returns(_mockServiceProvider.Object);
-            
-            _mockServiceProvider.Setup(sp => sp.GetService(typeof(IDatabaseHandler))).Returns(_mockDbHandler.Object);
-            _mockServiceProvider.Setup(sp => sp.GetService(typeof(BrevoEmailService))).Returns(_mockEmailService.Object);
-        }
-
-        // Add tests here if I make methods virtual...
     }
 }

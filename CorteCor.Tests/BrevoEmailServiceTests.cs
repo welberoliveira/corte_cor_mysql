@@ -26,7 +26,8 @@ namespace CorteCor.Tests
             
             _mockModeloHandler = new Mock<ModeloEmailHandler>((IDatabaseHandler)null);
             _mockConfiguration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
-            _mockConfiguration.Setup(c => c["Brevo:ApiKey"]).Returns("test-key");
+            _mockConfiguration.Setup(c => c["Brevo:ApiKeyEmail"]).Returns("test-key-email");
+            _mockConfiguration.Setup(c => c["Brevo:ApiKeySMS"]).Returns("test-key-sms");
 
             _service = new BrevoEmailService(httpClient, _mockModeloHandler.Object, _mockConfiguration.Object);
         }
@@ -68,7 +69,8 @@ namespace CorteCor.Tests
             var result = await _service.EnviarEmailTemplateAsync(1, "BoasVindas", "test@test.com", variaveis);
 
             // Assert
-            Assert.True(result);
+            Assert.True(result.Success);
+            Assert.Null(result.ErrorMessage);
             _mockHttpMessageHandler.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
@@ -89,7 +91,8 @@ namespace CorteCor.Tests
             var result = await _service.EnviarEmailTemplateAsync(1, "Inexistente", "test@test.com", new Dictionary<string, string>());
 
             // Assert
-            Assert.False(result);
+            Assert.False(result.Success);
+            Assert.Contains("Template not found", result.ErrorMessage);
         }
 
         [Fact]
@@ -115,7 +118,8 @@ namespace CorteCor.Tests
             var result = await _service.EnviarEmailTemplateAsync(1, "Erro", "test@test.com", new Dictionary<string, string>());
 
             // Assert
-            Assert.False(result);
+            Assert.False(result.Success);
+            Assert.Contains("Invalid API Key", result.ErrorMessage);
         }
 
         [Fact]
@@ -137,7 +141,8 @@ namespace CorteCor.Tests
             var result = await _service.EnviarEmailGenericoAsync("test@test.com", "User", "Subject", "<p>Body</p>");
 
             // Assert
-            Assert.True(result);
+            Assert.True(result.Success);
+            Assert.Null(result.ErrorMessage);
         }
     }
 }

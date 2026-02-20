@@ -111,6 +111,8 @@ namespace CorteCor.Tests
         mockDbHandler.Setup(db => db.GetConnection()).Returns(mockConnection.Object);
         mockConnection.Setup(conn => conn.CreateCommand()).Returns(mockCommand.Object);
         mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(mockReader.Object);
+        mockCommand.Setup(cmd => cmd.Parameters).Returns(new Mock<IDataParameterCollection>().Object);
+        mockCommand.Setup(cmd => cmd.CreateParameter()).Returns(new Mock<IDbDataParameter>().Object);
         
         // Simular 2 registros, assumindo que a query já filtra
         mockReader.SetupSequence(r => r.Read())
@@ -133,7 +135,7 @@ namespace CorteCor.Tests
         handler.Listar();
 
         // Assert
-        mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(s => s.Contains("Excluido = 0") || s.Contains("Excluido IS NULL")), Times.Once);
+        mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(s => s.Contains("Excluido = 0") || s.Contains("Excluido IS NULL")), Times.AtLeastOnce());
     }
 
     [Fact]

@@ -9,22 +9,32 @@ namespace CorteCor
     public class LembreteService
     {
         private readonly IDatabaseHandler _dbHandler;
+        private readonly ILembreteHandler _lembreteHandler;
         private readonly BrevoEmailService _emailService;
+        private readonly SMSMarketService _smsService;
         private readonly ILogger<LembreteService> _logger;
 
-        public LembreteService(IDatabaseHandler dbHandler, BrevoEmailService emailService, ILogger<LembreteService> logger)
+        public LembreteService(IDatabaseHandler dbHandler, BrevoEmailService emailService, SMSMarketService smsService, ILogger<LembreteService> logger, ILembreteHandler lembreteHandler = null)
         {
             _dbHandler = dbHandler;
             _emailService = emailService;
+            _smsService = smsService;
             _logger = logger;
+            _lembreteHandler = lembreteHandler ?? new LembreteHandler(dbHandler);
         }
 
         public async Task<int> ProcessarLembretesAsync(CancellationToken stoppingToken = default)
         {
             int enviados = 0;
-            var pendentes = ObterLembretesPendentes();
-            var cacheLimites = new Dictionary<int, bool>(); // IdSalao -> LimitReached
-            var lembreteHandler = new LembreteHandler(_dbHandler);
+            var pendentes = _lembreteHandler.ObterLembretesPendentes();
+            
+            // Cache para evitar consultar o banco repetidamente para o mesmo salão
+            // Key: IdSalao, Value: (EnviadosDb, Limite)
+            var cacheDbInfo = new Dictionary<int, (int EnviadosDb, int Limite)>();
+            
+            // Contador local para envios feitos NESTA execução (batch)
+            // Key: IdSalao, Value: Quantidade enviada agora
+            var localEnvios = new Dictionary<int, int>();
 
             foreach (var lembrete in pendentes)
             {
@@ -32,161 +42,95 @@ namespace CorteCor
 
                 try
                 {
-                    var dados = ObterDadosEnvio(lembrete.IdLembrete);
+                    var dados = _lembreteHandler.ObterDadosEnvio(lembrete.IdLembrete);
 
                     if (dados == null)
                     {
-                        AtualizarStatusLembrete(lembrete.IdLembrete, "ErroDados");
+                        _lembreteHandler.AtualizarStatusLembrete(lembrete.IdLembrete, "ErroDados");
                         continue;
                     }
 
-                    // Check Limit
                     int idSalao = dados.IdSalao;
-                    if (!cacheLimites.ContainsKey(idSalao))
+
+                    // 1. Obter informações do DB (apenas uma vez por salão neste batch)
+                    if (!cacheDbInfo.ContainsKey(idSalao))
                     {
-                        bool atingido = lembreteHandler.VerificarLimiteEmail(idSalao, out int used, out int limit);
-                        cacheLimites[idSalao] = atingido;
-                        if (atingido)
-                        {
-                            _logger.LogWarning($"Limite de envios atingido para o Salão {idSalao} ({used}/{limit}).");
-                        }
+                        _lembreteHandler.VerificarLimiteEmail(idSalao, out int enviadosDb, out int limite);
+                        cacheDbInfo[idSalao] = (enviadosDb, limite);
                     }
 
-                    if (cacheLimites[idSalao])
+                    var dbInfo = cacheDbInfo[idSalao];
+                    int enviadosAgora = localEnvios.ContainsKey(idSalao) ? localEnvios[idSalao] : 0;
+                    int totalEnviados = dbInfo.EnviadosDb + enviadosAgora;
+
+                    // 2. Verificar se o limite foi atingido (considerando DB + Local)
+                    if (totalEnviados >= dbInfo.Limite)
                     {
-                        _logger.LogInformation($"Skipping lembrete {lembrete.IdLembrete} due to email limit.");
+                        // Log apenas na primeira vez que exceder neste batch para não spammar
+                        if (enviadosAgora == 0 || (totalEnviados == dbInfo.Limite)) 
+                        {
+                            _logger.LogWarning($"Limite de envios atingido para o Salão {idSalao} ({totalEnviados}/{dbInfo.Limite}). Marcando lembrete {lembrete.IdLembrete} como 'FaltaCredito'.");
+                        }
+                        
+                        string infoDestino = dados.TipoLembrete == "SMS" ? dados.TelefoneCliente : dados.EmailCliente;
+                        _lembreteHandler.RegistrarLogEnvio(lembrete.IdLembrete, (int)lembrete.IdAgendamento, infoDestino, dados.TipoLembrete == "SMS" ? "SMS" : dados.AssuntoModelo, "Falha", "Falta de Crédito", dados.TipoLembrete ?? "Email", dados.TipoLembrete == "SMS" ? dados.TelefoneCliente : null);
+                        
+                        // Atualiza o status para não tentar enviar novamente depois (mesmo se o limite renovar)
+                        _lembreteHandler.AtualizarStatusLembrete(lembrete.IdLembrete, "FaltaCredito");
                         continue; 
                     }
 
-                    string assunto = dados.AssuntoModelo ?? $"Lembrete de Agendamento - {dados.NomeSalao}";
-                    string corpo = dados.CorpoModelo ?? "<p>Olá, este é um lembrete do seu agendamento.</p>";
-                    
-                    corpo = corpo.Replace("{NomeCliente}", dados.NomeCliente)
-                                 .Replace("{DataHora}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
-                                 .Replace("{Servico}", dados.NomeServico)
-                                 .Replace("{Profissional}", dados.NomeProfissional);
+                    bool enviado = false;
+                    string erroApi = null;
+                    string tipoEnvio = dados.TipoLembrete ?? "Email";
+                    string destino = tipoEnvio == "SMS" ? dados.TelefoneCliente : dados.EmailCliente;
 
-                    bool enviado = await _emailService.EnviarEmailGenericoAsync(dados.EmailCliente, dados.NomeCliente, assunto, corpo);
+                    if (tipoEnvio == "SMS")
+                    {
+                         string conteudo = dados.CorpoModelo ?? $"Lembrete: {dados.NomeServico} em {dados.DataHoraAgendamento:dd/MM HH:mm}";
+                         conteudo = conteudo.Replace("{NomeCliente}", dados.NomeCliente)
+                                            .Replace("{DataHora}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
+                                            .Replace("{Servico}", dados.NomeServico)
+                                            .Replace("{Profissional}", dados.NomeProfissional);
 
-                    RegistrarLogEnvio(lembrete.IdLembrete, (int)lembrete.IdAgendamento, dados.EmailCliente, assunto, enviado ? "Sucesso" : "ErroEnvio");
-                    AtualizarStatusLembrete(lembrete.IdLembrete, enviado ? "Enviado" : "ErroEnvio");
+                         (enviado, erroApi) = await _smsService.EnviarSmsAsync(dados.TelefoneCliente, conteudo);
+                    }
+                    else // Email
+                    {
+                        string assunto = dados.AssuntoModelo ?? $"Lembrete de Agendamento - {dados.NomeSalao}";
+                        string corpo = dados.CorpoModelo ?? "<p>Olá, este é um lembrete do seu agendamento.</p>";
+                        
+                        corpo = corpo.Replace("{NomeCliente}", dados.NomeCliente)
+                                     .Replace("{DataHora}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
+                                     .Replace("{Servico}", dados.NomeServico)
+                                     .Replace("{Profissional}", dados.NomeProfissional);
+
+                        (enviado, erroApi) = await _emailService.EnviarEmailGenericoAsync(dados.EmailCliente, dados.NomeCliente, assunto, corpo);
+                    }
+
+                    _lembreteHandler.RegistrarLogEnvio(lembrete.IdLembrete, (int)lembrete.IdAgendamento, destino, tipoEnvio == "SMS" ? "SMS" : dados.AssuntoModelo, enviado ? "Sucesso" : "ErroEnvio", erroApi, tipoEnvio, tipoEnvio == "SMS" ? dados.TelefoneCliente : null);
+
+
+                    _lembreteHandler.AtualizarStatusLembrete(lembrete.IdLembrete, enviado ? "Enviado" : "ErroEnvio");
                     
-                    if (enviado) enviados++;
+                    if (enviado) 
+                    {
+                        enviados++;
+                        // Incrementar contador local
+                        if (localEnvios.ContainsKey(idSalao))
+                            localEnvios[idSalao]++;
+                        else
+                            localEnvios[idSalao] = 1;
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"Erro ao enviar lembrete {lembrete.IdLembrete}");
-                    RegistrarLogEnvio(lembrete.IdLembrete, (int)lembrete.IdAgendamento, "Desconhecido", "Erro no processamento", "ErroExcecao", ex.Message);
-                    AtualizarStatusLembrete(lembrete.IdLembrete, "ErroExcecao");
+                    _lembreteHandler.RegistrarLogEnvio(lembrete.IdLembrete, (int)lembrete.IdAgendamento, "Desconhecido", "Erro no processamento", "ErroExcecao", ex.Message, "Email", null);
+                    _lembreteHandler.AtualizarStatusLembrete(lembrete.IdLembrete, "ErroExcecao");
                 }
             }
             return enviados;
-        }
-
-        private List<dynamic> ObterLembretesPendentes()
-        {
-            var lista = new List<dynamic>();
-            string query = @"SELECT IdLembrete, IdAgendamento FROM CorteCor_LembreteAgendado 
-                             WHERE Status = 'Pendente' AND DataEnvioProgramada <= @Agora";
-
-            using (var connection = _dbHandler.GetConnection())
-            using (var command = connection.CreateCommand(query))
-            {
-                command.AddWithValue("@Agora", DateTime.Now);
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        lista.Add(new { IdLembrete = (int)reader["IdLembrete"], IdAgendamento = (int)reader["IdAgendamento"] });
-                    }
-                }
-            }
-            return lista;
-        }
-
-        private dynamic ObterDadosEnvio(int idLembrete)
-        {
-            string query = @"
-                SELECT 
-                    P.Nome AS NomeCliente, P.Email AS EmailCliente,
-                    A.DataHora AS DataHoraAgendamento,
-                    S.Nome AS NomeServico,
-                    F.Nome AS NomeProfissional,
-                    TS.Nome AS NomeSalao, TS.IdSalao,
-                    M.Assunto, M.CorpoHTML
-                FROM CorteCor_LembreteAgendado LA
-                JOIN CorteCor_Agendamento A ON LA.IdAgendamento = A.IdAgendamento
-                JOIN CorteCor_Pessoa P ON A.IdPessoa = P.IdPessoa
-                JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
-                JOIN CorteCor_Funcionario F ON A.IdFuncionario = F.IdFuncionario
-                JOIN CorteCor_LembreteConfig C ON LA.IdConfig = C.IdConfig
-                LEFT JOIN CorteCor_ModeloEmail M ON C.IdModeloEmail = M.IdModelo
-                LEFT JOIN CorteCor_Salao TS ON S.IdSalao = TS.IdSalao
-                WHERE LA.IdLembrete = @IdLembrete";
-
-            using (var connection = _dbHandler.GetConnection())
-            using (var command = connection.CreateCommand(query))
-            {
-                command.AddWithValue("@IdLembrete", idLembrete);
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new
-                        {
-                            NomeCliente = reader["NomeCliente"].ToString(),
-                            EmailCliente = reader["EmailCliente"].ToString(),
-                            DataHoraAgendamento = Convert.ToDateTime(reader["DataHoraAgendamento"]),
-                            NomeServico = reader["NomeServico"].ToString(),
-                            NomeProfissional = reader["NomeProfissional"].ToString(),
-                            NomeSalao = reader["NomeSalao"] is DBNull ? "Salão" : reader["NomeSalao"].ToString(),
-                            IdSalao = Convert.ToInt32(reader["IdSalao"]),
-                            AssuntoModelo = reader["Assunto"] is DBNull ? null : reader["Assunto"].ToString(),
-                            CorpoModelo = reader["CorpoHTML"] is DBNull ? null : reader["CorpoHTML"].ToString()
-                        };
-                    }
-                }
-            }
-            return null;
-        }
-
-        private void AtualizarStatusLembrete(int idLembrete, string status)
-        {
-            string query = @"UPDATE CorteCor_LembreteAgendado SET Status = @Status, DataEnvioReal = @Data WHERE IdLembrete = @Id";
-            using (var connection = _dbHandler.GetConnection())
-            using (var command = connection.CreateCommand(query))
-            {
-                command.AddWithValue("@Status", status);
-                command.AddWithValue("@Data", DateTime.Now);
-                command.AddWithValue("@Id", idLembrete);
-                command.ExecuteNonQuery();
-            }
-        }
-
-        private void RegistrarLogEnvio(int idLembrete, int idAgendamento, string destinatario, string assunto, string status, string mensagemErro = null)
-        {
-            try
-            {
-                string query = @"INSERT INTO CorteCor_LogEnvioEmail (IdLembrete, IdAgendamento, DataEnvio, Destinatario, Assunto, Status, MensagemErro)
-                                 VALUES (@IdLembrete, @IdAgendamento, @DataEnvio, @Destinatario, @Assunto, @Status, @MensagemErro)";
-                
-                using (var connection = _dbHandler.GetConnection())
-                using (var command = connection.CreateCommand(query))
-                {
-                    command.AddWithValue("@IdLembrete", idLembrete);
-                    command.AddWithValue("@IdAgendamento", idAgendamento);
-                    command.AddWithValue("@DataEnvio", DateTime.Now);
-                    command.AddWithValue("@Destinatario", destinatario ?? "");
-                    command.AddWithValue("@Assunto", assunto ?? "");
-                    command.AddWithValue("@Status", status);
-                    command.AddWithValue("@MensagemErro", mensagemErro ?? (object)DBNull.Value);
-                    command.ExecuteNonQuery();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao registrar log de envio de e-mail.");
-            }
         }
     }
 }

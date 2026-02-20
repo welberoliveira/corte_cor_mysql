@@ -1,0 +1,53 @@
+@page
+@model CorteCor.Pages.ModeloSMSCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Modelo de SMS";
+}
+
+<div class="container">
+    <h4>Cadastro de Modelo de SMS</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info">@Model.Mensagem</div>
+    }
+
+    <form method="post">
+        <input type="hidden" asp-for="Modelo.IdModelo" />
+        <input type="hidden" asp-for="Modelo.IdSalao" />
+
+        <div class="form-group">
+            <label asp-for="Modelo.TipoEvento">Tipo de Evento</label>
+            <select asp-for="Modelo.TipoEvento" class="form-control" asp-items="Model.EventosOptions"></select>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Modelo.Conteudo">Conteúdo do SMS</label>
+            <textarea asp-for="Modelo.Conteudo" class="form-control" rows="5" maxlength="300" oninput="updateCounter()" required></textarea>
+            <div class="d-flex justify-content-between">
+                <small class="form-text text-muted">Variáveis disponíveis: {NomeCliente}, {DataAgendamento}, {NomeServico}, {NomeFuncionario}</small>
+                <small class="text-muted" id="charCounter">0/300</small>
+            </div>
+        </div>
+
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" asp-for="Modelo.Ativo" />
+            <label class="form-check-label" asp-for="Modelo.Ativo">Ativo</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="/ModeloSMSLista" class="btn btn-secondary">Voltar</a>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function updateCounter() {
+            var content = document.getElementById('Modelo_Conteudo').value;
+            document.getElementById('charCounter').innerText = content.length + '/300';
+        }
+        
+        // Init counter
+        updateCounter();
+    </script>
+}

@@ -1,0 +1,161 @@
+@page
+@model CorteCor.Pages.Configuracoes.FornecedoresEmailModel
+@{
+    ViewData["Title"] = "Fornecedores de Email";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Fornecedores de Email</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item active">Fornecedores de Email</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table me-1"></i>
+            Lista de Fornecedores
+            <button type="button" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#modalFornecedor" onclick="limparFormulario()">
+                <i class="fas fa-plus"></i> Novo Fornecedor
+            </button>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Endpoint</th>
+                        <th>Remetente</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Fornecedores)
+                    {
+                        <tr>
+                            <td>@item.Nome</td>
+                            <td>@item.Endpoint</td>
+                            <td>@item.RemetenteNome &lt;@item.RemetenteEmail&gt;</td>
+                            <td>
+                                @if (item.Ativo)
+                                {
+                                    <span class="badge bg-success">Ativo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inativo</span>
+                                    <form method="post" asp-page-handler="Ativar" asp-route-id="@item.IdFornecedor" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar este fornecedor">
+                                            <i class="fas fa-check"></i> Ativar
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" onclick='editar(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(item)))'>
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <form method="post" asp-page-handler="Excluir" asp-route-id="@item.IdFornecedor" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalFornecedor" tabindex="-1" aria-labelledby="modalFornecedorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalFornecedorLabel">Fornecedor de Email</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="IdFornecedor" name="IdFornecedor" value="0" />
+                    
+                    <div class="mb-3">
+                        <label for="Nome" class="form-label">Nome do Fornecedor</label>
+                        <input type="text" class="form-control" id="Nome" name="Nome" required />
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                             <label for="ApiKey" class="form-label">API Key</label>
+                             <input type="text" class="form-control" id="ApiKey" name="ApiKey" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                             <label for="ApiSecret" class="form-label">API Secret (Opcional)</label>
+                             <input type="text" class="form-control" id="ApiSecret" name="ApiSecret" />
+                        </div>
+                    </div>
+
+                     <div class="mb-3">
+                        <label for="Endpoint" class="form-label">Endpoint URL</label>
+                        <input type="text" class="form-control" id="Endpoint" name="Endpoint" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                             <label for="RemetenteNome" class="form-label">Nome do Remetente</label>
+                             <input type="text" class="form-control" id="RemetenteNome" name="RemetenteNome" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                             <label for="RemetenteEmail" class="form-label">Email do Remetente</label>
+                             <input type="email" class="form-control" id="RemetenteEmail" name="RemetenteEmail" />
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="Ativo" name="Ativo" value="true">
+                        <label class="form-check-label" for="Ativo">
+                            Definir como Ativo
+                        </label>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function limparFormulario() {
+        document.getElementById('IdFornecedor').value = "0";
+        document.getElementById('Nome').value = "";
+        document.getElementById('ApiKey').value = "";
+        document.getElementById('ApiSecret').value = "";
+        document.getElementById('Endpoint').value = "";
+        document.getElementById('RemetenteNome').value = "";
+        document.getElementById('RemetenteEmail').value = "";
+        document.getElementById('Ativo').checked = false;
+        document.getElementById('modalFornecedorLabel').innerText = "Novo Fornecedor";
+    }
+
+    function editar(item) {
+        document.getElementById('IdFornecedor').value = item.IdFornecedor;
+        document.getElementById('Nome').value = item.Nome;
+        document.getElementById('ApiKey').value = item.ApiKey;
+        document.getElementById('ApiSecret').value = item.ApiSecret;
+        document.getElementById('Endpoint').value = item.Endpoint;
+        document.getElementById('RemetenteNome').value = item.RemetenteNome;
+        document.getElementById('RemetenteEmail').value = item.RemetenteEmail;
+        document.getElementById('Ativo').checked = item.Ativo;
+        document.getElementById('modalFornecedorLabel').innerText = "Editar Fornecedor";
+        
+        var myModal = new bootstrap.Modal(document.getElementById('modalFornecedor'));
+        myModal.show();
+    }
+</script>

@@ -101,32 +101,34 @@
                         </td>
                         <td>@p.Tipo</td>
                         <td>
-                            @if (!string.IsNullOrEmpty(p.CheckoutUrl) && p.Status == "pending")
-                            {
-                                <a href="@p.CheckoutUrl" target="_blank" class="btn btn-sm btn-success" title="Pagar">
-                                    <i class="fas fa-money-bill-wave"></i>
+                            <div class="actions">
+                                @if (!string.IsNullOrEmpty(p.CheckoutUrl) && p.Status == "pending")
+                                {
+                                    <a href="@p.CheckoutUrl" target="_blank" class="btn btn-sm btn-success" title="Pagar">
+                                        <i class="fas fa-money-bill-wave"></i> Pagar
+                                    </a>
+                                }
+                                
+                                <form method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@p.IdPagamento">
+                                    <input type="hidden" name="action" value="sincronizar">
+                                    <button type="submit" class="btn btn-sm btn-info" title="Sincronizar Status">
+                                        <i class="fas fa-sync"></i> Sincronizar
+                                    </button>
+                                </form>
+
+                                <a href="/PagamentoCadastro?id=@p.IdPagamento" class="btn btn-sm btn-primary" title="Editar">
+                                    <i class="fas fa-edit"></i> Editar
                                 </a>
-                            }
-                            
-                            <form method="post" class="d-inline">
-                                <input type="hidden" name="id" value="@p.IdPagamento">
-                                <input type="hidden" name="action" value="sincronizar">
-                                <button type="submit" class="btn btn-sm btn-info" title="Sincronizar Status">
-                                    <i class="fas fa-sync"></i>
-                                </button>
-                            </form>
 
-                            <a href="/PagamentoCadastro?id=@p.IdPagamento" class="btn btn-sm btn-primary" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-
-                            <form method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir?');">
-                                <input type="hidden" name="id" value="@p.IdPagamento">
-                                <input type="hidden" name="action" value="excluir">
-                                <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+                                <form method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                                    <input type="hidden" name="id" value="@p.IdPagamento">
+                                    <input type="hidden" name="action" value="excluir">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 }
