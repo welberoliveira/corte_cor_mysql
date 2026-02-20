@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using CorteCor.Models;
+using CorteCor.Handlers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
@@ -72,15 +74,16 @@ namespace CorteCor.Pages
             if (id > 0)
             {
                 handler.Atualizar(servico);
-                Mensagem = "Servi�o atualizado com sucesso!";
+                Mensagem = "Servi?o atualizado com sucesso!";
             }
             else
             {
                 id = handler.CadastrarServico(servico);
-                Mensagem = "Servi�o cadastrado com sucesso!";
+                Mensagem = "Servi?o cadastrado com sucesso!";
             }
 
             OnGet(id > 0 ? id : (int?)null);
         }
     }
 }
+

@@ -1,8 +1,9 @@
 using System.Text;
 using System.Text.Json;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.Configuration;
 
-namespace CorteCor;
+namespace CorteCor.Services;
 
 public class MercadoPagoService
 {

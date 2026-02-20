@@ -1,9 +1,9 @@
 using System.Data;
 using System.Data.SqlClient;
 using Dapper;
-using static CorteCor.Models;
+using CorteCor.Models;
 
-namespace CorteCor
+namespace CorteCor.Handlers
 {
     public class FornecedoresHandler
     {
@@ -23,7 +23,7 @@ namespace CorteCor
             return conn.Query<FornecedorEmail>("SELECT * FROM CorteCor_FornecedoresEmail");
         }
 
-        public FornecedorEmail ObterEmailAtivo()
+        public virtual FornecedorEmail ObterEmailAtivo()
         {
             using var conn = GetConnection();
             return conn.QueryFirstOrDefault<FornecedorEmail>("SELECT * FROM CorteCor_FornecedoresEmail WHERE Ativo = 1");
@@ -83,7 +83,7 @@ namespace CorteCor
             return conn.Query<FornecedorSMS>("SELECT * FROM CorteCor_FornecedoresSMS");
         }
 
-        public FornecedorSMS ObterSMSAtivo()
+        public virtual FornecedorSMS ObterSMSAtivo()
         {
             using var conn = GetConnection();
             return conn.QueryFirstOrDefault<FornecedorSMS>("SELECT * FROM CorteCor_FornecedoresSMS WHERE Ativo = 1");
@@ -141,6 +141,12 @@ namespace CorteCor
             return conn.Query<FornecedorWhatsapp>("SELECT * FROM CorteCor_FornecedoresWhatsapp");
         }
 
+        public virtual FornecedorWhatsapp ObterWhatsappAtivo()
+        {
+            using var conn = GetConnection();
+            return conn.QueryFirstOrDefault<FornecedorWhatsapp>("SELECT * FROM CorteCor_FornecedoresWhatsapp WHERE Ativo = 1");
+        }
+
         public FornecedorWhatsapp ObterWhatsappPorId(int id)
         {
             using var conn = GetConnection();
@@ -187,3 +193,4 @@ namespace CorteCor
         #endregion
     }
 }
+

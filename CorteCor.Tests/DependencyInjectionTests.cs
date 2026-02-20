@@ -1,3 +1,4 @@
+using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,8 +6,10 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using CorteCor.Handlers;
 using Xunit;
 using CorteCor;
+using CorteCor.Services;
 using Moq;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Hosting;
@@ -51,15 +54,16 @@ namespace CorteCor.Tests
                         services.AddScoped<ModeloSMSHandler>();
                         services.AddScoped<MeioPagamentoHandler>();
                         services.AddHttpClient<BrevoEmailService>();
+                        services.AddHttpClient<SMSMarketService>();
                         
                         // Critical Fix Verification: Register ILembreteHandler -> LembreteHandler
                         services.AddScoped<ILembreteHandler, LembreteHandler>();
                         services.AddScoped<LembreteService>();
                         services.AddScoped<FornecedoresHandler>();
-                        services.AddHostedService<CorteCor.Pages.Webhooks.LembreteBackgroundService>();
+                        services.AddHostedService<LembreteBackgroundService>();
 
                         // Manually register PageModels since we don't have MapRazorPages logic here
-                        var assembly = typeof(CorteCor.LembreteService).Assembly;
+                        var assembly = typeof(LembreteService).Assembly;
                         var pageModels = assembly.GetTypes()
                             .Where(t => t.IsSubclassOf(typeof(PageModel)) && !t.IsAbstract)
                             .ToList();
@@ -76,7 +80,7 @@ namespace CorteCor.Tests
             using var scope = host.Services.CreateScope();
             var serviceProvider = scope.ServiceProvider;
 
-            var assemblyToTest = typeof(CorteCor.LembreteService).Assembly;
+            var assemblyToTest = typeof(LembreteService).Assembly;
             var pageModelTypes = assemblyToTest.GetTypes()
                 .Where(t => t.IsSubclassOf(typeof(PageModel)) && !t.IsAbstract)
                 .ToList();
@@ -102,3 +106,4 @@ namespace CorteCor.Tests
         }
     }
 }
+

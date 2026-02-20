@@ -1,3 +1,5 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Xunit;
 using Moq;
 using CorteCor;
@@ -22,9 +24,9 @@ namespace CorteCor.Tests
         {
             // Arrange
             var mockHandler = new Mock<MeioPagamentoHandler>((IDatabaseHandler)null);
-            var meios = new List<Models.MeioPagamento>
+            var meios = new List<MeioPagamento>
             {
-                new Models.MeioPagamento { IdMeioPagamento = 1, Gateway = gatewayName, Ativo = true }
+                new MeioPagamento { IdMeioPagamento = 1, Gateway = gatewayName, Ativo = true }
             };
 
             mockHandler.Setup(h => h.ListarPorSalao(It.IsAny<int>(), It.IsAny<bool?>()))
@@ -48,3 +50,4 @@ namespace CorteCor.Tests
         }
     }
 }
+

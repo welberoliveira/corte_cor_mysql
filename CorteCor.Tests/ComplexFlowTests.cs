@@ -1,7 +1,10 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Xunit;
 using Moq;
 using CorteCor;
-using static CorteCor.Models;
+using CorteCor.Services;
+
 using System.Data;
 using System.Collections.Generic;
 using System;
@@ -80,3 +83,4 @@ namespace CorteCor.Tests
         // If there was a Service method coordinating this, we would test that Service method here.
     }
 }
+

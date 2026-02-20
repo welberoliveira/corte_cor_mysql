@@ -1,13 +1,16 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
+using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Threading.Tasks;
-using static CorteCor.Models;
+using System.Linq;
 
-namespace CorteCor
+
+namespace CorteCor.Services
 {
     public class BrevoEmailService
     {
@@ -194,3 +197,4 @@ namespace CorteCor
         }
     }
 }
+

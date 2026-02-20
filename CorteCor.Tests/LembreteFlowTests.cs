@@ -1,10 +1,13 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using Moq;
+using CorteCor.Handlers;
 using Xunit;
 using CorteCor;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Tests
 {
@@ -146,3 +149,4 @@ namespace CorteCor.Tests
         }
     }
 }
+

@@ -1,8 +1,9 @@
+using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
 using System.Data.SqlClient;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {

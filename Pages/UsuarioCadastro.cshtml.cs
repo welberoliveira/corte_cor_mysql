@@ -1,9 +1,12 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System.Text;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
@@ -109,3 +112,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
+

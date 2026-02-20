@@ -1,5 +1,8 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System.Collections.Generic;
 using System.Security.Claims;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +14,7 @@ namespace CorteCor.Pages
     {
         private readonly ILembreteHandler _handler;
 
-        public List<Models.LembreteConfig> Configs { get; set; } = new List<Models.LembreteConfig>();
+        public List<LembreteConfig> Configs { get; set; } = new List<LembreteConfig>();
         [TempData]
         public string Mensagem { get; set; }
 
@@ -41,3 +44,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

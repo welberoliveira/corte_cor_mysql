@@ -1,13 +1,18 @@
-Ôªøusing System;
+using CorteCor.Logs;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Net.Mail;
 using System.Net;
-using static CorteCor.Models;
+using CorteCor.Models;
 using CorteCor;
+using CorteCor.Services;
 using System.Data;
 using System.Security.Claims;
 using Microsoft.Extensions.Caching.Memory;
+
+namespace CorteCor.Handlers
+{
 
 public abstract class EntityHandler<T>
 {
@@ -54,7 +59,7 @@ public class UsuarioHandler : EntityHandler<Usuario>
             command.AddWithValue("@Senha", Usuario.Senha);
             command.AddWithValue("@IdSalao", Usuario.IdSalao);
 
-            object result = command.ExecuteScalar(); // Obt√©m o ID gerado
+            object result = command.ExecuteScalar(); // ObtÈm o ID gerado
             if (result != null && int.TryParse(result.ToString(), out int id))
             {
                 novoId = id;
@@ -292,7 +297,7 @@ public class LoginManager
         }
         catch (Exception ex)
         {
-            // Tratar a exce√ß√£o conforme necess√°rio.
+            // Tratar a exceÁ„o conforme necess·rio.
         }
     }
 }
@@ -1149,7 +1154,7 @@ public class FuncionarioHandler : EntityHandler<Funcionario>
 
     public override void AtivarDesativar(int id, bool ativar)
     {
-        throw new NotSupportedException("CorteCor_Funcionario n√£o possui campo Status.");
+        throw new NotSupportedException("CorteCor_Funcionario n„o possui campo Status.");
     }
 
     public override void Cadastrar(Funcionario entity)
@@ -1320,10 +1325,10 @@ public class ServicoHandler : EntityHandler<Servico>
         }
     }
 
-    // Esta tabela n√É¬£o tem Status. Mantive o m√É¬©todo para bater com a base EntityHandler<T>.
+    // Esta tabela n√£o tem Status. Mantive o m√©todo para bater com a base EntityHandler<T>.
     public override void AtivarDesativar(int id, bool ativar)
     {
-        throw new NotSupportedException("CorteCor_Servico n√É¬£o possui campo Status.");
+        throw new NotSupportedException("CorteCor_Servico n√£o possui campo Status.");
     }
 
     public override void Cadastrar(Servico entity)
@@ -1337,7 +1342,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
 {
     public FuncionarioServicoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
     /// <summary>
-    /// Vincula um servi√ßo a um funcion√°rio (N:N).
+    /// Vincula um serviÁo a um funcion·rio (N:N).
     /// </summary>
     public virtual void Vincular(int idFuncionario, int idServico)
     {
@@ -1355,7 +1360,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     }
 
     /// <summary>
-    /// Remove o v√≠nculo entre um funcion√°rio e um servi√ßo.
+    /// Remove o vÌnculo entre um funcion·rio e um serviÁo.
     /// </summary>
     public virtual void Desvincular(int idFuncionario, int idServico)
     {
@@ -1373,7 +1378,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     }
 
     /// <summary>
-    /// Lista todos os v√≠nculos (N:N).
+    /// Lista todos os vÌnculos (N:N).
     /// </summary>
     public override List<FuncionarioServico> Listar()
     {
@@ -1402,7 +1407,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     }
 
     /// <summary>
-    /// Lista os servi√ßos vinculados a um funcion√°rio (retorna apenas os IDs).
+    /// Lista os serviÁos vinculados a um funcion·rio (retorna apenas os IDs).
     /// </summary>
     public virtual List<int> ListarServicosDoFuncionario(int idFuncionario)
     {
@@ -1432,7 +1437,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     }
 
     /// <summary>
-    /// Lista os funcion√°rios vinculados a um servi√ßo (retorna apenas os IDs).
+    /// Lista os funcion·rios vinculados a um serviÁo (retorna apenas os IDs).
     /// </summary>
     public virtual List<int> ListarFuncionariosDoServico(int idServico)
     {
@@ -1462,7 +1467,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     }
 
     /// <summary>
-    /// Remove todos os v√≠nculos de um funcion√°rio.
+    /// Remove todos os vÌnculos de um funcion·rio.
     /// </summary>
     public void LimparServicosDoFuncionario(int idFuncionario)
     {
@@ -1477,7 +1482,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
     }
 
     /// <summary>
-    /// Remove todos os v√≠nculos de um servi√ßo.
+    /// Remove todos os vÌnculos de um serviÁo.
     /// </summary>
     public void LimparFuncionariosDoServico(int idServico)
     {
@@ -1491,20 +1496,20 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         }
     }
 
-    // M√©todos do EntityHandler<T> que n√£o fazem sentido aqui (n√£o h√° PK √∫nica nem Status).
+    // MÈtodos do EntityHandler<T> que n„o fazem sentido aqui (n„o h· PK ˙nica nem Status).
     public override void Excluir(int id)
     {
-        throw new NotSupportedException("Use Desvincular() ou Limpar... para remover v√≠nculos.");
+        throw new NotSupportedException("Use Desvincular() ou Limpar... para remover vÌnculos.");
     }
 
     public override void AtivarDesativar(int id, bool ativar)
     {
-        throw new NotSupportedException("CorteCor_Funcionario_Servico n√£o possui campo Status.");
+        throw new NotSupportedException("CorteCor_Funcionario_Servico n„o possui campo Status.");
     }
 
     public override void Cadastrar(FuncionarioServico entity)
     {
-        // Mantive o padr√£o da base, mas aqui o ideal √© chamar Vincular().
+        // Mantive o padr„o da base, mas aqui o ideal È chamar Vincular().
         Vincular(entity.IdFuncionario, entity.IdServico);
     }
 
@@ -1522,7 +1527,7 @@ public class FuncionarioServicoHandler : EntityHandler<FuncionarioServico>
         }
     }
 
-    // (opcional, mas voc√™ j√° est√° usando no PageModel)
+    // (opcional, mas vocÍ j· est· usando no PageModel)
     public List<FuncionarioServico> ListarPorFuncionario(int idFuncionario)
     {
         string query = @"
@@ -1830,7 +1835,7 @@ public class PessoaHandler : EntityHandler<Pessoa>
 
     public override void AtivarDesativar(int id, bool ativar)
     {
-        throw new NotSupportedException("CorteCor_Pessoa n√£o possui campo Status.");
+        throw new NotSupportedException("CorteCor_Pessoa n„o possui campo Status.");
     }
 
     public override void Cadastrar(Pessoa entity)
@@ -2092,7 +2097,7 @@ public class AgendamentoHandler : EntityHandler<Agendamento>
 
     public override void AtivarDesativar(int id, bool ativar)
     {
-        // Como "Status" √© livre, padronizei:
+        // Como "Status" È livre, padronizei:
         // ativar = "Agendado"
         // desativar = "Cancelado"
         string status = ativar ? "Agendado" : "Cancelado";
@@ -2580,7 +2585,7 @@ public class PagamentoHandler : EntityHandler<Pagamento>
 
     public virtual void CadastrarPagamento(Pagamento pagamento)
     {
-        // Desativa pagamentos anteriores para evitar erro no √É¬≠ndice √É¬∫nico (UX_CorteCor_Pagamento_Agendamento_Ativo)
+        // Desativa pagamentos anteriores para evitar erro no √≠ndice √∫nico (UX_CorteCor_Pagamento_Agendamento_Ativo)
         string deactivateQuery = "UPDATE CorteCor_Pagamento SET Ativo = 0 WHERE IdAgendamento = @IdAgendamento AND Ativo = 1;";
         
         string insertQuery = @"
@@ -2895,20 +2900,20 @@ public class PagamentoHandler : EntityHandler<Pagamento>
         pagamento.MpStatus = mpPayment.Status;
         pagamento.MpStatusDetail = mpPayment.StatusDetail;
         
-        // L√É¬≥gica de atualiza√É¬ß√É¬£o de status baseada na resposta da API
+        // L√≥gica de atualiza√ß√£o de status baseada na resposta da API
         if (mpPayment.Status == "approved")
         {
             pagamento.Status = "Pago";
             pagamento.PagoEm = mpPayment.DateApproved ?? DateTime.UtcNow;
             
-            // Atualiza tamb√É¬©m o agendamento
+            // Atualiza tamb√©m o agendamento
             var agHandler = new AgendamentoHandler();
             agHandler.AtualizarStatus(pagamento.IdAgendamento, "Pago");
         }
         else if (mpPayment.Status == "cancelled" || mpPayment.Status == "rejected")
         {
             // Se foi rejeitado ou cancelado, marcamos este pagamento como inativo/cancelado
-            // mas N√É∆íO cancelamos o agendamento, permitindo nova tentativa.
+            // mas N√ÉO cancelamos o agendamento, permitindo nova tentativa.
             pagamento.Status = "Cancelado";
             pagamento.Ativo = false; 
         }
@@ -3216,7 +3221,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
                             DataHoraAgendamento = Convert.ToDateTime(reader["DataHoraAgendamento"]),
                             NomeServico = reader["NomeServico"].ToString(),
                             NomeProfissional = reader["NomeProfissional"].ToString(),
-                            NomeSalao = reader["NomeSalao"] is DBNull ? "Sal√£o" : reader["NomeSalao"].ToString(),
+                            NomeSalao = reader["NomeSalao"] is DBNull ? "Sal„o" : reader["NomeSalao"].ToString(),
                             IdSalao = Convert.ToInt32(reader["IdSalao"]),
                             TipoLembrete = reader["TipoLembrete"] is DBNull ? "Email" : reader["TipoLembrete"].ToString()
                         };
@@ -3309,12 +3314,12 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
                     if (config.TipoLembrete == "Email")
                 {
                     var val = reader["AssuntoModeloEmail"];
-                    config.AssuntoModelo = (val == null || val is DBNull) ? "Padr√£o" : val.ToString() ?? "Padr√£o";
+                    config.AssuntoModelo = (val == null || val is DBNull) ? "Padr„o" : val.ToString() ?? "Padr„o";
                 }
                 else
                 {
                     var val = reader["ConteudoModeloSMS"];
-                    config.AssuntoModelo = (val == null || val is DBNull) ? "Padr√£o" : "SMS Personalizado";
+                    config.AssuntoModelo = (val == null || val is DBNull) ? "Padr„o" : "SMS Personalizado";
                 }
 
                     lista.Add(config);
@@ -3389,7 +3394,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
     {
         using (var connection = _dbHandler.GetConnection())
         {
-            // 1. Excluir lembretes agendados associados a esta configura√ß√£o
+            // 1. Excluir lembretes agendados associados a esta configuraÁ„o
             string deleteLembretesQuery = "DELETE FROM CorteCor_LembreteAgendado WHERE IdConfig = @IdConfig AND Status = 'Pendente'";
             using (var command = connection.CreateCommand(deleteLembretesQuery))
             {
@@ -3397,7 +3402,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
                 command.ExecuteNonQuery();
             }
 
-            // 2. Excluir a configura√ß√£o
+            // 2. Excluir a configuraÁ„o
             string deleteConfigQuery = "DELETE FROM CorteCor_LembreteConfig WHERE IdConfig = @IdConfig";
             using (var command = connection.CreateCommand(deleteConfigQuery))
             {
@@ -3420,7 +3425,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
 
     public void GerarLembretes(int idAgendamento)
     {
-        // 0. Limpar lembretes pendentes antigos para evitar duplicidade ou inconsist√™ncia
+        // 0. Limpar lembretes pendentes antigos para evitar duplicidade ou inconsistÍncia
         ExcluirLembretesPendentes(idAgendamento);
 
         DateTime dataAgendamento;
@@ -3441,7 +3446,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
             {
                 if (!reader.Read()) 
                 {
-                     Console.WriteLine($"[LembreteHandler] Agendamento {idAgendamento} n√£o encontrado ou sem servi√ßo vinculado.");
+                     Console.WriteLine($"[LembreteHandler] Agendamento {idAgendamento} n„o encontrado ou sem serviÁo vinculado.");
                      return;
                 }
                 dataAgendamento = Convert.ToDateTime(reader["DataHora"]);
@@ -3470,10 +3475,10 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
                 else if (config.AntecedenciaUnidade == "Minutos")
                     dataEnvio = dataEnvio.AddMinutes(-config.AntecedenciaValor);
 
-                // L√≥gica de agendamento:
+                // LÛgica de agendamento:
                 // 1. Se DataEnvio > Agora -> Agendar para DataEnvio (Normal)
-                // 2. Se DataEnvio <= Agora mas DataAgendamento > Agora -> Agendar para Agora (Lembrete imediato para agendamento de √∫ltima hora)
-                // 3. Se DataAgendamento <= Agora -> N√£o agendar (Evento j√° ocorreu)
+                // 2. Se DataEnvio <= Agora mas DataAgendamento > Agora -> Agendar para Agora (Lembrete imediato para agendamento de ˙ltima hora)
+                // 3. Se DataAgendamento <= Agora -> N„o agendar (Evento j· ocorreu)
 
                 if (dataEnvio > DateTime.Now)
                 {
@@ -3497,7 +3502,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
                         command.AddWithValue("@DataEnvio", dataEnvioImediato);
                         command.ExecuteNonQuery();
                     }
-                    Console.WriteLine($"[LembreteHandler] Prazo de anteced√™ncia passou, mas evento √© futuro. Agendado para envio IMEDIATO ({dataEnvioImediato}).");
+                    Console.WriteLine($"[LembreteHandler] Prazo de antecedÍncia passou, mas evento È futuro. Agendado para envio IMEDIATO ({dataEnvioImediato}).");
                 }
             }
         }
@@ -3505,7 +3510,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
 
     public void AplicarRegraRetroativa(int idConfig)
     {
-        // 1. Obter a configura√ß√£o
+        // 1. Obter a configuraÁ„o
         LembreteConfig config = null;
         string queryConfig = "SELECT * FROM CorteCor_LembreteConfig WHERE IdConfig = @Id";
         using (var connection = _dbHandler.GetConnection())
@@ -3532,11 +3537,11 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
 
         if (config == null || !config.Ativo) return;
 
-        // 2. Buscar agendamentos que atendem √† regra:
+        // 2. Buscar agendamentos que atendem ‡ regra:
         // - Ativos
-        // - Do mesmo sal√£o
-        // - DataHora dentro do per√≠odo da regra
-        // - Sem esse lembrete j√° agendado (evita duplica√ß√£o)
+        // - Do mesmo sal„o
+        // - DataHora dentro do perÌodo da regra
+        // - Sem esse lembrete j· agendado (evita duplicaÁ„o)
         string queryAgendamentos = @"
             SELECT A.IdAgendamento, A.DataHora 
             FROM CorteCor_Agendamento A
@@ -3579,7 +3584,7 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
                 else if (config.AntecedenciaUnidade == "Minutos")
                     dataEnvio = dataEnvio.AddMinutes(-config.AntecedenciaValor);
 
-                // Se o tempo de envio j√° passou, envia agora (desde que o agendamento seja futuro)
+                // Se o tempo de envio j· passou, envia agora (desde que o agendamento seja futuro)
                 if (dataEnvio <= DateTime.Now)
                     dataEnvio = DateTime.Now;
 
@@ -3738,4 +3743,6 @@ public class ModeloEmailHandler : EntityHandler<ModeloEmail>
 
 
 
+
+}
 

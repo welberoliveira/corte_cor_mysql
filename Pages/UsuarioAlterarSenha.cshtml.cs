@@ -1,3 +1,5 @@
+using CorteCor.Handlers;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -104,3 +106,5 @@ namespace CorteCor.Pages
 
     }
 }
+
+

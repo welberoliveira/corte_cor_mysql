@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using static CorteCor.Models;
+using CorteCor.Models;
 
-namespace CorteCor
+namespace CorteCor.Handlers
 {
     public class ModeloSMSHandler
     {
@@ -151,3 +151,4 @@ namespace CorteCor
         }
     }
 }
+

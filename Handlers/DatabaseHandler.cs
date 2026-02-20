@@ -1,10 +1,14 @@
-﻿using System;
+using CorteCor.Logs;
+using System;
 using System.Data.SqlClient;
 
 using Microsoft.Extensions.Configuration;
 using System.IO;
 
 using System.Data;
+
+namespace CorteCor.Handlers
+{
 
 public interface IDatabaseHandler
 {
@@ -19,7 +23,7 @@ public class DatabaseHandler : IDatabaseHandler
     public DatabaseHandler()
     {
         var updatedPath = AppDomain.CurrentDomain.BaseDirectory;
-        // Ajuste para quando rodar local vs publicado, se necessário.
+        // Ajuste para quando rodar local vs publicado, se necess�rio.
         // Mas o appsettings.json costuma estar no BaseDirectory.
 
         var builder = new ConfigurationBuilder()
@@ -71,4 +75,5 @@ public class DatabaseHandler : IDatabaseHandler
             throw;
         }
     }
+}
 }

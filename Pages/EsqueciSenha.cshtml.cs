@@ -1,3 +1,7 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
+using CorteCor.Handlers;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
@@ -139,3 +143,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
+

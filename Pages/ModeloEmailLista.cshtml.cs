@@ -1,7 +1,10 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System.Collections.Generic;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
+using CorteCor.Handlers;
 
 namespace CorteCor.Pages
 {
@@ -10,7 +13,7 @@ namespace CorteCor.Pages
     {
         private readonly ModeloEmailHandler _handler;
 
-        public List<Models.ModeloEmail> Modelos { get; set; } = new List<Models.ModeloEmail>();
+        public List<ModeloEmail> Modelos { get; set; } = new List<ModeloEmail>();
         public string Mensagem { get; set; }
 
         public ModeloEmailListaModel(ModeloEmailHandler handler)
@@ -32,3 +35,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

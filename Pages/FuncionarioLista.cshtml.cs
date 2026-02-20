@@ -1,9 +1,11 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
@@ -50,3 +52,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

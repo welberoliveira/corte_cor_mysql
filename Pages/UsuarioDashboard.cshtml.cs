@@ -1,4 +1,7 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Generic;
@@ -10,7 +13,7 @@ using MercadoPago.Client.Payment;
 using MercadoPago.Client.Common;
 using MercadoPago.Resource.Payment;
 using MercadoPago.Client;
-using static CorteCor.Models;
+
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace CorteCor.Pages
@@ -71,3 +74,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

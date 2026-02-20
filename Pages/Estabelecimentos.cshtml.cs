@@ -1,4 +1,5 @@
-Ôªøusing Microsoft.AspNetCore.Mvc;
+using CorteCor.Handlers;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Data;
 using System.Text;
@@ -22,13 +23,13 @@ namespace CorteCor.Pages
             }
 
             // =========================
-            // Config de exporta√ß√£o
+            // Config de exportaÁ„o
             // =========================
             public int ExportMaxRows => 200000; // limite seguro
             public bool ExportTruncado { get; set; }
 
             // =========================
-            // Controle: s√≥ lista ap√≥s pesquisar
+            // Controle: sÛ lista apÛs pesquisar
             // =========================
             [BindProperty(SupportsGet = true)]
             public bool Pesquisar { get; set; } = false;
@@ -61,7 +62,7 @@ namespace CorteCor.Pages
 
             public List<OptionItem> Portes { get; } = new()
         {
-            new OptionItem(0, "N√£o informado"),
+            new OptionItem(0, "N„o informado"),
             new OptionItem(1, "Micro empresa"),
             new OptionItem(3, "Empresa de pequeno porte"),
             new OptionItem(5, "Demais")
@@ -110,7 +111,7 @@ namespace CorteCor.Pages
             [BindProperty(SupportsGet = true)] public DateTime? DataSitEspecialDe { get; set; }
             [BindProperty(SupportsGet = true)] public DateTime? DataSitEspecialAte { get; set; }
 
-            // Pagina√ß√£o
+            // PaginaÁ„o
             [BindProperty(SupportsGet = true)] public int Page { get; set; } = 1;
             [BindProperty(SupportsGet = true)] public int PageSize { get; set; } = 50;
 
@@ -139,7 +140,7 @@ namespace CorteCor.Pages
 
                 if (!Pesquisar)
                 {
-                    // N√£o listar nada no primeiro carregamento
+                    // N„o listar nada no primeiro carregamento
                     Total = 0;
                     Itens = new();
                     ExportTruncado = false;
@@ -158,7 +159,7 @@ namespace CorteCor.Pages
             // =========================
             public IActionResult OnGetExportCsv()
             {
-                // sempre carrega dropdowns? n√£o precisa
+                // sempre carrega dropdowns? n„o precisa
                 using var conn = GetConnection();
                 var (whereSql, pars) = BuildWhere();
 
@@ -611,7 +612,7 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
             }
 
             // =========================
-            // URL: pagina√ß√£o / export
+            // URL: paginaÁ„o / export
             // =========================
             public string BuildPageUrl(int page)
             {
@@ -622,7 +623,7 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
 
             public string BuildExportUrl(string handler)
             {
-                // mant√©m todos os filtros, apenas troca handler
+                // mantÈm todos os filtros, apenas troca handler
                 var baseUrl = BuildUrl(extra: null);
                 if (baseUrl.Contains("?"))
                     return baseUrl.Replace(Request.Path + "?", Request.Path + $"?handler={handler}&");
@@ -803,3 +804,4 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
 
 
 }
+

@@ -1,3 +1,5 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components;
@@ -7,7 +9,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System.Data.SqlClient;
 using System.Security.Claims;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
@@ -64,3 +66,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

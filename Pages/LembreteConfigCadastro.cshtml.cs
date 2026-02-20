@@ -1,5 +1,8 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System.Collections.Generic;
 using System.Security.Claims;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +19,7 @@ namespace CorteCor.Pages
         private readonly ModeloSMSHandler _modeloSmsHandler;
 
         [BindProperty]
-        public Models.LembreteConfig Config { get; set; } = new Models.LembreteConfig();
+        public LembreteConfig Config { get; set; } = new LembreteConfig();
 
         public List<SelectListItem> UnidadeOptions { get; set; }
         public List<SelectListItem> ModeloEmailOptions { get; set; }
@@ -150,3 +153,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

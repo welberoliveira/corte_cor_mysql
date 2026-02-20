@@ -1,4 +1,6 @@
-Ôªøusing Microsoft.AspNetCore.Authorization;
+using CorteCor.Models;
+using CorteCor.Handlers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc; // Adicionado para IActionResult e BindProperty
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
@@ -7,7 +9,8 @@ using System.Linq;
 using Microsoft.Extensions.Configuration; // Added for IConfiguration
 using Microsoft.Extensions.DependencyInjection; // Added for GetRequiredService
 using System.Threading.Tasks; // Added for Task
-using static CorteCor.Models;
+using CorteCor.Services;
+
 
 namespace CorteCor.Pages
 {
@@ -65,11 +68,11 @@ namespace CorteCor.Pages
                 try
                 {
                     handler.Excluir(id);
-                    Mensagem = "Pagamento exclu√≠do com sucesso.";
+                    Mensagem = "Pagamento excluÌdo com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N√£o foi poss√≠vel excluir este Pagamento porque ele est√° associado a outros registros.";
+                    Mensagem = "N„o foi possÌvel excluir este Pagamento porque ele est· associado a outros registros.";
                 }
             }
             else if (action == "alterar" && id != Guid.Empty)
@@ -78,11 +81,11 @@ namespace CorteCor.Pages
             }
             else if (action == "sincronizar" && id != Guid.Empty)
             {
-                // Sincroniza√ß√£o manual
+                // SincronizaÁ„o manual
                 var mpService = new MercadoPagoService(HttpContext.RequestServices.GetRequiredService<IConfiguration>());
                 bool synced = await handler.SincronizarPagamento(id, mpService);
                 if (synced) Mensagem = "Status sincronizado com sucesso!";
-                else Mensagem = "N√£o foi poss√≠vel sincronizar ou pagamento n√£o encontrado no Mercado Pago.";
+                else Mensagem = "N„o foi possÌvel sincronizar ou pagamento n„o encontrado no Mercado Pago.";
             }
 
             OnGet();

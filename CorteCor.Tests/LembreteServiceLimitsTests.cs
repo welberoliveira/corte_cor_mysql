@@ -1,7 +1,10 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Xunit;
 using Moq;
 using CorteCor;
-using static CorteCor.Models;
+using CorteCor.Services;
+
 using System.Data;
 using System.Collections.Generic;
 using System;
@@ -17,6 +20,8 @@ namespace CorteCor.Tests
         private readonly Mock<IDatabaseHandler> _mockDbHandler;
         private readonly Mock<ILembreteHandler> _mockLembreteHandler;
         private readonly Mock<BrevoEmailService> _mockEmailService;
+        private readonly Mock<SMSMarketService> _mockSmsService;
+        private readonly Mock<FornecedoresHandler> _mockFornecedoresHandler;
         private readonly Mock<ILogger<LembreteService>> _mockLogger;
         private readonly LembreteService _service;
 
@@ -27,16 +32,26 @@ namespace CorteCor.Tests
             _mockLogger = new Mock<ILogger<LembreteService>>();
 
             // Mock Email Service
-            var mockConfig = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
-            mockConfig.Setup(c => c["Brevo:ApiKey"]).Returns("test-api-key");
+            var mockDbH = new Mock<IDatabaseHandler>();
+            var mockFH = new Mock<FornecedoresHandler>(mockDbH.Object);
             
-            _mockEmailService = new Mock<BrevoEmailService>(new System.Net.Http.HttpClient(), null, mockConfig.Object);
+            _mockEmailService = new Mock<BrevoEmailService>(new System.Net.Http.HttpClient(), null, mockFH.Object);
             _mockEmailService.Setup(e => e.EnviarEmailGenericoAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                              .ReturnsAsync((true, null));
  
-            var mockSmsService = new Mock<SMSMarketService>(new System.Net.Http.HttpClient(), null);
+            _mockSmsService = new Mock<SMSMarketService>(new System.Net.Http.HttpClient(), null);
+            
+            _mockFornecedoresHandler = new Mock<FornecedoresHandler>(_mockDbHandler.Object);
+            _mockFornecedoresHandler.Setup(f => f.ObterEmailAtivo()).Returns(new FornecedorEmail { Nome = "Brevo", Ativo = true });
+            _mockFornecedoresHandler.Setup(f => f.ObterSMSAtivo()).Returns(new FornecedorSMS { Nome = "SMSMarket", Ativo = true });
 
-            _service = new LembreteService(_mockDbHandler.Object, _mockEmailService.Object, mockSmsService.Object, _mockLogger.Object, _mockLembreteHandler.Object);
+            _service = new LembreteService(
+                _mockDbHandler.Object, 
+                _mockEmailService.Object, 
+                _mockSmsService.Object, 
+                _mockFornecedoresHandler.Object,
+                _mockLogger.Object, 
+                _mockLembreteHandler.Object);
         }
 
         [Fact]
@@ -188,3 +203,4 @@ namespace CorteCor.Tests
         delegate void VerificarLimiteCallback(int idSalao, out int enviados, out int limite);
     }
 }
+

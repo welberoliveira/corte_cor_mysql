@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using CorteCor.Models;
+using CorteCor.Handlers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
@@ -42,7 +44,7 @@ namespace CorteCor.Pages
                 .Where(s => s.IdSalao == idSalao)
                 .ToList();
 
-            // Rela��es N:N (todos) e filtra por funcion�rio/servi�o do sal�o
+            // Rela??es N:N (todos) e filtra por funcion?rio/servi?o do sal?o
             var relacoes = fsHandler.Listar() ?? new List<FuncionarioServico>();
 
             var funcionariosDict = funcionariosSalao.ToDictionary(x => x.IdFuncionario, x => x);
@@ -71,7 +73,7 @@ namespace CorteCor.Pages
                 .ToList();
         }
 
-        // Opcional (se voc� colocar bot�es na tela):
+        // Opcional (se voc? colocar bot?es na tela):
         // action=remover precisa mandar idFuncionario e idServico no form.
         public void OnPost()
         {
@@ -91,14 +93,14 @@ namespace CorteCor.Pages
                 {
                     var fsHandler = new FuncionarioServicoHandler();
 
-                    // remove a rela��o (IdFuncionario, IdServico)
+                    // remove a rela??o (IdFuncionario, IdServico)
                     fsHandler.Desvincular(idFuncionario, idServico);
 
-                    Mensagem = "V�nculo removido com sucesso.";
+                    Mensagem = "V?nculo removido com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N�o foi poss�vel remover o v�nculo.";
+                    Mensagem = "N?o foi poss?vel remover o v?nculo.";
                 }
             }
             else if (action == "alterar")
@@ -114,3 +116,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

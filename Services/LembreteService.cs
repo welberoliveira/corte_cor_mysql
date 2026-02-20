@@ -1,10 +1,14 @@
+using CorteCor.Logs;
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using CorteCor.Handlers;
 using Microsoft.Extensions.Logging;
 
-namespace CorteCor
+namespace CorteCor.Services
 {
     public class LembreteService
     {
@@ -12,13 +16,15 @@ namespace CorteCor
         private readonly ILembreteHandler _lembreteHandler;
         private readonly BrevoEmailService _emailService;
         private readonly SMSMarketService _smsService;
+        private readonly FornecedoresHandler _fornecedoresHandler;
         private readonly ILogger<LembreteService> _logger;
 
-        public LembreteService(IDatabaseHandler dbHandler, BrevoEmailService emailService, SMSMarketService smsService, ILogger<LembreteService> logger, ILembreteHandler lembreteHandler = null)
+        public LembreteService(IDatabaseHandler dbHandler, BrevoEmailService emailService, SMSMarketService smsService, FornecedoresHandler fornecedoresHandler, ILogger<LembreteService> logger, ILembreteHandler lembreteHandler = null)
         {
             _dbHandler = dbHandler;
             _emailService = emailService;
             _smsService = smsService;
+            _fornecedoresHandler = fornecedoresHandler;
             _logger = logger;
             _lembreteHandler = lembreteHandler ?? new LembreteHandler(dbHandler);
         }
@@ -83,17 +89,44 @@ namespace CorteCor
                     bool enviado = false;
                     string erroApi = null;
                     string tipoEnvio = dados.TipoLembrete ?? "Email";
-                    string destino = tipoEnvio == "SMS" ? dados.TelefoneCliente : dados.EmailCliente;
+                    string destino = tipoEnvio == "SMS" ? dados.TelefoneCliente : (tipoEnvio == "Whatsapp" ? dados.TelefoneCliente : dados.EmailCliente);
 
                     if (tipoEnvio == "SMS")
                     {
-                         string conteudo = dados.CorpoModelo ?? $"Lembrete: {dados.NomeServico} em {dados.DataHoraAgendamento:dd/MM HH:mm}";
+                         string conteudo = dados.CorpoModelo ?? $"Lembrete: {dados.NomeServico} em {dados.DataHoraAgendamento:dd/MM/yyyy HH:mm}";
                          conteudo = conteudo.Replace("{NomeCliente}", dados.NomeCliente)
-                                            .Replace("{DataHora}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
-                                            .Replace("{Servico}", dados.NomeServico)
-                                            .Replace("{Profissional}", dados.NomeProfissional);
+                                            .Replace("{DataAgendamento}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
+                                            .Replace("{NomeServico}", dados.NomeServico)
+                                            .Replace("{NomeFuncionario}", dados.NomeProfissional);
 
-                         (enviado, erroApi) = await _smsService.EnviarSmsAsync(dados.TelefoneCliente, conteudo);
+                         var fornecedorSms = _fornecedoresHandler.ObterSMSAtivo();
+                         if (fornecedorSms != null && fornecedorSms.Nome.Equals("Brevo", StringComparison.OrdinalIgnoreCase))
+                         {
+                             (enviado, erroApi) = await _emailService.EnviarSmsAsync(dados.TelefoneCliente, conteudo);
+                         }
+                         else if (fornecedorSms != null && fornecedorSms.Nome.Equals("SMSMarket", StringComparison.OrdinalIgnoreCase))
+                         {
+                             (enviado, erroApi) = await _smsService.EnviarSmsAsync(dados.TelefoneCliente, conteudo);
+                         }
+                         else
+                         {
+                             erroApi = "Nenhum fornecedor de SMS ativo ou fornecedor não suportado.";
+                             enviado = false;
+                         }
+                    }
+                    else if (tipoEnvio == "Whatsapp")
+                    {
+                        string conteudo = dados.CorpoModelo ?? $"Lembrete: {dados.NomeServico} em {dados.DataHoraAgendamento:dd/MM/yyyy HH:mm}";
+                        conteudo = conteudo.Replace("{NomeCliente}", dados.NomeCliente)
+                                           .Replace("{DataAgendamento}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
+                                           .Replace("{NomeServico}", dados.NomeServico)
+                                           .Replace("{NomeFuncionario}", dados.NomeProfissional);
+
+                        var fornecedorWa = _fornecedoresHandler.ObterWhatsappAtivo();
+                        // Aqui seria chamado o serviço de WhatsApp dependendo do fornecedor (ex: Z-API, WppConnect, etc).
+                        // Atualmente não há um WhatsappService implementado, mas a estrutura está pronta.
+                        erroApi = "Integração de WhatsApp ainda não implementada no sistema.";
+                        enviado = false;
                     }
                     else // Email
                     {
@@ -101,14 +134,28 @@ namespace CorteCor
                         string corpo = dados.CorpoModelo ?? "<p>Olá, este é um lembrete do seu agendamento.</p>";
                         
                         corpo = corpo.Replace("{NomeCliente}", dados.NomeCliente)
-                                     .Replace("{DataHora}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
-                                     .Replace("{Servico}", dados.NomeServico)
-                                     .Replace("{Profissional}", dados.NomeProfissional);
+                                     .Replace("{DataAgendamento}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
+                                     .Replace("{NomeServico}", dados.NomeServico)
+                                     .Replace("{NomeFuncionario}", dados.NomeProfissional);
+                        
+                        assunto = assunto.Replace("{NomeCliente}", dados.NomeCliente)
+                                         .Replace("{DataAgendamento}", dados.DataHoraAgendamento.ToString("dd/MM/yyyy HH:mm"))
+                                         .Replace("{NomeServico}", dados.NomeServico)
+                                         .Replace("{NomeFuncionario}", dados.NomeProfissional);
 
-                        (enviado, erroApi) = await _emailService.EnviarEmailGenericoAsync(dados.EmailCliente, dados.NomeCliente, assunto, corpo);
+                        var fornecedorEmail = _fornecedoresHandler.ObterEmailAtivo();
+                        if (fornecedorEmail != null && fornecedorEmail.Nome.Equals("Brevo", StringComparison.OrdinalIgnoreCase))
+                        {
+                            (enviado, erroApi) = await _emailService.EnviarEmailGenericoAsync(dados.EmailCliente, dados.NomeCliente, assunto, corpo);
+                        }
+                        else
+                        {
+                             erroApi = "Nenhum fornecedor de E-mail ativo suportado (apenas Brevo configurado).";
+                             enviado = false;
+                        }
                     }
 
-                    _lembreteHandler.RegistrarLogEnvio(lembrete.IdLembrete, (int)lembrete.IdAgendamento, destino, tipoEnvio == "SMS" ? "SMS" : dados.AssuntoModelo, enviado ? "Sucesso" : "ErroEnvio", erroApi, tipoEnvio, tipoEnvio == "SMS" ? dados.TelefoneCliente : null);
+                    _lembreteHandler.RegistrarLogEnvio(lembrete.IdLembrete, (int)lembrete.IdAgendamento, destino, tipoEnvio == "Email" ? dados.AssuntoModelo : tipoEnvio, enviado ? "Sucesso" : "ErroEnvio", erroApi, tipoEnvio, (tipoEnvio == "SMS" || tipoEnvio == "Whatsapp") ? dados.TelefoneCliente : null);
 
 
                     _lembreteHandler.AtualizarStatusLembrete(lembrete.IdLembrete, enviado ? "Enviado" : "ErroEnvio");
@@ -134,3 +181,4 @@ namespace CorteCor
         }
     }
 }
+

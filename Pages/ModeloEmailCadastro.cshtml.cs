@@ -1,4 +1,7 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System.Collections.Generic;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
@@ -17,7 +20,7 @@ namespace CorteCor.Pages
         }
 
         [BindProperty]
-        public Models.ModeloEmail Modelo { get; set; }
+        public ModeloEmail Modelo { get; set; }
 
         public List<SelectListItem> EventosOptions { get; set; } = new List<SelectListItem>
         {
@@ -42,7 +45,7 @@ namespace CorteCor.Pages
                 }
                 else
                 {
-                    Modelo = new Models.ModeloEmail { Ativo = true, IdSalao = idSalao };
+                    Modelo = new ModeloEmail { Ativo = true, IdSalao = idSalao };
                 }
             }
             else
@@ -78,3 +81,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

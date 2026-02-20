@@ -1,11 +1,14 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using CorteCor;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
@@ -127,3 +130,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

@@ -1,10 +1,8 @@
-ï»¿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace CorteCor;
+namespace CorteCor.Models;
 
-public class Models
-{
     public class Administrador
     {
         public int IdUsuario { get; set; }
@@ -81,7 +79,7 @@ public class Models
         public string? Telefone { get; set; }
         public string? Celular { get; set; }
         
-        // Campos do cÃ´njuge
+        // Campos do cônjuge
         public string? ConjugeNome { get; set; }
         public string? ConjugeFiliacao { get; set; }
         public string? ConjugeRG { get; set; }
@@ -198,7 +196,7 @@ public class Models
         public string? MpPublicKeyProd { get; set; }
         public string? MpPublicKeySandbox { get; set; }
         
-        // True = ProduÃ§Ã£o, False = Sandbox
+        // True = Produção, False = Sandbox
         public bool MpProduction { get; set; }
     }
 
@@ -388,4 +386,3 @@ public class Models
         public DateTime DataCriacao { get; set; }
         public DateTime? DataAtualizacao { get; set; }
     }
-}

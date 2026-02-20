@@ -1,7 +1,9 @@
+using CorteCor.Handlers;
 using Xunit;
 using Moq;
 using Moq.Protected;
 using CorteCor;
+using CorteCor.Services;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http;
 using System.Threading;
@@ -133,3 +135,4 @@ namespace CorteCor.Tests
         }
     }
 }
+

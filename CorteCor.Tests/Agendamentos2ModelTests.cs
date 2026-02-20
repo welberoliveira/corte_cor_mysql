@@ -1,8 +1,11 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Xunit;
 using Moq;
 using CorteCor.Pages;
 using CorteCor;
-using static CorteCor.Models;
+using CorteCor.Services;
+
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
@@ -141,3 +144,4 @@ namespace CorteCor.Tests
         public IConfigurationSection GetSection(string key) => throw new NotImplementedException();
     }
 }
+

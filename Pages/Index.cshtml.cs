@@ -1,10 +1,13 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Data;
 using System.Security.Claims;
-using static CorteCor.Models;
+
 using CorteCor;
 
 namespace CorteCor.Pages
@@ -104,3 +107,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
+

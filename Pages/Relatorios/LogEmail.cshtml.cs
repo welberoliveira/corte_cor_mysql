@@ -1,11 +1,14 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
 using CorteCor;
-using static CorteCor.Models;
-using static LembreteHandler;
+
+using static CorteCor.Handlers.LembreteHandler;
 
 namespace CorteCor.Pages.Relatorios
 {
@@ -62,3 +65,4 @@ namespace CorteCor.Pages.Relatorios
         }
     }
 }
+

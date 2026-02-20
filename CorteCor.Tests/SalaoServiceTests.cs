@@ -1,7 +1,10 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Xunit;
 using Moq;
 using CorteCor;
-using static CorteCor.Models;
+using CorteCor.Services;
+
 using Microsoft.Extensions.Caching.Memory;
 using System.Data;
 using System;
@@ -94,3 +97,4 @@ namespace CorteCor.Tests
         }
     }
 }
+

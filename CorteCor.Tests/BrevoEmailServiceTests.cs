@@ -1,8 +1,11 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Xunit;
 using Moq;
 using Moq.Protected;
 using CorteCor;
-using static CorteCor.Models;
+using CorteCor.Services;
+
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +32,11 @@ namespace CorteCor.Tests
             _mockConfiguration.Setup(c => c["Brevo:ApiKeyEmail"]).Returns("test-key-email");
             _mockConfiguration.Setup(c => c["Brevo:ApiKeySMS"]).Returns("test-key-sms");
 
-            _service = new BrevoEmailService(httpClient, _mockModeloHandler.Object, _mockConfiguration.Object);
+            var mockDbHandler = new Mock<IDatabaseHandler>();
+            var mockFornecedoresHandler = new Mock<FornecedoresHandler>(mockDbHandler.Object);
+            mockFornecedoresHandler.Setup(f => f.ObterEmailAtivo()).Returns(new FornecedorEmail { Nome = "Brevo", ApiKey = "test-key-email", Ativo = true });
+
+            _service = new BrevoEmailService(httpClient, _mockModeloHandler.Object, mockFornecedoresHandler.Object);
         }
 
         [Fact]
@@ -146,3 +153,4 @@ namespace CorteCor.Tests
         }
     }
 }
+

@@ -4,10 +4,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Data.SqlClient;
-using System.Collections.Generic;
 
-namespace CorteCor.Pages.Webhooks
+namespace CorteCor.Services
 {
     public class LembreteBackgroundService : BackgroundService
     {

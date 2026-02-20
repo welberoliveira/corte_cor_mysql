@@ -1,3 +1,5 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using System.Data;
 using System.Collections.Generic;
 using System;
@@ -7,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Xunit;
+using CorteCor.Services;
 
 namespace CorteCor.Tests
 {
@@ -157,7 +160,7 @@ namespace CorteCor.Tests
         private readonly Mock<IServiceScopeFactory> _mockScopeFactory;
         private readonly Mock<ILembreteHandler> _mockLembreteHandler;
         private readonly Mock<BrevoEmailService> _mockEmailService;
-        private readonly Mock<Microsoft.Extensions.Logging.ILogger<CorteCor.Pages.Webhooks.LembreteBackgroundService>> _mockLogger;
+        private readonly Mock<Microsoft.Extensions.Logging.ILogger<LembreteBackgroundService>> _mockLogger;
 
         public LembreteBackgroundServiceAdvancedTests()
         {
@@ -166,8 +169,10 @@ namespace CorteCor.Tests
             _mockScopeFactory = new Mock<IServiceScopeFactory>();
             _mockLembreteHandler = new Mock<ILembreteHandler>();
             
-            _mockEmailService = new Mock<BrevoEmailService>(new System.Net.Http.HttpClient(), null, new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build()); 
-            _mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<CorteCor.Pages.Webhooks.LembreteBackgroundService>>();
+            var mockDbH = new Mock<IDatabaseHandler>();
+            var mockFH = new Mock<FornecedoresHandler>(mockDbH.Object);
+            _mockEmailService = new Mock<BrevoEmailService>(new System.Net.Http.HttpClient(), null, mockFH.Object); 
+            _mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<LembreteBackgroundService>>();
 
             _mockServiceProvider.Setup(sp => sp.GetService(typeof(IServiceScopeFactory))).Returns(_mockScopeFactory.Object);
             _mockScopeFactory.Setup(sf => sf.CreateScope()).Returns(_mockScope.Object);
@@ -175,14 +180,19 @@ namespace CorteCor.Tests
             
             _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILembreteHandler))).Returns(_mockLembreteHandler.Object);
             _mockServiceProvider.Setup(sp => sp.GetService(typeof(BrevoEmailService))).Returns(_mockEmailService.Object);
+            
+            var mockDbHandler = new Mock<IDatabaseHandler>();
+            var mockFornecedoresHandler = new Mock<FornecedoresHandler>(mockDbHandler.Object);
+            mockFornecedoresHandler.Setup(f => f.ObterEmailAtivo()).Returns(new FornecedorEmail { Nome = "Brevo" });
+            
             _mockServiceProvider.Setup(sp => sp.GetService(typeof(LembreteService)))
-                                .Returns(new LembreteService(new Mock<IDatabaseHandler>().Object, _mockEmailService.Object, new Mock<SMSMarketService>(new System.Net.Http.HttpClient(), null).Object, new Mock<Microsoft.Extensions.Logging.ILogger<LembreteService>>().Object, _mockLembreteHandler.Object));
+                                .Returns(new LembreteService(mockDbHandler.Object, _mockEmailService.Object, new Mock<SMSMarketService>(new System.Net.Http.HttpClient(), null).Object, mockFornecedoresHandler.Object, new Mock<Microsoft.Extensions.Logging.ILogger<LembreteService>>().Object, _mockLembreteHandler.Object));
         }
 
         [Fact]
         public async Task ProcessarLembretesAsync_DeveEnviarEmail_ERegistrarLog()
         {
-            var service = new CorteCor.Pages.Webhooks.LembreteBackgroundService(_mockServiceProvider.Object, _mockLogger.Object);
+            var mockBackgroundService = new Mock<LembreteBackgroundService>(_mockServiceProvider.Object, _mockLogger.Object);
             _mockLembreteHandler.Setup(h => h.ObterLembretesPendentes()).Returns(new List<CorteCor.Models.LembreteAgendado> { 
                 new CorteCor.Models.LembreteAgendado { IdLembrete = 1, IdAgendamento = 100 } 
             });
@@ -195,8 +205,8 @@ namespace CorteCor.Tests
             _mockLembreteHandler.Setup(h => h.VerificarLimiteEmail(1, out e, out l)).Returns(false);
             _mockEmailService.Setup(e => e.EnviarEmailGenericoAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync((true, null));
 
-            var method = typeof(CorteCor.Pages.Webhooks.LembreteBackgroundService).GetMethod("ProcessarLembretesAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            await (Task)method.Invoke(service, new object[] { CancellationToken.None });
+            var method = typeof(LembreteBackgroundService).GetMethod("ProcessarLembretesAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            await (Task)method.Invoke(mockBackgroundService.Object, new object[] { CancellationToken.None });
 
             _mockEmailService.Verify(e => e.EnviarEmailGenericoAsync("fulano@teste.com", "Fulano", It.IsAny<string>(), It.IsAny<string>()), Times.Once);
             _mockLembreteHandler.Verify(h => h.RegistrarLogEnvio(1, 100, "fulano@teste.com", "Lembrete", "Sucesso", null, "Email", null), Times.Once);
@@ -242,3 +252,4 @@ namespace CorteCor.Tests
         }
     }
 }
+

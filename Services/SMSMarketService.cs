@@ -1,3 +1,5 @@
+using CorteCor.Handlers;
+using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace CorteCor
+namespace CorteCor.Services
 {
     public class SMSMarketService
     {
@@ -109,3 +111,4 @@ namespace CorteCor
         }
     }
 }
+
