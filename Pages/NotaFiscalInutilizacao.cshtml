@@ -1,0 +1,101 @@
+@page
+@model CorteCor.Pages.NotaFiscalInutilizacaoModel
+@{
+    ViewData["Title"] = "Inutilização de Numeração";
+}
+
+<div class="container mt-4">
+    <h2>Inutilizar Faixa de Numeração (NFC-e)</h2>
+    <hr />
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-success">@Model.Mensagem</div>
+    }
+    @if (!string.IsNullOrEmpty(Model.Erro))
+    {
+        <div class="alert alert-danger">@Model.Erro</div>
+    }
+
+    <div class="card bg-light p-4 mb-4">
+        <form method="post">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Ano</label>
+                    <input type="number" name="ano" class="form-control" value="@DateTime.Now.Year" required />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Série</label>
+                    <input type="number" name="serie" class="form-control" value="1" required />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Número Inicial</label>
+                    <input type="number" name="numeroInicial" class="form-control" required />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Número Final</label>
+                    <input type="number" name="numeroFinal" class="form-control" required />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Justificativa (Mínimo 15 caracteres)</label>
+                    <textarea name="justificativa" class="form-control" rows="3" minlength="15" required></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-warning"><i class="bi bi-x-octagon"></i> Inutilizar Faixa na
+                Sefaz</button>
+            <a asp-page="/NotaFiscalLista" class="btn btn-secondary ms-2">Voltar</a>
+        </form>
+    </div>
+
+    <h4>Histórico de Inutilizações</h4>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Data</th>
+                    <th>Ano</th>
+                    <th>Série</th>
+                    <th>Núm. Inicial</th>
+                    <th>Núm. Final</th>
+                    <th>Status</th>
+                    <th>Protocolo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Historico != null && Model.Historico.Any())
+                {
+                    foreach (var inut in Model.Historico)
+                    {
+                        <tr>
+                            <td>@inut.DataInutilizacao.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@inut.Ano</td>
+                            <td>@inut.Serie</td>
+                            <td>@inut.NumeroInicial</td>
+                            <td>@inut.NumeroFinal</td>
+                            <td>
+                                @if (inut.Status.Contains("Homologado"))
+                                {
+                                    <span class="badge bg-success">@inut.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">@inut.Status</span>
+                                }
+                            </td>
+                            <td>@inut.Protocolo</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Nenhuma inutilização registrada para este salão.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

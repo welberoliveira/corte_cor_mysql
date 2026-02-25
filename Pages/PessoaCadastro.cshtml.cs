@@ -42,7 +42,19 @@ namespace CorteCor.Pages
                 Telefone = Request.Form["telefone"],
                 Email = Request.Form["email"],
                 DataNascimento = dataNascimento,
-                IdSalao = idSalao
+                IdSalao = idSalao,
+                
+                // Campos Fiscais / Endereço
+                CpfCnpj = Request.Form["cpfCnpj"].ToString().Replace(".", "").Replace("/", "").Replace("-", ""),
+                InscricaoEstadual = Request.Form["inscricaoEstadual"],
+                InscricaoMunicipal = Request.Form["inscricaoMunicipal"],
+                Cep = Request.Form["cep"].ToString().Replace("-", ""),
+                Logradouro = Request.Form["logradouro"],
+                Numero = Request.Form["numero"],
+                Complemento = Request.Form["complemento"],
+                Bairro = Request.Form["bairro"],
+                Cidade = Request.Form["cidade"],
+                UF = Request.Form["uf"]
             };
 
             var handler = new PessoaHandler();

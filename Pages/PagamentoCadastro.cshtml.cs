@@ -17,14 +17,14 @@ namespace CorteCor.Pages
         public void OnGet(Guid? id, int? idAgendamento)
         {
             var handler = new PagamentoHandler();
-            
+
             if (id.HasValue && id.Value != Guid.Empty)
             {
                 Pagamento = handler.ObterPorId(id.Value);
                 ButtonText = "Atualizar";
-                
+
                 // Se foi passado um idAgendamento via URL, atualiza o modelo
-                if (idAgendamento.HasValue && Pagamento != null) 
+                if (idAgendamento.HasValue && Pagamento != null)
                     Pagamento.IdAgendamento = idAgendamento.Value;
             }
             else if (idAgendamento.HasValue)
@@ -39,7 +39,7 @@ namespace CorteCor.Pages
 
                     var pessoaHandler = new PessoaHandler();
                     var pessoa = pessoaHandler.ObterPorId(agendamento.IdPessoa);
-                    
+
                     Pagamento = new Pagamento
                     {
                         IdAgendamento = idAgendamento.Value,
@@ -83,7 +83,7 @@ namespace CorteCor.Pages
             return DateTime.Parse(valor);
         }
 
-        public void OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             Guid id = Guid.Empty;
             Guid.TryParse(Request.Form["id"], out id);
@@ -111,9 +111,9 @@ namespace CorteCor.Pages
 
                 Contos = Request.Form["contos"],
                 Campos = Request.Form["campos"],
-                
+
                 Ativo = true,
-                Status = "Pago", // Cadastro manual assume Pago? Ou Pendente? Mantendo coerente.
+                Status = "Pago", // Cadastro manual assume Pago? Se houver seletor, deveria pegar de form, mas original era string fixa. 
                 Moeda = "BRL",
                 CriadoEm = DateTime.UtcNow
             };
@@ -132,7 +132,58 @@ namespace CorteCor.Pages
                 Mensagem = "Pagamento cadastrado com sucesso!";
             }
 
+            // GATILHO FISCAL
+            if (pagamento.Status == "Pago" && idAgendamento > 0)
+            {
+                var salaoIdStr = User.FindFirst("IdSalao")?.Value;
+                if (int.TryParse(salaoIdStr, out int idSalao))
+                {
+                    try
+                    {
+                        var db = new DatabaseHandler();
+                        var configHandler = new SalaoConfigFiscalHandler(db);
+                        var notaHandler = new NotaFiscalHandler(db);
+
+                        var config = await configHandler.ObterPorSalaoAsync(idSalao);
+                        // Verifica se existe config fiscal para emissão e se a emissão automática está habilitada
+                        if (config != null && config.EmissaoAutomatica)
+                        {
+                            // Verifica se já não existe nota para este agendamento (previne duplicar)
+                            var notasExistentes = await notaHandler.ListarPorSalaoAsync(idSalao);
+                            bool jaExiste = notasExistentes.Any(n => n.IdAgendamento == idAgendamento && n.Status != "Cancelada");
+
+                            if (!jaExiste)
+                            {
+                                var novaNota = new NotaFiscal
+                                {
+                                    IdNotaFiscal = Guid.NewGuid(),
+                                    IdSalao = idSalao,
+                                    IdAgendamento = idAgendamento,
+                                    TipoNota = "NFS-e", // Padrão assumido para serviço de salão
+                                    Ambiente = config.Ambiente,
+                                    Numero = 0, // A ser gerado pelo emissor fiscal
+                                    Serie = 1,
+                                    ValorTotal = pagamento.Valor,
+                                    Status = "Pendente",
+                                    DataEmissao = DateTime.Now,
+                                    DataAtualizacao = DateTime.Now
+                                };
+
+                                await notaHandler.InserirAsync(novaNota);
+                                Mensagem += " (Nota fiscal enfileirada para emissão automática!)";
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Apenas logar, não deve quebrar a página de pagamento
+                        Console.WriteLine($"Erro ao gerar emissão fiscal automática: {ex.Message}");
+                    }
+                }
+            }
+
             OnGet(id != Guid.Empty ? id : (Guid?)null, null);
+            return Page();
         }
     }
 }

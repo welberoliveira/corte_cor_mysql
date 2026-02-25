@@ -58,6 +58,8 @@ builder.Services.AddScoped<PessoaHandler>();
 builder.Services.AddScoped<AgendamentoHandler>();
 builder.Services.AddScoped<FuncionarioHandler>();
 builder.Services.AddScoped<FuncionarioServicoHandler>();
+builder.Services.AddScoped<SalaoConfigFiscalHandler>();
+builder.Services.AddScoped<NotaFiscalHandler>();
 builder.Services.AddScoped<PagamentoHandler>();
 builder.Services.AddScoped<MercadoPagoService>();
 builder.Services.AddScoped<ModeloEmailHandler>();
@@ -76,6 +78,11 @@ builder.Services.AddHostedService<LembreteBackgroundService>();
 builder.Services.AddSingleton<ICriptografiaService, CriptografiaService>();
 builder.Services.AddTransient<CertificadoFiscalFactory>();
 builder.Services.AddTransient<NFCeEmissorService>();
+builder.Services.AddTransient<NFSeEmissorService>();
+builder.Services.AddTransient<FiscalActionService>();
+builder.Services.AddTransient<FiscalPdfGenerator>();
+builder.Services.AddScoped<NotaFiscalEventoHandler>();
+builder.Services.AddScoped<NotaFiscalInutilizacaoHandler>();
 builder.Services.AddHostedService<NFSeVerificadorRetornoJob>();
 
 // Configurar cultura para pt-BR

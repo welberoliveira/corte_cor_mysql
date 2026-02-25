@@ -1,4 +1,4 @@
--- TABELA: Configurações Fiscais e Armazenamento do Certificado
+﻿-- TABELA: Configurações Fiscais e Armazenamento do Certificado
 CREATE TABLE CorteCor_SalaoConfigFiscal (
     IdConfigFiscal UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     IdSalao INT NOT NULL UNIQUE,
@@ -52,4 +52,23 @@ CREATE TABLE CorteCor_NotaFiscal (
     CONSTRAINT FK_NotaFiscal_Salao FOREIGN KEY (IdSalao) REFERENCES CorteCor_Salao(IdSalao),
     CONSTRAINT FK_NotaFiscal_Agendamento FOREIGN KEY (IdAgendamento) REFERENCES CorteCor_Agendamento(IdAgendamento)
 );
+GO
+
+-- Adicionar campos fiscais em Pessoa
+ALTER TABLE CorteCor_Pessoa ADD CpfCnpj VARCHAR(20) NULL;
+ALTER TABLE CorteCor_Pessoa ADD InscricaoEstadual VARCHAR(20) NULL;
+ALTER TABLE CorteCor_Pessoa ADD InscricaoMunicipal VARCHAR(20) NULL;
+ALTER TABLE CorteCor_Pessoa ADD Cep VARCHAR(10) NULL;
+ALTER TABLE CorteCor_Pessoa ADD Logradouro VARCHAR(150) NULL;
+ALTER TABLE CorteCor_Pessoa ADD Numero VARCHAR(10) NULL;
+ALTER TABLE CorteCor_Pessoa ADD Complemento VARCHAR(50) NULL;
+ALTER TABLE CorteCor_Pessoa ADD Bairro VARCHAR(100) NULL;
+ALTER TABLE CorteCor_Pessoa ADD Cidade VARCHAR(100) NULL;
+ALTER TABLE CorteCor_Pessoa ADD UF VARCHAR(2) NULL;
+GO
+
+-- Adicionar campos fiscais em Servico
+ALTER TABLE CorteCor_Servico ADD CodigoTributacaoMunicipio VARCHAR(20) NULL;
+ALTER TABLE CorteCor_Servico ADD Cnae VARCHAR(20) NULL;
+ALTER TABLE CorteCor_Servico ADD AliquotaISS DECIMAL(5,2) NULL;
 GO

@@ -1,4 +1,4 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
@@ -68,29 +68,30 @@ namespace CorteCor.Pages
             var clientes = _pessoaHandler.ListarPorSalao(idSalao);
             var dictPessoas = clientes.ToDictionary(p => p.IdPessoa, p => p.Nome);
 
-            // Ajuste de datas para garantir cobertura (start/end do FullCalendar s„o exatos)
+            // Ajuste de datas para garantir cobertura (start/end do FullCalendar s√£o exatos)
             var dataInicio = start.AddDays(-1);
             var dataFim = end.AddDays(1);
-            
+
             // Agora usa o filtro de data no banco via ListarPorIntervalo
             var allAgendamentos = _agendamentoHandler.ListarPorIntervalo(idSalao, dataInicio, dataFim);
 
             var items = allAgendamentos
                 .Where(a => a.Status != "Cancelado")
-                .Select(a => {
-                   var servico = dictServicos.ContainsKey(a.IdServico) ? dictServicos[a.IdServico] : null;
-                   var nomeCliente = dictPessoas.ContainsKey(a.IdPessoa) ? dictPessoas[a.IdPessoa] : "Cliente Removido";
-                   
-                   var duracao = servico?.Duracao ?? TimeSpan.FromMinutes(30);
-                   
-                   // Map legacy "Confirmado" to "Pago" for display
-                   var statusExibicao = a.Status;
-                   if (statusExibicao == "Confirmado") statusExibicao = "Pago";
+                .Select(a =>
+                {
+                    var servico = dictServicos.ContainsKey(a.IdServico) ? dictServicos[a.IdServico] : null;
+                    var nomeCliente = dictPessoas.ContainsKey(a.IdPessoa) ? dictPessoas[a.IdPessoa] : "Cliente Removido";
 
-                   var cor = GetCorPorStatus(statusExibicao);
+                    var duracao = servico?.Duracao ?? TimeSpan.FromMinutes(30);
+
+                    // Map legacy "Confirmado" to "Pago" for display
+                    var statusExibicao = a.Status;
+                    if (statusExibicao == "Confirmado") statusExibicao = "Pago";
+
+                    var cor = GetCorPorStatus(statusExibicao);
 
                     var primeiroNome = nomeCliente.Split(' ')[0];
-                    var titulo = $"{primeiroNome} - {servico?.Nome ?? "ServiÁo Removido"}";
+                    var titulo = $"{primeiroNome} - {servico?.Nome ?? "Servi√ßo Removido"}";
                     if (statusExibicao == "Pago") titulo = "? " + titulo;
 
                     return new
@@ -132,37 +133,37 @@ namespace CorteCor.Pages
         {
             try
             {
-                if (req == null) return BadRequest(new ErrorResponse { Message = "RequisiÁ„o inv·lida." });
+                if (req == null) return BadRequest(new ErrorResponse { Message = "Requisi√ß√£o inv√°lida." });
 
-                if (string.IsNullOrWhiteSpace(req.Start)) return BadRequest(new ErrorResponse { Message = "InÌcio È obrigatÛrio." });
+                if (string.IsNullOrWhiteSpace(req.Start)) return BadRequest(new ErrorResponse { Message = "In√≠cio √© obrigat√≥rio." });
 
                 if (!DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var start))
-                    return BadRequest(new ErrorResponse { Message = "Formato de data de inÌcio inv·lido." });
+                    return BadRequest(new ErrorResponse { Message = "Formato de data de in√≠cio inv√°lido." });
 
                 if (start.Kind == DateTimeKind.Utc)
                 {
                     start = start.ToLocalTime();
                 }
 
-                if (req.IdServico <= 0) return BadRequest(new ErrorResponse { Message = "ServiÁo È obrigatÛrio." });
-                if (req.IdPessoa <= 0) return BadRequest(new ErrorResponse { Message = "Cliente È obrigatÛrio." });
+                if (req.IdServico <= 0) return BadRequest(new ErrorResponse { Message = "Servi√ßo √© obrigat√≥rio." });
+                if (req.IdPessoa <= 0) return BadRequest(new ErrorResponse { Message = "Cliente √© obrigat√≥rio." });
 
                 int idSalao = 0;
                 int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
-                // ValidaÁıes
+                // Valida√ß√µes
                 var servico = _servicoHandler.ObterPorId(req.IdServico);
-                if (servico == null) return BadRequest(new ErrorResponse { Message = "ServiÁo n„o encontrado" });
-                if (servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "ServiÁo inv·lido para este sal„o" });
+                if (servico == null) return BadRequest(new ErrorResponse { Message = "Servi√ßo n√£o encontrado" });
+                if (servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Servi√ßo inv√°lido para este sal√£o" });
 
                 var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
-                if (pessoa == null) return BadRequest(new ErrorResponse { Message = "Cliente n„o encontrado" });
-                if (pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inv·lido para este sal„o" });
+                if (pessoa == null) return BadRequest(new ErrorResponse { Message = "Cliente n√£o encontrado" });
+                if (pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inv√°lido para este sal√£o" });
 
                 int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, start, idSalao);
 
                 if (idFuncionarioSelecionado == 0)
-                    return BadRequest(new ErrorResponse { Message = "N„o h· profissionais disponÌveis para este serviÁo no hor·rio selecionado." });
+                    return BadRequest(new ErrorResponse { Message = "N√£o h√° profissionais dispon√≠veis para este servi√ßo no hor√°rio selecionado." });
 
                 var novoAgendamento = new Agendamento
                 {
@@ -184,17 +185,17 @@ namespace CorteCor.Pages
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ErrorResponse 
-                { 
-                    Message = "Erro ao salvar agendamento: " + ex.Message, 
-                    Detail = ex.StackTrace 
+                return StatusCode(500, new ErrorResponse
+                {
+                    Message = "Erro ao salvar agendamento: " + ex.Message,
+                    Detail = ex.StackTrace
                 });
             }
         }
 
         public IActionResult OnGetDetails(int id)
         {
-            if (id <= 0) return BadRequest(new ErrorResponse { Message = "ID inv·lido." });
+            if (id <= 0) return BadRequest(new ErrorResponse { Message = "ID inv√°lido." });
 
             var a = _agendamentoHandler.ObterPorId(id);
             if (a == null) return NotFound();
@@ -209,7 +210,7 @@ namespace CorteCor.Pages
                 id = a.IdAgendamento,
                 idPessoa = a.IdPessoa,
                 idServico = a.IdServico,
-                servicoNome = servico?.Nome ?? "ServiÁo n„o encontrado", 
+                servicoNome = servico?.Nome ?? "Servi√ßo n√£o encontrado",
                 start = a.DataHora,
                 status = status
             });
@@ -228,25 +229,25 @@ namespace CorteCor.Pages
         {
             try
             {
-                if (req == null || req.Id <= 0) return BadRequest(new ErrorResponse { Message = "RequisiÁ„o inv·lida." });
+                if (req == null || req.Id <= 0) return BadRequest(new ErrorResponse { Message = "Requisi√ß√£o inv√°lida." });
 
                 int idSalao = 0;
                 int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
                 var agendamento = _agendamentoHandler.ObterPorId(req.Id);
-                if (agendamento == null) return NotFound("Agendamento n„o encontrado.");
+                if (agendamento == null) return NotFound("Agendamento n√£o encontrado.");
 
                 if (agendamento.Status == "Pago")
-                    return BadRequest(new ErrorResponse { Message = "Agendamentos pagos n„o podem ser alterados." });
+                    return BadRequest(new ErrorResponse { Message = "Agendamentos pagos n√£o podem ser alterados." });
 
-                // ValidaÁıes
+                // Valida√ß√µes
                 var servico = _servicoHandler.ObterPorId(req.IdServico);
-                if (servico == null || servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "ServiÁo inv·lido" });
+                if (servico == null || servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Servi√ßo inv√°lido" });
 
                 var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
-                if (pessoa == null || pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inv·lido" });
+                if (pessoa == null || pessoa.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente inv√°lido" });
 
-                // Determina a data/hora (mantÈm a original se n„o enviada)
+                // Determina a data/hora (mant√©m a original se n√£o enviada)
                 DateTime dataHora = agendamento.DataHora;
                 if (!string.IsNullOrWhiteSpace(req.Start))
                 {
@@ -257,15 +258,15 @@ namespace CorteCor.Pages
                     }
                     else
                     {
-                        return BadRequest(new ErrorResponse { Message = "Formato de data inv·lido." });
+                        return BadRequest(new ErrorResponse { Message = "Formato de data inv√°lido." });
                     }
                 }
 
-                // Re-calcula funcion·rio se necess·rio (passando o prÛprio ID para ignorar colis„o consigo mesmo)
+                // Re-calcula funcion√°rio se necess√°rio (passando o pr√≥prio ID para ignorar colis√£o consigo mesmo)
                 int idFuncionarioSelecionado = GetAvailableFuncionarioId(req.IdServico, dataHora, idSalao, agendamento.IdAgendamento);
 
                 if (idFuncionarioSelecionado == 0)
-                    return BadRequest(new ErrorResponse { Message = "N„o h· profissionais disponÌveis para este serviÁo no hor·rio selecionado (ou h· conflito de agenda)." });
+                    return BadRequest(new ErrorResponse { Message = "N√£o h√° profissionais dispon√≠veis para este servi√ßo no hor√°rio selecionado (ou h√° conflito de agenda)." });
 
                 agendamento.IdPessoa = req.IdPessoa;
                 agendamento.IdServico = req.IdServico;
@@ -275,6 +276,31 @@ namespace CorteCor.Pages
                     agendamento.Status = req.Status;
 
                 _agendamentoHandler.Atualizar(agendamento);
+
+                // Gera√ß√£o de Pagamento Manual se status for "Pago" e data/hora atual √© posterior √† altera√ß√£o de status
+                if (agendamento.Status == "Pago")
+                {
+                    // L√≥gica para preencher o registro de Pagamento como Manual.
+                    var existingPayment = _pagamentoHandler.ObterPorIdAgendamento(agendamento.IdAgendamento);
+                    if (existingPayment == null || existingPayment.Status != "Pago")
+                    {
+                        var novoPag = new Pagamento
+                        {
+                            IdPagamento = Guid.NewGuid(),
+                            IdAgendamento = agendamento.IdAgendamento,
+                            Ativo = true,
+                            Status = "Pago",
+                            Valor = servico.Preco,
+                            Moeda = "BRL",
+                            Descricao = $"Pagamento do agendamento {agendamento.IdAgendamento} (Marcado Manualmente)",
+                            Data = DateTime.Now,
+                            PagoEm = DateTime.Now,
+                            CriadoEm = DateTime.UtcNow,
+                            Tipo = "Manual"
+                        };
+                        _pagamentoHandler.CadastrarPagamento(novoPag);
+                    }
+                }
 
                 var primeiroNome = pessoa.Nome.Split(' ')[0];
                 return new JsonResult(new
@@ -288,10 +314,10 @@ namespace CorteCor.Pages
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ErrorResponse 
-                { 
-                    Message = "Erro ao atualizar agendamento: " + ex.Message, 
-                    Detail = ex.StackTrace 
+                return StatusCode(500, new ErrorResponse
+                {
+                    Message = "Erro ao atualizar agendamento: " + ex.Message,
+                    Detail = ex.StackTrace
                 });
             }
         }
@@ -304,68 +330,72 @@ namespace CorteCor.Pages
 
         public async Task<IActionResult> OnPostPagar([FromBody] PagarRequest req)
         {
-            if (req == null || req.IdAgendamento <= 0) return BadRequest(new ErrorResponse { Message = "RequisiÁ„o inv·lida." });
+            if (req == null || req.IdAgendamento <= 0) return BadRequest(new ErrorResponse { Message = "Requisi√ß√£o inv√°lida." });
 
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
             var a = _agendamentoHandler.ObterPorId(req.IdAgendamento);
-            if (a == null) return NotFound("Agendamento n„o encontrado");
+            if (a == null) return NotFound("Agendamento n√£o encontrado");
 
-            // Valida se pertence ao sal„o
+            // Valida se pertence ao sal√£o
             var s = _servicoHandler.ObterPorId(a.IdServico);
             if (s == null || s.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Acesso negado" });
 
-            if (a.Status == "Pago") return BadRequest(new ErrorResponse { Message = "Este agendamento j· foi pago" });
+            if (a.Status == "Pago") return BadRequest(new ErrorResponse { Message = "Este agendamento j√° foi pago" });
 
             var p = _pessoaHandler.ObterPorId(a.IdPessoa);
-            if (p == null) return BadRequest(new ErrorResponse { Message = "Cliente n„o encontrado" });
+            if (p == null) return BadRequest(new ErrorResponse { Message = "Cliente n√£o encontrado" });
 
-            // 1. Identificar se È produÁ„o ou sandbox baseado no Config do Banco
+            // 1. Identificar se √© produ√ß√£o ou sandbox baseado no Config do Banco
 
-            // 2. Buscar configuraÁıes de Meio de Pagamento do Sal„o
+            // 2. Buscar configura√ß√µes de Meio de Pagamento do Sal√£o
             // Using injected handler
             var meios = _meioPagamentoHandler.ListarPorSalao(idSalao, somenteAtivos: true);
-            var mpConfig = meios.FirstOrDefault(m => 
+            var mpConfig = meios.FirstOrDefault(m =>
                 (m.Gateway != null && m.Gateway.Replace(" ", "").Equals("MercadoPago", StringComparison.OrdinalIgnoreCase)));
 
             if (mpConfig == null)
-                return BadRequest(new ErrorResponse { Message = "Meio de pagamento Mercado Pago n„o configurado para este sal„o." });
+                return BadRequest(new ErrorResponse { Message = "Meio de pagamento Mercado Pago n√£o configurado para este sal√£o." });
 
             bool isProduction = mpConfig.MpProduction;
 
             string accessToken = isProduction ? mpConfig.MpAccessTokenProd : mpConfig.MpAccessTokenSandbox;
 
             if (string.IsNullOrWhiteSpace(accessToken))
-                return BadRequest(new ErrorResponse { Message = isProduction 
-                    ? "Token de ProduÁ„o do Mercado Pago n„o configurado." 
-                    : "Token de Sandbox do Mercado Pago n„o configurado." });
+                return BadRequest(new ErrorResponse
+                {
+                    Message = isProduction
+                    ? "Token de Produ√ß√£o do Mercado Pago n√£o configurado."
+                    : "Token de Sandbox do Mercado Pago n√£o configurado."
+                });
 
             // Gera novo ID para o Pagamento
             var idPagamento = Guid.NewGuid();
 
-            // Gera PreferÍncia no Mercado Pago usando o ID do Pagamento e o Token do Banco
+            // Gera Prefer√™ncia no Mercado Pago usando o ID do Pagamento e o Token do Banco
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var (pref, error) = await _mpService.CreatePreferenceAsync(
                 accessToken,
-                idPagamento, 
-                $"ServiÁo {s.Nome} - Corte & Cor", 
-                s.Preco, 
-                p.Email ?? "cliente@cortecor.com", 
+                idPagamento,
+                $"Servi√ßo {s.Nome} - Corte & Cor",
+                s.Preco,
+                p.Email ?? "cliente@cortecor.com",
                 baseUrl);
 
-            if (pref == null) 
+            if (pref == null)
             {
-                return StatusCode(500, new ErrorResponse { 
-                    Message = "Erro ao gerar preferÍncia de pagamento no Mercado Pago",
+                return StatusCode(500, new ErrorResponse
+                {
+                    Message = "Erro ao gerar prefer√™ncia de pagamento no Mercado Pago",
                     Detail = error
                 });
             }
 
-            // Inicia transaÁ„o para garantir consistÍncia
+            // Inicia transa√ß√£o para garantir consist√™ncia
             using (var scope = new System.Transactions.TransactionScope(System.Transactions.TransactionScopeAsyncFlowOption.Enabled))
             {
-                // Atualiza status do agendamento para Pendente (se n„o estiver pago)
+                // Atualiza status do agendamento para Pendente (se n√£o estiver pago)
                 if (a.Status != "Pago")
                     _agendamentoHandler.AtualizarStatus(a.IdAgendamento, "Pendente");
 
@@ -402,15 +432,15 @@ namespace CorteCor.Pages
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
-            // Validar se pertence ao sal„o
+            // Validar se pertence ao sal√£o
             var s = _servicoHandler.ObterPorId(agendamento.IdServico);
             if (s == null || s.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Acesso negado" });
 
             if (agendamento.Status == "Pago")
-                return BadRequest(new ErrorResponse { Message = "Agendamentos pagos n„o podem ser excluÌdos." });
+                return BadRequest(new ErrorResponse { Message = "Agendamentos pagos n√£o podem ser exclu√≠dos." });
 
             _agendamentoHandler.Excluir(id);
-            
+
             return new JsonResult(new { ok = true });
         }
 
@@ -440,7 +470,7 @@ namespace CorteCor.Pages
             if (servico == null || servico.IdSalao != idSalao) return 0;
 
             var idsFuncionarios = _fsHandler.ListarFuncionariosDoServico(idServico);
-            
+
             // Calculamos o fim
             DateTime fim = start.Add(servico.Duracao);
 
@@ -468,11 +498,11 @@ namespace CorteCor.Pages
                     var horaInicio = start.TimeOfDay;
                     var horaFim = fim.TimeOfDay;
 
-                    // Verifica jornada de trabalho (hor·rio)
+                    // Verifica jornada de trabalho (hor√°rio)
                     // Note: horaFim > f_fim.Value pode ser problema se passar da meia noite, mas assumindo mesmo dia:
                     if (horaInicio >= ini.Value && horaFim <= f_fim.Value)
                     {
-                        // Verifica colis„o com outros agendamentos
+                        // Verifica colis√£o com outros agendamentos
                         if (_agendamentoHandler.VerificarDisponibilidade(f.IdFuncionario, start, fim, idAgendamentoIgnorar))
                         {
                             return f.IdFuncionario;

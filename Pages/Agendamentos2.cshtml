@@ -15,10 +15,11 @@
             --cc-border: #e6eaf2;
             --cc-text: #111827;
             --cc-muted: #475569;
-            --cc-accent: #2563eb; /* azul */
-            --cc-accent-soft: rgba(37,99,235,.10);
+            --cc-accent: #2563eb;
+            /* azul */
+            --cc-accent-soft: rgba(37, 99, 235, .10);
             --cc-green: #16a34a;
-            --cc-shadow: 0 10px 30px rgba(17,24,39,.08);
+            --cc-shadow: 0 10px 30px rgba(17, 24, 39, .08);
         }
 
         body {
@@ -48,157 +49,157 @@
             color: var(--cc-text) !important;
         }
 
-            /* toolbar */
-            .fc .fc-toolbar {
-                gap: 10px;
-                padding: 8px 8px 16px;
-            }
+        /* toolbar */
+        .fc .fc-toolbar {
+            gap: 10px;
+            padding: 8px 8px 16px;
+        }
 
-            .fc .fc-toolbar-title {
-                font-size: 1.15rem;
-                font-weight: 700;
-                color: var(--cc-text) !important;
-            }
+        .fc .fc-toolbar-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--cc-text) !important;
+        }
 
-            /* botões */
-            .fc .fc-button {
-                border: 1px solid var(--cc-border) !important;
-                background: #fff !important;
-                color: var(--cc-text) !important;
-                border-radius: 12px !important;
-                padding: 8px 12px !important;
-                box-shadow: none !important;
-            }
+        /* botões */
+        .fc .fc-button {
+            border: 1px solid var(--cc-border) !important;
+            background: #fff !important;
+            color: var(--cc-text) !important;
+            border-radius: 12px !important;
+            padding: 8px 12px !important;
+            box-shadow: none !important;
+        }
 
-                .fc .fc-button:hover {
-                    background: #f8fafc !important;
-                    border-color: #d8deea !important;
-                }
+        .fc .fc-button:hover {
+            background: #f8fafc !important;
+            border-color: #d8deea !important;
+        }
 
-            /* botão ativo */
-            .fc .fc-button-primary:not(:disabled).fc-button-active,
-            .fc .fc-button-primary:not(:disabled):active {
-                background: var(--cc-accent) !important;
-                border-color: var(--cc-accent) !important;
-                color: #fff !important;
-            }
+        /* botão ativo */
+        .fc .fc-button-primary:not(:disabled).fc-button-active,
+        .fc .fc-button-primary:not(:disabled):active {
+            background: var(--cc-accent) !important;
+            border-color: var(--cc-accent) !important;
+            color: #fff !important;
+        }
 
-            /* today */
-            .fc .fc-today-button {
-                border-color: rgba(22,163,74,.25) !important;
-                background: rgba(22,163,74,.08) !important;
-                color: #0f172a !important;
-            }
+        /* today */
+        .fc .fc-today-button {
+            border-color: rgba(22, 163, 74, .25) !important;
+            background: rgba(22, 163, 74, .08) !important;
+            color: #0f172a !important;
+        }
 
-            /* grid */
-            .fc .fc-scrollgrid,
-            .fc-theme-standard td,
-            .fc-theme-standard th {
-                border-color: var(--cc-border) !important;
-            }
+        /* grid */
+        .fc .fc-scrollgrid,
+        .fc-theme-standard td,
+        .fc-theme-standard th {
+            border-color: var(--cc-border) !important;
+        }
 
-            /* cabeçalho dos dias */
-            .fc .fc-col-header {
-                background: #f1f5ff;
-            }
+        /* cabeçalho dos dias */
+        .fc .fc-col-header {
+            background: #f1f5ff;
+        }
 
-            .fc .fc-col-header-cell-cushion {
-                padding: 10px 8px !important;
-                font-weight: 700;
-                color: #1e3a8a !important;
-                text-transform: uppercase;
-                letter-spacing: .4px;
-                font-size: .78rem;
-            }
+        .fc .fc-col-header-cell-cushion {
+            padding: 10px 8px !important;
+            font-weight: 700;
+            color: #1e3a8a !important;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            font-size: .78rem;
+        }
 
-            /* horas */
-            .fc .fc-timegrid-axis-cushion,
-            .fc .fc-timegrid-slot-label-cushion {
-                color: var(--cc-muted) !important;
-                font-weight: 700;
-                font-variant-numeric: tabular-nums;
-            }
+        /* horas */
+        .fc .fc-timegrid-axis-cushion,
+        .fc .fc-timegrid-slot-label-cushion {
+            color: var(--cc-muted) !important;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
 
-            /* linhas */
-            .fc .fc-timegrid-slot-lane {
-                border-bottom: 1px solid #eef2f7 !important;
-            }
+        /* linhas */
+        .fc .fc-timegrid-slot-lane {
+            border-bottom: 1px solid #eef2f7 !important;
+        }
 
-            .fc .fc-timegrid-slot {
-                height: 1.75em;
-            }
+        .fc .fc-timegrid-slot {
+            height: 1.75em;
+        }
 
-            /* hoje */
-            .fc .fc-day-today {
-                background: var(--cc-accent-soft) !important;
-            }
+        /* hoje */
+        .fc .fc-day-today {
+            background: var(--cc-accent-soft) !important;
+        }
 
-            /* seleção */
-            .fc .fc-highlight {
-                background: rgba(37,99,235,.18) !important;
-            }
+        /* seleção */
+        .fc .fc-highlight {
+            background: rgba(37, 99, 235, .18) !important;
+        }
 
-            /* eventos */
-            .fc .fc-event {
-                border-radius: 12px !important;
-                border: 1px solid rgba(37,99,235,.25) !important;
-                color: var(--cc-text) !important;
-            }
+        /* eventos */
+        .fc .fc-event {
+            border-radius: 12px !important;
+            border: 1px solid rgba(37, 99, 235, .25) !important;
+            color: var(--cc-text) !important;
+        }
 
-                .fc .fc-event .fc-event-main {
-                    padding: 6px 8px !important;
-                }
+        .fc .fc-event .fc-event-main {
+            padding: 6px 8px !important;
+        }
 
-            .fc .fc-event-title {
-                font-weight: 700;
-            }
+        .fc .fc-event-title {
+            font-weight: 700;
+        }
 
-            .fc .fc-event-time {
-                font-weight: 700;
-                opacity: .85;
-            }
+        .fc .fc-event-time {
+            font-weight: 700;
+            opacity: .85;
+        }
 
-            /* indicador de agora */
-            .fc .fc-now-indicator-line {
-                border-color: rgba(22,163,74,.9) !important;
-                border-width: 2px !important;
-            }
+        /* indicador de agora */
+        .fc .fc-now-indicator-line {
+            border-color: rgba(22, 163, 74, .9) !important;
+            border-width: 2px !important;
+        }
 
-            .fc .fc-now-indicator-arrow {
-                border-color: rgba(22,163,74,.9) !important;
-            }
+        .fc .fc-now-indicator-arrow {
+            border-color: rgba(22, 163, 74, .9) !important;
+        }
 
-            /* seu cabeçalho roxo (mantive, mas se quiser eu harmonizo com o tema) */
-            .fc th {
-                background: #767dff !important;
-            }
+        /* seu cabeçalho roxo (mantive, mas se quiser eu harmonizo com o tema) */
+        .fc th {
+            background: #767dff !important;
+        }
 
-            /* botão "Semanas" como texto (não clicável) */
-            .fc .fc-ccSemanas-button {
-                background: transparent !important;
-                border: 0 !important;
-                box-shadow: none !important;
-                cursor: default !important;
-                padding: 0 10px !important;
-                color: var(--cc-muted) !important;
-                font-weight: 700 !important;
-            }
+        /* botão "Semanas" como texto (não clicável) */
+        .fc .fc-ccSemanas-button {
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            cursor: default !important;
+            padding: 0 10px !important;
+            color: var(--cc-muted) !important;
+            font-weight: 700 !important;
+        }
 
-            .fc .fc-ccSemanas-button:hover {
-                background: transparent !important;
-            }
+        .fc .fc-ccSemanas-button:hover {
+            background: transparent !important;
+        }
 
-            /* botão "Novo Agendamento" em destaque */
-            .fc .fc-novoAgendamento-button {
-                background: var(--cc-accent) !important;
-                border-color: var(--cc-accent) !important;
-                color: #fff !important;
-            }
+        /* botão "Novo Agendamento" em destaque */
+        .fc .fc-novoAgendamento-button {
+            background: var(--cc-accent) !important;
+            border-color: var(--cc-accent) !important;
+            color: #fff !important;
+        }
 
-            .fc .fc-novoAgendamento-button:hover {
-                background: #1d4ed8 !important;
-                border-color: #1d4ed8 !important;
-            }
+        .fc .fc-novoAgendamento-button:hover {
+            background: #1d4ed8 !important;
+            border-color: #1d4ed8 !important;
+        }
 
         /* ====== Responsividade Móvel ====== */
         @@media (max-width: 768px) {
@@ -224,7 +225,6 @@
                 justify-content: center;
             }
         }
-
     </style>
 }
 
@@ -320,9 +320,11 @@
 
             <div class="modal-footer">
                 <input type="hidden" id="idAgendamento" value="" />
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
                 <button type="button" id="btnSalvar" class="btn btn-primary">Salvar</button>
                 <button type="button" id="btnAlterar" class="btn btn-success d-none">Alterar</button>
+                <button type="button" id="btnEmitirNota" class="btn btn-warning d-none"><i class="bi bi-receipt"></i>
+                    Emitir Nota Fiscal</button>
                 <button type="button" id="btnExcluir" class="btn btn-danger d-none">Excluir</button>
                 <button type="button" id="btnPagar" class="btn btn-primary d-none">Pagar Agora</button>
             </div>
@@ -351,7 +353,7 @@
                 <div class="cc-modal-row">
                     <label class="form-label mb-0">Fim</label>
                     <!-- habilitado com calendário (date/time picker do navegador) -->
-                    <input id="fimNovo" class="form-control" type="datetime-local" readonly/>
+                    <input id="fimNovo" class="form-control" type="datetime-local" readonly />
                 </div>
 
                 <div class="cc-modal-row">
@@ -379,12 +381,13 @@
                 </div>
 
                 <div class="text-muted small">
-                    Obs: escolha Início pelo calendário. Ao trocar o serviço, o sistema inclui o fim pela duração do serviço.
+                    Obs: escolha Início pelo calendário. Ao trocar o serviço, o sistema inclui o fim pela duração do
+                    serviço.
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
                 <button type="button" id="btnSalvarNovo" class="btn btn-primary">Salvar</button>
             </div>
         </div>
@@ -435,9 +438,9 @@
 
             const services = await resp.json();
             const select = document.getElementById(selectId);
-            
+
             select.innerHTML = '<option value="">Selecione...</option>';
-            
+
             let found = false;
             services.forEach(s => {
                 const opt = document.createElement('option');
@@ -456,12 +459,12 @@
             if (currentValue && !found && currentName) {
                 const opt = document.createElement('option');
                 opt.value = currentValue;
-                opt.textContent = currentName; 
+                opt.textContent = currentName;
                 // Precisariamos da duracao, mas se for so visualizacao, ok. 
                 // Se for alterar horario, pode dar problema no calculo de fim.
                 // Ideal seria o EndPoint retornar a duracao tambem ou a gente buscar.
                 // Por hora, assumimos 30min ou tentamos pegar de algum cache se possivel, ou deixamos 0.
-                opt.dataset.duracaoMin = 30; 
+                opt.dataset.duracaoMin = 30;
                 opt.selected = true;
                 select.appendChild(opt);
             }
@@ -487,8 +490,15 @@
             // Toggle botões
             document.getElementById('btnSalvar').classList.remove('d-none');
             document.getElementById('btnAlterar').classList.add('d-none');
+            document.getElementById('btnEmitirNota').classList.add('d-none');
             document.getElementById('btnExcluir').classList.add('d-none');
             document.getElementById('btnPagar').classList.add('d-none');
+
+            // Reset readonly state
+            document.getElementById('inicio').readOnly = false;
+            document.getElementById('idPessoa').disabled = false;
+            document.getElementById('idServico').disabled = false;
+            document.getElementById('idStatus').disabled = false;
 
             // Status no novo agendamento
             document.getElementById('rowStatus').classList.add('d-none');
@@ -513,7 +523,7 @@
 
             const min = getDuracaoServicoMinutos();
             selectionEnd = new Date(selectionStart.getTime() + min * 60 * 1000);
-            
+
             // Se for datetime-local
             // document.getElementById('fim').value = toDateTimeLocalValue(selectionEnd); 
             // Mas o fim é texto readonly na modal principal? Não, é "text" readonly. 
@@ -592,7 +602,7 @@
                 idPessoa: parseInt(idPessoaStr),
                 idServico: parseInt(idServicoStr),
                 status: document.getElementById('idStatus').value,
-                start: selectionStart.toISOString() 
+                start: selectionStart.toISOString()
             };
 
             const resp = await fetch('?handler=Update', {
@@ -608,10 +618,10 @@
                 const result = await resp.json();
                 const evt = calendar.getEventById(id);
                 if (evt) {
-                   evt.setProp('title', result.title);
-                   evt.setProp('backgroundColor', result.color);
-                   if (result.start) evt.setStart(result.start);
-                   if (result.end) evt.setEnd(result.end);
+                    evt.setProp('title', result.title);
+                    evt.setProp('backgroundColor', result.color);
+                    if (result.start) evt.setStart(result.start);
+                    if (result.end) evt.setEnd(result.end);
                 }
                 modal.hide();
                 Swal.fire('Sucesso', 'Agendamento atualizado.', 'success');
@@ -632,7 +642,7 @@
                 confirmButtonColor: '#e53e3e',
                 cancelButtonColor: '#ccc',
                 confirmButtonText: 'Sim, excluir!',
-                cancelButtonText: 'Cancelar'
+                cancelButtonText: 'Voltar'
             });
 
             if (!result.isConfirmed) return;
@@ -674,6 +684,28 @@
                 }
             } else {
                 await showError(resp, 'Erro ao iniciar pagamento.');
+            }
+        }
+
+        async function emitirNotaFiscal() {
+            const id = document.getElementById('idAgendamento').value;
+            if (!id) return;
+
+            const resp = await fetch('?handler=EmitirNota', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ idAgendamento: parseInt(id) })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                Swal.fire('Sucesso', data.message || 'Nota fiscal enfileirada para emissão.', 'success');
+                modal.hide();
+            } else {
+                await showError(resp, 'Erro ao emitir nota fiscal.');
             }
         }
 
@@ -812,7 +844,7 @@
                     day: 'Dia'
                 },
                 customButtons: {
-                    novoAgendamento: {     
+                    novoAgendamento: {
                         text: 'Novo Agendamento',
                         click: abrirModalNovoAgendamento
                     }
@@ -852,7 +884,7 @@
                     if (!resp.ok) return;
 
                     const data = await resp.json();
-                    
+
                     selectionStart = new Date(data.start);
 
                     // Título dinâmico
@@ -861,12 +893,12 @@
                     document.getElementById('idAgendamento').value = data.id;
                     document.getElementById('inicio').value = toDateTimeLocalValue(selectionStart);
                     document.getElementById('idPessoa').value = data.idPessoa;
-                    
+
                     // Fetch serviços disponíveis para este horário antes de setar o valor
                     await atualizarServicosDisponiveis(selectionStart, 'idServico', data.idServico, data.servicoNome);
-                    
+
                     document.getElementById('idServico').value = data.idServico;
-                    
+
                     // Status
                     document.getElementById('rowStatus').classList.remove('d-none');
                     document.getElementById('idStatus').value = data.status;
@@ -875,21 +907,24 @@
 
                     // Bloqueio se Pago
                     const isPago = data.status === 'Pago';
+                    document.getElementById('inicio').readOnly = isPago;
                     document.getElementById('idPessoa').disabled = isPago;
                     document.getElementById('idServico').disabled = isPago;
                     document.getElementById('idStatus').disabled = isPago;
 
                     // Toggle botões
                     document.getElementById('btnSalvar').classList.add('d-none');
-                    
+
                     if (isPago) {
                         document.getElementById('btnAlterar').classList.add('d-none');
                         document.getElementById('btnExcluir').classList.add('d-none');
                         document.getElementById('btnPagar').classList.add('d-none');
+                        document.getElementById('btnEmitirNota').classList.remove('d-none');
                     } else {
                         document.getElementById('btnAlterar').classList.remove('d-none');
                         document.getElementById('btnExcluir').classList.remove('d-none');
                         document.getElementById('btnPagar').classList.remove('d-none');
+                        document.getElementById('btnEmitirNota').classList.add('d-none');
                     }
 
                     modal.show();
@@ -900,7 +935,7 @@
             modalNovo = new bootstrap.Modal(document.getElementById('agendamentoNovoModal'));
 
             document.getElementById('btnSalvarNovo').addEventListener('click', salvarAgendamentoNovo);
-            document.getElementById('inicioNovo').addEventListener('change', async function() {
+            document.getElementById('inicioNovo').addEventListener('change', async function () {
                 const start = fromDateTimeLocalValue(this.value);
                 if (start) {
                     await atualizarServicosDisponiveis(start, 'idServicoNovo');
@@ -912,6 +947,7 @@
             document.getElementById('btnAlterar').addEventListener('click', alterarAgendamento);
             document.getElementById('btnExcluir').addEventListener('click', excluirAgendamento);
             document.getElementById('btnPagar').addEventListener('click', iniciarPagamento);
+            document.getElementById('btnEmitirNota').addEventListener('click', emitirNotaFiscal);
 
 
 
@@ -924,9 +960,9 @@
             document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
 
             // Listener para mudança de horário na edição
-            document.getElementById('inicio').addEventListener('change', function() {
+            document.getElementById('inicio').addEventListener('change', function () {
                 const val = this.value;
-                if(val) {
+                if (val) {
                     selectionStart = fromDateTimeLocalValue(val);
                     recalcularFimPeloServico();
                 }

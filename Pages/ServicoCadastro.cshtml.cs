@@ -59,14 +59,24 @@ namespace CorteCor.Pages
 
             TimeSpan duracao = ParseDuracao(Request.Form["duracao"]);
 
+            decimal? aliquotaIss = null;
+            if (!string.IsNullOrWhiteSpace(Request.Form["aliquotaISS"]))
+            {
+                aliquotaIss = ParsePrecoBR(Request.Form["aliquotaISS"]);
+            }
+
             var servico = new Servico
             {
                 IdServico = id,
                 Nome = Request.Form["nome"],
                 Preco = preco,
-                
+
                 Duracao = duracao,
-                IdSalao = idSalao
+                IdSalao = idSalao,
+
+                CodigoTributacaoMunicipio = Request.Form["codigoTributacao"],
+                Cnae = Request.Form["cnae"].ToString()?.Replace(".", "").Replace("-", "").Replace("/", ""),
+                AliquotaISS = aliquotaIss
             };
 
             var handler = new ServicoHandler();

@@ -101,7 +101,7 @@ namespace CorteCor.Pages
                           $"<p>O administrador do <b>Tonni Corte & Cor</b> criou um usuário para você nesse sistema.</p>" +
                           $"<p>O login é seu email: <b>{Usuario.FirstOrDefault().Email}</b></p>" +
                           $"<p>Sua senha é: <b>{senhaRecuperada}</b></p>" +
-                          $"<p>Para acessar o sistema <a href='https://tonni.com.br/CorteCor/adm'>clique aqui</a>, ou acesse: <a href='https://tonni.com.br/CorteCor/adm'>tonni.com.br/CorteCor/adm</a></p>" +
+                          $"<p>Para acessar o sistema <a href='https://tonni.com.br/CorteCor'>clique aqui</a>, ou acesse: <a href='https://tonni.com.br/CorteCor'>tonni.com.br/CorteCor/adm</a></p>" +
                           $"<br><br><p>Atenciosamente, <br>Equipe Tonni Tecnologia <br> <a href='https://tonni.com.br'>tonni.com.br</a></p>";
 
             var loginManager = new LoginManager();

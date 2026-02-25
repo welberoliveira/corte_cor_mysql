@@ -1,16 +1,15 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc; // Adicionado para IActionResult e BindProperty
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Configuration; // Added for IConfiguration
-using Microsoft.Extensions.DependencyInjection; // Added for GetRequiredService
-using System.Threading.Tasks; // Added for Task
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 using CorteCor.Services;
-
 
 namespace CorteCor.Pages
 {
@@ -38,6 +37,9 @@ namespace CorteCor.Pages
         [BindProperty(SupportsGet = true)]
         public int p { get; set; } = 1;
 
+        public decimal TotalValor { get; set; }
+        public int TotalContagem { get; set; }
+
         public void OnGet()
         {
             var handler = new PagamentoHandler();
@@ -53,6 +55,10 @@ namespace CorteCor.Pages
             };
             Pagamentos = handler.Listar(filtro);
             if (Pagamentos == null) Pagamentos = new PagedResult<Pagamento>();
+
+            var resumo = handler.ObterResumo(filtro);
+            TotalValor = resumo.totalValor;
+            TotalContagem = resumo.totalContagem;
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -68,11 +74,11 @@ namespace CorteCor.Pages
                 try
                 {
                     handler.Excluir(id);
-                    Mensagem = "Pagamento excluÌdo com sucesso.";
+                    Mensagem = "Pagamento exclu√≠do com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir este Pagamento porque ele est· associado a outros registros.";
+                    Mensagem = "N√£o foi poss√≠vel excluir este Pagamento porque ele est√° associado a outros registros.";
                 }
             }
             else if (action == "alterar" && id != Guid.Empty)
@@ -81,11 +87,11 @@ namespace CorteCor.Pages
             }
             else if (action == "sincronizar" && id != Guid.Empty)
             {
-                // SincronizaÁ„o manual
+                // Sincroniza√ß√£o manual
                 var mpService = new MercadoPagoService(HttpContext.RequestServices.GetRequiredService<IConfiguration>());
                 bool synced = await handler.SincronizarPagamento(id, mpService);
                 if (synced) Mensagem = "Status sincronizado com sucesso!";
-                else Mensagem = "N„o foi possÌvel sincronizar ou pagamento n„o encontrado no Mercado Pago.";
+                else Mensagem = "N√£o foi poss√≠vel sincronizar ou pagamento n√£o encontrado no Mercado Pago.";
             }
 
             OnGet();

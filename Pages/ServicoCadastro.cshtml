@@ -17,22 +17,39 @@
     <form method="post">
         <input type="hidden" name="id" value="@Model.Servico?.IdServico">
 
-        <div class="form-group">
-            <label for="nome">Nome</label>
-            <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Servico?.Nome">
+        <div class="row">
+            <div class="col-md-9 form-group">
+                <label for="nome">Nome</label>
+                <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Servico?.Nome">
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="duracao">Duração</label>
+                <input type="time" id="duracao" name="duracao" class="form-control" required step="60"
+                    value="@(Model.Servico != null ? Model.Servico.Duracao.ToString(@"hh\:mm") : "")">
+                <small class="form-text text-muted">Ex: 00:30</small>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label for="preco">Preço (R$)</label>
-            <input type="text" id="preco" name="preco" class="form-control" required
-                   value="@(Model.Servico != null ? Model.Servico.Preco.ToString("0.00").Replace('.', ',') : "")">
-        </div>
-
-        <div class="form-group">
-            <label for="duracao">Duração</label>
-            <input type="time" id="duracao" name="duracao" class="form-control" required step="60"
-                   value="@(Model.Servico != null ? Model.Servico.Duracao.ToString(@"hh\:mm") : "")">
-            <small class="form-text text-muted">Ex: 00:30</small>
+        <div class="row">
+            <div class="col-md-3 form-group">
+                <label for="preco">Preço (R$)</label>
+                <input type="text" id="preco" name="preco" class="form-control" required
+                    value="@(Model.Servico != null ? Model.Servico.Preco.ToString("0.00").Replace('.', ',') : "")">
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="aliquotaISS">Alíquota ISS (%)</label>
+                <input type="text" id="aliquotaISS" name="aliquotaISS" class="form-control"
+                    value="@(Model.Servico?.AliquotaISS != null ? Model.Servico.AliquotaISS.Value.ToString("0.00").Replace('.', ',') : "")">
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="cnae">CNAE</label>
+                <input type="text" id="cnae" name="cnae" class="form-control" value="@Model.Servico?.Cnae">
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="codigoTributacao">Cód. Tributação (ISS)</label>
+                <input type="text" id="codigoTributacao" name="codigoTributacao" class="form-control"
+                    value="@Model.Servico?.CodigoTributacaoMunicipio">
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">@Model.ButtonText</button>

@@ -1,4 +1,4 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -18,7 +18,9 @@ namespace CorteCor.Pages
         public void OnGet()
         {
             var handler = new MeioPagamentoHandler();
-            MeiosPagamento = handler.Listar() ?? new List<MeioPagamento>();
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+            MeiosPagamento = handler.ListarPorSalao(idSalao, null) ?? new List<MeioPagamento>();
         }
 
         public void OnPost()
@@ -27,6 +29,17 @@ namespace CorteCor.Pages
 
             int id = int.Parse(Request.Form["id"]);
             string action = Request.Form["action"];
+
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+            var meio = handler.ObterPorId(id);
+            if (meio == null || meio.IdSalao != idSalao)
+            {
+                Mensagem = "Meio de pagamento n√£o encontrado ou acesso negado.";
+                OnGet();
+                return;
+            }
 
             if (action == "ativar")
             {
@@ -43,11 +56,11 @@ namespace CorteCor.Pages
                 try
                 {
                     handler.Excluir(id);
-                    Mensagem = "Meio de pagamento excluÌdo com sucesso.";
+                    Mensagem = "Meio de pagamento exclu√≠do com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir este Meio de Pagamento porque ele est· associado a outros registros.";
+                    Mensagem = "N√£o foi poss√≠vel excluir este Meio de Pagamento porque ele est√° associado a outros registros.";
                 }
             }
             else if (action == "alterar")
