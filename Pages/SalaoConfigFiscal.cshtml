@@ -10,11 +10,11 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-                <div class="alert alert-success">@Model.Mensagem</div>
+        <div class="alert alert-success">@Model.Mensagem</div>
     }
     @if (!string.IsNullOrEmpty(Model.Erro))
     {
-                <div class="alert alert-danger">@Model.Erro</div>
+        <div class="alert alert-danger">@Model.Erro</div>
     }
 
     <form method="post" enctype="multipart/form-data">
@@ -72,10 +72,12 @@
         <div class="row">
             <div class="col-md-12 mb-3">
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="emissaoAuto" asp-for="Configuracao.EmissaoAutomatica">
+                    <input class="form-check-input" type="checkbox" id="emissaoAuto"
+                        asp-for="Configuracao.EmissaoAutomatica">
                     <label class="form-check-label" for="emissaoAuto">
                         <strong>Emissão Automática ao Pagar</strong> <br>
-                        <small class="text-muted">Gera e envia a nota fiscal automaticamente para a Sefaz/Prefeitura assim que o agendamento for registrado como "Pago".</small>
+                        <small class="text-muted">Gera e envia a nota fiscal automaticamente para a Sefaz/Prefeitura
+                            assim que o agendamento for registrado como "Pago".</small>
                     </label>
                 </div>
             </div>
@@ -89,7 +91,8 @@
                     <input type="file" name="certificadoFile" class="form-control" accept=".pfx" />
                     @if (Model.PossuiCertificadoSalvo)
                     {
-                                <small class="text-success fw-bold d-block mt-1">O Salão já possui um certificado salvo. Envie outro apenas para substituí-lo.</small>
+                        <small class="text-success fw-bold d-block mt-1">O Salão já possui um certificado salvo. Envie outro
+                            apenas para substituí-lo.</small>
                     }
                 </div>
                 <div class="col-md-6 mb-3">
@@ -107,9 +110,9 @@
 </div>
 
 @section Scripts {
-            <script>
-                $(document).ready(function () {
-                     $('.cnpj').inputmask('99.999.999/9999-99');
-                });
-            </script>
+    <script>
+        $(document).ready(function () {
+            $('.cnpj').inputmask('99.999.999/9999-99');
+        });
+    </script>
 }

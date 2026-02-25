@@ -105,8 +105,8 @@ app.UseRequestLocalization(localizationOptions);
 var currentPath = AppDomain.CurrentDomain.BaseDirectory;
 
 //>>> incluido para ter duas aplicações ao mesmo tempo Verifica se o PathBase precisa ser definido automaticamente
-var pathBase = AppDomain.CurrentDomain.BaseDirectory.Contains("CorteCor") ? "/CorteCor" :
-               AppDomain.CurrentDomain.BaseDirectory.Contains("CorteCor_hml") ? "/CorteCor_hml" : "";
+var pathBase = AppDomain.CurrentDomain.BaseDirectory.Contains("tonni") ? "/cortecor" : "";
+
 
 if (!string.IsNullOrEmpty(pathBase))
 {

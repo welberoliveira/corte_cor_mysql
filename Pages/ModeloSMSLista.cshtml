@@ -9,7 +9,7 @@
         <h4>Modelos de SMS</h4>
     </div>
     <div class="col-md-6 text-right">
-        <a href="/ModeloSMSCadastro" class="btn btn-success">Cadastrar Novo</a>
+        <a asp-page="/ModeloSMSCadastro" class="btn btn-success">Cadastrar Novo</a>
     </div>
 </div>
 
@@ -37,7 +37,7 @@
                 </td>
                 <td>@(m.Ativo ? "Sim" : "Não")</td>
                 <td>
-                    <a href="/ModeloSMSCadastro?id=@m.IdModelo" class="btn btn-primary btn-sm">Editar</a>
+                    <a asp-page="/ModeloSMSCadastro" asp-route-id="@m.IdModelo" class="btn btn-primary btn-sm">Editar</a>
                 </td>
             </tr>
         }

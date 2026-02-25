@@ -9,7 +9,7 @@
         <h4>Modelos de E-mail</h4>
     </div>
     <div class="col-md-6 text-right">
-        <a href="/ModeloEmailCadastro" class="btn btn-success">Cadastrar Novo</a>
+        <a asp-page="/ModeloEmailCadastro" class="btn btn-success">Cadastrar Novo</a>
     </div>
 </div>
 
@@ -35,7 +35,7 @@
                 <td>@m.Assunto</td>
                 <td>@(m.Ativo ? "Sim" : "Não")</td>
                 <td>
-                    <a href="/ModeloEmailCadastro?id=@m.IdModelo" class="btn btn-primary btn-sm">Editar</a>
+                    <a asp-page="/ModeloEmailCadastro" asp-route-id="@m.IdModelo" class="btn btn-primary btn-sm">Editar</a>
                 </td>
             </tr>
         }

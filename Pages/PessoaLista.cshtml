@@ -9,7 +9,7 @@
         <h2>@ViewData["Title"]</h2>
     </div>
     <div class="col-md-2">
-        <a class="btn btn-primary pull-right" href="/PessoaCadastro">Nova Pessoa</a>
+        <a class="btn btn-primary pull-right" asp-page="/PessoaCadastro">Nova Pessoa</a>
     </div>
 </div>
 <br />
@@ -40,11 +40,13 @@
                     <td>@(Pessoa.DataNascimento.HasValue ? Pessoa.DataNascimento.Value.ToShortDateString() : "")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
-                            <button name="id" value="@Pessoa.IdPessoa" class="btn btn-info" type="submit" formaction="?handler=Alterar">Alterar</button>
+                            <button name="id" value="@Pessoa.IdPessoa" class="btn btn-info" type="submit"
+                                formaction="?handler=Alterar">Alterar</button>
                             <input type="hidden" name="action" value="alterar">
                         </form>
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta Pessoa?');">
+                        <form method="post" style="display: inline;"
+                            onsubmit="return confirm('Tem certeza que deseja excluir esta Pessoa?');">
                             <input type="hidden" name="id" value="@Pessoa.IdPessoa">
                             <input type="hidden" name="action" value="excluir">
                             <button class="btn btn-danger">Excluir</button>

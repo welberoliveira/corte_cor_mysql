@@ -3,6 +3,7 @@
 
 <style>
     @@media (max-width: 768px) {
+
         table th:nth-child(2),
         table td:nth-child(2),
         table th:nth-child(3),
@@ -17,7 +18,7 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center">
         <h4>Lista de Saloes</h4>
-        <a href="/SalaoCadastro" class="btn btn-primary">Novo Salão</a>
+        <a asp-page="/SalaoCadastro" class="btn btn-primary">Novo Salão</a>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
@@ -35,7 +36,7 @@
         </select>
     </form>
 
-    <table >
+    <table>
         <thead>
             <tr>
                 <th>Nome</th>
@@ -79,7 +80,8 @@
                             </form>
                         }
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta Salao?');">
+                        <form method="post" style="display: inline;"
+                            onsubmit="return confirm('Tem certeza que deseja excluir esta Salao?');">
                             <input type="hidden" name="id" value="@Salao.IdSalao">
                             <input type="hidden" name="action" value="excluir">
                             <button class="btn btn-danger">Excluir</button>

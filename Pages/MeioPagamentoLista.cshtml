@@ -3,6 +3,7 @@
 
 <style>
     @@media (max-width: 768px) {
+
         table th:nth-child(2),
         table td:nth-child(2),
         table th:nth-child(3),
@@ -19,7 +20,7 @@
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h4>Lista de Meios de Pagamento</h4>
-        <a href="/MeioPagamentoCadastro" class="btn btn-primary">Cadastrar Novo</a>
+        <a asp-page="/MeioPagamentoCadastro" class="btn btn-primary">Cadastrar Novo</a>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
@@ -78,7 +79,8 @@
                             <button class="btn btn-warning">Desativar</button>
                         </form>
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Meio de Pagamento?');">
+                        <form method="post" style="display: inline;"
+                            onsubmit="return confirm('Tem certeza que deseja excluir este Meio de Pagamento?');">
                             <input type="hidden" name="id" value="@Meio.IdMeioPagamento">
                             <input type="hidden" name="action" value="excluir">
                             <button class="btn btn-danger">Excluir</button>

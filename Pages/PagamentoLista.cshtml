@@ -3,59 +3,27 @@
 @{
     ViewData["Title"] = "Relatório de Pagamentos";
 
-
-
     var statusClass = new Func<string, string>(s => s switch
-
-
-
     {
-
-
-
         "Pago" => "success",
-
-
-
         "approved" => "success",
-
-
-
         "Pendente" => "warning",
-
-
-
         "pending" => "warning",
-
-
-
         "Cancelado" => "danger",
-
-
-
         "failure" => "danger",
-
-
-
         _ => "secondary"
-
-
-
     });
 }
 
 <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between mb-4 mt-3">
         <h2 class="mb-0">@ViewData["Title"]</h2>
-        <a class="btn btn-primary shadow-sm" href="/PagamentoCadastro">
+        <a class="btn btn-primary shadow-sm" asp-page="/PagamentoCadastro">
             <i class="fas fa-plus"></i> Novo Pagamento
         </a>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
-
-
-
     {
         <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
             <i class="fas fa-info-circle mr-2"></i> @Model.Mensagem
@@ -108,7 +76,7 @@
                         <button type="submit" class="btn btn-primary px-4 shadow-sm mr-2">
                             <i class="fas fa-search"></i> Filtrar
                         </button>
-                        <a href="/PagamentoLista" class="btn btn-secondary px-4">
+                        <a asp-page="/PagamentoLista" class="btn btn-secondary px-4">
                             <i class="fas fa-eraser"></i> Limpar
                         </a>
                     </div>
@@ -165,9 +133,6 @@
                 </thead>
                 <tbody>
                     @foreach (var p in Model.Pagamentos.Items)
-
-
-
                     {
                         <tr>
                             <td class="align-middle">@p.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
@@ -180,9 +145,6 @@
                                     @(string.IsNullOrEmpty(p.Status) ? "N/A" : p.Status)
                                 </span>
                                 @if (!string.IsNullOrEmpty(p.MpStatusDetail))
-
-
-
                                 {
                                     <small class="d-block text-muted mt-1">@p.MpStatusDetail</small>
                                 }
@@ -194,9 +156,6 @@
                             <td class="text-right align-middle">
                                 <div class="btn-group">
                                     @if (!string.IsNullOrEmpty(p.CheckoutUrl) && p.Status == "Pendente")
-
-
-
                                     {
                                         <a href="@p.CheckoutUrl" target="_blank" class="btn btn-sm btn-success" title="Pagar">
                                             <i class="fas fa-money-bill-wave"></i> Pagar
@@ -211,8 +170,8 @@
                                         </button>
                                     </form>
 
-                                    <a href="/PagamentoCadastro?id=@p.IdPagamento" class="btn btn-sm btn-primary ml-1"
-                                        title="Editar">
+                                    <a asp-page="/PagamentoCadastro" asp-route-id="@p.IdPagamento"
+                                        class="btn btn-sm btn-primary ml-1" title="Editar">
                                         <i class="fas fa-edit"></i> Editar
                                     </a>
 
@@ -229,9 +188,6 @@
                         </tr>
                     }
                     @if (!Model.Pagamentos.Items.Any())
-
-
-
                     {
                         <tr>
                             <td colspan="8" class="text-center py-5 text-muted">
@@ -247,63 +203,23 @@
 
     <!-- Paginação -->
     @if (Model.Pagamentos.TotalPages > 1)
-
-
-
     {
         <nav aria-label="Navegação de página" class="mt-4">
             <ul class="pagination justify-content-center shadow-sm">
                 @{
                     var queryParams = new Dictionary<string, string>();
 
-
-
                     if (Model.DataInicio.HasValue) queryParams.Add("DataInicio", Model.DataInicio.Value.ToString("yyyy-MM-dd"));
-
-
-
                     if (Model.DataFim.HasValue) queryParams.Add("DataFim", Model.DataFim.Value.ToString("yyyy-MM-dd"));
-
-
-
                     if (!string.IsNullOrEmpty(Model.Status)) queryParams.Add("Status", Model.Status);
-
-
-
                     if (!string.IsNullOrEmpty(Model.NomeCliente)) queryParams.Add("NomeCliente", Model.NomeCliente);
-
-
-
-                    if (Model.DataAgendamento.HasValue) queryParams.Add("DataAgendamento",
-
-                    Model.DataAgendamento.Value.ToString("yyyy-MM-dd"));
-
-
-
-
-
-
+                    if (Model.DataAgendamento.HasValue) queryParams.Add("DataAgendamento", Model.DataAgendamento.Value.ToString("yyyy-MM-dd"));
 
                     string GetLink(int page)
-
-
-
                     {
-
-
-
                         var dict = new Dictionary<string, string>(queryParams);
-
-
-
                         dict["p"] = page.ToString();
-
-
-
                         return "?" + string.Join("&", dict.Select(kv => $"{kv.Key}={System.Net.WebUtility.UrlEncode(kv.Value)}"));
-
-
-
                     }
                 }
 
@@ -314,9 +230,6 @@
                 </li>
 
                 @for (int i = 1; i <= Model.Pagamentos.TotalPages; i++)
-
-
-
                 {
                     <li class="page-item @(i == Model.Pagamentos.PageIndex ? "active" : "")">
                         <a class="page-link" href="@GetLink(i)">@i</a>
@@ -332,3 +245,4 @@
         </nav>
     }
 </div>
+
