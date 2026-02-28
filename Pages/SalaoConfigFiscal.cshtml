@@ -61,11 +61,15 @@
             </div>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Cód. UF (IBGE)</label>
-                <input type="number" asp-for="Configuracao.CodigoUFIBGE" class="form-control" required />
+                <select asp-for="Configuracao.CodigoUFIBGE" class="form-select" id="uf-select" required>
+                    <option value="">Selecione...</option>
+                </select>
             </div>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Cód. Município (IBGE)</label>
-                <input type="number" asp-for="Configuracao.CodigoMunicipioIBGE" class="form-control" required />
+                <select asp-for="Configuracao.CodigoMunicipioIBGE" class="form-select" id="municipio-select" required>
+                    <option value="">Selecione...</option>
+                </select>
             </div>
         </div>
 
@@ -104,7 +108,6 @@
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary px-4">Salvar Configurações</button>
-            <a href="/" class="btn btn-secondary ms-2">Voltar</a>
         </div>
     </form>
 </div>
@@ -113,6 +116,47 @@
     <script>
         $(document).ready(function () {
             $('.cnpj').inputmask('99.999.999/9999-99');
+
+            var initialUfId = '@(Model.Configuracao.CodigoUFIBGE)';
+            var initialMunicipioId = '@(Model.Configuracao.CodigoMunicipioIBGE)';
+
+            // Load States
+            $.getJSON('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome', function (data) {
+                var $ufSelect = $('#uf-select');
+                $.each(data, function (key, val) {
+                    $ufSelect.append($('<option></option>').val(val.id).html(val.sigla));
+                });
+                
+                if (initialUfId && initialUfId !== '0') {
+                    $ufSelect.val(initialUfId);
+                    carregarMunicipios(initialUfId, initialMunicipioId);
+                }
+            });
+
+            // UF change event
+            $('#uf-select').change(function () {
+                var ufId = $(this).val();
+                carregarMunicipios(ufId, null);
+            });
+
+            function carregarMunicipios(ufId, selectedMunicipioId) {
+                var $municipioSelect = $('#municipio-select');
+                $municipioSelect.empty().append('<option value="">Carregando...</option>');
+                
+                if (ufId) {
+                    $.getJSON('https://servicodados.ibge.gov.br/api/v1/localidades/estados/' + ufId + '/municipios?orderBy=nome', function (data) {
+                        $municipioSelect.empty().append('<option value="">Selecione...</option>');
+                        $.each(data, function (key, val) {
+                            $municipioSelect.append($('<option></option>').val(val.id).html(val.nome));
+                        });
+                        if (selectedMunicipioId && selectedMunicipioId !== '0') {
+                            $municipioSelect.val(selectedMunicipioId);
+                        }
+                    });
+                } else {
+                    $municipioSelect.empty().append('<option value="">Selecione...</option>');
+                }
+            }
         });
     </script>
 }

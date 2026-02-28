@@ -56,7 +56,7 @@ namespace CorteCor.Pages
                 }
 
                 var handler = new UsuarioHandler();
-                var Usuario = handler.Listar().FirstOrDefault(m => m.IdUsuario.ToString() == IdUsuario);
+                var Usuario = handler.ObterPorId(int.Parse(IdUsuario));
 
 
                 // Criar os claims do usuário autenticado

@@ -12,7 +12,7 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class MeioPagamentoListaModel : PageModel
     {
-        public List<MeioPagamento> MeiosPagamento { get; set; }
+        public List<MeioPagamento> MeiosPagamento { get; set; } = new();
         public string Mensagem { get; set; }
 
         public void OnGet()
@@ -55,7 +55,7 @@ namespace CorteCor.Pages
             {
                 try
                 {
-                    handler.Excluir(id);
+                    handler.ExcluirPorSalao(id, idSalao);
                     Mensagem = "Meio de pagamento excluído com sucesso.";
                 }
                 catch (Exception)

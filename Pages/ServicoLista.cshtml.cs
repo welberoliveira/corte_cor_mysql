@@ -1,4 +1,4 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,13 +12,16 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class ServicoListaModel : PageModel
     {
-        public List<Servico> Servicos { get; set; }
+        public List<Servico> Servicos { get; set; } = new();
         public string Mensagem { get; set; }
 
         public void OnGet()
         {
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
             var handler = new ServicoHandler();
-            Servicos = handler.Listar() ?? new List<Servico>();
+            Servicos = handler.ListarPorSalao(idSalao) ?? new List<Servico>();
         }
 
         public void OnPost()
@@ -32,12 +35,13 @@ namespace CorteCor.Pages
             {
                 try
                 {
-                    handler.Excluir(id);
-                    Mensagem = "ServiÁo excluÌdo com sucesso.";
+                    int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
+                    handler.ExcluirPorSalao(id, idSalao);
+                    Mensagem = "Servi√ßo exclu√≠do com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir este ServiÁo porque ele est· associado a outros registros.";
+                    Mensagem = "N√£o foi poss√≠vel excluir este Servi√ßo porque ele est√° associado a outros registros.";
                 }
             }
             else if (action == "alterar")

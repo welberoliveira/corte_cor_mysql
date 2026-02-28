@@ -46,9 +46,9 @@ namespace CorteCor.Pages
         [BindProperty(SupportsGet = true)]
         public int p { get; set; } = 1;
 
-        public List<Servico> ServicosOptions { get; set; }
-        public List<Pessoa> PessoasOptions { get; set; }
-        public List<Funcionario> FuncionariosOptions { get; set; }
+        public List<Servico> ServicosOptions { get; set; } = new();
+        public List<Pessoa> PessoasOptions { get; set; } = new();
+        public List<Funcionario> FuncionariosOptions { get; set; } = new();
         public List<string> StatusOptions { get; set; } = new List<string> { "Agendado", "Pago", "Pendente", "Cancelado" };
 
         private Dictionary<int, string> _servicosCache = new Dictionary<int, string>();
@@ -95,7 +95,7 @@ namespace CorteCor.Pages
 
         private void CarregarDadosApoio(int idSalao)
         {
-            ServicosOptions = _servicoHandler.Listar().Where(s => s.IdSalao == idSalao).OrderBy(s => s.Nome).ToList();
+            ServicosOptions = _servicoHandler.ListarPorSalao(idSalao).OrderBy(s => s.Nome).ToList();
             foreach(var s in ServicosOptions) _servicosCache[s.IdServico] = s.Nome;
 
             var pessoas = _pessoaHandler.ListarPorSalao(idSalao); 

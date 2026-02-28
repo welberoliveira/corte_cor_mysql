@@ -17,8 +17,18 @@ namespace CorteCor.Pages
         {
             if (id.HasValue)
             {
+                int idSalao = 0;
+                int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
                 var handler = new PessoaHandler();
-                Pessoa = handler.Listar().FirstOrDefault(p => p.IdPessoa == id.Value);
+                Pessoa = handler.ObterPorId(id.Value);
+
+                if (Pessoa != null && Pessoa.IdSalao != idSalao)
+                {
+                    Response.Redirect(HttpContext.Request.PathBase + $"/PessoaLista");
+                    return;
+                }
+
                 ButtonText = "Atualizar";
             }
         }

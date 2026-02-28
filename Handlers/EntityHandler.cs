@@ -114,6 +114,74 @@ namespace CorteCor.Handlers
             return Usuarios;
         }
 
+        public Usuario ObterPorId(int idUsuario)
+        {
+            string query = @"SELECT IdUsuario, Nome, Email, Telefone, DataEntrada, Status, Sobrenome, CPF, Senha, IdSalao
+                         FROM CorteCor_Usuario 
+                         WHERE IdUsuario = @IdUsuario";
+            var Usuario = new Usuario();
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdUsuario", idUsuario);
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        Usuario = new Usuario
+                        {
+                            IdUsuario = reader["IdUsuario"] is DBNull ? 0 : Convert.ToInt32(reader["IdUsuario"]),
+                            Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                            Email = reader["Email"] is DBNull ? "" : reader["Email"].ToString(),
+                            Telefone = reader["Telefone"] is DBNull ? "" : reader["Telefone"].ToString(),
+                            DataEntrada = reader["DataEntrada"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataEntrada"]),
+                            Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
+                            Sobrenome = reader["Sobrenome"] is DBNull ? "" : reader["Sobrenome"].ToString(),
+                            CPF = reader["CPF"] is DBNull ? "" : reader["CPF"].ToString(),
+                            Senha = reader["Senha"] is DBNull ? "" : reader["Senha"].ToString(),
+                            IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"])
+                        };
+                        return Usuario;
+                    }
+                }
+            }
+            return null;
+        }
+
+        public List<Usuario> ListarPorSalao(int idSalao)
+        {
+            string query = @"SELECT IdUsuario, Nome, Email, Telefone, DataEntrada, Status, Sobrenome, CPF, Senha, IdSalao
+                         FROM CorteCor_Usuario 
+                         WHERE IdSalao = @IdSalao
+                         ORDER BY Nome";
+            var Usuarios = new List<Usuario>();
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Usuarios.Add(new Usuario
+                        {
+                            IdUsuario = reader["IdUsuario"] is DBNull ? 0 : Convert.ToInt32(reader["IdUsuario"]),
+                            Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                            Email = reader["Email"] is DBNull ? "" : reader["Email"].ToString(),
+                            Telefone = reader["Telefone"] is DBNull ? "" : reader["Telefone"].ToString(),
+                            DataEntrada = reader["DataEntrada"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataEntrada"]),
+                            Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
+                            Sobrenome = reader["Sobrenome"] is DBNull ? "" : reader["Sobrenome"].ToString(),
+                            CPF = reader["CPF"] is DBNull ? "" : reader["CPF"].ToString(),
+                            Senha = reader["Senha"] is DBNull ? "" : reader["Senha"].ToString(),
+                            IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"])
+                        });
+                    }
+                }
+            }
+            return Usuarios;
+        }
+
         public override void Excluir(int id)
         {
             string query = "DELETE FROM CorteCor_Usuario WHERE IdUsuario = @IdUsuario";
@@ -121,6 +189,18 @@ namespace CorteCor.Handlers
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@IdUsuario", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void ExcluirPorSalao(int idUsuario, int idSalao)
+        {
+            string query = "DELETE FROM CorteCor_Usuario WHERE IdUsuario = @IdUsuario AND IdSalao = @IdSalao";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdUsuario", idUsuario);
+                command.AddWithValue("@IdSalao", idSalao);
                 command.ExecuteNonQuery();
             }
         }
@@ -135,7 +215,7 @@ namespace CorteCor.Handlers
                              Sobrenome = @Sobrenome, 
                              CPF = @CPF,
                              IdSalao = @IdSalao
-                         WHERE IdUsuario = @IdUsuario";
+                         WHERE IdUsuario = @IdUsuario AND IdSalao = @IdSalao";
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
             {
@@ -1098,13 +1178,12 @@ namespace CorteCor.Handlers
             sab = @sab, sab_ini = @sab_ini, sab_fim = @sab_fim,
             dom = @dom, dom_ini = @dom_ini, dom_fim = @dom_fim,
             IdSalao = @IdSalao
-        WHERE IdFuncionario = @IdFuncionario;";
+        WHERE IdFuncionario = @IdFuncionario AND IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@Nome", funcionario.Nome ?? "");
-
                 command.AddWithValue("@seg", funcionario.seg);
                 command.AddWithValue("@seg_ini", (object?)funcionario.seg_ini ?? DBNull.Value);
                 command.AddWithValue("@seg_fim", (object?)funcionario.seg_fim ?? DBNull.Value);
@@ -1149,6 +1228,18 @@ namespace CorteCor.Handlers
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@IdFuncionario", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void ExcluirPorSalao(int idFuncionario, int idSalao)
+        {
+            string query = "DELETE FROM CorteCor_Funcionario WHERE IdFuncionario = @IdFuncionario AND IdSalao = @IdSalao";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdFuncionario", idFuncionario);
+                command.AddWithValue("@IdSalao", idSalao);
                 command.ExecuteNonQuery();
             }
         }
@@ -1262,14 +1353,13 @@ namespace CorteCor.Handlers
                     });
                 }
             }
-
             return servicos;
         }
 
-        public virtual List<Servico> ListarPorSalao(int idSalao)
+        public List<Servico> ListarPorSalao(int idSalao)
         {
             string query = @"
-        SELECT IdServico, Nome, Preco, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS
+        SELECT IdServico, Nome, Preco, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS 
         FROM CorteCor_Servico
         WHERE IdSalao = @IdSalao
         ORDER BY Nome;";
@@ -1280,7 +1370,6 @@ namespace CorteCor.Handlers
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@IdSalao", idSalao);
-
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
@@ -1299,9 +1388,11 @@ namespace CorteCor.Handlers
                     }
                 }
             }
-
             return servicos;
         }
+
+
+
 
         public void Atualizar(Servico servico)
         {
@@ -1314,7 +1405,7 @@ namespace CorteCor.Handlers
             CodigoTributacaoMunicipio = @CodigoTributacaoMunicipio,
             Cnae = @Cnae,
             AliquotaISS = @AliquotaISS
-        WHERE IdServico = @IdServico;";
+        WHERE IdServico = @IdServico AND IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
@@ -1344,10 +1435,23 @@ namespace CorteCor.Handlers
             }
         }
 
-        // Esta tabela nÃ£o tem Status. Mantive o mÃ©todo para bater com a base EntityHandler<T>.
+        public void ExcluirPorSalao(int idServico, int idSalao)
+        {
+            string query = "DELETE FROM CorteCor_Servico WHERE IdServico = @IdServico AND IdSalao = @IdSalao";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdServico", idServico);
+                command.AddWithValue("@IdSalao", idSalao);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        // Esta tabela não tem Status. Mantive o método para bater com a base EntityHandler<T>.
         public override void AtivarDesativar(int id, bool ativar)
         {
-            throw new NotSupportedException("CorteCor_Servico nÃ£o possui campo Status.");
+            throw new NotSupportedException("CorteCor_Servico não possui campo Status.");
         }
 
         public override void Cadastrar(Servico entity)
@@ -1819,7 +1923,7 @@ namespace CorteCor.Handlers
             Bairro = @Bairro,
             Cidade = @Cidade,
             UF = @UF
-        WHERE IdPessoa = @IdPessoa;";
+        WHERE IdPessoa = @IdPessoa AND IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
@@ -1865,6 +1969,19 @@ namespace CorteCor.Handlers
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@IdPessoa", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void ExcluirPorSalao(int idPessoa, int idSalao)
+        {
+            string query = "UPDATE CorteCor_Pessoa SET Excluido = 1 WHERE IdPessoa = @IdPessoa AND IdSalao = @IdSalao";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdPessoa", idPessoa);
+                command.AddWithValue("@IdSalao", idSalao);
                 command.ExecuteNonQuery();
             }
         }
@@ -2041,6 +2158,42 @@ namespace CorteCor.Handlers
             return agendamentos;
         }
 
+        public List<Agendamento> ListarPorSalao(int idSalao)
+        {
+            string query = @"
+        SELECT a.IdAgendamento, a.DataHora, a.Status, a.IdServico, a.IdPessoa, a.IdFuncionario, a.Excluido
+        FROM CorteCor_Agendamento a
+        INNER JOIN CorteCor_Servico s ON a.IdServico = s.IdServico
+        WHERE s.IdSalao = @IdSalao AND (a.Excluido = 0 OR a.Excluido IS NULL)
+        ORDER BY a.DataHora;";
+
+            var agendamentos = new List<Agendamento>();
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        agendamentos.Add(new Agendamento
+                        {
+                            IdAgendamento = reader["IdAgendamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdAgendamento"]),
+                            DataHora = reader["DataHora"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataHora"]),
+                            Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
+                            IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
+                            IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
+                            IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                            Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
+                        });
+                    }
+                }
+            }
+
+            return agendamentos;
+        }
+
         public virtual List<Agendamento> ListarPorIntervalo(int idSalao, DateTime inicio, DateTime fim)
         {
             string query = @"
@@ -2125,7 +2278,7 @@ namespace CorteCor.Handlers
             return agendamentos;
         }
 
-        public virtual void Atualizar(Agendamento agendamento)
+        public virtual void Atualizar(Agendamento agendamento, int idSalao)
         {
             string query = @"
         UPDATE CorteCor_Agendamento
@@ -2134,7 +2287,8 @@ namespace CorteCor.Handlers
             IdServico = @IdServico,
             IdPessoa = @IdPessoa,
             IdFuncionario = @IdFuncionario
-        WHERE IdAgendamento = @IdAgendamento;";
+        WHERE IdAgendamento = @IdAgendamento
+          AND IdServico IN (SELECT IdServico FROM CorteCor_Servico WHERE IdSalao = @IdSalao);";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
@@ -2145,6 +2299,7 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@IdPessoa", agendamento.IdPessoa);
                 command.AddWithValue("@IdFuncionario", agendamento.IdFuncionario);
                 command.AddWithValue("@IdAgendamento", agendamento.IdAgendamento);
+                command.AddWithValue("@IdSalao", idSalao);
 
                 command.ExecuteNonQuery();
 
@@ -2234,14 +2389,43 @@ namespace CorteCor.Handlers
             }
         }
 
-        public virtual void AtualizarStatus(int idAgendamento, string novoStatus)
+        public void ExcluirPorSalao(int idAgendamento, int idSalao)
         {
-            string query = "UPDATE CorteCor_Agendamento SET Status = @Status WHERE IdAgendamento = @IdAgendamento;";
+            string query = @"
+                UPDATE CorteCor_Agendamento 
+                SET Excluido = 1 
+                WHERE IdAgendamento = @IdAgendamento
+                  AND IdServico IN (SELECT IdServico FROM CorteCor_Servico WHERE IdSalao = @IdSalao)";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdAgendamento", idAgendamento);
+                command.AddWithValue("@IdSalao", idSalao);
+                command.ExecuteNonQuery();
+
+                try
+                {
+                    new LembreteHandler(_dbHandler).ExcluirLembretesPendentes(idAgendamento);
+                }
+                catch { }
+            }
+        }
+
+        public virtual void AtualizarStatus(int idAgendamento, string novoStatus, int idSalao)
+        {
+            string query = @"
+        UPDATE CorteCor_Agendamento 
+        SET Status = @Status 
+        WHERE IdAgendamento = @IdAgendamento
+          AND IdServico IN (SELECT IdServico FROM CorteCor_Servico WHERE IdSalao = @IdSalao);";
+
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@Status", novoStatus);
                 command.AddWithValue("@IdAgendamento", idAgendamento);
+                command.AddWithValue("@IdSalao", idSalao);
                 command.ExecuteNonQuery();
 
                 if (novoStatus == "Cancelado")
@@ -2542,6 +2726,58 @@ namespace CorteCor.Handlers
             return itens;
         }
 
+        public List<MeioPagamento> ListarPorSalao(int idSalao)
+        {
+            string query = @"
+        SELECT IdMeioPagamento, Nome, Tipo, Gateway, PermiteParcelamento, ParcelasMax,
+               TaxaPercentual, TaxaFixa, PrazoRecebimentoDias, Ativo, IdSalao, DataCadastro,
+               MpAccessTokenProd, MpAccessTokenSandbox, MpPublicKeyProd, MpPublicKeySandbox,
+               MpProduction
+        FROM CorteCor_MeioPagamento
+        WHERE IdSalao = @IdSalao
+        ORDER BY Nome;";
+
+            var itens = new List<MeioPagamento>();
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        itens.Add(new MeioPagamento
+                        {
+                            IdMeioPagamento = reader["IdMeioPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdMeioPagamento"]),
+                            Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                            Tipo = reader["Tipo"] is DBNull ? "" : reader["Tipo"].ToString(),
+                            Gateway = reader["Gateway"] is DBNull ? "" : reader["Gateway"].ToString(),
+
+                            PermiteParcelamento = reader["PermiteParcelamento"] is DBNull ? false : Convert.ToBoolean(reader["PermiteParcelamento"]),
+                            ParcelasMax = reader["ParcelasMax"] is DBNull ? (byte?)null : Convert.ToByte(reader["ParcelasMax"]),
+
+                            TaxaPercentual = reader["TaxaPercentual"] is DBNull ? 0m : Convert.ToDecimal(reader["TaxaPercentual"]),
+                            TaxaFixa = reader["TaxaFixa"] is DBNull ? 0m : Convert.ToDecimal(reader["TaxaFixa"]),
+                            PrazoRecebimentoDias = reader["PrazoRecebimentoDias"] is DBNull ? (short)0 : Convert.ToInt16(reader["PrazoRecebimentoDias"]),
+
+                            Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
+
+                            IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                            DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"]),
+                            MpAccessTokenProd = reader["MpAccessTokenProd"] as string,
+                            MpAccessTokenSandbox = reader["MpAccessTokenSandbox"] as string,
+                            MpPublicKeyProd = reader["MpPublicKeyProd"] as string,
+                            MpPublicKeySandbox = reader["MpPublicKeySandbox"] as string,
+                            MpProduction = reader["MpProduction"] is DBNull ? false : Convert.ToBoolean(reader["MpProduction"])
+                        });
+                    }
+                }
+            }
+            return itens;
+        }
+
         public virtual List<MeioPagamento> ListarPorSalao(int idSalao, bool? somenteAtivos = true)
         {
             string query = @"
@@ -2629,7 +2865,7 @@ namespace CorteCor.Handlers
             MpPublicKeyProd = @MpPublicKeyProd,
             MpPublicKeySandbox = @MpPublicKeySandbox,
             MpProduction = @MpProduction
-        WHERE IdMeioPagamento = @IdMeioPagamento;";
+        WHERE IdMeioPagamento = @IdMeioPagamento AND IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
@@ -2699,6 +2935,19 @@ namespace CorteCor.Handlers
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@IdMeioPagamento", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void ExcluirPorSalao(int idMeioPagamento, int idSalao)
+        {
+            string query = "DELETE FROM CorteCor_MeioPagamento WHERE IdMeioPagamento = @IdMeioPagamento AND IdSalao = @IdSalao;";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdMeioPagamento", idMeioPagamento);
+                command.AddWithValue("@IdSalao", idSalao);
                 command.ExecuteNonQuery();
             }
         }
@@ -2807,18 +3056,22 @@ namespace CorteCor.Handlers
             }
         }
 
-        public void AtualizarPagamento(Pagamento p)
+        public void AtualizarPagamento(Pagamento p, int idSalao)
         {
             string query = @"
-        UPDATE CorteCor_Pagamento
-        SET Status = @Status,
-            MercadoPagoPaymentId = @MercadoPagoPaymentId,
-            MpStatus = @MpStatus,
-            MpStatusDetail = @MpStatusDetail,
-            AtualizadoEm = GETUTCDATE(),
-            PagoEm = @PagoEm,
-            Ativo = @Ativo
-        WHERE IdPagamento = @IdPagamento;";
+        UPDATE P
+        SET P.Status = @Status,
+            P.MercadoPagoPaymentId = @MercadoPagoPaymentId,
+            P.MpStatus = @MpStatus,
+            P.MpStatusDetail = @MpStatusDetail,
+            P.AtualizadoEm = GETUTCDATE(),
+            P.PagoEm = @PagoEm,
+            P.Ativo = @Ativo
+        FROM CorteCor_Pagamento P
+        INNER JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
+        INNER JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+        WHERE P.IdPagamento = @IdPagamento 
+          AND S.IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
@@ -2830,6 +3083,7 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@PagoEm", (object?)p.PagoEm ?? DBNull.Value);
                 command.AddWithValue("@Ativo", p.Ativo);
                 command.AddWithValue("@IdPagamento", p.IdPagamento);
+                command.AddWithValue("@IdSalao", idSalao);
 
                 command.ExecuteNonQuery();
             }
@@ -2879,19 +3133,23 @@ namespace CorteCor.Handlers
             return false;
         }
 
-        public void Atualizar(Pagamento p)
+        public void Atualizar(Pagamento p, int idSalao)
         {
             string query = @"
-        UPDATE CorteCor_Pagamento
-        SET IdAgendamento = @IdAgendamento,
-            IdMeioPagamento = @IdMeioPagamento,
-            Tipo = @Tipo,
-            Valor = @Valor,
-            Data = @Data,
-            Contos = @Contos,
-            Campos = @Campos,
-            AtualizadoEm = GETUTCDATE()
-        WHERE IdPagamento = @IdPagamento;";
+        UPDATE P
+        SET P.IdAgendamento = @IdAgendamento,
+            P.IdMeioPagamento = @IdMeioPagamento,
+            P.Tipo = @Tipo,
+            P.Valor = @Valor,
+            P.Data = @Data,
+            P.Contos = @Contos,
+            P.Campos = @Campos,
+            P.AtualizadoEm = GETUTCDATE()
+        FROM CorteCor_Pagamento P
+        INNER JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
+        INNER JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+        WHERE P.IdPagamento = @IdPagamento 
+          AND S.IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand())
@@ -2905,6 +3163,7 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@Contos", p.Contos ?? "");
                 command.AddWithValue("@Campos", p.Campos ?? "");
                 command.AddWithValue("@IdPagamento", p.IdPagamento);
+                command.AddWithValue("@IdSalao", idSalao);
 
                 command.ExecuteNonQuery();
             }
@@ -2974,6 +3233,67 @@ namespace CorteCor.Handlers
             return result;
         }
 
+        public PagedResult<Pagamento> ListarPorSalao(int idSalao, PagamentoFiltroDTO filtro)
+        {
+            var result = new PagedResult<Pagamento>
+            {
+                PageIndex = filtro.PageIndex,
+                PageSize = filtro.PageSize
+            };
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append("FROM CorteCor_Pagamento P ");
+            sb.Append("LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento ");
+            sb.Append("LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa ");
+            sb.Append("LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico ");
+            sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) AND S.IdSalao = @IdSalao ");
+
+            if (filtro.DataInicio.HasValue) sb.Append("AND P.CriadoEm >= @DataInicio ");
+            if (filtro.DataFim.HasValue) sb.Append("AND P.CriadoEm <= @DataFim ");
+            if (!string.IsNullOrEmpty(filtro.Status)) sb.Append("AND P.Status = @Status ");
+            if (!string.IsNullOrEmpty(filtro.NomeCliente)) sb.Append("AND Pe.Nome LIKE @NomeCliente ");
+            if (filtro.DataAgendamento.HasValue) sb.Append("AND CAST(A.DataHora AS DATE) = CAST(@DataAgendamento AS DATE) ");
+
+            string baseQuery = sb.ToString();
+
+            using (var connection = _dbHandler.GetConnection())
+            {
+                // Count
+                using (var countCmd = connection.CreateCommand("SELECT COUNT(*) " + baseQuery))
+                {
+                    AddFiltroParams(countCmd, filtro);
+                    countCmd.AddWithValue("@IdSalao", idSalao);
+                    result.TotalCount = Convert.ToInt32(countCmd.ExecuteScalar());
+                }
+
+                // Data
+                string dataQuery = "SELECT P.*, Pe.Nome as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento " +
+                                   baseQuery +
+                                   "ORDER BY P.CriadoEm DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+                using (var cmd = connection.CreateCommand(dataQuery))
+                {
+                    AddFiltroParams(cmd, filtro);
+                    cmd.AddWithValue("@IdSalao", idSalao);
+                    cmd.AddWithValue("@Offset", (filtro.PageIndex - 1) * filtro.PageSize);
+                    cmd.AddWithValue("@PageSize", filtro.PageSize);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var p = Map(reader);
+                            p.NomeCliente = reader["NomeCliente"] is DBNull ? "" : reader["NomeCliente"].ToString();
+                            p.NomeServico = reader["NomeServico"] is DBNull ? "" : reader["NomeServico"].ToString();
+                            p.DataAgendamento = reader["DataAgendamento"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataAgendamento"]);
+                            result.Items.Add(p);
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
         private void AddFiltroParams(IDbCommand cmd, PagamentoFiltroDTO filtro)
         {
             if (filtro.DataInicio.HasValue) cmd.AddWithValue("@DataInicio", filtro.DataInicio.Value);
@@ -2983,13 +3303,14 @@ namespace CorteCor.Handlers
             if (filtro.DataAgendamento.HasValue) cmd.AddWithValue("@DataAgendamento", filtro.DataAgendamento.Value);
         }
 
-        public (decimal totalValor, int totalContagem) ObterResumo(PagamentoFiltroDTO filtro)
+        public (decimal totalValor, int totalContagem) ObterResumo(int idSalao, PagamentoFiltroDTO filtro)
         {
             var sb = new System.Text.StringBuilder();
             sb.Append("FROM CorteCor_Pagamento P ");
             sb.Append("LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento ");
             sb.Append("LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa ");
-            sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) ");
+            sb.Append("LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico ");
+            sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) AND S.IdSalao = @IdSalao ");
 
             if (filtro.DataInicio.HasValue) sb.Append("AND P.CriadoEm >= @DataInicio ");
             if (filtro.DataFim.HasValue) sb.Append("AND P.CriadoEm <= @DataFim ");
@@ -3004,6 +3325,7 @@ namespace CorteCor.Handlers
                 using (var cmd = connection.CreateCommand("SELECT ISNULL(SUM(P.Valor), 0), COUNT(*) " + baseQuery))
                 {
                     AddFiltroParams(cmd, filtro);
+                    cmd.AddWithValue("@IdSalao", idSalao);
                     using (var reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
@@ -3054,7 +3376,7 @@ namespace CorteCor.Handlers
         }
 
         public override void AtivarDesativar(int id, bool ativar) => throw new NotSupportedException("CorteCor_Pagamento utiliza UNIQUEIDENTIFIER.");
-        public async Task<bool> SincronizarPagamento(Guid idPagamento, MercadoPagoService mpService)
+        public async Task<bool> SincronizarPagamento(Guid idPagamento, MercadoPagoService mpService, int idSalao)
         {
             var pagamento = ObterPorId(idPagamento);
             if (pagamento == null || string.IsNullOrEmpty(pagamento.MercadoPagoPaymentId)) return false;
@@ -3071,19 +3393,19 @@ namespace CorteCor.Handlers
                 pagamento.Status = "Pago";
                 pagamento.PagoEm = mpPayment.DateApproved ?? DateTime.UtcNow;
 
-                // Atualiza tambÃ©m o agendamento
-                var agHandler = new AgendamentoHandler();
-                agHandler.AtualizarStatus(pagamento.IdAgendamento, "Pago");
+                // Atualiza também o agendamento
+                var agHandler = new AgendamentoHandler(_dbHandler);
+                agHandler.AtualizarStatus(pagamento.IdAgendamento, "Pago", idSalao);
             }
             else if (mpPayment.Status == "cancelled" || mpPayment.Status == "rejected")
             {
                 // Se foi rejeitado ou cancelado, marcamos este pagamento como inativo/cancelado
-                // mas NÃƒO cancelamos o agendamento, permitindo nova tentativa.
+                // mas NÃO cancelamos o agendamento, permitindo nova tentativa.
                 pagamento.Status = "Cancelado";
                 pagamento.Ativo = false;
             }
 
-            AtualizarPagamento(pagamento);
+            AtualizarPagamento(pagamento, idSalao);
             return true;
         }
 
@@ -3508,7 +3830,7 @@ namespace CorteCor.Handlers
                           Ativo = @Ativo,
                           DataInicio = @DataInicio,
                           DataFim = @DataFim
-                      WHERE IdConfig = @IdConfig";
+                      WHERE IdConfig = @IdConfig AND IdSalao = @IdSalao";
             }
             else
             {
@@ -3520,10 +3842,9 @@ namespace CorteCor.Handlers
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
             {
+                command.AddWithValue("@IdSalao", config.IdSalao);
                 if (config.IdConfig > 0)
                     command.AddWithValue("@IdConfig", config.IdConfig);
-                else
-                    command.AddWithValue("@IdSalao", config.IdSalao);
 
                 command.AddWithValue("@AntecedenciaValor", config.AntecedenciaValor);
                 command.AddWithValue("@AntecedenciaUnidade", config.AntecedenciaUnidade);
@@ -3766,7 +4087,7 @@ namespace CorteCor.Handlers
 
 
 
-        public PagedResult<LogEnvioEmail> ListarLogsEnvio(DateTime? inicio, DateTime? fim, string destinatario, string assunto, string status, int page = 1, int pageSize = 10, string tipoLembrete = null)
+        public PagedResult<LogEnvioEmail> ListarLogsEnvio(int idSalao, DateTime? inicio, DateTime? fim, string destinatario, string assunto, string status, int page = 1, int pageSize = 10, string tipoLembrete = null)
         {
             var result = new PagedResult<LogEnvioEmail>
             {
@@ -3775,14 +4096,17 @@ namespace CorteCor.Handlers
             };
 
             var sb = new System.Text.StringBuilder();
-            sb.Append("FROM CorteCor_LogEnvioEmail WHERE 1=1 ");
+            sb.Append(@" FROM CorteCor_LogEnvioEmail L
+                         JOIN CorteCor_Agendamento A ON L.IdAgendamento = A.IdAgendamento
+                         JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+                         WHERE S.IdSalao = @IdSalao ");
 
-            if (inicio.HasValue) sb.Append("AND DataEnvio >= @Inicio ");
-            if (fim.HasValue) sb.Append("AND DataEnvio <= @Fim ");
-            if (!string.IsNullOrEmpty(destinatario)) sb.Append("AND Destinatario LIKE @Destinatario ");
-            if (!string.IsNullOrEmpty(assunto)) sb.Append("AND Assunto LIKE @Assunto ");
-            if (!string.IsNullOrEmpty(status)) sb.Append("AND Status = @Status ");
-            if (!string.IsNullOrEmpty(tipoLembrete)) sb.Append("AND TipoLembrete = @TipoLembrete ");
+            if (inicio.HasValue) sb.Append("AND L.DataEnvio >= @Inicio ");
+            if (fim.HasValue) sb.Append("AND L.DataEnvio <= @Fim ");
+            if (!string.IsNullOrEmpty(destinatario)) sb.Append("AND L.Destinatario LIKE @Destinatario ");
+            if (!string.IsNullOrEmpty(assunto)) sb.Append("AND L.Assunto LIKE @Assunto ");
+            if (!string.IsNullOrEmpty(status)) sb.Append("AND L.Status = @Status ");
+            if (!string.IsNullOrEmpty(tipoLembrete)) sb.Append("AND L.TipoLembrete = @TipoLembrete ");
 
             string baseQuery = sb.ToString();
 
@@ -3791,17 +4115,19 @@ namespace CorteCor.Handlers
                 // Count
                 using (var countCmd = connection.CreateCommand("SELECT COUNT(*) " + baseQuery))
                 {
+                    countCmd.AddWithValue("@IdSalao", idSalao);
                     AddLogParams(countCmd, inicio, fim, destinatario, assunto, status, tipoLembrete);
                     result.TotalCount = Convert.ToInt32(countCmd.ExecuteScalar());
                 }
 
                 // Data
-                string dataQuery = "SELECT * " +
+                string dataQuery = "SELECT L.* " +
                                    baseQuery +
-                                   "ORDER BY DataEnvio DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                                   "ORDER BY L.DataEnvio DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 using (var command = connection.CreateCommand(dataQuery))
                 {
+                    command.AddWithValue("@IdSalao", idSalao);
                     AddLogParams(command, inicio, fim, destinatario, assunto, status, tipoLembrete);
                     command.AddWithValue("@Offset", (page - 1) * pageSize);
                     command.AddWithValue("@PageSize", pageSize);

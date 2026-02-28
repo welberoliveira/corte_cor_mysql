@@ -1,0 +1,122 @@
+@page
+@model CorteCor.Pages.NotaFiscalLogListaModel
+@{
+    ViewData["Title"] = "Auditoria e Logs Fiscais";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h6 class="mb-0">Histórico Transacional - Notas Fiscais</h6>
+                        <a href="/SalaoConfigFiscal" class="btn btn-sm btn-outline-primary mb-0">Configurações Fiscais</a>
+                    </div>
+                </div>
+                <div class="card-body px-0 pt-0 pb-2">
+                    <div class="table-responsive p-0">
+                        <table class="table align-items-center mb-0 table-hover">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-3">Data Hora</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Etapa (Ação)</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Log / Status</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ref Agen/Nota</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Payload (XML)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Logs != null && Model.Logs.Count > 0)
+                                {
+                                    @foreach (var log in Model.Logs)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 pe-2">
+                                                <span class="text-xs font-weight-bold">@log.DataHora.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-gradient-info">@log.Etapa</span>
+                                            </td>
+                                            <td class="text-xs text-wrap" style="max-width: 300px;">
+                                                @(log.MensagemStatus.Length > 80 ? log.MensagemStatus.Substring(0, 80) + "..." : log.MensagemStatus)
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                <div class="d-flex flex-column justify-content-center">
+                                                    @if(log.IdAgendamento.HasValue) { <span class="text-xs text-secondary mb-0">Age: #@log.IdAgendamento</span> }
+                                                    @if(log.IdNotaFiscal.HasValue) { <span class="text-xxs text-secondary">NF: @log.IdNotaFiscal.ToString().Substring(0, 8)...</span> }
+                                                </div>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                @if (!string.IsNullOrEmpty(log.ConteudoXml))
+                                                {
+                                                    <button type="button" class="btn btn-link text-dark px-3 mb-0" 
+                                                            onclick="ShowXmlModal('@System.Web.HttpUtility.JavaScriptStringEncode(log.ConteudoXml)')">
+                                                        <i class="fas fa-file-code text-primary me-2" aria-hidden="true"></i>Ver XML
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-xs text-secondary opacity-5">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <p class="text-xs text-secondary mb-0">Nenhum log fiscal foi registrado ainda para este salão.</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal XML -->
+<div class="modal fade" id="xmlModal" tabindex="-1" role="dialog" aria-labelledby="xmlModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="xmlModalLabel">Conteúdo Técnico Payload / XML</h5>
+        <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body bg-dark">
+        <pre><code id="xmlContent" class="text-white text-xs" style="white-space: pre-wrap; word-wrap: break-word;"></code></pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        function ShowXmlModal(xmlString) {
+            // Tenta formatar xml
+            try {
+                var parser = new DOMParser();
+                var xml = parser.parseFromString(xmlString, 'application/xml');
+                var serializer = new XMLSerializer();
+                var formatted = serializer.serializeToString(xml);
+                // Substituir tag fechamento/abertura para pre visualizacao quebra
+                formatted = formatted.replace(/(>)(<)(\/*)/g, '$1\n$2$3');
+                document.getElementById('xmlContent').innerText = formatted;
+            } catch(e) {
+                document.getElementById('xmlContent').innerText = xmlString; // raw
+            }
+            
+            var modal = new bootstrap.Modal(document.getElementById('xmlModal'));
+            modal.show();
+        }
+    </script>
+}

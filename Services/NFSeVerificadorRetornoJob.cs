@@ -40,26 +40,23 @@ namespace CorteCor.Services
         private async Task VerificarLotesPendentesAsync()
         {
             // O BackgroundService é Singleton. Precisamos de um Scope para usar Services transientes/scoped.
-            /* 
             using var scope = _serviceProvider.CreateScope();
-            var notaHandler = scope.ServiceProvider.GetRequiredService<dynamic>();
-            var configHandler = scope.ServiceProvider.GetRequiredService<dynamic>();
+            var notaHandler = scope.ServiceProvider.GetRequiredService<NotaFiscalHandler>();
+            var configHandler = scope.ServiceProvider.GetRequiredService<SalaoConfigFiscalHandler>();
             var certFactory = scope.ServiceProvider.GetRequiredService<CertificadoFiscalFactory>();
+            var logHandler = scope.ServiceProvider.GetRequiredService<NotaFiscalLogHandler>();
 
-            // Mock de chamada para buscar todas as notas em Processamento.
-            // Para produção, criar um método específico em EntityHandler para "ObterPorStatus"
-            var todasNotas = await Task.FromResult(new List<NotaFiscal>()); // MOCK - Implementar GetByStatus
-            var notasProcessando = todasNotas.Where(n => n.Status == "Processando" && n.TipoNota == "NFS-e").ToList();
+            // Buscar notas NFS-e em Processamento
+            var notasProcessando = await notaHandler.ObterPorStatusAsync("Processando", "NFS-e");
 
             if (!notasProcessando.Any()) return;
 
             foreach (var nota in notasProcessando)
             {
                 // Obter a configuração a partir do Salão
-                var configuracoes = await Task.FromResult(new List<SalaoConfigFiscal>()); // MOCK - Implementar GetBySalaoId
-                var configSalao = configuracoes.FirstOrDefault(c => c.IdSalao == nota.IdSalao);
+                var configSalao = await configHandler.ObterPorSalaoAsync(nota.IdSalao);
                 
-                if (configSalao == null) continue;
+                if (configSalao == null || configSalao.CertificadoPfx == null) continue;
 
                 var certificado = certFactory.InstanciarCertificado(configSalao);
 
@@ -67,34 +64,28 @@ namespace CorteCor.Services
                 var cfgParams = new Configuracao
                 {
                     TipoDFe = TipoDFe.NFSe,
-                    CertificadoDigital = certificado,
-                    CodigoMunicipio = configSalao.CodigoMunicipioIBGE, 
-                    Ambiente = configSalao.Ambiente == 1 ? TipoAmbiente.Producao : TipoAmbiente.Homologacao
+                    CertificadoDigital = certificado
                 };
 
-                var consultaLoteRps = new ConsultarLoteRps(nota.NumeroRecibo, cfgParams);
-                consultaLoteRps.Executar();
-
-                var resposta = consultaLoteRps.Result;
-                
-                // Padrão ABRASF/Nacional de Retorno
-                if (resposta.SituacaoLote == SituacaoLoteNFSe.ProcessadoComSucesso)
+                try 
                 {
-                    nota.Status = "Autorizada";
-                    nota.ProtocoloAutorizacao = resposta.Protocolo;
-                    nota.XmlRetorno = consultaLoteRps.RetornoLoteRps.GerarXML().OuterXml;
-                }
-                else if (resposta.SituacaoLote == SituacaoLoteNFSe.ProcessadoComErros)
-                {
-                    nota.Status = "Rejeitada";
-                    nota.JustificativaRejeicao = resposta.ListaMensagemRetorno?.FirstOrDefault()?.Mensagem;
-                    nota.XmlRetorno = consultaLoteRps.RetornoLoteRps.GerarXML().OuterXml;
-                }
+                   await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Consulta RPS", $"Iniciou verificação do Lote {nota.NumeroRecibo}.");
+                   
+                   var consultaLoteRps = new ConsultarLoteRps(nota.NumeroRecibo, cfgParams);
+                   consultaLoteRps.Executar();
 
-                // Salva a alteração
-                await notaHandler.UpdateAsync(nota);
+                   var resposta = consultaLoteRps.Result;
+                   
+                   // A estrutura do 'Result' varia muito de acordo com o XSD da prefeitura.
+                   // Algumas retornam SituacaoLote, outras CStat. Portanto, precisa do Wrapper Municipal Específico.
+                   throw new NotImplementedException("O Parsing do retorno depende do objeto deserializado da Prefeitura.");
+                }
+                catch (Exception ex)
+                {
+                   await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Falha Consulta", $"Erro ao baixar status RPS: {ex.Message}");
+                   _logger.LogError(ex, $"Erro ao verificar lote RPS {nota.NumeroRecibo}");
+                }
             }
-            */
         }
     }
 }

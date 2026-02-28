@@ -1,19 +1,7 @@
 @page
 @model CorteCor.Pages.FuncionarioListaModel
 
-<style>
-    @@media (max-width: 768px) {
 
-        table th:nth-child(2),
-        table td:nth-child(2),
-        table th:nth-child(3),
-        table td:nth-child(3),
-        table th:nth-child(4),
-        table td:nth-child(4) {
-            display: none;
-        }
-    }
-</style>
 
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -36,13 +24,13 @@
         <thead>
             <tr>
                 <th>Nome</th>
-                <th>Seg</th>
-                <th>Ter</th>
-                <th>Qua</th>
-                <th>Qui</th>
-                <th>Sex</th>
-                <th>Sab</th>
-                <th>Dom</th>
+                <th class="d-none d-md-table-cell">Seg</th>
+                <th class="d-none d-md-table-cell">Ter</th>
+                <th class="d-none d-md-table-cell">Qua</th>
+                <th class="d-none d-md-table-cell">Qui</th>
+                <th class="d-none d-md-table-cell">Sex</th>
+                <th class="d-none d-md-table-cell">Sab</th>
+                <th class="d-none d-md-table-cell">Dom</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -51,13 +39,13 @@
             {
                 <tr>
                     <td>@Funcionario.Nome</td>
-                    <td>@(Funcionario.seg ? "Sim" : "Não")</td>
-                    <td>@(Funcionario.ter ? "Sim" : "Não")</td>
-                    <td>@(Funcionario.qua ? "Sim" : "Não")</td>
-                    <td>@(Funcionario.qui ? "Sim" : "Não")</td>
-                    <td>@(Funcionario.sex ? "Sim" : "Não")</td>
-                    <td>@(Funcionario.sab ? "Sim" : "Não")</td>
-                    <td>@(Funcionario.dom ? "Sim" : "Não")</td>
+                    <td class="d-none d-md-table-cell">@(Funcionario.seg ? "Sim" : "Não")</td>
+                    <td class="d-none d-md-table-cell">@(Funcionario.ter ? "Sim" : "Não")</td>
+                    <td class="d-none d-md-table-cell">@(Funcionario.qua ? "Sim" : "Não")</td>
+                    <td class="d-none d-md-table-cell">@(Funcionario.qui ? "Sim" : "Não")</td>
+                    <td class="d-none d-md-table-cell">@(Funcionario.sex ? "Sim" : "Não")</td>
+                    <td class="d-none d-md-table-cell">@(Funcionario.sab ? "Sim" : "Não")</td>
+                    <td class="d-none d-md-table-cell">@(Funcionario.dom ? "Sim" : "Não")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Funcionario.IdFuncionario">

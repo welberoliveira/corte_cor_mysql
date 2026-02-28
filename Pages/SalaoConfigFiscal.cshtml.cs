@@ -60,7 +60,7 @@ namespace CorteCor.Pages
                 {
                     if (string.IsNullOrEmpty(senhaCertificado))
                     {
-                        Erro = "Senha do certificado Ã© obrigatÃ³ria quando um novo arquivo PFX Ã© enviado.";
+                        Erro = "Senha do certificado é obrigatória quando um novo arquivo PFX é enviado.";
                         return Page();
                     }
 
@@ -75,7 +75,7 @@ namespace CorteCor.Pages
                 }
                 else if (configAtual != null)
                 {
-                    // Manter o certificado antigo preservado caso a config jÃ¡ exista
+                    // Manter o certificado antigo preservado caso a config já exista
                     Configuracao.CertificadoPfx = configAtual.CertificadoPfx;
                     Configuracao.CertificadoSenha = configAtual.CertificadoSenha;
                 }
@@ -85,20 +85,20 @@ namespace CorteCor.Pages
                 if (configAtual == null)
                 {
                     await _configHandler.AddAsync(Configuracao);
-                    Mensagem = "ConfiguraÃ§Ãµes Fiscais criadas com sucesso!";
+                    Mensagem = "Configurações Fiscais criadas com sucesso!";
                 }
                 else
                 {
                     Configuracao.IdConfigFiscal = configAtual.IdConfigFiscal;
                     await _configHandler.UpdateAsync(Configuracao);
-                    Mensagem = "ConfiguraÃ§Ãµes Fiscais atualizadas com sucesso!";
+                    Mensagem = "Configurações Fiscais atualizadas com sucesso!";
                 }
 
                 PossuiCertificadoSalvo = Configuracao.CertificadoPfx != null && Configuracao.CertificadoPfx.Length > 0;
             }
             catch (Exception ex)
             {
-                Erro = "Ocorreu um erro ao salvar as configuraÃ§Ãµes: " + ex.Message;
+                Erro = "Ocorreu um erro ao salvar as configurações: " + ex.Message;
             }
 
             return Page();

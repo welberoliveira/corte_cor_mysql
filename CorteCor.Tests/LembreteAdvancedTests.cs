@@ -145,7 +145,7 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["Status"]).Returns("Sucesso");
             _mockReader.Setup(r => r["MensagemErro"]).Returns(DBNull.Value);
 
-            var result = _handler.ListarLogsEnvio(null, null, null, null, null);
+            var result = _handler.ListarLogsEnvio(1, null, null, null, null, null);
 
             Assert.Single(result.Items);
             Assert.Equal("test@test.com", result.Items[0].Destinatario);

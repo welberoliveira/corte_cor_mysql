@@ -21,9 +21,23 @@ namespace CorteCor.Pages
 
         public void OnGet()
         {
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
             var handler = new PessoaHandler();
-            Pessoas = handler.Listar(p > 0 ? p : 1, 10);
-            if (Pessoas == null) Pessoas = new PagedResult<Pessoa>();
+            var todasPessoas = handler.ListarPorSalao(idSalao);
+            
+            // Apply memory pagination to maintain PagedResult
+            int pageIndex = p > 0 ? p : 1;
+            int pageSize = 10;
+            
+            Pessoas = new PagedResult<Pessoa> 
+            {
+                PageIndex = pageIndex,
+                PageSize = pageSize,
+                TotalCount = todasPessoas.Count,
+                Items = todasPessoas.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList()
+            };
         }
 
         public void OnPost()
@@ -37,7 +51,8 @@ namespace CorteCor.Pages
             {
                 try
                 {
-                    handler.Excluir(id);
+                    int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
+                    handler.ExcluirPorSalao(id, idSalao);
                     Mensagem = "Pessoa excluída com sucesso.";
                 }
                 catch (Exception)

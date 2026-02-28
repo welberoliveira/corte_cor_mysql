@@ -22,7 +22,7 @@
     <thead>
         <tr>
             <th>Evento</th>
-            <th>Conteúdo</th>
+            <th class="d-none d-md-table-cell">Conteúdo</th>
             <th>Ativo</th>
             <th>Ações</th>
         </tr>
@@ -32,7 +32,7 @@
         {
             <tr>
                 <td>@m.TipoEvento</td>
-                <td>
+                <td class="d-none d-md-table-cell">
                     @(m.Conteudo.Length > 50 ? m.Conteudo.Substring(0, 50) + "..." : m.Conteudo)
                 </td>
                 <td>@(m.Ativo ? "Sim" : "Não")</td>

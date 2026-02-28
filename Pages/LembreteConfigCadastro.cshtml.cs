@@ -21,9 +21,11 @@ namespace CorteCor.Pages
         [BindProperty]
         public LembreteConfig Config { get; set; } = new LembreteConfig();
 
-        public List<SelectListItem> UnidadeOptions { get; set; }
-        public List<SelectListItem> ModeloEmailOptions { get; set; }
-        public List<SelectListItem> ModeloSmsOptions { get; set; }
+        public bool IsViewMode { get; set; }
+
+        public List<SelectListItem> UnidadeOptions { get; set; } = new();
+        public List<SelectListItem> ModeloEmailOptions { get; set; } = new();
+        public List<SelectListItem> ModeloSmsOptions { get; set; } = new();
         
         public List<SelectListItem> TipoOptions { get; set; } = new List<SelectListItem> 
         { 
@@ -47,8 +49,10 @@ namespace CorteCor.Pages
             };
         }
 
-        public void OnGet(int? id)
+        public void OnGet(int? id, bool view = false)
         {
+            IsViewMode = view;
+
             var idSalaoClaim = User.FindFirst("IdSalao");
             if (idSalaoClaim != null && int.TryParse(idSalaoClaim.Value, out int idSalao))
             {

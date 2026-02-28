@@ -1,4 +1,4 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,14 +10,14 @@ namespace CorteCor.Pages
     [Authorize(Policy = "AdminPolicy")]
     public class UsuarioListaModel : PageModel
     {
-        public List<Usuario>? Usuarios { get; set; }
+        public List<Usuario>? Usuarios { get; set; } = new();
         public string Mensagem { get; set; }
         public string StatusFilter { get; set; } = "Ativo";
 
         public string NomeClientes { get; set; }
         public string NomeCliente { get; set; }
 
-        public List<Salao> Saloes { get; set; }
+        public List<Salao> Saloes { get; set; } = new();
 
         public void OnGet(string statusFilter = "Ativo")
         {
@@ -27,9 +27,11 @@ namespace CorteCor.Pages
             try
             {
                 StatusFilter = statusFilter;
-                var handler = new UsuarioHandler();
-                var allUsuarios = handler.Listar();
-                Usuarios = StatusFilter == "Ativo" ? allUsuarios.Where(m => m.Status == "Ativo").ToList() : allUsuarios;
+            var handler = new UsuarioHandler();
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+            var allUsuarios = handler.ListarPorSalao(idSalao);
+            Usuarios = StatusFilter == "Ativo" ? allUsuarios.Where(m => m.Status == "Ativo").ToList() : allUsuarios;
             }
             catch (Exception)
             {
@@ -48,23 +50,24 @@ namespace CorteCor.Pages
             if (action == "ativar")
             {
                 handler.AtivarDesativar(id, true);
-                Mensagem = $"Usu·rio ativado com sucesso.";
+                Mensagem = $"Usu√°rio ativado com sucesso.";
             }
             else if (action == "desativar")
             {
                 handler.AtivarDesativar(id, false);
-                Mensagem = $"Usu·rio desativado com sucesso.";
+                Mensagem = $"Usu√°rio desativado com sucesso.";
             }
             else if (action == "excluir")
             {
                 try
                 {
-                    handler.Excluir(id);
-                    Mensagem = $"Usu·rio excluÌdo com sucesso.";
+                    int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
+                    handler.ExcluirPorSalao(id, idSalao);
+                    Mensagem = $"Usu√°rio exclu√≠do com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir esse registro porque ele est· associado a um ou mais eventos";
+                    Mensagem = "N√£o foi poss√≠vel excluir esse registro porque ele est√° associado a um ou mais eventos";
                 }
             }
             else if (action == "alterar")

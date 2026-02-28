@@ -120,9 +120,12 @@ namespace CorteCor.Pages
 
             var handler = new PagamentoHandler();
 
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
             if (id != Guid.Empty)
             {
-                handler.Atualizar(pagamento);
+                handler.AtualizarPagamento(pagamento, idSalao);
                 Mensagem = "Pagamento atualizado com sucesso!";
             }
             else
@@ -136,7 +139,7 @@ namespace CorteCor.Pages
             if (pagamento.Status == "Pago" && idAgendamento > 0)
             {
                 var salaoIdStr = User.FindFirst("IdSalao")?.Value;
-                if (int.TryParse(salaoIdStr, out int idSalao))
+                if (int.TryParse(salaoIdStr, out int idSalaoConfig))
                 {
                     try
                     {
@@ -144,12 +147,12 @@ namespace CorteCor.Pages
                         var configHandler = new SalaoConfigFiscalHandler(db);
                         var notaHandler = new NotaFiscalHandler(db);
 
-                        var config = await configHandler.ObterPorSalaoAsync(idSalao);
+                        var config = await configHandler.ObterPorSalaoAsync(idSalaoConfig);
                         // Verifica se existe config fiscal para emissão e se a emissão automática está habilitada
                         if (config != null && config.EmissaoAutomatica)
                         {
                             // Verifica se já não existe nota para este agendamento (previne duplicar)
-                            var notasExistentes = await notaHandler.ListarPorSalaoAsync(idSalao);
+                            var notasExistentes = await notaHandler.ListarPorSalaoAsync(idSalaoConfig);
                             bool jaExiste = notasExistentes.Any(n => n.IdAgendamento == idAgendamento && n.Status != "Cancelada");
 
                             if (!jaExiste)
@@ -157,7 +160,7 @@ namespace CorteCor.Pages
                                 var novaNota = new NotaFiscal
                                 {
                                     IdNotaFiscal = Guid.NewGuid(),
-                                    IdSalao = idSalao,
+                                    IdSalao = idSalaoConfig,
                                     IdAgendamento = idAgendamento,
                                     TipoNota = "NFS-e", // Padrão assumido para serviço de salão
                                     Ambiente = config.Ambiente,

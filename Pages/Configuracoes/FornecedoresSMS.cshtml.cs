@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +18,7 @@ namespace CorteCor.Pages.Configuracoes
             _handler = handler;
         }
 
-        public IEnumerable<FornecedorSMS> Fornecedores { get; set; }
+        public IEnumerable<FornecedorSMS> Fornecedores { get; set; } = new List<FornecedorSMS>();
 
         public void OnGet()
         {

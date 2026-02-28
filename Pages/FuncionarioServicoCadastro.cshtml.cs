@@ -12,8 +12,8 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class FuncionarioServicoCadastroModel : PageModel
     {
-        public List<Funcionario> Funcionarios { get; set; }
-        public List<Servico> Servicos { get; set; }
+        public List<Funcionario> Funcionarios { get; set; } = new();
+        public List<Servico> Servicos { get; set; } = new();
 
         public bool IsLockedEmployee { get; set; }
 
@@ -32,7 +32,7 @@ namespace CorteCor.Pages
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
             Funcionarios = funcionarioHandler.ListarPorSalao(idSalao) ?? new List<Funcionario>();
-            Servicos = servicoHandler.Listar() ?? new List<Servico>();
+            Servicos = servicoHandler.ListarPorSalao(idSalao) ?? new List<Servico>();
 
             if (idFuncionario.HasValue)
             {

@@ -88,12 +88,21 @@ namespace CorteCor.Pages.Webhooks
                                 p.MpStatus = payment.Status;
                                 p.MpStatusDetail = payment.StatusDetail;
 
-                                
                                 if (payment.Status == "approved")
                                 {
                                     p.Status = "Pago";
                                     p.PagoEm = payment.DateApproved ?? DateTime.UtcNow;
-                                    agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Pago");
+                                    
+                                    var agendamento = agendamentoHandler.ObterPorId(p.IdAgendamento);
+                                    if(agendamento != null)
+                                    {
+                                        var servicoHandler = new ServicoHandler();
+                                        var servico = servicoHandler.ObterPorId(agendamento.IdServico);
+                                        if(servico != null)
+                                        {
+                                            agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Pago", servico.IdSalao);
+                                        }
+                                    }
                                 }
                                 else if (payment.Status == "rejected" || payment.Status == "cancelled")
                                 {
@@ -103,7 +112,7 @@ namespace CorteCor.Pages.Webhooks
                                     p.Ativo = false;
                                     
                                     // Opcional: Voltar status do agendamento para Agendado se estava Pendente?
-                                    // agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Agendado");
+                                    // agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Agendado", idSalao);
                                 }
 
                                 pagHandler.AtualizarStatusWebhook(p.IdPagamento, p.Status, payment.Id, p.MpStatus, p.MpStatusDetail, p.PagoEm);

@@ -1,4 +1,4 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +12,7 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class FuncionarioListaModel : PageModel
     {
-        public List<Funcionario> Funcionarios { get; set; }
+        public List<Funcionario> Funcionarios { get; set; } = new();
         public string Mensagem { get; set; }
 
         public void OnGet()
@@ -35,12 +35,13 @@ namespace CorteCor.Pages
             {
                 try
                 {
-                    handler.Excluir(id);
-                    Mensagem = "Funcion·rio excluÌdo com sucesso.";
+                    int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
+                    handler.ExcluirPorSalao(id, idSalao);
+                    Mensagem = "Funcion√°rio exclu√≠do com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir este Funcion·rio porque ele est· associado a outros registros.";
+                    Mensagem = "N√£o foi poss√≠vel excluir este Funcion√°rio porque ele est√° associado a outros registros.";
                 }
             }
             else if (action == "alterar")

@@ -1,6 +1,5 @@
 ﻿using CorteCor.Models;
 using CorteCor.Handlers;
-using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -20,6 +19,14 @@ namespace CorteCor.Pages
         private readonly PagamentoHandler _pagamentoHandler;
         private readonly MercadoPagoService _mpService;
         private readonly IConfiguration _configuration;
+        
+        // Servicos Fiscais
+        private readonly SalaoConfigFiscalHandler _salaoConfigFiscalHandler;
+        private readonly NotaFiscalHandler _notaFiscalHandler;
+        private readonly NFSeEmissorService _nfseEmissorService;
+        private readonly NFCeEmissorService _nfceEmissorService;
+        private readonly FiscalBuilderService _fiscalBuilderService;
+        private readonly NotaFiscalLogHandler _notaFiscalLogHandler;
 
         public Agendamentos2Model(
             ServicoHandler servicoHandler,
@@ -30,7 +37,13 @@ namespace CorteCor.Pages
             MeioPagamentoHandler meioPagamentoHandler,
             PagamentoHandler pagamentoHandler,
             MercadoPagoService mpService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            SalaoConfigFiscalHandler salaoConfigFiscalHandler,
+            NotaFiscalHandler notaFiscalHandler,
+            NFSeEmissorService nfseEmissorService,
+            NFCeEmissorService nfceEmissorService,
+            FiscalBuilderService fiscalBuilderService,
+            NotaFiscalLogHandler notaFiscalLogHandler)
         {
             _servicoHandler = servicoHandler;
             _pessoaHandler = pessoaHandler;
@@ -41,6 +54,12 @@ namespace CorteCor.Pages
             _pagamentoHandler = pagamentoHandler;
             _mpService = mpService;
             _configuration = configuration;
+            _salaoConfigFiscalHandler = salaoConfigFiscalHandler;
+            _notaFiscalHandler = notaFiscalHandler;
+            _nfseEmissorService = nfseEmissorService;
+            _nfceEmissorService = nfceEmissorService;
+            _fiscalBuilderService = fiscalBuilderService;
+            _notaFiscalLogHandler = notaFiscalLogHandler;
         }
 
         public List<Servico> Servicos { get; set; } = new();
@@ -275,7 +294,7 @@ namespace CorteCor.Pages
                 if (!string.IsNullOrEmpty(req.Status))
                     agendamento.Status = req.Status;
 
-                _agendamentoHandler.Atualizar(agendamento);
+                _agendamentoHandler.Atualizar(agendamento, idSalao);
 
                 // Geração de Pagamento Manual se status for "Pago" e data/hora atual é posterior à alteração de status
                 if (agendamento.Status == "Pago")
@@ -397,7 +416,7 @@ namespace CorteCor.Pages
             {
                 // Atualiza status do agendamento para Pendente (se não estiver pago)
                 if (a.Status != "Pago")
-                    _agendamentoHandler.AtualizarStatus(a.IdAgendamento, "Pendente");
+                    _agendamentoHandler.AtualizarStatus(a.IdAgendamento, "Pendente", idSalao);
 
                 // Registra o pagamento na tabela com o ID gerado
                 var novoPag = new Pagamento
@@ -423,6 +442,134 @@ namespace CorteCor.Pages
             return new JsonResult(new { checkoutUrl = pref.InitPoint });
         }
 
+        public class EmitirNotaRequest
+        {
+            public int IdAgendamento { get; set; }
+        }
+
+        public async Task<IActionResult> OnPostEmitirNota([FromBody] EmitirNotaRequest req)
+        {
+            if (req == null || req.IdAgendamento <= 0) return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
+
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+            var agendamento = _agendamentoHandler.ObterPorId(req.IdAgendamento);
+            if (agendamento == null) return NotFound("Agendamento não encontrado.");
+
+            var servico = _servicoHandler.ObterPorId(agendamento.IdServico);
+            if (servico == null || servico.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Serviço inválido" });
+
+            var cliente = _pessoaHandler.ObterPorId(agendamento.IdPessoa);
+            if (cliente == null || cliente.IdSalao != idSalao) return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
+
+            try
+            {
+                // 1. Obter Configuracao Fiscal do Salao
+                var configFiscal = await _salaoConfigFiscalHandler.ObterPorSalaoAsync(idSalao);
+                if (configFiscal == null || configFiscal.CertificadoPfx == null)
+                {
+                    await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, null, "Pré-Validação", "Configurações Fiscais ou Certificado A1 não cadastrados para este Salão.");
+                    return new JsonResult(new { success = false, message = "Configurações Fiscais ou Certificado A1 não cadastrados para este Salão." });
+                }
+
+                // Determinar o Tipo de Nota baseado em alguma regra de negócio.
+                // Exemplo prático: Se o CodigoTributacaoMunicipio estiver preenchido, tratamos como NFS-e.
+                // Caso contrário (venda de item com NCM prático), seria NFC-e. 
+                // Por ora, assumiremos a base: A existência de um código de ISS dita a ida para a Prefeitura.
+                bool isServicoNfse = !string.IsNullOrWhiteSpace(servico.CodigoTributacaoMunicipio) || servico.Preco > 0;
+
+                if (isServicoNfse)
+                {
+                    await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, null, "Início Emissão", "Iniciando processo de emissão de NFS-e (Serviço).");
+                    var nfseObj = _fiscalBuilderService.MontarNFSe(configFiscal, cliente, servico, agendamento);
+                    
+                    var retornoEmissao = await _nfseEmissorService.EmitirNFSeAsync(configFiscal, nfseObj, req.IdAgendamento);
+                    
+                    var notaPersistida = new NotaFiscal
+                    {
+                        IdNotaFiscal = Guid.NewGuid(),
+                        IdSalao = idSalao,
+                        IdAgendamento = agendamento.IdAgendamento,
+                        TipoNota = "NFS-e",
+                        Ambiente = configFiscal.Ambiente,
+                        Numero = 1,
+                        Serie = 1,
+                        ValorTotal = servico.Preco,
+                        Status = retornoEmissao.Autorizada ? "Processando" : "Rejeitada",
+                        ChaveAcesso = retornoEmissao.ChaveAcesso,
+                        NumeroRecibo = retornoEmissao.Protocolo, 
+                        ProtocoloAutorizacao = retornoEmissao.Protocolo,
+                        JustificativaRejeicao = !retornoEmissao.Autorizada ? retornoEmissao.Motivo : null,
+                        XmlEnvio = retornoEmissao.XmlEnvio,
+                        XmlRetorno = retornoEmissao.XmlRetorno,
+                        DataEmissao = DateTime.Now
+                    };
+
+                    await _notaFiscalHandler.InserirAsync(notaPersistida);
+
+                    if (retornoEmissao.Autorizada)
+                    {
+                        await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, notaPersistida.IdNotaFiscal, "Processando", $"NFS-e recebida na prefeitura! Recibo: {retornoEmissao.Protocolo}", retornoEmissao.XmlRetorno);
+                        return new JsonResult(new { success = true, message = $"NFS-e enviada com sucesso! Lote em processamento. Recibo: {retornoEmissao.Protocolo}", nf_id = notaPersistida.IdNotaFiscal });
+                    }
+                    else
+                    {
+                        await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, notaPersistida.IdNotaFiscal, "Rejeitada", $"NFS-e Rejeitada pela Prefeitura: {retornoEmissao.Motivo}", retornoEmissao.XmlRetorno);
+                        return new JsonResult(new { success = false, message = $"NFS-e Rejeitada: {retornoEmissao.Motivo}" });
+                    }
+                }
+                else
+                {
+                    // Fluxo NFC-e (Produtos)
+                    await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, null, "Início Emissão", "Iniciando processo de emissão de NFC-e (Produto).");
+                    
+                    // Monta o XML da NFe
+                    var nfeObj = _fiscalBuilderService.MontarNFCe(configFiscal, cliente, servico, agendamento);
+                    
+                    // Despacha para SEFAZ
+                    var retornoEmissaoNFCe = await _nfceEmissorService.EmitirNFCeSincronoAsync(configFiscal, nfeObj);
+                    
+                    var notaPersistidaNfce = new NotaFiscal
+                    {
+                        IdNotaFiscal = Guid.NewGuid(),
+                        IdSalao = idSalao,
+                        IdAgendamento = agendamento.IdAgendamento,
+                        TipoNota = "NFC-e",
+                        Ambiente = configFiscal.Ambiente,
+                        Numero = 1, // Idealmente vindo do banco (contador)
+                        Serie = 1,
+                        ValorTotal = servico.Preco,
+                        Status = retornoEmissaoNFCe.Autorizada ? "Autorizada" : "Rejeitada",
+                        ChaveAcesso = retornoEmissaoNFCe.ChaveAcesso,
+                        NumeroRecibo = retornoEmissaoNFCe.Protocolo, 
+                        ProtocoloAutorizacao = retornoEmissaoNFCe.Protocolo,
+                        JustificativaRejeicao = !retornoEmissaoNFCe.Autorizada ? retornoEmissaoNFCe.Motivo : null,
+                        XmlEnvio = retornoEmissaoNFCe.XmlEnvio,
+                        XmlRetorno = retornoEmissaoNFCe.XmlRetorno,
+                        DataEmissao = DateTime.Now
+                    };
+
+                    await _notaFiscalHandler.InserirAsync(notaPersistidaNfce);
+
+                    if (retornoEmissaoNFCe.Autorizada)
+                    {
+                        await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, notaPersistidaNfce.IdNotaFiscal, "Autorizada", $"NFC-e Autorizada com sucesso! Prot: {retornoEmissaoNFCe.Protocolo}", retornoEmissaoNFCe.XmlRetorno);
+                        return new JsonResult(new { success = true, message = $"NFC-e Autorizada! Status 100.", nf_id = notaPersistidaNfce.IdNotaFiscal });
+                    }
+                    else
+                    {
+                        await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, notaPersistidaNfce.IdNotaFiscal, "Rejeitada", $"NFC-e Rejeitada Sefaz: {retornoEmissaoNFCe.Motivo}", retornoEmissaoNFCe.XmlRetorno);
+                        return new JsonResult(new { success = false, message = $"NFC-e Rejeitada: {retornoEmissaoNFCe.Motivo}" });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, null, "Erro Interno", "Falha catastrófica ao emitir nota: " + ex.Message);
+                return new JsonResult(new { success = false, message = "Erro ao processar emissão NF: " + ex.Message });
+            }
+        }
 
         public IActionResult OnPostDelete(int id)
         {

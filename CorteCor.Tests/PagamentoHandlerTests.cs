@@ -207,7 +207,7 @@ namespace CorteCor.Tests
             };
 
             // Act
-            _handler.AtualizarPagamento(pagamento);
+            _handler.AtualizarPagamento(pagamento, 1);
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);

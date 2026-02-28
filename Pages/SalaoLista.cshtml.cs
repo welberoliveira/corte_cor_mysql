@@ -1,4 +1,4 @@
-using CorteCor.Models;
+Ôªøusing CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +13,7 @@ namespace CorteCor.Pages
     [Authorize(Policy = "AdminPolicy")]
     public class SalaoListaModel : PageModel
     {
-        public List<Salao> Saloes { get; set; }
+        public List<Salao> Saloes { get; set; } = new();
         public string Mensagem { get; set; }
         public string StatusFilter { get; set; } = "Ativo";
 
@@ -52,11 +52,11 @@ namespace CorteCor.Pages
                 try
                 {
                     handler.Excluir(id);
-                    Mensagem = "Salao excluÌda com sucesso.";
+                    Mensagem = "Salao exclu√≠da com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N„o foi possÌvel excluir esta Salao porque ela est· associada a outros registros.";
+                    Mensagem = "N√£o foi poss√≠vel excluir esta Salao porque ela est√° associada a outros registros.";
                 }
             }
             else if (action == "alterar")

@@ -19,12 +19,12 @@
         <thead class="thead-dark">
             <tr>
                 <th>Tipo</th>
-                <th>Antecedência</th>
+                <th title="Antecedência">Ant.</th>
                 <th>Unidade</th>
-                <th>Modelo</th>
+                <th class="d-none d-md-table-cell">Modelo</th>
                 <th>Status</th>
-                <th>Início</th>
-                <th>Fim</th>
+                <th class="d-none d-md-table-cell">Início</th>
+                <th class="d-none d-md-table-cell">Fim</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -35,15 +35,16 @@
                         <td>@item.TipoLembrete</td>
                         <td>@item.AntecedenciaValor</td>
                         <td>@item.AntecedenciaUnidade</td>
-                        <td>@item.AssuntoModelo</td>
+                        <td class="d-none d-md-table-cell">@item.AssuntoModelo</td>
                         <td>
                             <span class="badge @(item.Ativo ? "bg-success" : "bg-danger")">
                             @(item.Ativo ? "Ativo" : "Inativo")
                             </span>
                         </td>
-                        <td>@item.DataInicio.ToString("dd/MM/yyyy")</td>
-                        <td>@(item.DataFim?.ToString("dd/MM/yyyy") ?? "Eterna")</td>
+                        <td class="d-none d-md-table-cell">@item.DataInicio.ToString("dd/MM/yyyy")</td>
+                        <td class="d-none d-md-table-cell">@(item.DataFim?.ToString("dd/MM/yyyy") ?? "Eterna")</td>
                         <td>
+                            <a asp-page="/LembreteConfigCadastro" asp-route-id="@item.IdConfig" asp-route-view="true" class="btn btn-sm btn-info" style="margin-right: 5px;">Visualizar</a>
                             <form method="post" asp-page-handler="Excluir" asp-route-id="@item.IdConfig" onsubmit="return confirm('Tem certeza que deseja excluir esta regra?');" style="display:inline;">
                                 <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                             </form>

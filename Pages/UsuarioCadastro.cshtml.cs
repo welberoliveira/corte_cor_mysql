@@ -1,4 +1,4 @@
-using CorteCor.Models;
+ï»¿using CorteCor.Models;
 using CorteCor.Handlers;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +20,7 @@ namespace CorteCor.Pages
         public string NomeClientes { get; set; }
         public string NomeCliente { get; set; }
         public string NomeCurto { get; set; }
-        public List<Salao> Saloes { get; set; }
+        public List<Salao> Saloes { get; set; } = new();
 
 
         public void OnGet(int? id)
@@ -43,7 +43,9 @@ namespace CorteCor.Pages
             string senhaConvertida = Convert.ToBase64String(Encoding.UTF8.GetBytes(senha));
 
             int.TryParse(Request.Form["id"], out var id);
-            int IdSaloeselecionada = int.Parse(Request.Form["IdSalao"]);
+            // Security patch: Enforce IdSalao from Claims, ignore form tampering
+            int IdSaloeselecionada = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out IdSaloeselecionada);
 
             var handler = new UsuarioHandler();
             var Usuario = new Usuario
@@ -63,19 +65,29 @@ namespace CorteCor.Pages
             if (id > 0)
             {
                 handler.Atualizar(Usuario);
-                Mensagem = $"Usuário atualizado com sucesso!";
+                Mensagem = $"UsuÃ¡rio atualizado com sucesso!";
             }
             else
             {
-                if (handler.Listar().Where(m => m.Email == Usuario.Email).Any())
+                bool emailExiste = false;
+                string queryCheckEmail = "SELECT COUNT(1) FROM CorteCor_Usuario WHERE Email = @Email";
+                using (var connection = new DatabaseHandler().GetConnection())
+                using (var command = connection.CreateCommand())
                 {
-                    Mensagem = $"Não foi possível finalizar o cadastro! Este email já está cadastrado: {Usuario.Email}";
+                    command.CommandText = queryCheckEmail;
+                    command.AddWithValue("@Email", Usuario.Email);
+                    emailExiste = (int)command.ExecuteScalar() > 0;
+                }
+
+                if (emailExiste)
+                {
+                    Mensagem = $"NÃ£o foi possÃ­vel finalizar o cadastro! Este email jÃ¡ estÃ¡ cadastrado: {Usuario.Email}";
                     OnGet(id > 0 ? id : null);
                     return;
                 }
 
                 id = handler.CadastrarUsuario(Usuario);
-                Mensagem = $"Usuário cadastrado com sucesso!";
+                Mensagem = $"UsuÃ¡rio cadastrado com sucesso!";
             }
 
             OnGet(id > 0 ? id : null);
@@ -87,27 +99,27 @@ namespace CorteCor.Pages
             int.TryParse(Request.Form["id"], out var id);
 
             var handler = new UsuarioHandler();
-            var Usuario = handler.Listar().Where(m => m.IdUsuario == id).ToList();
+            var Usuario = handler.ObterPorId(id);
 
 
-            string senhaCriptografada = Usuario.FirstOrDefault().Senha;
+            string senhaCriptografada = Usuario.Senha;
             byte[] senhaByte = Convert.FromBase64String(senhaCriptografada);
             var senhaRecuperada = Encoding.UTF8.GetString(senhaByte);
 
             // Enviar e-mail com a nova senha
             string from = "CorteCor@tonni.com.br";
             string subject = "Suas Credenciais - Tonni Corte & Cor";
-            string body = $"<p>Olá, seja bem-vindo</p>" +
-                          $"<p>O administrador do <b>Tonni Corte & Cor</b> criou um usuário para você nesse sistema.</p>" +
-                          $"<p>O login é seu email: <b>{Usuario.FirstOrDefault().Email}</b></p>" +
-                          $"<p>Sua senha é: <b>{senhaRecuperada}</b></p>" +
+            string body = $"<p>OlÃ¡, seja bem-vindo</p>" +
+                          $"<p>O administrador do <b>Tonni Corte & Cor</b> criou um usuÃ¡rio para vocÃª nesse sistema.</p>" +
+                          $"<p>O login Ã© seu email: <b>{Usuario.Email}</b></p>" +
+                          $"<p>Sua senha Ã©: <b>{senhaRecuperada}</b></p>" +
                           $"<p>Para acessar o sistema <a href='https://tonni.com.br/CorteCor'>clique aqui</a>, ou acesse: <a href='https://tonni.com.br/CorteCor'>tonni.com.br/CorteCor/adm</a></p>" +
                           $"<br><br><p>Atenciosamente, <br>Equipe Tonni Tecnologia <br> <a href='https://tonni.com.br'>tonni.com.br</a></p>";
 
             var loginManager = new LoginManager();
             loginManager.EnviarEmail(email, from, subject, body);
 
-            Mensagem = $"A senha e instruções para acesso foram enviadas por email para: {email}. Lembre que o email pode estar no SPAM ou no Lixo Eletrônico.";
+            Mensagem = $"A senha e instruÃ§Ãµes para acesso foram enviadas por email para: {email}. Lembre que o email pode estar no SPAM ou no Lixo EletrÃ´nico.";
             OnGet(id > 0 ? id : null);
         }
     }

@@ -66,6 +66,32 @@ namespace CorteCor.Handlers
             return null;
         }
 
+        public async Task<List<NotaFiscal>> ObterPorStatusAsync(string status, string tipoNota)
+        {
+            var notas = new List<NotaFiscal>();
+
+            string query = @"
+                SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, NumeroRecibo, 
+                       ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
+                       DataEmissao, DataAtualizacao
+                FROM CorteCor_NotaFiscal
+                WHERE Status = @Status AND TipoNota = @TipoNota;";
+
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@Status", status);
+            command.AddWithValue("@TipoNota", tipoNota);
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            while (reader.Read())
+            {
+                notas.Add(MapFromReader(reader));
+            }
+
+            return notas;
+        }
+
         private NotaFiscal MapFromReader(IDataReader reader)
         {
             return new NotaFiscal
@@ -130,6 +156,32 @@ namespace CorteCor.Handlers
             command.AddWithValue("@XmlRetorno", nota.XmlRetorno ?? (object)DBNull.Value);
             command.AddWithValue("@DataEmissao", nota.DataEmissao == default ? DateTime.Now : nota.DataEmissao);
             command.AddWithValue("@DataAtualizacao", DateTime.Now);
+
+            await Task.Run(() => command.ExecuteNonQuery());
+        }
+
+        public async Task UpdateAsync(NotaFiscal nota)
+        {
+            string query = @"
+                UPDATE CorteCor_NotaFiscal 
+                SET Status = @Status,
+                    ChaveAcesso = ISNULL(@ChaveAcesso, ChaveAcesso),
+                    ProtocoloAutorizacao = ISNULL(@ProtocoloAutorizacao, ProtocoloAutorizacao),
+                    JustificativaRejeicao = ISNULL(@JustificativaRejeicao, JustificativaRejeicao),
+                    XmlRetorno = ISNULL(@XmlRetorno, XmlRetorno),
+                    DataAtualizacao = @DataAtualizacao
+                WHERE IdNotaFiscal = @IdNotaFiscal;";
+                
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+
+            command.AddWithValue("@Status", nota.Status);
+            command.AddWithValue("@ChaveAcesso", nota.ChaveAcesso ?? (object)DBNull.Value);
+            command.AddWithValue("@ProtocoloAutorizacao", nota.ProtocoloAutorizacao ?? (object)DBNull.Value);
+            command.AddWithValue("@JustificativaRejeicao", nota.JustificativaRejeicao ?? (object)DBNull.Value);
+            command.AddWithValue("@XmlRetorno", nota.XmlRetorno ?? (object)DBNull.Value);
+            command.AddWithValue("@DataAtualizacao", DateTime.Now);
+            command.AddWithValue("@IdNotaFiscal", nota.IdNotaFiscal);
 
             await Task.Run(() => command.ExecuteNonQuery());
         }

@@ -127,7 +127,7 @@
                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-3" style="width: 40px; height: 40px;">
                         <i class="fas fa-bell"></i>
                     </div>
-                    <h4 class="mb-0">Configuração de Lembrete</h4>
+                    <h4 class="mb-0">@(Model.IsViewMode ? "Visualização da Regra" : "Configuração de Lembrete")</h4>
                 </div>
 
                 @if (!string.IsNullOrEmpty(Model.Mensagem))
@@ -143,6 +143,8 @@
                 <form method="post">
                     <input type="hidden" asp-for="Config.IdConfig" />
                     <input type="hidden" asp-for="Config.IdSalao" />
+
+                    <fieldset disabled="@(Model.IsViewMode ? "disabled" : null)">
 
                     <div class="row">
                         <div class="col-md-7">
@@ -221,14 +223,18 @@
                         <span class="toggle-text">Regra Ativa</span>
                         <small class="text-muted ml-3">(Esta regra permanecerá ativa)</small>
                     </div>
+                    </fieldset>
 
                     <div class="d-flex justify-content-between">
                         <a asp-page="/LembreteConfigLista" class="btn btn-secondary px-4">
                             <i class="fas fa-arrow-left mr-2"></i> Voltar
                         </a>
-                        <button type="submit" class="btn btn-primary px-5 shadow-sm">
-                            <i class="fas fa-save mr-2"></i> Salvar Regra
-                        </button>
+                        @if (!Model.IsViewMode)
+                        {
+                            <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                                <i class="fas fa-save mr-2"></i> Salvar Regra
+                            </button>
+                        }
                     </div>
                 </form>
             </div>

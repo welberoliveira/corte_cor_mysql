@@ -17,8 +17,18 @@ namespace CorteCor.Pages
         {
             if (id.HasValue)
             {
+                int idSalao = 0;
+                int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
                 var handler = new ServicoHandler();
-                Servico = handler.Listar().FirstOrDefault(p => p.IdServico == id.Value);
+                Servico = handler.ObterPorId(id.Value);
+
+                if (Servico != null && Servico.IdSalao != idSalao)
+                {
+                    Response.Redirect(HttpContext.Request.PathBase + $"/ServicoLista");
+                    return;
+                }
+
                 ButtonText = "Atualizar";
             }
         }
@@ -84,12 +94,12 @@ namespace CorteCor.Pages
             if (id > 0)
             {
                 handler.Atualizar(servico);
-                Mensagem = "Servi?o atualizado com sucesso!";
+                Mensagem = "Serviço atualizado com sucesso!";
             }
             else
             {
                 id = handler.CadastrarServico(servico);
-                Mensagem = "Servi?o cadastrado com sucesso!";
+                Mensagem = "Serviço cadastrado com sucesso!";
             }
 
             OnGet(id > 0 ? id : (int?)null);

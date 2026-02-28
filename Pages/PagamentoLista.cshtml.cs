@@ -53,10 +53,14 @@ namespace CorteCor.Pages
                 PageIndex = p > 0 ? p : 1,
                 PageSize = 10
             };
-            Pagamentos = handler.Listar(filtro);
+
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+            Pagamentos = handler.ListarPorSalao(idSalao, filtro);
             if (Pagamentos == null) Pagamentos = new PagedResult<Pagamento>();
 
-            var resumo = handler.ObterResumo(filtro);
+            var resumo = handler.ObterResumo(idSalao, filtro);
             TotalValor = resumo.totalValor;
             TotalContagem = resumo.totalContagem;
         }
@@ -88,8 +92,11 @@ namespace CorteCor.Pages
             else if (action == "sincronizar" && id != Guid.Empty)
             {
                 // Sincronização manual
+                int idSalao = 0;
+                int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
                 var mpService = new MercadoPagoService(HttpContext.RequestServices.GetRequiredService<IConfiguration>());
-                bool synced = await handler.SincronizarPagamento(id, mpService);
+                bool synced = await handler.SincronizarPagamento(id, mpService, idSalao);
                 if (synced) Mensagem = "Status sincronizado com sucesso!";
                 else Mensagem = "Não foi possível sincronizar ou pagamento não encontrado no Mercado Pago.";
             }

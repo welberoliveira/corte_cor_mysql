@@ -28,7 +28,7 @@ namespace CorteCor.Pages
         public int IdUsuario { get; set; }
         public string NomeUsuario { get; set; }
         public string NomeSalao { get; set; }
-        public List<Salao> Saloes { get; set; }
+        public List<Salao> Saloes { get; set; } = new();
         public DatabaseHandler dbHandler = new();
 
         public Dictionary<string, int> DocumentacaoChartData { get; set; }
@@ -53,9 +53,16 @@ namespace CorteCor.Pages
         {
             string emailUsuario = User.Identity.Name;
 
-            var handler = new UsuarioHandler();
-            var Usuario = handler.Listar().Where(m => m.Email == emailUsuario).ToList();
-            int IdUsuario = Usuario.FirstOrDefault().IdUsuario;
+            int IdUsuario = 0;
+            string queryIdUsuario = "SELECT IdUsuario FROM CorteCor_Usuario WHERE Email = @Email";
+            using (var connection = dbHandler.GetConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = queryIdUsuario;
+                command.AddWithValue("@Email", emailUsuario);
+                var result = command.ExecuteScalar();
+                if (result != null) IdUsuario = Convert.ToInt32(result);
+            }
 
             // Buscar nome do cliente
             string queryNomeUsuario = "SELECT Nome FROM CorteCor_Usuario WHERE IdUsuario = @IdUsuario";
@@ -70,7 +77,10 @@ namespace CorteCor.Pages
             var SalaoHandler = new SalaoHandler();
             Saloes = SalaoHandler.Listar();
 
-            NomeSalao = Saloes.FirstOrDefault(p => p.IdSalao == Usuario.FirstOrDefault().IdSalao).Nome ?? "Erro";
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+            NomeSalao = Saloes.FirstOrDefault(p => p.IdSalao == idSalao)?.Nome ?? "Erro";
         }
     }
 }

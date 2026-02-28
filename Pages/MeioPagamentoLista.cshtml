@@ -1,21 +1,7 @@
 @page
 @model CorteCor.Pages.MeioPagamentoListaModel
 
-<style>
-    @@media (max-width: 768px) {
 
-        table th:nth-child(2),
-        table td:nth-child(2),
-        table th:nth-child(3),
-        table td:nth-child(3),
-        table th:nth-child(4),
-        table td:nth-child(4),
-        table th:nth-child(5),
-        table td:nth-child(5) {
-            display: none;
-        }
-    }
-</style>
 
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -38,7 +24,7 @@
                 <th>Gateway</th>
                 <th>Taxa %</th>
                 <th>Taxa Fixa</th>
-                <th>Parcelamento</th>
+                <th class="d-none d-md-table-cell">Parcelamento</th>
                 <th>Prazo (dias)</th>
                 <th>Ativo</th>
                 <th>Ações</th>
@@ -53,7 +39,7 @@
                     <td>@Meio.Gateway</td>
                     <td>@Meio.TaxaPercentual.ToString("0.###")</td>
                     <td>R$ @Meio.TaxaFixa.ToString("0.00")</td>
-                    <td>
+                    <td class="d-none d-md-table-cell">
                         @(Meio.PermiteParcelamento
                             ? $"Sim ({(Meio.ParcelasMax.HasValue ? Meio.ParcelasMax.Value.ToString() : "-")}x)"
                             : "Não")

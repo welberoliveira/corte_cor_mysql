@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +18,7 @@ namespace CorteCor.Pages.Configuracoes
             _handler = handler;
         }
 
-        public IEnumerable<FornecedorWhatsapp> Fornecedores { get; set; }
+        public IEnumerable<FornecedorWhatsapp> Fornecedores { get; set; } = new List<FornecedorWhatsapp>();
 
         public void OnGet()
         {
