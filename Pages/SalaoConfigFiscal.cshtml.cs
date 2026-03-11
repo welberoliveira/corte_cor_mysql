@@ -51,6 +51,8 @@ namespace CorteCor.Pages
 
                 // Limpezas de input
                 if (!string.IsNullOrEmpty(Configuracao.Cnpj)) Configuracao.Cnpj = Configuracao.Cnpj.Replace(".", "").Replace("/", "").Replace("-", "");
+                if (!string.IsNullOrEmpty(Configuracao.EnderecoCep)) Configuracao.EnderecoCep = Configuracao.EnderecoCep.Replace("-", "");
+                if (!string.IsNullOrEmpty(Configuracao.Telefone)) Configuracao.Telefone = Configuracao.Telefone.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "");
 
                 // Obter configuração existente
                 var configAtual = await _configHandler.ObterPorSalaoAsync(Configuracao.IdSalao);

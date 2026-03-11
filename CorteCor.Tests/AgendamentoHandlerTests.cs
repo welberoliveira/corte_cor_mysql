@@ -140,7 +140,7 @@ namespace CorteCor.Tests
         public void AtualizarStatus_DeveExecutarUpdate()
         {
             // Act
-            _handler.AtualizarStatus(1, "Cancelado");
+            _handler.AtualizarStatus(1, "Cancelado", 1);
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
@@ -161,7 +161,7 @@ namespace CorteCor.Tests
             };
 
             // Act
-            _handler.Atualizar(agendamento);
+            _handler.Atualizar(agendamento, 1);
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());

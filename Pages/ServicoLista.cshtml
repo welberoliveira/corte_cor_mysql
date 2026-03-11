@@ -20,6 +20,31 @@
         <a asp-page="/ServicoCadastro" class="btn btn-primary">Cadastrar Novo</a>
     </div>
 
+    <!-- Filtros -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="idCategoria" class="form-label">Filtrar por Categoria</label>
+                    <select name="idCategoria" id="idCategoria" class="form-select">
+                        <option value="">-- Todas --</option>
+                        @foreach (var cat in Model.Categorias)
+                        {
+                            var isSelected = Model.IdCategoria == cat.IdCategoria ? "selected" : "";
+                            @Html.Raw($"<option value='{cat.IdCategoria}' {isSelected}>{cat.Nome}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+                <div class="col-md-2 text-end">
+                    <a asp-page="/ServicoLista" class="btn btn-link">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
         <div class="alert">
@@ -31,6 +56,7 @@
         <thead>
             <tr>
                 <th>Nome</th>
+                <th>Categoria</th>
                 <th>Preço</th>
                 <th>Ações</th>
             </tr>
@@ -40,6 +66,7 @@
             {
                 <tr>
                     <td>@Servico.Nome</td>
+                    <td>@(string.IsNullOrWhiteSpace(Servico.CategoriaNome) ? "-" : Servico.CategoriaNome)</td>
                     <td>R$ @Servico.Preco.ToString("0.00")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">

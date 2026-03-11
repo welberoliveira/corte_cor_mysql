@@ -1,0 +1,138 @@
+@page
+@model CorteCor.Pages.SistemaLogListaModel
+@{
+    ViewData["Title"] = "Logs do Sistema Fiscal e Integrações";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h6 class="mb-0">Logs Globais de Integração (NFS-e Padrão Nacional)</h6>
+                    </div>
+                </div>
+                <div class="card-body px-4 pt-4 pb-2">
+                    <form method="get" class="row gx-3 gy-2 align-items-center mb-4">
+                        <div class="col-sm-3">
+                            <label class="visually-hidden" for="DtInicio">Data Início</label>
+                            <input type="date" class="form-control" id="DtInicio" name="DtInicio" value="@Model.DtInicio?.ToString("yyyy-MM-dd")" placeholder="Data Início">
+                        </div>
+                        <div class="col-sm-3">
+                            <label class="visually-hidden" for="DtFim">Data Fim</label>
+                            <input type="date" class="form-control" id="DtFim" name="DtFim" value="@Model.DtFim?.ToString("yyyy-MM-dd")" placeholder="Data Fim">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary mb-0">Filtrar</button>
+                            <a asp-page="./SistemaLogLista" class="btn btn-secondary mb-0">Limpar</a>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive p-0">
+                        <table class="table align-items-center mb-0 table-hover">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Data Hora</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tipo de Evento</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Erro / Responsável</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mensagem</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ações (Payloads)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Logs != null && Model.Logs.Count > 0)
+                                {
+                                    @foreach (var log in Model.Logs)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 pe-2">
+                                                <span class="text-xs font-weight-bold">@log.DataHora.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(log.CodigoErro != null ? "bg-gradient-danger" : "bg-gradient-info")">@log.TipoEvento</span>
+                                            </td>
+                                            <td class="text-xs text-wrap" style="max-width: 200px;">
+                                                @if(!string.IsNullOrEmpty(log.CodigoErro)) { <strong class="text-danger">@log.CodigoErro</strong><br/> }
+                                                <span class="text-secondary text-xxs">Usr: @log.Usuario</span>
+                                            </td>
+                                            <td class="text-xs text-wrap" style="max-width: 300px;">
+                                                @log.Mensagem
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                @if (!string.IsNullOrEmpty(log.RequestPayload))
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-primary px-2 py-1 mb-0 me-1" 
+                                                            onclick="ShowXmlModal('Request Enviado', '@System.Web.HttpUtility.JavaScriptStringEncode(log.RequestPayload)')">
+                                                        Req
+                                                    </button>
+                                                }
+                                                @if (!string.IsNullOrEmpty(log.ResponsePayload))
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-secondary px-2 py-1 mb-0" 
+                                                            onclick="ShowXmlModal('Response Recebido', '@System.Web.HttpUtility.JavaScriptStringEncode(log.ResponsePayload)')">
+                                                        Res
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <p class="text-xs text-secondary mb-0">Nenhum log global de comunicação foi registrado com esses filtros.</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal XML -->
+<div class="modal fade" id="xmlModal" tabindex="-1" role="dialog" aria-labelledby="xmlModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="xmlModalLabel">Sefaz / Integração Payload</h5>
+        <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body bg-dark">
+        <pre><code id="xmlContent" class="text-white text-xs" style="white-space: pre-wrap; word-wrap: break-word;"></code></pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        function ShowXmlModal(titulo, xmlString) {
+            document.getElementById('xmlModalLabel').innerText = titulo;
+            // Tenta formatar xml
+            try {
+                var parser = new DOMParser();
+                var xml = parser.parseFromString(xmlString, 'application/xml');
+                var serializer = new XMLSerializer();
+                var formatted = serializer.serializeToString(xml);
+                // Substituir tag fechamento/abertura para pre visualizacao quebra
+                formatted = formatted.replace(/(>)(<)(\/*)/g, '$1\n$2$3');
+                document.getElementById('xmlContent').innerText = formatted;
+            } catch(e) {
+                document.getElementById('xmlContent').innerText = xmlString; // raw se format falhar
+            }
+            
+            var modal = new bootstrap.Modal(document.getElementById('xmlModal'));
+            modal.show();
+        }
+    </script>
+}

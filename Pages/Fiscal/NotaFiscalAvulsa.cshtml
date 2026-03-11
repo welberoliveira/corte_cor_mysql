@@ -1,0 +1,552 @@
+@page
+@model CorteCor.Pages.Fiscal.NotaFiscalAvulsaModel
+@{
+    ViewData["Title"] = "Nota Fiscal Avulsa Completa";
+}
+
+<div class="avulsa-container">
+    <div class="header-section mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-file-earmark-spreadsheet"></i> Nota Fiscal Avulsa</h1>
+            <p class="text-muted">Emissão independente com todos os campos regulatórios</p>
+        </div>
+        <div class="glass-card p-2 px-4">
+            <span class="badge @(Model.Input.Ambiente == 1 ? "bg-danger" : "bg-warning")">
+                <i class="bi bi-broadcast"></i> @(Model.Input.Ambiente == 1 ? "PRODUÇÃO" : "HOMOLOGAÇÃO")
+            </span>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-@Model.MensagemTipo alert-dismissible fade show animate__animated animate__shakeX" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i> @Model.Mensagem
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["SuccessMessage"] != null || !string.IsNullOrEmpty(Model.ProtocoloAutorizacao))
+    {
+        <div class="row mb-4 animate__animated animate__fadeIn">
+            <div class="col-12">
+                <div class="glass-card border-success border-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="text-success mb-1"><i class="bi bi-shield-check"></i> Resultado da Transmissão</h4>
+                            @if (!string.IsNullOrEmpty(Model.ProtocoloAutorizacao))
+                            {
+                                <p class="mb-0"><strong>Protocolo:</strong> <span class="badge bg-success">@Model.ProtocoloAutorizacao</span></p>
+                            }
+                            else
+                            {
+                                <p class="mb-0 text-muted">@TempData["SuccessMessage"]</p>
+                            }
+                        </div>
+                         <div class="d-flex flex-column align-items-end gap-2">
+                            <div class="d-flex gap-2">
+                                @if (!string.IsNullOrEmpty(Model.XmlRetorno))
+                                {
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="downloadXml('retorno')">
+                                        <i class="bi bi-download"></i> Baixar XML Retorno
+                                    </button>
+                                    <textarea id="xmlRetornoContent" style="display:none">@Model.XmlRetorno</textarea>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.XmlEnvio))
+                                {
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="downloadXml('envio')">
+                                        <i class="bi bi-code-slash"></i> XML Envio
+                                    </button>
+                                    <textarea id="xmlEnvioContent" style="display:none">@Model.XmlEnvio</textarea>
+                                }
+                            </div>
+                            
+                             @if (!string.IsNullOrEmpty(Model.ChaveAcesso))
+                            {
+                                <div class="input-group input-group-sm" style="max-width: 450px;">
+                                    <span class="input-group-text bg-light">Chave:</span>
+                                    <input type="text" class="form-control font-monospace" value="@Model.ChaveAcesso" readonly id="chaveAcessoCopiada" name="ChaveAcesso">
+                                    <button class="btn btn-secondary" type="button" onclick="copyChave()">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                    <button type="submit" asp-page-handler="Consultar" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Consultar Status SEFAZ
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form method="post" enctype="multipart/form-data" id="nfeForm">
+        <div class="row">
+            <!-- Sidebar: Configurações Rápidas & Logs -->
+            <div class="col-md-3">
+                <div class="glass-card mb-4">
+                    <h5 class="mb-3"><i class="bi bi-shield-lock"></i> Segurança</h5>
+                    <div class="mb-3">
+                        <label asp-for="Input.CertificadoFile" class="form-label small"></label>
+                        <input asp-for="Input.CertificadoFile" type="file" class="form-control form-control-sm" accept=".pfx" />
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Input.CertificadoSenha" class="form-label small"></label>
+                        <input asp-for="Input.CertificadoSenha" class="form-control form-control-sm" placeholder="Senha PFX" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Ambiente</label>
+                        <select asp-for="Input.Ambiente" class="form-select form-select-sm">
+                            <option value="2">Homologação (Teste)</option>
+                            <option value="1">Produção (Real)</option>
+                        </select>
+                    </div>
+                    @if (Model.HasSavedCertificate)
+                    {
+                        <div class="alert alert-success p-2 small">
+                            <i class="bi bi-check-circle-fill"></i> Certificado salvo.
+                        </div>
+                    }
+                </div>
+
+                <div class="glass-card">
+                    <h5 class="mb-3"><i class="bi bi-terminal"></i> Log em Tempo Real</h5>
+                    <div id="logContent" class="log-area-compact">
+                        @foreach (var log in Model.Logs)
+                        {
+                            <div class="log-entry">@log</div>
+                        }
+                        @if (Model.Logs.Count == 0)
+                        {
+                            <div class="text-muted small">Aguardando processamento...</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content: Tabs -->
+            <div class="col-md-9">
+                <div class="glass-card shadow-lg p-0 overflow-hidden">
+                    <ul class="nav nav-tabs custom-tabs" id="nfeTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="ident-tab" data-bs-toggle="tab" data-bs-target="#ident" type="button" role="tab"><i class="bi bi-info-circle"></i> Identificação</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="emit-tab" data-bs-toggle="tab" data-bs-target="#emit" type="button" role="tab"><i class="bi bi-building"></i> Emitente</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="dest-tab" data-bs-toggle="tab" data-bs-target="#dest" type="button" role="tab"><i class="bi bi-person"></i> Destinatário</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="itens-tab" data-bs-toggle="tab" data-bs-target="#itens" type="button" role="tab"><i class="bi bi-box-seam"></i> Itens</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content p-4" id="nfeTabsContent">
+                        <!-- Identificação -->
+                        <div class="tab-pane fade show active" id="ident" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label asp-for="Input.Modelo" class="form-label"></label>
+                                    <select asp-for="Input.Modelo" class="form-select">
+                                        @foreach (var mod in Model.ModelosList)
+                                        {
+                                            <option value="@mod.Value">@mod.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <label asp-for="Input.NaturezaOperacao" class="form-label"></label>
+                                    <select asp-for="Input.NaturezaOperacao" class="form-select">
+                                        @foreach (var nat in Model.NaturezasList)
+                                        {
+                                            <option value="@nat">@nat</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Input.Serie" class="form-label"></label>
+                                    <input asp-for="Input.Serie" class="form-control" type="number" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Input.Numero" class="form-label"></label>
+                                    <input asp-for="Input.Numero" class="form-control" type="number" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Input.DataEmissao" class="form-label"></label>
+                                    <input asp-for="Input.DataEmissao" class="form-control" type="datetime-local" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emitente -->
+                        <div class="tab-pane fade" id="emit" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="Input.EmitenteNome" class="form-label"></label>
+                                    <input asp-for="Input.EmitenteNome" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Input.EmitenteCnpj" class="form-label"></label>
+                                    <input asp-for="Input.EmitenteCnpj" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Input.EmitenteIE" class="form-label"></label>
+                                    <input asp-for="Input.EmitenteIE" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Input.EmitenteIM" class="form-label"></label>
+                                    <input asp-for="Input.EmitenteIM" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Input.EmitenteCRT" class="form-label"></label>
+                                    <select asp-for="Input.EmitenteCRT" class="form-select">
+                                        <option value="1">Simples Nacional</option>
+                                        <option value="2">Simples Nacional - Excesso</option>
+                                        <option value="3">Regime Normal</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="form-label">Logradouro</label>
+                                    <input asp-for="Input.EmitenteLogradouro" class="form-control" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Número</label>
+                                    <input asp-for="Input.EmitenteNumero" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Bairro</label>
+                                    <input asp-for="Input.EmitenteBairro" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Cidade / Município</label>
+                                    <input asp-for="Input.EmitenteCidade" class="form-control" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">UF</label>
+                                    <input asp-for="Input.EmitenteUF" class="form-control" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Cód IBGE</label>
+                                    <select asp-for="Input.EmitenteCodMun" class="form-select">
+                                        <option value="">Selecione...</option>
+                                        @foreach (var mun in Model.MunicipiosList)
+                                        {
+                                            <option value="@mun.Value">@mun.Value - @mun.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Destinatário -->
+                        <div class="tab-pane fade" id="dest" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label asp-for="Input.DestinatarioNome" class="form-label"></label>
+                                    <input asp-for="Input.DestinatarioNome" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Input.DestinatarioCpfCnpj" class="form-label"></label>
+                                    <input asp-for="Input.DestinatarioCpfCnpj" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Input.DestinatarioIE" class="form-label"></label>
+                                    <input asp-for="Input.DestinatarioIE" class="form-control" />
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Endereco (Logradouro, Nº)</label>
+                                    <div class="input-group">
+                                        <input asp-for="Input.DestinatarioLogradouro" class="form-control" />
+                                        <input asp-for="Input.DestinatarioNumero" class="form-control w-25" placeholder="S/N" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Bairro</label>
+                                    <input asp-for="Input.DestinatarioBairro" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Cidade</label>
+                                    <input asp-for="Input.DestinatarioCidade" class="form-control" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">UF</label>
+                                    <input asp-for="Input.DestinatarioUF" class="form-control" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Cód IBGE</label>
+                                    <select asp-for="Input.DestinatarioCodMun" class="form-select">
+                                        <option value="">Selecione...</option>
+                                        @foreach (var mun in Model.MunicipiosList)
+                                        {
+                                            <option value="@mun.Value">@mun.Value - @mun.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Itens -->
+                        <div class="tab-pane fade" id="itens" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle" id="itemsTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 10%">Cód</th>
+                                            <th style="width: 25%">Descrição</th>
+                                            <th style="width: 10%">NCM</th>
+                                            <th style="width: 15%">Cod. Trib (NFSe)</th>
+                                            <th style="width: 10%">Aliq ISS</th>
+                                            <th style="width: 5%">Qtd</th>
+                                            <th style="width: 10%">Vlr Unit</th>
+                                            <th style="width: 10%">Subtotal</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < Model.Input.Itens.Count; i++)
+                                        {
+                                            <tr class="item-row">
+                                                <td><input name="Input.Itens[@i].CProd" value="@Model.Input.Itens[i].CProd" class="form-control form-control-sm" /></td>
+                                                <td><input name="Input.Itens[@i].XProd" value="@Model.Input.Itens[i].XProd" class="form-control form-control-sm" /></td>
+                                                <td><input name="Input.Itens[@i].NCM" value="@Model.Input.Itens[i].NCM" class="form-control form-control-sm" /></td>
+                                                <td><input name="Input.Itens[@i].CodigoTributacao" value="@Model.Input.Itens[i].CodigoTributacao" class="form-control form-control-sm" placeholder="060101" /></td>
+                                                <td><input name="Input.Itens[@i].AliquotaISS" value="@Model.Input.Itens[i].AliquotaISS" class="form-control form-control-sm" /></td>
+                                                <td><input name="Input.Itens[@i].qCom" value="@Model.Input.Itens[i].qCom" class="form-control form-control-sm qty-input" /></td>
+                                                <td><input name="Input.Itens[@i].vUnCom" value="@Model.Input.Itens[i].vUnCom" class="form-control form-control-sm price-input" /></td>
+                                                <td class="subtotal-cell fw-bold">R$ 0,00</td>
+                                                <td><button type="button" class="btn btn-sm btn-danger remove-item"><i class="bi bi-trash"></i></button></td>
+                                                <input type="hidden" name="Input.Itens[@i].vProd" value="@Model.Input.Itens[i].vProd" class="vprod-hidden" />
+                                                <input type="hidden" name="Input.Itens[@i].CSOSN" value="@Model.Input.Itens[i].CSOSN" />
+                                                <input type="hidden" name="Input.Itens[@i].vTotTrib" value="@Model.Input.Itens[i].vTotTrib" />
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary mt-2" id="addItemBtn">
+                                <i class="bi bi-plus-circle"></i> Adicionar Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 border-top d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small">Total da Nota:</span>
+                            <span class="fs-4 fw-bold text-primary ms-2" id="totalNotaValue">R$ 0,00</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary pulse-button px-5">
+                            <i class="bi bi-send-check-fill me-2"></i> Emitir Nota Fiscal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+    <style>
+        :root {
+            --primary-color: #4e54c8;
+            --secondary-color: #8f94fb;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --tab-active-bg: #4e54c8;
+        }
+
+        .avulsa-container {
+            padding: 20px;
+            animation: fadeIn 0.8s ease-out;
+            background: #f8f9fd;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-tabs {
+            border-bottom: none;
+            background: #f1f2f6;
+        }
+
+        .custom-tabs .nav-link {
+            border: none;
+            border-radius: 0;
+            padding: 15px 25px;
+            color: #636e72;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .custom-tabs .nav-link.active {
+            background: white;
+            color: var(--primary-color);
+            border-top: 3px solid var(--primary-color);
+        }
+
+        .custom-tabs .nav-link:hover:not(.active) {
+            background: #e1e2e6;
+        }
+
+        .log-area-compact {
+            background: #1e1e1e;
+            color: #dcdcdc;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.75rem;
+            padding: 12px;
+            border-radius: 10px;
+            height: 250px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+
+        .log-entry {
+            border-bottom: 1px solid #2d2d2d;
+            padding: 4px 0;
+            word-break: break-all;
+        }
+
+        .pulse-button {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 10px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(78, 84, 200, 0.3);
+            transition: all 0.3s;
+        }
+
+        .pulse-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(78, 84, 200, 0.4);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2d3436;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #d5d9e2;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(78, 84, 200, 0.1);
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .table > :not(caption) > * > * {
+            padding: 0.75rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Function to recalculate subtotal and total
+            function calculateTotals() {
+                let grandTotal = 0;
+                $(".item-row").each(function () {
+                    const qty = parseFloat($(this).find(".qty-input").val()) || 0;
+                    const price = parseFloat($(this).find(".price-input").val()) || 0;
+                    const subtotal = qty * price;
+                    $(this).find(".subtotal-cell").text("R$ " + subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+                    $(this).find(".vprod-hidden").val(subtotal.toFixed(2));
+                    grandTotal += subtotal;
+                });
+                $("#totalNotaValue").text("R$ " + grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+            }
+
+            // Bind calculation to inputs
+            $(document).on("input", ".qty-input, .price-input", calculateTotals);
+
+            // Add Item
+            $("#addItemBtn").click(function () {
+                const index = $(".item-row").length;
+                const newRow = `
+                    <tr class="item-row">
+                        <td><input name="Input.Itens[${index}].CProd" class="form-control form-control-sm" /></td>
+                        <td><input name="Input.Itens[${index}].XProd" class="form-control form-control-sm" /></td>
+                        <td><input name="Input.Itens[${index}].NCM" class="form-control form-control-sm" value="00" /></td>
+                        <td><input name="Input.Itens[${index}].CodigoTributacao" class="form-control form-control-sm" value="060101" /></td>
+                        <td><input name="Input.Itens[${index}].AliquotaISS" class="form-control form-control-sm" value="5" /></td>
+                        <td><input name="Input.Itens[${index}].qCom" class="form-control form-control-sm qty-input" value="1" /></td>
+                        <td><input name="Input.Itens[${index}].vUnCom" class="form-control form-control-sm price-input" value="0" /></td>
+                        <td class="subtotal-cell fw-bold">R$ 0,00</td>
+                        <td><button type="button" class="btn btn-sm btn-danger remove-item"><i class="bi bi-trash"></i></button></td>
+                        <input type="hidden" name="Input.Itens[${index}].vProd" class="vprod-hidden" />
+                        <input type="hidden" name="Input.Itens[${index}].CSOSN" value="102" />
+                        <input type="hidden" name="Input.Itens[${index}].vTotTrib" value="0" />
+                    </tr>
+                `;
+                $("#itemsTable tbody").append(newRow);
+                calculateTotals();
+            });
+
+            // Remove Item
+            $(document).on("click", ".remove-item", function () {
+                if ($(".item-row").length > 1) {
+                    $(this).closest("tr").remove();
+                    // Re-index inputs
+                    $(".item-row").each(function (i) {
+                        $(this).find("input").each(function () {
+                            const name = $(this).attr("name");
+                            if (name) {
+                                const newName = name.replace(/\[\d+\]/, "[" + i + "]");
+                                $(this).attr("name", newName).attr("id", newName.replace(/\./g, "_"));
+                            }
+                        });
+                    });
+                    calculateTotals();
+                } else {
+                    alert("A nota deve conter ao menos um item.");
+                }
+            });
+
+            // Initial calculation
+            calculateTotals();
+
+            // Auto-scroll logs
+            var logContent = document.getElementById("logContent");
+            if(logContent) logContent.scrollTop = logContent.scrollHeight;
+        });
+
+        function copyChave() {
+            var copyText = document.getElementById("chaveAcessoCopiada");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value);
+            alert("Chave copiada: " + copyText.value);
+        }
+
+        function downloadXml(type) {
+            const content = type === 'retorno' ? document.getElementById('xmlRetornoContent').value : document.getElementById('xmlEnvioContent').value;
+            const filename = `NotaFiscal_${type}_${new Date().getTime()}.xml`;
+            const blob = new Blob([content], { type: 'text/xml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    </script>
+}

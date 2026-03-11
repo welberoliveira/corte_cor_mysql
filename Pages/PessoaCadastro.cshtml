@@ -9,7 +9,7 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success">
+        <div class="alert alert-@Model.MensagemTipo">
             @Model.Mensagem
         </div>
     }
@@ -17,14 +17,53 @@
     <form method="post">
         <input type="hidden" name="id" value="@Model.Pessoa?.IdPessoa">
 
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label class="font-weight-bold d-block">Tipo de Contato</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="isCliente" name="isCliente" @(Model.Pessoa?.IsCliente == true || Model.Pessoa?.IdPessoa == 0 ? "checked" : "")>
+                    <label class="form-check-label" for="isCliente">Cliente</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="isFornecedor" name="isFornecedor" @(Model.Pessoa?.IsFornecedor == true ? "checked" : "")>
+                    <label class="form-check-label" for="isFornecedor">Fornecedor</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="isTransportador" name="isTransportador" @(Model.Pessoa?.IsTransportador == true ? "checked" : "")>
+                    <label class="form-check-label" for="isTransportador">Transportador</label>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
+            <div class="col-md-6 form-group">
+                <label for="cpfCnpj">CPF / CNPJ</label>
+                <div class="input-group">
+                    <input type="text" id="cpfCnpj" name="cpfCnpj" class="form-control" value="@Model.Pessoa?.CpfCnpj">
+                    <span class="input-group-text" id="cpfCnpjSpinner" style="display:none;">
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                    </span>
+                </div>
+            </div>
             <div class="col-md-6 form-group">
                 <label for="nome">Nome</label>
                 <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Pessoa?.Nome">
             </div>
-            <div class="col-md-6 form-group">
-                <label for="cpfCnpj">CPF / CNPJ</label>
-                <input type="text" id="cpfCnpj" name="cpfCnpj" class="form-control" value="@Model.Pessoa?.CpfCnpj">
+        </div>
+
+        @* ── Campos CNPJ (ReceitaWS - preenchidos automaticamente) ── *@
+        <div class="row" id="cnpjFieldsRow">
+            <div class="col-md-4 form-group">
+                <label for="razaoSocial">Razão Social</label>
+                <input type="text" id="razaoSocial" name="razaoSocial" class="form-control" value="@Model.Pessoa?.RazaoSocial">
+            </div>
+            <div class="col-md-4 form-group">
+                <label for="nomeFantasia">Nome Fantasia</label>
+                <input type="text" id="nomeFantasia" name="nomeFantasia" class="form-control" value="@Model.Pessoa?.NomeFantasia">
+            </div>
+            <div class="col-md-4 form-group">
+                <label for="cnae">CNAE</label>
+                <input type="text" id="cnae" name="cnae" class="form-control" value="@Model.Pessoa?.Cnae">
             </div>
         </div>
 
@@ -41,7 +80,22 @@
 
         <div class="row">
             <div class="col-md-4 form-group">
-                <label for="dataNascimento">Data de Nascimento</label>
+                <label for="nomeContato">Nome do Contato</label>
+                <input type="text" id="nomeContato" name="nomeContato" class="form-control" value="@Model.Pessoa?.NomeContato">
+            </div>
+            <div class="col-md-4 form-group">
+                <label for="pais">País</label>
+                <input type="text" id="pais" name="pais" class="form-control" value="@Model.Pessoa?.Pais">
+            </div>
+            <div class="col-md-4 form-group">
+                <label for="idEstrangeiro">ID Estrangeiro</label>
+                <input type="text" id="idEstrangeiro" name="idEstrangeiro" class="form-control" value="@Model.Pessoa?.IdEstrangeiro">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 form-group">
+                <label for="dataNascimento">Data Nasc. / Fundação</label>
                 <input type="date" id="dataNascimento" name="dataNascimento" class="form-control"
                        value="@(Model.Pessoa?.DataNascimento?.ToString("yyyy-MM-dd") ?? "")">
             </div>
@@ -61,7 +115,12 @@
         <div class="row">
             <div class="col-md-3 form-group">
                 <label for="cep">CEP</label>
-                <input type="text" id="cep" name="cep" class="form-control" value="@Model.Pessoa?.Cep">
+                <div class="input-group">
+                    <input type="text" id="cep" name="cep" class="form-control" value="@Model.Pessoa?.Cep">
+                    <span class="input-group-text" id="cepSpinner" style="display:none;">
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                    </span>
+                </div>
             </div>
             <div class="col-md-7 form-group">
                 <label for="logradouro">Logradouro</label>
@@ -99,13 +158,305 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary mt-3">@Model.ButtonText</button>
+        <h5 class="mt-4">Endereço de Entrega</h5>
+        <hr />
+        <div class="row">
+            <div class="col-md-3 form-group">
+                <label for="entCep">CEP</label>
+                <input type="text" id="entCep" name="entCep" class="form-control" value="@Model.Pessoa?.EntCep">
+            </div>
+            <div class="col-md-7 form-group">
+                <label for="entLogradouro">Logradouro</label>
+                <input type="text" id="entLogradouro" name="entLogradouro" class="form-control" value="@Model.Pessoa?.EntLogradouro">
+            </div>
+            <div class="col-md-2 form-group">
+                <label for="entNumero">Número</label>
+                <input type="text" id="entNumero" name="entNumero" class="form-control" value="@Model.Pessoa?.EntNumero">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 form-group">
+                <label for="entComplemento">Complemento</label>
+                <input type="text" id="entComplemento" name="entComplemento" class="form-control" value="@Model.Pessoa?.EntComplemento">
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="entBairro">Bairro</label>
+                <input type="text" id="entBairro" name="entBairro" class="form-control" value="@Model.Pessoa?.EntBairro">
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="entCidade">Cidade</label>
+                <input type="text" id="entCidade" name="entCidade" class="form-control" value="@Model.Pessoa?.EntCidade">
+            </div>
+            <div class="col-md-2 form-group">
+                <label for="entUf">UF</label>
+                <select id="entUf" name="entUf" class="form-control">
+                    <option value="">--</option>
+                    @foreach (var sigla in new[] { "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO" })
+                    {
+                        var isSelected = Model.Pessoa?.EntUf == sigla ? "selected" : "";
+                        @Html.Raw($"<option value='{sigla}' {isSelected}>{sigla}</option>")
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 form-group">
+                <label for="entNome">Nome/Razão Social (Entrega)</label>
+                <input type="text" id="entNome" name="entNome" class="form-control" value="@Model.Pessoa?.EntNome">
+            </div>
+            <div class="col-md-4 form-group">
+                <label for="entCpfCnpj">CPF/CNPJ (Entrega)</label>
+                <input type="text" id="entCpfCnpj" name="entCpfCnpj" class="form-control" value="@Model.Pessoa?.EntCpfCnpj">
+            </div>
+            <div class="col-md-4 form-group">
+                <label for="entInscricaoEstadual">Inscrição Estadual (Entrega)</label>
+                <input type="text" id="entInscricaoEstadual" name="entInscricaoEstadual" class="form-control" value="@Model.Pessoa?.EntInscricaoEstadual">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label for="entEmail">E-mail (Entrega)</label>
+                <input type="email" id="entEmail" name="entEmail" class="form-control" value="@Model.Pessoa?.EntEmail">
+            </div>
+            <div class="col-md-6 form-group">
+                <label for="entTelefone">Telefone (Entrega)</label>
+                <input type="text" id="entTelefone" name="entTelefone" class="form-control" value="@Model.Pessoa?.EntTelefone">
+            </div>
+        </div>
+
+        <h5 class="mt-4">Informações Fiscais</h5>
+        <hr />
+        <div class="row">
+            <div class="col-md-3 form-group align-self-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="consumidorFinal" name="consumidorFinal" @(Model.Pessoa?.ConsumidorFinal == true ? "checked" : "")>
+                    <label class="form-check-label" for="consumidorFinal">Consumidor Final?</label>
+                </div>
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="indicadorIE">Indicador IE</label>
+                <select id="indicadorIE" name="indicadorIE" class="form-control">
+                    <option value="">Selecione...</option>
+                    @if(Model.Pessoa?.IndicadorIE == 1) { <option value="1" selected>1 - Contribuinte ICMS</option> } else { <option value="1">1 - Contribuinte ICMS</option> }
+                    @if(Model.Pessoa?.IndicadorIE == 2) { <option value="2" selected>2 - Contribuinte Isento</option> } else { <option value="2">2 - Contribuinte Isento</option> }
+                    @if(Model.Pessoa?.IndicadorIE == 9) { <option value="9" selected>9 - Não Contribuinte</option> } else { <option value="9">9 - Não Contribuinte</option> }
+                </select>
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="ieSubstTrib">IE Subst. Trib.</label>
+                <input type="text" id="ieSubstTrib" name="ieSubstTrib" class="form-control" value="@Model.Pessoa?.IESubstTrib">
+            </div>
+            <div class="col-md-3 form-group">
+                <label for="suframa">Suframa</label>
+                <input type="text" id="suframa" name="suframa" class="form-control" value="@Model.Pessoa?.Suframa">
+            </div>
+        </div>
+
+        <h5 class="mt-4">Outras Informações</h5>
+        <hr />
+        <div class="row">
+            <div class="col-md-4 form-group">
+                <label for="dataComemorativa">Data Comemorativa</label>
+                <input type="date" id="dataComemorativa" name="dataComemorativa" class="form-control" value="@(Model.Pessoa?.DataComemorativa?.ToString("yyyy-MM-dd") ?? "")">
+            </div>
+            <div class="col-md-8 form-group">
+                <label for="descricaoComemoracao">Descrição da Comemoração</label>
+                <input type="text" id="descricaoComemoracao" name="descricaoComemoracao" class="form-control" value="@Model.Pessoa?.DescricaoComemoracao">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 form-group">
+                <label for="tags">Palavras-chave (Tags)</label>
+                <input type="text" id="tags" name="tags" class="form-control" value="@Model.Pessoa?.Tags" placeholder="Ex: Revenda, Vip, Especial">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label for="basesLegais">Bases Legais (LGPD)</label>
+                <textarea id="basesLegais" name="basesLegais" class="form-control" rows="3">@Model.Pessoa?.BasesLegais</textarea>
+            </div>
+            <div class="col-md-6 form-group">
+                <label for="observacoes">Observações</label>
+                <textarea id="observacoes" name="observacoes" class="form-control" rows="3">@Model.Pessoa?.Observacoes</textarea>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+            </div>
+            <div class="col-md-6 text-end">
+                @{
+                    bool cadastroSalvo = (Model.Pessoa?.IdPessoa ?? 0) > 0;
+                }
+                @if (cadastroSalvo)
+                {
+                    <button type="submit" asp-page-handler="EnviarCredenciais" 
+                            class="btn btn-secondary"
+                            id="btnEnviarCredenciais">
+                        <i class="bi bi-envelope"></i> Enviar Credenciais
+                    </button>
+                }
+                else
+                {
+                    <button type="submit" asp-page-handler="EnviarCredenciais" 
+                            class="btn btn-secondary"
+                            id="btnEnviarCredenciais"
+                            disabled>
+                        <i class="bi bi-envelope"></i> Enviar Credenciais
+                    </button>
+                }
+                @if (!cadastroSalvo)
+                {
+                    <div class="alert alert-warning mt-2 small" id="alertaCredenciais">
+                        <i class="bi bi-info-circle"></i>
+                        Conclua e salve o cadastro antes de gerar os dados de acesso.
+                    </div>
+                }
+            </div>
+        </div>
     </form>
 </div>
 
 
 <script>
     $(document).ready(function () {
+        // ── Máscaras ──
         $("#telefone").inputmask("(99) 99999-9999");
+        $("#cep").inputmask("99999-999");
+
+        // ── Máscara dinâmica CPF/CNPJ ──
+        // Permite digitação livre e formata no blur conforme quantidade de dígitos
+        var cpfCnpjField = $("#cpfCnpj");
+        
+        // Limitar a 14 dígitos numéricos (tamanho máximo do CNPJ)
+        cpfCnpjField.attr("maxlength", "18"); // 18 = CNPJ formatado (99.999.999/9999-99)
+        
+        cpfCnpjField.on("input", function () {
+            // Remove tudo que não é número
+            var val = $(this).val().replace(/\D/g, "");
+            
+            // Limitar a 14 dígitos
+            if (val.length > 14) val = val.substring(0, 14);
+            
+            // Formatar enquanto digita
+            if (val.length <= 11) {
+                // Formato CPF parcial: 999.999.999-99
+                val = val.replace(/(\d{3})(\d)/, "$1.$2");
+                val = val.replace(/(\d{3})(\d)/, "$1.$2");
+                val = val.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            } else {
+                // Formato CNPJ: 99.999.999/9999-99
+                val = val.replace(/^(\d{2})(\d)/, "$1.$2");
+                val = val.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+                val = val.replace(/\.(\d{3})(\d)/, ".$1/$2");
+                val = val.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+            }
+            
+            $(this).val(val);
+        });
+
+        // ── Auto-preenchimento CNPJ (blur) ──
+        cpfCnpjField.on("blur", function () {
+            var val = $(this).val().replace(/\D/g, "");
+            
+            // Só consultar se for CNPJ (14 dígitos)
+            if (val.length !== 14) return;
+
+            $("#cpfCnpjSpinner").show();
+
+            fetch("?handler=ConsultaCnpj&cnpj=" + val)
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    $("#cpfCnpjSpinner").hide();
+                    if (data.sucesso) {
+                        // Limpar todos os campos da empresa e endereço antes de preencher
+                        $("#nome").val("");
+                        $("#razaoSocial").val("");
+                        $("#nomeFantasia").val("");
+                        $("#cnae").val("");
+                        $("#telefone").val("");
+                        $("#email").val("");
+                        $("#dataNascimento").val("");
+                        $("#inscricaoEstadual").val("");
+                        $("#inscricaoMunicipal").val("");
+                        $("#cep").val("");
+                        $("#logradouro").val("");
+                        $("#numero").val("");
+                        $("#complemento").val("");
+                        $("#bairro").val("");
+                        $("#cidade").val("");
+                        $("#uf").val("");
+
+                        // Preencher dados da empresa
+                        $("#razaoSocial").val(data.razaoSocial);
+                        $("#nomeFantasia").val(data.nomeFantasia);
+                        $("#cnae").val(data.cnae);
+                        
+                        // Preencher telefone, email e data de fundação
+                        if (data.telefone) $("#telefone").val(data.telefone);
+                        if (data.email) $("#email").val(data.email);
+                        if (data.dataFundacao) {
+                            var partes = data.dataFundacao.split("/");
+                            if (partes.length === 3) {
+                                var dataFormatada = partes[2] + "-" + partes[1] + "-" + partes[0];
+                                $("#dataNascimento").val(dataFormatada);
+                            }
+                        }
+
+                        // Preencher endereço da empresa
+                        if (data.cep) {
+                            $("#cep").val(data.cep.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"));
+                        }
+                        if (data.logradouro) $("#logradouro").val(data.logradouro);
+                        if (data.numero) $("#numero").val(data.numero);
+                        if (data.complemento) $("#complemento").val(data.complemento);
+                        if (data.bairro) $("#bairro").val(data.bairro);
+                        if (data.cidade) $("#cidade").val(data.cidade);
+                        if (data.uf) $("#uf").val(data.uf);
+                        
+                        // Se o nome estiver vazio, preencher com a razão social
+                        if (!$("#nome").val()) {
+                            $("#nome").val(data.nomeFantasia || data.razaoSocial);
+                        }
+                    } else {
+                        alert("CNPJ: " + (data.mensagem || "Não encontrado."));
+                    }
+                })
+                .catch(function (err) {
+                    $("#cpfCnpjSpinner").hide();
+                    console.error("Erro ao consultar CNPJ:", err);
+                });
+        });
+
+        // ── Auto-preenchimento CEP (blur) ──
+        $("#cep").on("blur", function () {
+            var val = $(this).val().replace(/\D/g, "");
+            
+            if (val.length !== 8) return;
+
+            $("#cepSpinner").show();
+
+            fetch("?handler=ConsultaCep&cep=" + val)
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    $("#cepSpinner").hide();
+                    if (data.sucesso) {
+                        $("#logradouro").val(data.logradouro);
+                        $("#bairro").val(data.bairro);
+                        $("#cidade").val(data.cidade);
+                        $("#uf").val(data.uf);
+                        
+                        // Focar no campo Número após preencher
+                        $("#numero").focus();
+                    } else {
+                        alert("CEP: " + (data.mensagem || "Não encontrado."));
+                    }
+                })
+                .catch(function (err) {
+                    $("#cepSpinner").hide();
+                    console.error("Erro ao consultar CEP:", err);
+                });
+        });
     });
 </script>

@@ -1,0 +1,123 @@
+@page
+@model CorteCor.Pages.ProdutoListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        /* Adicione estilos mobile se necessário */
+    }
+</style>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>Lista de Produtos</h4>
+        <a asp-page="/ProdutoCadastro" class="btn btn-primary">Cadastrar Novo</a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="idCategoria" class="form-label">Filtrar por Categoria</label>
+                    <select name="idCategoria" id="idCategoria" class="form-select">
+                        <option value="">-- Todas --</option>
+                        @foreach (var cat in Model.Categorias)
+                        {
+                            var isSelected = Model.IdCategoria == cat.IdCategoria ? "selected" : "";
+                            @Html.Raw($"<option value='{cat.IdCategoria}' {isSelected}>{cat.Nome}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+                <div class="col-md-2 text-end">
+                    <a asp-page="/ProdutoLista" class="btn btn-link">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info mt-2">
+            @Model.Mensagem
+        </div>
+    }
+
+    <div class="table-responsive mt-3">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nome / Código</th>
+                    <th>Categoria</th>
+                    <th>Estoque</th>
+                    <th>Preço de Venda</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Produtos != null && Model.Produtos.Any())
+                {
+                    foreach (var produto in Model.Produtos)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@produto.Nome</strong><br />
+                                <small class="text-muted">Cód: @(string.IsNullOrWhiteSpace(produto.CodigoProprio) ? "-" : produto.CodigoProprio)</small>
+                            </td>
+                            <td>
+                                @(string.IsNullOrWhiteSpace(produto.CategoriaNome) ? "-" : produto.CategoriaNome)
+                            </td>
+                            <td>
+                                @if (produto.ControlarEstoque)
+                                {
+                                    @produto.EstoqueAtual
+                                    @if(produto.EstoqueAtual <= produto.EstoqueMinimo)
+                                    {
+                                        <span class="badge bg-warning text-dark" title="Estoque abaixo do mínimo">Baixo</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Não Controla</span>
+                                }
+                            </td>
+                            <td>R$ @produto.PrecoVenda.ToString("0.00")</td>
+                            <td>
+                                @if (produto.Arquivado)
+                                {
+                                    <span class="badge bg-secondary">Arquivado</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Ativo</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <form method="post" style="display: inline;">
+                                    <input type="hidden" name="id" value="@produto.IdProduto">
+                                    <input type="hidden" name="action" value="alterar">
+                                    <button type="submit" class="btn btn-info btn-sm">Alterar</button>
+                                </form>
+
+                                <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja reciclar (inativar) este produto?');">
+                                    <input type="hidden" name="id" value="@produto.IdProduto">
+                                    <input type="hidden" name="action" value="excluir">
+                                    <button type="submit" class="btn btn-danger btn-sm">Inativar/Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhum produto encontrado.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

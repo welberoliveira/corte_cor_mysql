@@ -1267,9 +1267,11 @@ namespace CorteCor.Handlers
 
             string query = @"
         INSERT INTO CorteCor_Servico
-            (Nome, Preco, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS)
+            (Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, IdCategoria, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
+             Tags, Anotacoes, ItemListaServicoLC116, IdCnae, CodTributacaoNacional, CodNBS, Arquivado)
         VALUES
-            (@Nome, @Preco, @Duracao, @IdSalao, @CodigoTributacaoMunicipio, @Cnae, @AliquotaISS);
+            (@Nome, @Preco, @PrecoCusto, @MargemContribuicao, @Duracao, @IdSalao, @IdCategoria, @CodigoTributacaoMunicipio, @Cnae, @AliquotaISS,
+             @Tags, @Anotacoes, @ItemListaServicoLC116, @IdCnae, @CodTributacaoNacional, @CodNBS, @Arquivado);
         SELECT SCOPE_IDENTITY();
 ";
 
@@ -1278,11 +1280,22 @@ namespace CorteCor.Handlers
             {
                 command.AddWithValue("@Nome", servico.Nome ?? "");
                 command.AddWithValue("@Preco", servico.Preco);
+                command.AddWithValue("@PrecoCusto", servico.PrecoCusto.HasValue ? (object)servico.PrecoCusto.Value : DBNull.Value);
+                command.AddWithValue("@MargemContribuicao", servico.MargemContribuicao.HasValue ? (object)servico.MargemContribuicao.Value : DBNull.Value);
                 command.AddWithValue("@Duracao", servico.Duracao);
                 command.AddWithValue("@IdSalao", servico.IdSalao);
+                command.AddWithValue("@IdCategoria", servico.IdCategoria.HasValue ? (object)servico.IdCategoria.Value : DBNull.Value);
                 command.AddWithValue("@CodigoTributacaoMunicipio", string.IsNullOrWhiteSpace(servico.CodigoTributacaoMunicipio) ? (object)DBNull.Value : servico.CodigoTributacaoMunicipio);
                 command.AddWithValue("@Cnae", string.IsNullOrWhiteSpace(servico.Cnae) ? (object)DBNull.Value : servico.Cnae);
                 command.AddWithValue("@AliquotaISS", servico.AliquotaISS.HasValue ? (object)servico.AliquotaISS.Value : DBNull.Value);
+                
+                command.AddWithValue("@Tags", string.IsNullOrWhiteSpace(servico.Tags) ? (object)DBNull.Value : servico.Tags);
+                command.AddWithValue("@Anotacoes", string.IsNullOrWhiteSpace(servico.Anotacoes) ? (object)DBNull.Value : servico.Anotacoes);
+                command.AddWithValue("@ItemListaServicoLC116", string.IsNullOrWhiteSpace(servico.ItemListaServicoLC116) ? (object)DBNull.Value : servico.ItemListaServicoLC116);
+                command.AddWithValue("@IdCnae", string.IsNullOrWhiteSpace(servico.IdCnae) ? (object)DBNull.Value : servico.IdCnae);
+                command.AddWithValue("@CodTributacaoNacional", string.IsNullOrWhiteSpace(servico.CodTributacaoNacional) ? (object)DBNull.Value : servico.CodTributacaoNacional);
+                command.AddWithValue("@CodNBS", string.IsNullOrWhiteSpace(servico.CodNBS) ? (object)DBNull.Value : servico.CodNBS);
+                command.AddWithValue("@Arquivado", servico.Arquivado);
 
                 object result = command.ExecuteScalar();
                 if (result != null && int.TryParse(result.ToString(), out int id))
@@ -1297,7 +1310,8 @@ namespace CorteCor.Handlers
         public virtual Servico ObterPorId(int idServico)
         {
             string query = @"
-        SELECT IdServico, Nome, Preco, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS
+        SELECT IdServico, Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, IdCategoria, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
+               Tags, Anotacoes, ItemListaServicoLC116, IdCnae, CodTributacaoNacional, CodNBS, Arquivado
         FROM CorteCor_Servico
         WHERE IdServico = @IdServico;";
 
@@ -1314,12 +1328,22 @@ namespace CorteCor.Handlers
                     {
                         IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                         Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
-                        Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
-                        Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
+                            Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
+                            PrecoCusto = reader["PrecoCusto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PrecoCusto"]),
+                            MargemContribuicao = reader["MargemContribuicao"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["MargemContribuicao"]),
+                            Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
                         IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                        IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),
                         CodigoTributacaoMunicipio = reader["CodigoTributacaoMunicipio"] is DBNull ? "" : reader["CodigoTributacaoMunicipio"].ToString(),
                         Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
-                        AliquotaISS = reader["AliquotaISS"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["AliquotaISS"])
+                        AliquotaISS = reader["AliquotaISS"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["AliquotaISS"]),
+                        Tags = reader["Tags"] is DBNull ? null : reader["Tags"].ToString(),
+                        Anotacoes = reader["Anotacoes"] is DBNull ? null : reader["Anotacoes"].ToString(),
+                        ItemListaServicoLC116 = reader["ItemListaServicoLC116"] is DBNull ? null : reader["ItemListaServicoLC116"].ToString(),
+                        IdCnae = reader["IdCnae"] is DBNull ? null : reader["IdCnae"].ToString(),
+                        CodTributacaoNacional = reader["CodTributacaoNacional"] is DBNull ? null : reader["CodTributacaoNacional"].ToString(),
+                        CodNBS = reader["CodNBS"] is DBNull ? null : reader["CodNBS"].ToString(),
+                        Arquivado = reader["Arquivado"] is DBNull ? false : Convert.ToBoolean(reader["Arquivado"])
                     };
                 }
             }
@@ -1328,7 +1352,8 @@ namespace CorteCor.Handlers
         public override List<Servico> Listar()
         {
             string query = @"
-        SELECT IdServico, Nome, Preco, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS 
+        SELECT IdServico, Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
+               Tags, Anotacoes, ItemListaServicoLC116, IdCnae, CodTributacaoNacional, CodNBS, Arquivado
         FROM CorteCor_Servico
         ORDER BY Nome;";
 
@@ -1344,24 +1369,36 @@ namespace CorteCor.Handlers
                     {
                         IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                         Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
-                        Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
-                        Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
-                        IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                            Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
+                            PrecoCusto = reader["PrecoCusto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PrecoCusto"]),
+                            MargemContribuicao = reader["MargemContribuicao"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["MargemContribuicao"]),
+                            Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
+                            IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                            IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),
                         CodigoTributacaoMunicipio = reader["CodigoTributacaoMunicipio"] is DBNull ? "" : reader["CodigoTributacaoMunicipio"].ToString(),
                         Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
-                        AliquotaISS = reader["AliquotaISS"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["AliquotaISS"])
+                        AliquotaISS = reader["AliquotaISS"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["AliquotaISS"]),
+                        Tags = reader["Tags"] is DBNull ? null : reader["Tags"].ToString(),
+                        Anotacoes = reader["Anotacoes"] is DBNull ? null : reader["Anotacoes"].ToString(),
+                        ItemListaServicoLC116 = reader["ItemListaServicoLC116"] is DBNull ? null : reader["ItemListaServicoLC116"].ToString(),
+                        IdCnae = reader["IdCnae"] is DBNull ? null : reader["IdCnae"].ToString(),
+                        CodTributacaoNacional = reader["CodTributacaoNacional"] is DBNull ? null : reader["CodTributacaoNacional"].ToString(),
+                        CodNBS = reader["CodNBS"] is DBNull ? null : reader["CodNBS"].ToString(),
+                        Arquivado = reader["Arquivado"] is DBNull ? false : Convert.ToBoolean(reader["Arquivado"])
                     });
                 }
             }
             return servicos;
         }
 
-        public List<Servico> ListarPorSalao(int idSalao)
+        public List<Servico> ListarPorSalao(int idSalao, int? idCategoria = null)
         {
             string query = @"
-        SELECT IdServico, Nome, Preco, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS 
+        SELECT IdServico, Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, IdCategoria, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
+               Tags, Anotacoes, ItemListaServicoLC116, IdCnae, CodTributacaoNacional, CodNBS, Arquivado
         FROM CorteCor_Servico
         WHERE IdSalao = @IdSalao
+          AND (@IdCategoria IS NULL OR IdCategoria = @IdCategoria)
         ORDER BY Nome;";
 
             var servicos = new List<Servico>();
@@ -1370,6 +1407,7 @@ namespace CorteCor.Handlers
             using (var command = connection.CreateCommand(query))
             {
                 command.AddWithValue("@IdSalao", idSalao);
+                command.AddWithValue("@IdCategoria", (object?)idCategoria ?? DBNull.Value);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
@@ -1378,12 +1416,19 @@ namespace CorteCor.Handlers
                         {
                             IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                             Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
-                            Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
                             Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
                             IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                            IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),
                             CodigoTributacaoMunicipio = reader["CodigoTributacaoMunicipio"] is DBNull ? "" : reader["CodigoTributacaoMunicipio"].ToString(),
                             Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
-                            AliquotaISS = reader["AliquotaISS"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["AliquotaISS"])
+                            AliquotaISS = reader["AliquotaISS"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["AliquotaISS"]),
+                            Tags = reader["Tags"] is DBNull ? null : reader["Tags"].ToString(),
+                            Anotacoes = reader["Anotacoes"] is DBNull ? null : reader["Anotacoes"].ToString(),
+                            ItemListaServicoLC116 = reader["ItemListaServicoLC116"] is DBNull ? null : reader["ItemListaServicoLC116"].ToString(),
+                            IdCnae = reader["IdCnae"] is DBNull ? null : reader["IdCnae"].ToString(),
+                            CodTributacaoNacional = reader["CodTributacaoNacional"] is DBNull ? null : reader["CodTributacaoNacional"].ToString(),
+                            CodNBS = reader["CodNBS"] is DBNull ? null : reader["CodNBS"].ToString(),
+                            Arquivado = reader["Arquivado"] is DBNull ? false : Convert.ToBoolean(reader["Arquivado"])
                         });
                     }
                 }
@@ -1391,20 +1436,27 @@ namespace CorteCor.Handlers
             return servicos;
         }
 
-
-
-
         public void Atualizar(Servico servico)
         {
             string query = @"
         UPDATE CorteCor_Servico
         SET Nome = @Nome,
             Preco = @Preco,
+            PrecoCusto = @PrecoCusto,
+            MargemContribuicao = @MargemContribuicao,
             Duracao = @Duracao,
             IdSalao = @IdSalao,
+            IdCategoria = @IdCategoria,
             CodigoTributacaoMunicipio = @CodigoTributacaoMunicipio,
             Cnae = @Cnae,
-            AliquotaISS = @AliquotaISS
+            AliquotaISS = @AliquotaISS,
+            Tags = @Tags,
+            Anotacoes = @Anotacoes,
+            ItemListaServicoLC116 = @ItemListaServicoLC116,
+            IdCnae = @IdCnae,
+            CodTributacaoNacional = @CodTributacaoNacional,
+            CodNBS = @CodNBS,
+            Arquivado = @Arquivado
         WHERE IdServico = @IdServico AND IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
@@ -1412,11 +1464,23 @@ namespace CorteCor.Handlers
             {
                 command.AddWithValue("@Nome", servico.Nome ?? "");
                 command.AddWithValue("@Preco", servico.Preco);
+                command.AddWithValue("@PrecoCusto", servico.PrecoCusto.HasValue ? (object)servico.PrecoCusto.Value : DBNull.Value);
+                command.AddWithValue("@MargemContribuicao", servico.MargemContribuicao.HasValue ? (object)servico.MargemContribuicao.Value : DBNull.Value);
                 command.AddWithValue("@Duracao", servico.Duracao);
                 command.AddWithValue("@IdSalao", servico.IdSalao);
+                command.AddWithValue("@IdCategoria", servico.IdCategoria.HasValue ? (object)servico.IdCategoria.Value : DBNull.Value);
                 command.AddWithValue("@CodigoTributacaoMunicipio", string.IsNullOrWhiteSpace(servico.CodigoTributacaoMunicipio) ? (object)DBNull.Value : servico.CodigoTributacaoMunicipio);
                 command.AddWithValue("@Cnae", string.IsNullOrWhiteSpace(servico.Cnae) ? (object)DBNull.Value : servico.Cnae);
                 command.AddWithValue("@AliquotaISS", servico.AliquotaISS.HasValue ? (object)servico.AliquotaISS.Value : DBNull.Value);
+                
+                command.AddWithValue("@Tags", string.IsNullOrWhiteSpace(servico.Tags) ? (object)DBNull.Value : servico.Tags);
+                command.AddWithValue("@Anotacoes", string.IsNullOrWhiteSpace(servico.Anotacoes) ? (object)DBNull.Value : servico.Anotacoes);
+                command.AddWithValue("@ItemListaServicoLC116", string.IsNullOrWhiteSpace(servico.ItemListaServicoLC116) ? (object)DBNull.Value : servico.ItemListaServicoLC116);
+                command.AddWithValue("@IdCnae", string.IsNullOrWhiteSpace(servico.IdCnae) ? (object)DBNull.Value : servico.IdCnae);
+                command.AddWithValue("@CodTributacaoNacional", string.IsNullOrWhiteSpace(servico.CodTributacaoNacional) ? (object)DBNull.Value : servico.CodTributacaoNacional);
+                command.AddWithValue("@CodNBS", string.IsNullOrWhiteSpace(servico.CodNBS) ? (object)DBNull.Value : servico.CodNBS);
+                command.AddWithValue("@Arquivado", servico.Arquivado);
+                
                 command.AddWithValue("@IdServico", servico.IdServico);
 
                 command.ExecuteNonQuery();
@@ -1709,9 +1773,15 @@ namespace CorteCor.Handlers
 
             string query = @"
         INSERT INTO CorteCor_Pessoa
-            (Nome, Telefone, Email, DataNascimento, IdSalao, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF)
+            (Nome, Telefone, Email, DataNascimento, IdSalao, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
+             IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro, 
+             EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
+             ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes)
         VALUES
-            (@Nome, @Telefone, @Email, @DataNascimento, @IdSalao, @CpfCnpj, @InscricaoEstadual, @InscricaoMunicipal, @Cep, @Logradouro, @Numero, @Complemento, @Bairro, @Cidade, @UF);
+            (@Nome, @Telefone, @Email, @DataNascimento, @IdSalao, @CpfCnpj, @InscricaoEstadual, @InscricaoMunicipal, @Cep, @Logradouro, @Numero, @Complemento, @Bairro, @Cidade, @UF, @RazaoSocial, @NomeFantasia, @Cnae,
+             @IsCliente, @IsFornecedor, @IsTransportador, @NomeContato, @Pais, @IdEstrangeiro,
+             @EntCep, @EntUf, @EntCidade, @EntNome, @EntCpfCnpj, @EntInscricaoEstadual, @EntLogradouro, @EntNumero, @EntComplemento, @EntBairro, @EntEmail, @EntTelefone,
+             @ConsumidorFinal, @IndicadorIE, @IESubstTrib, @Suframa, @Tags, @DataComemorativa, @DescricaoComemoracao, @BasesLegais, @Observacoes);
         SELECT SCOPE_IDENTITY();";
 
             using (var connection = _dbHandler.GetConnection())
@@ -1743,6 +1813,41 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@Bairro", string.IsNullOrWhiteSpace(pessoa.Bairro) ? (object)DBNull.Value : pessoa.Bairro);
                 command.AddWithValue("@Cidade", string.IsNullOrWhiteSpace(pessoa.Cidade) ? (object)DBNull.Value : pessoa.Cidade);
                 command.AddWithValue("@UF", string.IsNullOrWhiteSpace(pessoa.UF) ? (object)DBNull.Value : pessoa.UF);
+                command.AddWithValue("@RazaoSocial", string.IsNullOrWhiteSpace(pessoa.RazaoSocial) ? (object)DBNull.Value : pessoa.RazaoSocial);
+                command.AddWithValue("@NomeFantasia", string.IsNullOrWhiteSpace(pessoa.NomeFantasia) ? (object)DBNull.Value : pessoa.NomeFantasia);
+                command.AddWithValue("@Cnae", string.IsNullOrWhiteSpace(pessoa.Cnae) ? (object)DBNull.Value : pessoa.Cnae);
+
+                // Novos Campos
+                command.AddWithValue("@IsCliente", pessoa.IsCliente);
+                command.AddWithValue("@IsFornecedor", pessoa.IsFornecedor);
+                command.AddWithValue("@IsTransportador", pessoa.IsTransportador);
+                command.AddWithValue("@NomeContato", string.IsNullOrWhiteSpace(pessoa.NomeContato) ? (object)DBNull.Value : pessoa.NomeContato);
+                command.AddWithValue("@Pais", string.IsNullOrWhiteSpace(pessoa.Pais) ? (object)DBNull.Value : pessoa.Pais);
+                command.AddWithValue("@IdEstrangeiro", string.IsNullOrWhiteSpace(pessoa.IdEstrangeiro) ? (object)DBNull.Value : pessoa.IdEstrangeiro);
+
+                command.AddWithValue("@EntCep", string.IsNullOrWhiteSpace(pessoa.EntCep) ? (object)DBNull.Value : pessoa.EntCep);
+                command.AddWithValue("@EntUf", string.IsNullOrWhiteSpace(pessoa.EntUf) ? (object)DBNull.Value : pessoa.EntUf);
+                command.AddWithValue("@EntCidade", string.IsNullOrWhiteSpace(pessoa.EntCidade) ? (object)DBNull.Value : pessoa.EntCidade);
+                command.AddWithValue("@EntNome", string.IsNullOrWhiteSpace(pessoa.EntNome) ? (object)DBNull.Value : pessoa.EntNome);
+                command.AddWithValue("@EntCpfCnpj", string.IsNullOrWhiteSpace(pessoa.EntCpfCnpj) ? (object)DBNull.Value : pessoa.EntCpfCnpj);
+                command.AddWithValue("@EntInscricaoEstadual", string.IsNullOrWhiteSpace(pessoa.EntInscricaoEstadual) ? (object)DBNull.Value : pessoa.EntInscricaoEstadual);
+                command.AddWithValue("@EntLogradouro", string.IsNullOrWhiteSpace(pessoa.EntLogradouro) ? (object)DBNull.Value : pessoa.EntLogradouro);
+                command.AddWithValue("@EntNumero", string.IsNullOrWhiteSpace(pessoa.EntNumero) ? (object)DBNull.Value : pessoa.EntNumero);
+                command.AddWithValue("@EntComplemento", string.IsNullOrWhiteSpace(pessoa.EntComplemento) ? (object)DBNull.Value : pessoa.EntComplemento);
+                command.AddWithValue("@EntBairro", string.IsNullOrWhiteSpace(pessoa.EntBairro) ? (object)DBNull.Value : pessoa.EntBairro);
+                command.AddWithValue("@EntEmail", string.IsNullOrWhiteSpace(pessoa.EntEmail) ? (object)DBNull.Value : pessoa.EntEmail);
+                command.AddWithValue("@EntTelefone", string.IsNullOrWhiteSpace(pessoa.EntTelefone) ? (object)DBNull.Value : pessoa.EntTelefone);
+
+                command.AddWithValue("@ConsumidorFinal", pessoa.ConsumidorFinal.HasValue ? (object)pessoa.ConsumidorFinal.Value : DBNull.Value);
+                command.AddWithValue("@IndicadorIE", pessoa.IndicadorIE.HasValue ? (object)pessoa.IndicadorIE.Value : DBNull.Value);
+                command.AddWithValue("@IESubstTrib", string.IsNullOrWhiteSpace(pessoa.IESubstTrib) ? (object)DBNull.Value : pessoa.IESubstTrib);
+                command.AddWithValue("@Suframa", string.IsNullOrWhiteSpace(pessoa.Suframa) ? (object)DBNull.Value : pessoa.Suframa);
+
+                command.AddWithValue("@Tags", string.IsNullOrWhiteSpace(pessoa.Tags) ? (object)DBNull.Value : pessoa.Tags);
+                command.AddWithValue("@DataComemorativa", pessoa.DataComemorativa.HasValue ? (object)pessoa.DataComemorativa.Value.Date : DBNull.Value);
+                command.AddWithValue("@DescricaoComemoracao", string.IsNullOrWhiteSpace(pessoa.DescricaoComemoracao) ? (object)DBNull.Value : pessoa.DescricaoComemoracao);
+                command.AddWithValue("@BasesLegais", string.IsNullOrWhiteSpace(pessoa.BasesLegais) ? (object)DBNull.Value : pessoa.BasesLegais);
+                command.AddWithValue("@Observacoes", string.IsNullOrWhiteSpace(pessoa.Observacoes) ? (object)DBNull.Value : pessoa.Observacoes);
 
                 object result = command.ExecuteScalar();
                 if (result != null && int.TryParse(result.ToString(), out int id))
@@ -1755,7 +1860,10 @@ namespace CorteCor.Handlers
         public virtual Pessoa ObterPorId(int idPessoa)
         {
             string query = @"
-        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
+               IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+               EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
+               ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
         FROM CorteCor_Pessoa
         WHERE IdPessoa = @IdPessoa;";
 
@@ -1786,7 +1894,37 @@ namespace CorteCor.Handlers
                         Complemento = reader["Complemento"] is DBNull ? "" : reader["Complemento"].ToString(),
                         Bairro = reader["Bairro"] is DBNull ? "" : reader["Bairro"].ToString(),
                         Cidade = reader["Cidade"] is DBNull ? "" : reader["Cidade"].ToString(),
-                        UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString()
+                        UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString(),
+                        RazaoSocial = reader["RazaoSocial"] is DBNull ? "" : reader["RazaoSocial"].ToString(),
+                        NomeFantasia = reader["NomeFantasia"] is DBNull ? "" : reader["NomeFantasia"].ToString(),
+                        Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
+                        IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
+                        IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                        IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
+                        NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
+                        Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
+                        IdEstrangeiro = reader["IdEstrangeiro"] is DBNull ? "" : reader["IdEstrangeiro"].ToString(),
+                        EntCep = reader["EntCep"] is DBNull ? "" : reader["EntCep"].ToString(),
+                        EntUf = reader["EntUf"] is DBNull ? "" : reader["EntUf"].ToString(),
+                        EntCidade = reader["EntCidade"] is DBNull ? "" : reader["EntCidade"].ToString(),
+                        EntNome = reader["EntNome"] is DBNull ? "" : reader["EntNome"].ToString(),
+                        EntCpfCnpj = reader["EntCpfCnpj"] is DBNull ? "" : reader["EntCpfCnpj"].ToString(),
+                        EntInscricaoEstadual = reader["EntInscricaoEstadual"] is DBNull ? "" : reader["EntInscricaoEstadual"].ToString(),
+                        EntLogradouro = reader["EntLogradouro"] is DBNull ? "" : reader["EntLogradouro"].ToString(),
+                        EntNumero = reader["EntNumero"] is DBNull ? "" : reader["EntNumero"].ToString(),
+                        EntComplemento = reader["EntComplemento"] is DBNull ? "" : reader["EntComplemento"].ToString(),
+                        EntBairro = reader["EntBairro"] is DBNull ? "" : reader["EntBairro"].ToString(),
+                        EntEmail = reader["EntEmail"] is DBNull ? "" : reader["EntEmail"].ToString(),
+                        EntTelefone = reader["EntTelefone"] is DBNull ? "" : reader["EntTelefone"].ToString(),
+                        ConsumidorFinal = reader["ConsumidorFinal"] is DBNull ? (bool?)null : Convert.ToBoolean(reader["ConsumidorFinal"]),
+                        IndicadorIE = reader["IndicadorIE"] is DBNull ? (int?)null : Convert.ToInt32(reader["IndicadorIE"]),
+                        IESubstTrib = reader["IESubstTrib"] is DBNull ? "" : reader["IESubstTrib"].ToString(),
+                        Suframa = reader["Suframa"] is DBNull ? "" : reader["Suframa"].ToString(),
+                        Tags = reader["Tags"] is DBNull ? "" : reader["Tags"].ToString(),
+                        DataComemorativa = reader["DataComemorativa"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataComemorativa"]),
+                        DescricaoComemoracao = reader["DescricaoComemoracao"] is DBNull ? "" : reader["DescricaoComemoracao"].ToString(),
+                        BasesLegais = reader["BasesLegais"] is DBNull ? "" : reader["BasesLegais"].ToString(),
+                        Observacoes = reader["Observacoes"] is DBNull ? "" : reader["Observacoes"].ToString()
                     };
                 }
             }
@@ -1816,7 +1954,10 @@ namespace CorteCor.Handlers
 
                 // Data
                 string query = @"
-            SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF
+            SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
+                   IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+                   EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
+                   ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
             FROM CorteCor_Pessoa
             WHERE (Excluido = 0 OR Excluido IS NULL)
             ORDER BY Nome
@@ -1849,7 +1990,37 @@ namespace CorteCor.Handlers
                                 Complemento = reader["Complemento"] is DBNull ? "" : reader["Complemento"].ToString(),
                                 Bairro = reader["Bairro"] is DBNull ? "" : reader["Bairro"].ToString(),
                                 Cidade = reader["Cidade"] is DBNull ? "" : reader["Cidade"].ToString(),
-                                UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString()
+                                UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString(),
+                            RazaoSocial = reader["RazaoSocial"] is DBNull ? "" : reader["RazaoSocial"].ToString(),
+                            NomeFantasia = reader["NomeFantasia"] is DBNull ? "" : reader["NomeFantasia"].ToString(),
+                            Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
+                            IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
+                            IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                            IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
+                            NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
+                            Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
+                            IdEstrangeiro = reader["IdEstrangeiro"] is DBNull ? "" : reader["IdEstrangeiro"].ToString(),
+                            EntCep = reader["EntCep"] is DBNull ? "" : reader["EntCep"].ToString(),
+                            EntUf = reader["EntUf"] is DBNull ? "" : reader["EntUf"].ToString(),
+                            EntCidade = reader["EntCidade"] is DBNull ? "" : reader["EntCidade"].ToString(),
+                            EntNome = reader["EntNome"] is DBNull ? "" : reader["EntNome"].ToString(),
+                            EntCpfCnpj = reader["EntCpfCnpj"] is DBNull ? "" : reader["EntCpfCnpj"].ToString(),
+                            EntInscricaoEstadual = reader["EntInscricaoEstadual"] is DBNull ? "" : reader["EntInscricaoEstadual"].ToString(),
+                            EntLogradouro = reader["EntLogradouro"] is DBNull ? "" : reader["EntLogradouro"].ToString(),
+                            EntNumero = reader["EntNumero"] is DBNull ? "" : reader["EntNumero"].ToString(),
+                            EntComplemento = reader["EntComplemento"] is DBNull ? "" : reader["EntComplemento"].ToString(),
+                            EntBairro = reader["EntBairro"] is DBNull ? "" : reader["EntBairro"].ToString(),
+                            EntEmail = reader["EntEmail"] is DBNull ? "" : reader["EntEmail"].ToString(),
+                            EntTelefone = reader["EntTelefone"] is DBNull ? "" : reader["EntTelefone"].ToString(),
+                            ConsumidorFinal = reader["ConsumidorFinal"] is DBNull ? (bool?)null : Convert.ToBoolean(reader["ConsumidorFinal"]),
+                            IndicadorIE = reader["IndicadorIE"] is DBNull ? (int?)null : Convert.ToInt32(reader["IndicadorIE"]),
+                            IESubstTrib = reader["IESubstTrib"] is DBNull ? "" : reader["IESubstTrib"].ToString(),
+                            Suframa = reader["Suframa"] is DBNull ? "" : reader["Suframa"].ToString(),
+                            Tags = reader["Tags"] is DBNull ? "" : reader["Tags"].ToString(),
+                            DataComemorativa = reader["DataComemorativa"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataComemorativa"]),
+                            DescricaoComemoracao = reader["DescricaoComemoracao"] is DBNull ? "" : reader["DescricaoComemoracao"].ToString(),
+                            BasesLegais = reader["BasesLegais"] is DBNull ? "" : reader["BasesLegais"].ToString(),
+                            Observacoes = reader["Observacoes"] is DBNull ? "" : reader["Observacoes"].ToString()
                             });
                         }
                     }
@@ -1861,7 +2032,10 @@ namespace CorteCor.Handlers
         public virtual List<Pessoa> ListarPorSalao(int idSalao)
         {
             string query = @"
-        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
+               IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+               EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
+               ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
         FROM CorteCor_Pessoa
         WHERE IdSalao = @IdSalao AND (Excluido = 0 OR Excluido IS NULL)
         ORDER BY Nome;";
@@ -1895,7 +2069,37 @@ namespace CorteCor.Handlers
                             Complemento = reader["Complemento"] is DBNull ? "" : reader["Complemento"].ToString(),
                             Bairro = reader["Bairro"] is DBNull ? "" : reader["Bairro"].ToString(),
                             Cidade = reader["Cidade"] is DBNull ? "" : reader["Cidade"].ToString(),
-                            UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString()
+                            UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString(),
+                            RazaoSocial = reader["RazaoSocial"] is DBNull ? "" : reader["RazaoSocial"].ToString(),
+                            NomeFantasia = reader["NomeFantasia"] is DBNull ? "" : reader["NomeFantasia"].ToString(),
+                            Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
+                            IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
+                            IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                            IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
+                            NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
+                            Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
+                            IdEstrangeiro = reader["IdEstrangeiro"] is DBNull ? "" : reader["IdEstrangeiro"].ToString(),
+                            EntCep = reader["EntCep"] is DBNull ? "" : reader["EntCep"].ToString(),
+                            EntUf = reader["EntUf"] is DBNull ? "" : reader["EntUf"].ToString(),
+                            EntCidade = reader["EntCidade"] is DBNull ? "" : reader["EntCidade"].ToString(),
+                            EntNome = reader["EntNome"] is DBNull ? "" : reader["EntNome"].ToString(),
+                            EntCpfCnpj = reader["EntCpfCnpj"] is DBNull ? "" : reader["EntCpfCnpj"].ToString(),
+                            EntInscricaoEstadual = reader["EntInscricaoEstadual"] is DBNull ? "" : reader["EntInscricaoEstadual"].ToString(),
+                            EntLogradouro = reader["EntLogradouro"] is DBNull ? "" : reader["EntLogradouro"].ToString(),
+                            EntNumero = reader["EntNumero"] is DBNull ? "" : reader["EntNumero"].ToString(),
+                            EntComplemento = reader["EntComplemento"] is DBNull ? "" : reader["EntComplemento"].ToString(),
+                            EntBairro = reader["EntBairro"] is DBNull ? "" : reader["EntBairro"].ToString(),
+                            EntEmail = reader["EntEmail"] is DBNull ? "" : reader["EntEmail"].ToString(),
+                            EntTelefone = reader["EntTelefone"] is DBNull ? "" : reader["EntTelefone"].ToString(),
+                            ConsumidorFinal = reader["ConsumidorFinal"] is DBNull ? (bool?)null : Convert.ToBoolean(reader["ConsumidorFinal"]),
+                            IndicadorIE = reader["IndicadorIE"] is DBNull ? (int?)null : Convert.ToInt32(reader["IndicadorIE"]),
+                            IESubstTrib = reader["IESubstTrib"] is DBNull ? "" : reader["IESubstTrib"].ToString(),
+                            Suframa = reader["Suframa"] is DBNull ? "" : reader["Suframa"].ToString(),
+                            Tags = reader["Tags"] is DBNull ? "" : reader["Tags"].ToString(),
+                            DataComemorativa = reader["DataComemorativa"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataComemorativa"]),
+                            DescricaoComemoracao = reader["DescricaoComemoracao"] is DBNull ? "" : reader["DescricaoComemoracao"].ToString(),
+                            BasesLegais = reader["BasesLegais"] is DBNull ? "" : reader["BasesLegais"].ToString(),
+                            Observacoes = reader["Observacoes"] is DBNull ? "" : reader["Observacoes"].ToString()
                         });
                     }
                 }
@@ -1922,7 +2126,37 @@ namespace CorteCor.Handlers
             Complemento = @Complemento,
             Bairro = @Bairro,
             Cidade = @Cidade,
-            UF = @UF
+            UF = @UF,
+            RazaoSocial = @RazaoSocial,
+            NomeFantasia = @NomeFantasia,
+            Cnae = @Cnae,
+            IsCliente = @IsCliente,
+            IsFornecedor = @IsFornecedor,
+            IsTransportador = @IsTransportador,
+            NomeContato = @NomeContato,
+            Pais = @Pais,
+            IdEstrangeiro = @IdEstrangeiro,
+            EntCep = @EntCep,
+            EntUf = @EntUf,
+            EntCidade = @EntCidade,
+            EntNome = @EntNome,
+            EntCpfCnpj = @EntCpfCnpj,
+            EntInscricaoEstadual = @EntInscricaoEstadual,
+            EntLogradouro = @EntLogradouro,
+            EntNumero = @EntNumero,
+            EntComplemento = @EntComplemento,
+            EntBairro = @EntBairro,
+            EntEmail = @EntEmail,
+            EntTelefone = @EntTelefone,
+            ConsumidorFinal = @ConsumidorFinal,
+            IndicadorIE = @IndicadorIE,
+            IESubstTrib = @IESubstTrib,
+            Suframa = @Suframa,
+            Tags = @Tags,
+            DataComemorativa = @DataComemorativa,
+            DescricaoComemoracao = @DescricaoComemoracao,
+            BasesLegais = @BasesLegais,
+            Observacoes = @Observacoes
         WHERE IdPessoa = @IdPessoa AND IdSalao = @IdSalao;";
 
             using (var connection = _dbHandler.GetConnection())
@@ -1954,6 +2188,41 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@Bairro", string.IsNullOrWhiteSpace(pessoa.Bairro) ? (object)DBNull.Value : pessoa.Bairro);
                 command.AddWithValue("@Cidade", string.IsNullOrWhiteSpace(pessoa.Cidade) ? (object)DBNull.Value : pessoa.Cidade);
                 command.AddWithValue("@UF", string.IsNullOrWhiteSpace(pessoa.UF) ? (object)DBNull.Value : pessoa.UF);
+                command.AddWithValue("@RazaoSocial", string.IsNullOrWhiteSpace(pessoa.RazaoSocial) ? (object)DBNull.Value : pessoa.RazaoSocial);
+                command.AddWithValue("@NomeFantasia", string.IsNullOrWhiteSpace(pessoa.NomeFantasia) ? (object)DBNull.Value : pessoa.NomeFantasia);
+                command.AddWithValue("@Cnae", string.IsNullOrWhiteSpace(pessoa.Cnae) ? (object)DBNull.Value : pessoa.Cnae);
+
+                // Novos Campos
+                command.AddWithValue("@IsCliente", pessoa.IsCliente);
+                command.AddWithValue("@IsFornecedor", pessoa.IsFornecedor);
+                command.AddWithValue("@IsTransportador", pessoa.IsTransportador);
+                command.AddWithValue("@NomeContato", string.IsNullOrWhiteSpace(pessoa.NomeContato) ? (object)DBNull.Value : pessoa.NomeContato);
+                command.AddWithValue("@Pais", string.IsNullOrWhiteSpace(pessoa.Pais) ? (object)DBNull.Value : pessoa.Pais);
+                command.AddWithValue("@IdEstrangeiro", string.IsNullOrWhiteSpace(pessoa.IdEstrangeiro) ? (object)DBNull.Value : pessoa.IdEstrangeiro);
+
+                command.AddWithValue("@EntCep", string.IsNullOrWhiteSpace(pessoa.EntCep) ? (object)DBNull.Value : pessoa.EntCep);
+                command.AddWithValue("@EntUf", string.IsNullOrWhiteSpace(pessoa.EntUf) ? (object)DBNull.Value : pessoa.EntUf);
+                command.AddWithValue("@EntCidade", string.IsNullOrWhiteSpace(pessoa.EntCidade) ? (object)DBNull.Value : pessoa.EntCidade);
+                command.AddWithValue("@EntNome", string.IsNullOrWhiteSpace(pessoa.EntNome) ? (object)DBNull.Value : pessoa.EntNome);
+                command.AddWithValue("@EntCpfCnpj", string.IsNullOrWhiteSpace(pessoa.EntCpfCnpj) ? (object)DBNull.Value : pessoa.EntCpfCnpj);
+                command.AddWithValue("@EntInscricaoEstadual", string.IsNullOrWhiteSpace(pessoa.EntInscricaoEstadual) ? (object)DBNull.Value : pessoa.EntInscricaoEstadual);
+                command.AddWithValue("@EntLogradouro", string.IsNullOrWhiteSpace(pessoa.EntLogradouro) ? (object)DBNull.Value : pessoa.EntLogradouro);
+                command.AddWithValue("@EntNumero", string.IsNullOrWhiteSpace(pessoa.EntNumero) ? (object)DBNull.Value : pessoa.EntNumero);
+                command.AddWithValue("@EntComplemento", string.IsNullOrWhiteSpace(pessoa.EntComplemento) ? (object)DBNull.Value : pessoa.EntComplemento);
+                command.AddWithValue("@EntBairro", string.IsNullOrWhiteSpace(pessoa.EntBairro) ? (object)DBNull.Value : pessoa.EntBairro);
+                command.AddWithValue("@EntEmail", string.IsNullOrWhiteSpace(pessoa.EntEmail) ? (object)DBNull.Value : pessoa.EntEmail);
+                command.AddWithValue("@EntTelefone", string.IsNullOrWhiteSpace(pessoa.EntTelefone) ? (object)DBNull.Value : pessoa.EntTelefone);
+
+                command.AddWithValue("@ConsumidorFinal", pessoa.ConsumidorFinal.HasValue ? (object)pessoa.ConsumidorFinal.Value : DBNull.Value);
+                command.AddWithValue("@IndicadorIE", pessoa.IndicadorIE.HasValue ? (object)pessoa.IndicadorIE.Value : DBNull.Value);
+                command.AddWithValue("@IESubstTrib", string.IsNullOrWhiteSpace(pessoa.IESubstTrib) ? (object)DBNull.Value : pessoa.IESubstTrib);
+                command.AddWithValue("@Suframa", string.IsNullOrWhiteSpace(pessoa.Suframa) ? (object)DBNull.Value : pessoa.Suframa);
+
+                command.AddWithValue("@Tags", string.IsNullOrWhiteSpace(pessoa.Tags) ? (object)DBNull.Value : pessoa.Tags);
+                command.AddWithValue("@DataComemorativa", pessoa.DataComemorativa.HasValue ? (object)pessoa.DataComemorativa.Value.Date : DBNull.Value);
+                command.AddWithValue("@DescricaoComemoracao", string.IsNullOrWhiteSpace(pessoa.DescricaoComemoracao) ? (object)DBNull.Value : pessoa.DescricaoComemoracao);
+                command.AddWithValue("@BasesLegais", string.IsNullOrWhiteSpace(pessoa.BasesLegais) ? (object)DBNull.Value : pessoa.BasesLegais);
+                command.AddWithValue("@Observacoes", string.IsNullOrWhiteSpace(pessoa.Observacoes) ? (object)DBNull.Value : pessoa.Observacoes);
 
                 command.AddWithValue("@IdPessoa", pessoa.IdPessoa);
 
@@ -1989,7 +2258,10 @@ namespace CorteCor.Handlers
         public List<Pessoa> ListarExcluidos(int idSalao)
         {
             string query = @"
-        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
+               IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+               EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
+               ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
         FROM CorteCor_Pessoa
         WHERE IdSalao = @IdSalao AND Excluido = 1
         ORDER BY Nome;";
@@ -2023,7 +2295,37 @@ namespace CorteCor.Handlers
                             Complemento = reader["Complemento"] is DBNull ? "" : reader["Complemento"].ToString(),
                             Bairro = reader["Bairro"] is DBNull ? "" : reader["Bairro"].ToString(),
                             Cidade = reader["Cidade"] is DBNull ? "" : reader["Cidade"].ToString(),
-                            UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString()
+                            UF = reader["UF"] is DBNull ? "" : reader["UF"].ToString(),
+                            RazaoSocial = reader["RazaoSocial"] is DBNull ? "" : reader["RazaoSocial"].ToString(),
+                            NomeFantasia = reader["NomeFantasia"] is DBNull ? "" : reader["NomeFantasia"].ToString(),
+                            Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
+                            IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
+                            IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                            IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
+                            NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
+                            Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
+                            IdEstrangeiro = reader["IdEstrangeiro"] is DBNull ? "" : reader["IdEstrangeiro"].ToString(),
+                            EntCep = reader["EntCep"] is DBNull ? "" : reader["EntCep"].ToString(),
+                            EntUf = reader["EntUf"] is DBNull ? "" : reader["EntUf"].ToString(),
+                            EntCidade = reader["EntCidade"] is DBNull ? "" : reader["EntCidade"].ToString(),
+                            EntNome = reader["EntNome"] is DBNull ? "" : reader["EntNome"].ToString(),
+                            EntCpfCnpj = reader["EntCpfCnpj"] is DBNull ? "" : reader["EntCpfCnpj"].ToString(),
+                            EntInscricaoEstadual = reader["EntInscricaoEstadual"] is DBNull ? "" : reader["EntInscricaoEstadual"].ToString(),
+                            EntLogradouro = reader["EntLogradouro"] is DBNull ? "" : reader["EntLogradouro"].ToString(),
+                            EntNumero = reader["EntNumero"] is DBNull ? "" : reader["EntNumero"].ToString(),
+                            EntComplemento = reader["EntComplemento"] is DBNull ? "" : reader["EntComplemento"].ToString(),
+                            EntBairro = reader["EntBairro"] is DBNull ? "" : reader["EntBairro"].ToString(),
+                            EntEmail = reader["EntEmail"] is DBNull ? "" : reader["EntEmail"].ToString(),
+                            EntTelefone = reader["EntTelefone"] is DBNull ? "" : reader["EntTelefone"].ToString(),
+                            ConsumidorFinal = reader["ConsumidorFinal"] is DBNull ? (bool?)null : Convert.ToBoolean(reader["ConsumidorFinal"]),
+                            IndicadorIE = reader["IndicadorIE"] is DBNull ? (int?)null : Convert.ToInt32(reader["IndicadorIE"]),
+                            IESubstTrib = reader["IESubstTrib"] is DBNull ? "" : reader["IESubstTrib"].ToString(),
+                            Suframa = reader["Suframa"] is DBNull ? "" : reader["Suframa"].ToString(),
+                            Tags = reader["Tags"] is DBNull ? "" : reader["Tags"].ToString(),
+                            DataComemorativa = reader["DataComemorativa"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataComemorativa"]),
+                            DescricaoComemoracao = reader["DescricaoComemoracao"] is DBNull ? "" : reader["DescricaoComemoracao"].ToString(),
+                            BasesLegais = reader["BasesLegais"] is DBNull ? "" : reader["BasesLegais"].ToString(),
+                            Observacoes = reader["Observacoes"] is DBNull ? "" : reader["Observacoes"].ToString()
                         });
                     }
                 }
@@ -4232,8 +4534,420 @@ namespace CorteCor.Handlers
         }
     }
 
+    public class CategoriaProdutoHandler : EntityHandler<CategoriaProduto>
+    {
+        public CategoriaProdutoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
 
+        public override void Cadastrar(CategoriaProduto entity)
+        {
+            throw new NotImplementedException();
+        }
 
+        public int CadastrarCategoria(CategoriaProduto categoria)
+        {
+            int novoId = 0;
+            string query = @"
+                INSERT INTO CorteCor_CategoriaProduto (IdSalao, Nome, Ativo, DataCadastro)
+                VALUES (@IdSalao, @Nome, @Ativo, @DataCadastro);
+                SELECT SCOPE_IDENTITY();";
 
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", categoria.IdSalao);
+                command.AddWithValue("@Nome", categoria.Nome ?? "");
+                command.AddWithValue("@Ativo", categoria.Ativo);
+                command.AddWithValue("@DataCadastro", categoria.DataCadastro);
+
+                object result = command.ExecuteScalar();
+                if (result != null && int.TryParse(result.ToString(), out int id))
+                {
+                    novoId = id;
+                }
+            }
+            return novoId;
+        }
+
+        public void Atualizar(CategoriaProduto categoria)
+        {
+            string query = @"
+                UPDATE CorteCor_CategoriaProduto
+                SET Nome = @Nome, Ativo = @Ativo
+                WHERE IdCategoria = @IdCategoria AND IdSalao = @IdSalao;";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Nome", categoria.Nome ?? "");
+                command.AddWithValue("@Ativo", categoria.Ativo);
+                command.AddWithValue("@IdCategoria", categoria.IdCategoria);
+                command.AddWithValue("@IdSalao", categoria.IdSalao);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public override void Excluir(int id)
+        {
+            string query = "DELETE FROM CorteCor_CategoriaProduto WHERE IdCategoria = @IdCategoria";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdCategoria", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void ExcluirPorSalao(int idCategoria, int idSalao)
+        {
+            string query = "DELETE FROM CorteCor_CategoriaProduto WHERE IdCategoria = @IdCategoria AND IdSalao = @IdSalao";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdCategoria", idCategoria);
+                command.AddWithValue("@IdSalao", idSalao);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public override void AtivarDesativar(int id, bool ativar)
+        {
+            string query = "UPDATE CorteCor_CategoriaProduto SET Ativo = @Ativo WHERE IdCategoria = @IdCategoria";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Ativo", ativar);
+                command.AddWithValue("@IdCategoria", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public override List<CategoriaProduto> Listar()
+        {
+            string query = @"SELECT * FROM CorteCor_CategoriaProduto ORDER BY Nome";
+            var lista = new List<CategoriaProduto>();
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    lista.Add(new CategoriaProduto
+                    {
+                        IdCategoria = reader["IdCategoria"] is DBNull ? 0 : Convert.ToInt32(reader["IdCategoria"]),
+                        IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                        Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                        Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
+                        DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"])
+                    });
+                }
+            }
+            return lista;
+        }
+
+        public List<CategoriaProduto> ListarPorSalao(int idSalao)
+        {
+            string query = @"SELECT * FROM CorteCor_CategoriaProduto WHERE IdSalao = @IdSalao ORDER BY Nome";
+            var lista = new List<CategoriaProduto>();
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        lista.Add(new CategoriaProduto
+                        {
+                            IdCategoria = reader["IdCategoria"] is DBNull ? 0 : Convert.ToInt32(reader["IdCategoria"]),
+                            IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                            Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                            Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
+                            DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"])
+                        });
+                    }
+                }
+            }
+            return lista;
+        }
+    }
+
+    public class ProdutoHandler : EntityHandler<Produto>
+    {
+        public ProdutoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
+
+        public override void Cadastrar(Produto entity) { throw new NotImplementedException(); }
+
+        public int CadastrarProduto(Produto produto)
+        {
+            int novoId = 0;
+            string query = @"
+                INSERT INTO CorteCor_Produto (
+                    IdSalao, Nome, CodigoProprio, IdCategoria, Tags, TipoUso, Arquivado, Anotacoes,
+                    PrecoCusto, PrecoVenda, MargemContribuicao, ControlarEstoque, EstoqueAtual, EstoqueMinimo,
+                    Origem, ReferenciaEAN, PesoLiquido, PesoBruto, NCM, CEST, UnidadeComercial, ExcecaoIPI, CodBeneficioFiscalUF,
+                    UnidadeTributadaDiferente, EANTributada, UnidadeTributada, QuantidadeTributada, IgnorarTribPrecoVenda,
+                    AnotacoesFiscaisNFe, GrupoTributarioVinculado, DataCadastro, Excluido
+                ) VALUES (
+                    @IdSalao, @Nome, @CodigoProprio, @IdCategoria, @Tags, @TipoUso, @Arquivado, @Anotacoes,
+                    @PrecoCusto, @PrecoVenda, @MargemContribuicao, @ControlarEstoque, @EstoqueAtual, @EstoqueMinimo,
+                    @Origem, @ReferenciaEAN, @PesoLiquido, @PesoBruto, @NCM, @CEST, @UnidadeComercial, @ExcecaoIPI, @CodBeneficioFiscalUF,
+                    @UnidadeTributadaDiferente, @EANTributada, @UnidadeTributada, @QuantidadeTributada, @IgnorarTribPrecoVenda,
+                    @AnotacoesFiscaisNFe, @GrupoTributarioVinculado, @DataCadastro, @Excluido
+                );
+                SELECT SCOPE_IDENTITY();";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", produto.IdSalao);
+                command.AddWithValue("@Nome", produto.Nome ?? "");
+                command.AddWithValue("@CodigoProprio", (object)produto.CodigoProprio ?? DBNull.Value);
+                command.AddWithValue("@IdCategoria", (object)produto.IdCategoria ?? DBNull.Value);
+                command.AddWithValue("@Tags", (object)produto.Tags ?? DBNull.Value);
+                command.AddWithValue("@TipoUso", (object)produto.TipoUso ?? DBNull.Value);
+                command.AddWithValue("@Arquivado", produto.Arquivado);
+                command.AddWithValue("@Anotacoes", (object)produto.Anotacoes ?? DBNull.Value);
+                
+                command.AddWithValue("@PrecoCusto", (object)produto.PrecoCusto ?? DBNull.Value);
+                command.AddWithValue("@PrecoVenda", produto.PrecoVenda);
+                command.AddWithValue("@MargemContribuicao", (object)produto.MargemContribuicao ?? DBNull.Value);
+                
+                command.AddWithValue("@ControlarEstoque", produto.ControlarEstoque);
+                command.AddWithValue("@EstoqueAtual", (object)produto.EstoqueAtual ?? DBNull.Value);
+                command.AddWithValue("@EstoqueMinimo", (object)produto.EstoqueMinimo ?? DBNull.Value);
+                
+                command.AddWithValue("@Origem", (object)produto.Origem ?? DBNull.Value);
+                command.AddWithValue("@ReferenciaEAN", (object)produto.ReferenciaEAN ?? DBNull.Value);
+                command.AddWithValue("@PesoLiquido", (object)produto.PesoLiquido ?? DBNull.Value);
+                command.AddWithValue("@PesoBruto", (object)produto.PesoBruto ?? DBNull.Value);
+                command.AddWithValue("@NCM", (object)produto.NCM ?? DBNull.Value);
+                command.AddWithValue("@CEST", (object)produto.CEST ?? DBNull.Value);
+                command.AddWithValue("@UnidadeComercial", (object)produto.UnidadeComercial ?? DBNull.Value);
+                command.AddWithValue("@ExcecaoIPI", (object)produto.ExcecaoIPI ?? DBNull.Value);
+                command.AddWithValue("@CodBeneficioFiscalUF", (object)produto.CodBeneficioFiscalUF ?? DBNull.Value);
+                
+                command.AddWithValue("@UnidadeTributadaDiferente", produto.UnidadeTributadaDiferente);
+                command.AddWithValue("@EANTributada", (object)produto.EANTributada ?? DBNull.Value);
+                command.AddWithValue("@UnidadeTributada", (object)produto.UnidadeTributada ?? DBNull.Value);
+                command.AddWithValue("@QuantidadeTributada", (object)produto.QuantidadeTributada ?? DBNull.Value);
+                command.AddWithValue("@IgnorarTribPrecoVenda", produto.IgnorarTribPrecoVenda);
+                command.AddWithValue("@AnotacoesFiscaisNFe", (object)produto.AnotacoesFiscaisNFe ?? DBNull.Value);
+                
+                command.AddWithValue("@GrupoTributarioVinculado", (object)produto.GrupoTributarioVinculado ?? DBNull.Value);
+                
+                command.AddWithValue("@DataCadastro", produto.DataCadastro);
+                command.AddWithValue("@Excluido", produto.Excluido);
+
+                object result = command.ExecuteScalar();
+                if (result != null && int.TryParse(result.ToString(), out int id))
+                {
+                    novoId = id;
+                }
+            }
+            return novoId;
+        }
+
+        public void Atualizar(Produto produto)
+        {
+            string query = @"
+                UPDATE CorteCor_Produto SET
+                    Nome = @Nome, CodigoProprio = @CodigoProprio, IdCategoria = @IdCategoria, 
+                    Tags = @Tags, TipoUso = @TipoUso, Arquivado = @Arquivado, Anotacoes = @Anotacoes,
+                    PrecoCusto = @PrecoCusto, PrecoVenda = @PrecoVenda, MargemContribuicao = @MargemContribuicao, 
+                    ControlarEstoque = @ControlarEstoque, EstoqueAtual = @EstoqueAtual, EstoqueMinimo = @EstoqueMinimo,
+                    Origem = @Origem, ReferenciaEAN = @ReferenciaEAN, PesoLiquido = @PesoLiquido, 
+                    PesoBruto = @PesoBruto, NCM = @NCM, CEST = @CEST, UnidadeComercial = @UnidadeComercial, 
+                    ExcecaoIPI = @ExcecaoIPI, CodBeneficioFiscalUF = @CodBeneficioFiscalUF,
+                    UnidadeTributadaDiferente = @UnidadeTributadaDiferente, EANTributada = @EANTributada, 
+                    UnidadeTributada = @UnidadeTributada, QuantidadeTributada = @QuantidadeTributada, 
+                    IgnorarTribPrecoVenda = @IgnorarTribPrecoVenda, AnotacoesFiscaisNFe = @AnotacoesFiscaisNFe, 
+                    GrupoTributarioVinculado = @GrupoTributarioVinculado
+                WHERE IdProduto = @IdProduto AND IdSalao = @IdSalao;";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Nome", produto.Nome ?? "");
+                command.AddWithValue("@CodigoProprio", (object)produto.CodigoProprio ?? DBNull.Value);
+                command.AddWithValue("@IdCategoria", (object)produto.IdCategoria ?? DBNull.Value);
+                command.AddWithValue("@Tags", (object)produto.Tags ?? DBNull.Value);
+                command.AddWithValue("@TipoUso", (object)produto.TipoUso ?? DBNull.Value);
+                command.AddWithValue("@Arquivado", produto.Arquivado);
+                command.AddWithValue("@Anotacoes", (object)produto.Anotacoes ?? DBNull.Value);
+                command.AddWithValue("@PrecoCusto", (object)produto.PrecoCusto ?? DBNull.Value);
+                command.AddWithValue("@PrecoVenda", produto.PrecoVenda);
+                command.AddWithValue("@MargemContribuicao", (object)produto.MargemContribuicao ?? DBNull.Value);
+                command.AddWithValue("@ControlarEstoque", produto.ControlarEstoque);
+                command.AddWithValue("@EstoqueAtual", (object)produto.EstoqueAtual ?? DBNull.Value);
+                command.AddWithValue("@EstoqueMinimo", (object)produto.EstoqueMinimo ?? DBNull.Value);
+                command.AddWithValue("@Origem", (object)produto.Origem ?? DBNull.Value);
+                command.AddWithValue("@ReferenciaEAN", (object)produto.ReferenciaEAN ?? DBNull.Value);
+                command.AddWithValue("@PesoLiquido", (object)produto.PesoLiquido ?? DBNull.Value);
+                command.AddWithValue("@PesoBruto", (object)produto.PesoBruto ?? DBNull.Value);
+                command.AddWithValue("@NCM", (object)produto.NCM ?? DBNull.Value);
+                command.AddWithValue("@CEST", (object)produto.CEST ?? DBNull.Value);
+                command.AddWithValue("@UnidadeComercial", (object)produto.UnidadeComercial ?? DBNull.Value);
+                command.AddWithValue("@ExcecaoIPI", (object)produto.ExcecaoIPI ?? DBNull.Value);
+                command.AddWithValue("@CodBeneficioFiscalUF", (object)produto.CodBeneficioFiscalUF ?? DBNull.Value);
+                command.AddWithValue("@UnidadeTributadaDiferente", produto.UnidadeTributadaDiferente);
+                command.AddWithValue("@EANTributada", (object)produto.EANTributada ?? DBNull.Value);
+                command.AddWithValue("@UnidadeTributada", (object)produto.UnidadeTributada ?? DBNull.Value);
+                command.AddWithValue("@QuantidadeTributada", (object)produto.QuantidadeTributada ?? DBNull.Value);
+                command.AddWithValue("@IgnorarTribPrecoVenda", produto.IgnorarTribPrecoVenda);
+                command.AddWithValue("@AnotacoesFiscaisNFe", (object)produto.AnotacoesFiscaisNFe ?? DBNull.Value);
+                command.AddWithValue("@GrupoTributarioVinculado", (object)produto.GrupoTributarioVinculado ?? DBNull.Value);
+                command.AddWithValue("@IdProduto", produto.IdProduto);
+                command.AddWithValue("@IdSalao", produto.IdSalao);
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public override void Excluir(int id)
+        {
+            AtivarDesativar(id, false); // Define Excluido = 1
+        }
+        
+        public void ExcluirPorSalao(int idProduto, int idSalao)
+        {
+            string query = "UPDATE CorteCor_Produto SET Excluido = 1 WHERE IdProduto = @IdProduto AND IdSalao = @IdSalao";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdProduto", idProduto);
+                command.AddWithValue("@IdSalao", idSalao);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public override void AtivarDesativar(int id, bool ativar)
+        {
+            string query = "UPDATE CorteCor_Produto SET Excluido = @Excluido WHERE IdProduto = @IdProduto";
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Excluido", !ativar);
+                command.AddWithValue("@IdProduto", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public override List<Produto> Listar()
+        {
+            string query = @"SELECT * FROM CorteCor_Produto WHERE Excluido = 0 ORDER BY Nome";
+            return LerListaProdutos(query);
+        }
+
+        public List<Produto> ListarPorSalao(int idSalao, int? idCategoria = null)
+        {
+            string query = @"SELECT * FROM CorteCor_Produto WHERE IdSalao = @IdSalao AND (Excluido = 0 OR Excluido IS NULL) AND (@IdCategoria IS NULL OR IdCategoria = @IdCategoria) ORDER BY Nome";
+            var parametros = new Dictionary<string, object> { 
+                { "@IdSalao", idSalao },
+                { "@IdCategoria", (object?)idCategoria ?? DBNull.Value }
+            };
+            return LerListaProdutos(query, parametros);
+        }
+
+        public Produto ObterPorId(int idProduto)
+        {
+            string query = @"SELECT * FROM CorteCor_Produto WHERE IdProduto = @IdProduto AND Excluido = 0";
+            var parametros = new Dictionary<string, object> { { "@IdProduto", idProduto } };
+            var produtos = LerListaProdutos(query, parametros);
+            return produtos.Count > 0 ? produtos[0] : null;
+        }
+
+        private List<Produto> LerListaProdutos(string query, Dictionary<string, object> parametros = null)
+        {
+            var lista = new List<Produto>();
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                if (parametros != null)
+                {
+                    foreach (var p in parametros)
+                    {
+                        command.AddWithValue(p.Key, p.Value);
+                    }
+                }
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        lista.Add(new Produto
+                        {
+                            IdProduto = reader["IdProduto"] is DBNull ? 0 : Convert.ToInt32(reader["IdProduto"]),
+                            IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                            Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                            CodigoProprio = reader["CodigoProprio"] is DBNull ? null : reader["CodigoProprio"].ToString(),
+                            IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),
+                            Tags = reader["Tags"] is DBNull ? null : reader["Tags"].ToString(),
+                            TipoUso = reader["TipoUso"] is DBNull ? null : reader["TipoUso"].ToString(),
+                            Arquivado = reader["Arquivado"] is DBNull ? false : Convert.ToBoolean(reader["Arquivado"]),
+                            Anotacoes = reader["Anotacoes"] is DBNull ? null : reader["Anotacoes"].ToString(),
+                            PrecoCusto = reader["PrecoCusto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PrecoCusto"]),
+                            PrecoVenda = reader["PrecoVenda"] is DBNull ? 0m : Convert.ToDecimal(reader["PrecoVenda"]),
+                            MargemContribuicao = reader["MargemContribuicao"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["MargemContribuicao"]),
+                            ControlarEstoque = reader["ControlarEstoque"] is DBNull ? false : Convert.ToBoolean(reader["ControlarEstoque"]),
+                            EstoqueAtual = reader["EstoqueAtual"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["EstoqueAtual"]),
+                            EstoqueMinimo = reader["EstoqueMinimo"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["EstoqueMinimo"]),
+                            Origem = reader["Origem"] is DBNull ? (int?)null : Convert.ToInt32(reader["Origem"]),
+                            ReferenciaEAN = reader["ReferenciaEAN"] is DBNull ? null : reader["ReferenciaEAN"].ToString(),
+                            PesoLiquido = reader["PesoLiquido"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PesoLiquido"]),
+                            PesoBruto = reader["PesoBruto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PesoBruto"]),
+                            NCM = reader["NCM"] is DBNull ? null : reader["NCM"].ToString(),
+                            CEST = reader["CEST"] is DBNull ? null : reader["CEST"].ToString(),
+                            UnidadeComercial = reader["UnidadeComercial"] is DBNull ? null : reader["UnidadeComercial"].ToString(),
+                            ExcecaoIPI = reader["ExcecaoIPI"] is DBNull ? (int?)null : Convert.ToInt32(reader["ExcecaoIPI"]),
+                            CodBeneficioFiscalUF = reader["CodBeneficioFiscalUF"] is DBNull ? null : reader["CodBeneficioFiscalUF"].ToString(),
+                            UnidadeTributadaDiferente = reader["UnidadeTributadaDiferente"] is DBNull ? false : Convert.ToBoolean(reader["UnidadeTributadaDiferente"]),
+                            EANTributada = reader["EANTributada"] is DBNull ? null : reader["EANTributada"].ToString(),
+                            UnidadeTributada = reader["UnidadeTributada"] is DBNull ? null : reader["UnidadeTributada"].ToString(),
+                            QuantidadeTributada = reader["QuantidadeTributada"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["QuantidadeTributada"]),
+                            IgnorarTribPrecoVenda = reader["IgnorarTribPrecoVenda"] is DBNull ? false : Convert.ToBoolean(reader["IgnorarTribPrecoVenda"]),
+                            AnotacoesFiscaisNFe = reader["AnotacoesFiscaisNFe"] is DBNull ? null : reader["AnotacoesFiscaisNFe"].ToString(),
+                            GrupoTributarioVinculado = reader["GrupoTributarioVinculado"] is DBNull ? (int?)null : Convert.ToInt32(reader["GrupoTributarioVinculado"]),
+                            DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"]),
+                            Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
+                        });
+                    }
+                }
+            }
+            return lista;
+        }
+    }
+
+    public class ItemListaServicoHandler : EntityHandler<ItemListaServico>
+    {
+        public ItemListaServicoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
+
+        public override void Cadastrar(ItemListaServico entity) => throw new NotImplementedException();
+        public override void Excluir(int id) => throw new NotImplementedException();
+        public override void AtivarDesativar(int id, bool status) => throw new NotImplementedException();
+        
+        public override List<ItemListaServico> Listar()
+        {
+            var lista = new List<ItemListaServico>();
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var cmd = connection.CreateCommand("SELECT IdItemListaServico, Codigo, Descricao FROM CorteCor_ItemListaServico ORDER BY Codigo"))
+            {
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        lista.Add(new ItemListaServico
+                        {
+                            IdItemListaServico = Convert.ToInt32(reader["IdItemListaServico"]),
+                            Codigo = reader["Codigo"].ToString(),
+                            Descricao = reader["Descricao"].ToString()
+                        });
+                    }
+                }
+            }
+            return lista;
+        }
+    }
 }
-

@@ -69,21 +69,47 @@ namespace CorteCor.Services
 
                 try 
                 {
-                   await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Consulta RPS", $"Iniciou verificação do Lote {nota.NumeroRecibo}.");
+                   await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Consulta Nacional", $"Iniciou verificação do Lote/Processamento.");
                    
-                   var consultaLoteRps = new ConsultarLoteRps(nota.NumeroRecibo, cfgParams);
-                   consultaLoteRps.Executar();
+                   // Usando a Consulta Genérica do Padrão Nacional se disponível, ou Consulta via Chave/DPS
+                   var pedSitNFSe = new Unimake.Business.DFe.Xml.NFSe.NACIONAL.Consulta.NFSe
+                   {
+                        Versao = "1.00",
+                        InfNFSe = new Unimake.Business.DFe.Xml.NFSe.NACIONAL.Consulta.InfNFSe
+                        {
+                            Id = nota.ChaveAcessoNacional // O Id de consulta na ABRASF Nacional pode ser a chave
+                        }
+                   };
 
-                   var resposta = consultaLoteRps.Result;
-                   
-                   // A estrutura do 'Result' varia muito de acordo com o XSD da prefeitura.
-                   // Algumas retornam SituacaoLote, outras CStat. Portanto, precisa do Wrapper Municipal Específico.
-                   throw new NotImplementedException("O Parsing do retorno depende do objeto deserializado da Prefeitura.");
+                   cfgParams.TipoDFe = TipoDFe.NFSe;
+                   cfgParams.PadraoNFSe = PadraoNFSe.NACIONAL;
+                   cfgParams.Servico = Unimake.Business.DFe.Servicos.Servico.NFSeConsultarNfse;
+                   cfgParams.TipoAmbiente = configSalao.Ambiente == 1 ? TipoAmbiente.Producao : TipoAmbiente.Homologacao;
+
+                   var consultarNfse = new Unimake.Business.DFe.Servicos.NFSe.ConsultarNfse(pedSitNFSe.GerarXML(), cfgParams);
+                   consultarNfse.Executar();
+
+                   var resposta = consultarNfse.RetornoWSString;
+
+                   if (resposta.Contains("chNFSe"))
+                   {
+                        nota.Status = "Autorizada";
+                        nota.XmlRetorno = resposta;
+                        await notaHandler.UpdateAsync(nota);
+                        await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Retorno Nacional", "Nota Autorizada após processamento.", resposta);
+                   }
+                   else if (resposta.Contains("rejeicao") || resposta.Contains("erro"))
+                   {
+                        nota.Status = "Rejeitada";
+                        nota.XmlRetorno = resposta;
+                        await notaHandler.UpdateAsync(nota);
+                        await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Rejeição Nacional", "Nota Rejeitada após processamento.", resposta);
+                   }
                 }
                 catch (Exception ex)
                 {
-                   await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Falha Consulta", $"Erro ao baixar status RPS: {ex.Message}");
-                   _logger.LogError(ex, $"Erro ao verificar lote RPS {nota.NumeroRecibo}");
+                   await logHandler.LogarEtapaAsync(nota.IdSalao, nota.IdAgendamento, nota.IdNotaFiscal, "Falha Consulta Nacional", $"Erro ao baixar status: {ex.Message}");
+                   _logger.LogError(ex, $"Erro ao verificar nota.");
                 }
             }
         }

@@ -137,13 +137,26 @@ public class Servico
     public int IdServico { get; set; }
     public string Nome { get; set; }
     public decimal Preco { get; set; }
+    public decimal? PrecoCusto { get; set; }
+    public decimal? MargemContribuicao { get; set; }
     public int IdSalao { get; set; }
     public TimeSpan Duracao { get; set; }
+    public int? IdCategoria { get; set; }
+    public string? CategoriaNome { get; set; }
+
+    // Dados Gerais e Complementares
+    public string? Tags { get; set; }
+    public string? Anotacoes { get; set; }
+    public bool Arquivado { get; set; }
 
     // Campos Fiscais
     public string? CodigoTributacaoMunicipio { get; set; }
     public string? Cnae { get; set; }
     public decimal? AliquotaISS { get; set; }
+    public string? ItemListaServicoLC116 { get; set; }
+    public string? IdCnae { get; set; }
+    public string? CodTributacaoNacional { get; set; }
+    public string? CodNBS { get; set; }
 }
 
 public class FuncionarioServico
@@ -173,6 +186,48 @@ public class Pessoa
     public string? Bairro { get; set; }
     public string? Cidade { get; set; }
     public string? UF { get; set; }
+
+    // Campos de Consulta CNPJ (ReceitaWS)
+    public string? RazaoSocial { get; set; }
+    public string? NomeFantasia { get; set; }
+    public string? Cnae { get; set; }
+
+    // Tipo de Contato
+    public bool IsCliente { get; set; } = true;
+    public bool IsFornecedor { get; set; }
+    public bool IsTransportador { get; set; }
+
+    // Dados Contato e Estrangeiro
+    public string? NomeContato { get; set; }
+    public string? Pais { get; set; }
+    public string? IdEstrangeiro { get; set; }
+
+    // Endereço de Entrega
+    public string? EntCep { get; set; }
+    public string? EntUf { get; set; }
+    public string? EntCidade { get; set; }
+    public string? EntNome { get; set; }
+    public string? EntCpfCnpj { get; set; }
+    public string? EntInscricaoEstadual { get; set; }
+    public string? EntLogradouro { get; set; }
+    public string? EntNumero { get; set; }
+    public string? EntComplemento { get; set; }
+    public string? EntBairro { get; set; }
+    public string? EntEmail { get; set; }
+    public string? EntTelefone { get; set; }
+
+    // Fiscais (Adicionais)
+    public bool? ConsumidorFinal { get; set; }
+    public int? IndicadorIE { get; set; }
+    public string? IESubstTrib { get; set; }
+    public string? Suframa { get; set; }
+
+    // Outras Informações
+    public string? Tags { get; set; }
+    public DateTime? DataComemorativa { get; set; }
+    public string? DescricaoComemoracao { get; set; }
+    public string? BasesLegais { get; set; }
+    public string? Observacoes { get; set; }
 }
 
 public class Agendamento
@@ -417,12 +472,29 @@ public class SalaoConfigFiscal
     public int CodigoUFIBGE { get; set; }
     public int RegimeTributario { get; set; }
     public byte[]? CertificadoPfx { get; set; }
+    public string? CertificadoBase64 { get; set; }
     public byte[]? CertificadoSenha { get; set; }
+    public string? CertificadoSenhaTexto { get; set; }
     public DateTime? CertificadoValidade { get; set; }
     public string? TokenNfse { get; set; }
     public string? CSC { get; set; }
     public string? IdCSC { get; set; }
+    public int SerieNFCe { get; set; } = 1;
+    public int NumeroNFCe { get; set; } = 1;
+    public int SerieNFSe { get; set; } = 1;
+    public int NumeroNFSe { get; set; } = 1;
+    public int RegimeEspecialTributacao { get; set; }
+    public int IssExigibilidade { get; set; } = 1;
+    public int IssRetido { get; set; } = 2;
+    public string? EnderecoLogradouro { get; set; }
+    public string? EnderecoNumero { get; set; }
+    public string? EnderecoBairro { get; set; }
+    public string? EnderecoCep { get; set; }
+    public string? Telefone { get; set; }
+    public string? Email { get; set; }
     public bool EmissaoAutomatica { get; set; }
+    public string? EnderecoCidade { get; set; }
+    public string? EnderecoUF { get; set; }
     public DateTime DataAtualizacao { get; set; }
 }
 
@@ -440,6 +512,8 @@ public class NotaFiscal
     public decimal ValorTotal { get; set; }
     public string Status { get; set; }
     public string? ChaveAcesso { get; set; }
+    public string? ChaveAcessoNacional { get; set; }
+    public string? NumeroNFSeNacional { get; set; }
     public string? NumeroRecibo { get; set; }
     public string? ProtocoloAutorizacao { get; set; }
     public string? JustificativaRejeicao { get; set; }
@@ -492,3 +566,125 @@ public class RetornoEmissaoDto
     public int? CodigoStatusSefaz { get; set; }
 }
 
+public class CategoriaProduto
+{
+    public int IdCategoria { get; set; }
+    public int IdSalao { get; set; }
+    public string Nome { get; set; }
+    public bool Ativo { get; set; }
+    public DateTime DataCadastro { get; set; }
+}
+
+public class Produto
+{
+    public int IdProduto { get; set; }
+    public int IdSalao { get; set; }
+    public string Nome { get; set; }
+    public string? CodigoProprio { get; set; }
+    public int? IdCategoria { get; set; }
+    public string? CategoriaNome { get; set; }
+    public string? Tags { get; set; }
+    public string? TipoUso { get; set; }
+    public bool Arquivado { get; set; }
+    public string? Anotacoes { get; set; }
+    
+    public decimal? PrecoCusto { get; set; }
+    public decimal PrecoVenda { get; set; }
+    public decimal? MargemContribuicao { get; set; }
+    
+    public bool ControlarEstoque { get; set; }
+    public decimal? EstoqueAtual { get; set; }
+    public decimal? EstoqueMinimo { get; set; }
+    
+    public int? Origem { get; set; }
+    public string? ReferenciaEAN { get; set; }
+    public decimal? PesoLiquido { get; set; }
+    public decimal? PesoBruto { get; set; }
+    public string? NCM { get; set; }
+    public string? CEST { get; set; }
+    public string? UnidadeComercial { get; set; }
+    public int? ExcecaoIPI { get; set; }
+    public string? CodBeneficioFiscalUF { get; set; }
+    
+    public bool UnidadeTributadaDiferente { get; set; }
+    public string? EANTributada { get; set; }
+    public string? UnidadeTributada { get; set; }
+    public decimal? QuantidadeTributada { get; set; }
+    public bool IgnorarTribPrecoVenda { get; set; }
+    public string? AnotacoesFiscaisNFe { get; set; }
+    
+    public int? GrupoTributarioVinculado { get; set; }
+    
+    public DateTime DataCadastro { get; set; }
+    public bool Excluido { get; set; }
+}
+
+public class ItemListaServico
+{
+    public int IdItemListaServico { get; set; }
+    public string Codigo { get; set; }
+    public string Descricao { get; set; }
+}
+
+public class ConfigGeral
+{
+    [Key]
+    public int IdSalao { get; set; }
+    public string? NomeFantasia { get; set; }
+    public string? LogoUrl { get; set; }
+    public string TemaCor { get; set; } = "#0d6efd";
+    public bool ModoPDV { get; set; }
+    public bool ModoEstoque { get; set; } = true;
+    public bool AgendamentoOnline { get; set; }
+    public int MinutosAntecedencia { get; set; }
+    public DateTime DataAtualizacao { get; set; }
+}
+
+public class PlanoContas
+{
+    [Key]
+    public int IdPlano { get; set; }
+    public int IdSalao { get; set; }
+    public string? Codigo { get; set; }
+    public string Descricao { get; set; }
+    public string Tipo { get; set; } // 'R' or 'D'
+    public bool Ativo { get; set; } = true;
+}
+
+public class ContaCaixa
+{
+    [Key]
+    public int IdConta { get; set; }
+    public int IdSalao { get; set; }
+    public string Nome { get; set; }
+    public string? Tipo { get; set; }
+    public string? Banco { get; set; }
+    public string? Agencia { get; set; }
+    public string? Conta { get; set; }
+    public decimal SaldoInicial { get; set; }
+    public bool Ativo { get; set; } = true;
+}
+
+public class ConfigPix
+{
+    [Key]
+    public int IdSalao { get; set; }
+    public string? ChavePix { get; set; }
+    public string? PSP { get; set; }
+    public string? ClientId { get; set; }
+    public string? ClientSecret { get; set; }
+    public byte[]? Certificado { get; set; }
+    public bool Ativo { get; set; }
+}
+
+public class ConfigApi
+{
+    [Key]
+    public int IdApi { get; set; }
+    public int IdSalao { get; set; }
+    public string? NomeApp { get; set; }
+    public Guid ApiKey { get; set; } = Guid.NewGuid();
+    public DateTime DataCriacao { get; set; } = DateTime.Now;
+    public DateTime? UltimoAcesso { get; set; }
+    public bool Ativo { get; set; } = true;
+}

@@ -22,11 +22,13 @@ namespace CorteCor.Services
             // Descriptografa a senha armazenada no banco usando a chave mestre da infraestrutura
             string senhaOriginal = _criptoService.Descriptografar(config.CertificadoSenha);
 
-            // EphemeralKeySet e MachineKeySet são IMPRESCINDÍVEIS para não dar crash em ambiente Web/IIS/Container
+            // Simplificando o Storage Flags para o padrão mínimo aceitável pelo HttpClient no Windows
+            // Sem o MachineKeySet ou PersistKeySet, a chave vai interinamente para o provedor de Criptografia em Memória 
+            // e é enviada diretamente no handshake TLS sem problemas de acesso a pastas de sistema.
             return new X509Certificate2(
                 config.CertificadoPfx, 
                 senhaOriginal, 
-                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.UserKeySet
             );
         }
     }

@@ -22,7 +22,7 @@ namespace CorteCor.Handlers
 
             string query = @"
                 SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
-                       Numero, Serie, ValorTotal, Status, ChaveAcesso, NumeroRecibo, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
                        ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
                        DataEmissao, DataAtualizacao
                 FROM CorteCor_NotaFiscal
@@ -46,7 +46,7 @@ namespace CorteCor.Handlers
         {
             string query = @"
                 SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
-                       Numero, Serie, ValorTotal, Status, ChaveAcesso, NumeroRecibo, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
                        ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
                        DataEmissao, DataAtualizacao
                 FROM CorteCor_NotaFiscal
@@ -72,7 +72,7 @@ namespace CorteCor.Handlers
 
             string query = @"
                 SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
-                       Numero, Serie, ValorTotal, Status, ChaveAcesso, NumeroRecibo, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
                        ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
                        DataEmissao, DataAtualizacao
                 FROM CorteCor_NotaFiscal
@@ -107,6 +107,8 @@ namespace CorteCor.Handlers
                 ValorTotal = Convert.ToDecimal(reader["ValorTotal"]),
                 Status = reader["Status"] is DBNull ? "" : reader["Status"].ToString(),
                 ChaveAcesso = reader["ChaveAcesso"] is DBNull ? null : reader["ChaveAcesso"].ToString(),
+                ChaveAcessoNacional = reader.GetSchemaTable().Select("ColumnName = 'ChaveAcessoNacional'").Length > 0 && !(reader["ChaveAcessoNacional"] is DBNull) ? reader["ChaveAcessoNacional"].ToString() : null,
+                NumeroNFSeNacional = reader.GetSchemaTable().Select("ColumnName = 'NumeroNFSeNacional'").Length > 0 && !(reader["NumeroNFSeNacional"] is DBNull) ? reader["NumeroNFSeNacional"].ToString() : null,
                 NumeroRecibo = reader["NumeroRecibo"] is DBNull ? null : reader["NumeroRecibo"].ToString(),
                 ProtocoloAutorizacao = reader["ProtocoloAutorizacao"] is DBNull ? null : reader["ProtocoloAutorizacao"].ToString(),
                 JustificativaRejeicao = reader["JustificativaRejeicao"] is DBNull ? null : reader["JustificativaRejeicao"].ToString(),
@@ -122,12 +124,12 @@ namespace CorteCor.Handlers
             string query = @"
                 INSERT INTO CorteCor_NotaFiscal (
                     IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
-                    Numero, Serie, ValorTotal, Status, ChaveAcesso, NumeroRecibo, 
+                    Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
                     ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
                     DataEmissao, DataAtualizacao
                 ) VALUES (
                     @IdNotaFiscal, @IdSalao, @IdAgendamento, @IdVendaProduto, @TipoNota, @Ambiente, 
-                    @Numero, @Serie, @ValorTotal, @Status, @ChaveAcesso, @NumeroRecibo, 
+                    @Numero, @Serie, @ValorTotal, @Status, @ChaveAcesso, @ChaveAcessoNacional, @NumeroNFSeNacional, @NumeroRecibo, 
                     @ProtocoloAutorizacao, @JustificativaRejeicao, @XmlEnvio, @XmlRetorno, 
                     @DataEmissao, @DataAtualizacao
                 );";
@@ -149,6 +151,8 @@ namespace CorteCor.Handlers
             command.AddWithValue("@ValorTotal", nota.ValorTotal);
             command.AddWithValue("@Status", nota.Status ?? "Pendente");
             command.AddWithValue("@ChaveAcesso", nota.ChaveAcesso ?? (object)DBNull.Value);
+            command.AddWithValue("@ChaveAcessoNacional", nota.ChaveAcessoNacional ?? (object)DBNull.Value);
+            command.AddWithValue("@NumeroNFSeNacional", nota.NumeroNFSeNacional ?? (object)DBNull.Value);
             command.AddWithValue("@NumeroRecibo", nota.NumeroRecibo ?? (object)DBNull.Value);
             command.AddWithValue("@ProtocoloAutorizacao", nota.ProtocoloAutorizacao ?? (object)DBNull.Value);
             command.AddWithValue("@JustificativaRejeicao", nota.JustificativaRejeicao ?? (object)DBNull.Value);
@@ -166,6 +170,8 @@ namespace CorteCor.Handlers
                 UPDATE CorteCor_NotaFiscal 
                 SET Status = @Status,
                     ChaveAcesso = ISNULL(@ChaveAcesso, ChaveAcesso),
+                    ChaveAcessoNacional = ISNULL(@ChaveAcessoNacional, ChaveAcessoNacional),
+                    NumeroNFSeNacional = ISNULL(@NumeroNFSeNacional, NumeroNFSeNacional),
                     ProtocoloAutorizacao = ISNULL(@ProtocoloAutorizacao, ProtocoloAutorizacao),
                     JustificativaRejeicao = ISNULL(@JustificativaRejeicao, JustificativaRejeicao),
                     XmlRetorno = ISNULL(@XmlRetorno, XmlRetorno),
@@ -177,6 +183,8 @@ namespace CorteCor.Handlers
 
             command.AddWithValue("@Status", nota.Status);
             command.AddWithValue("@ChaveAcesso", nota.ChaveAcesso ?? (object)DBNull.Value);
+            command.AddWithValue("@ChaveAcessoNacional", nota.ChaveAcessoNacional ?? (object)DBNull.Value);
+            command.AddWithValue("@NumeroNFSeNacional", nota.NumeroNFSeNacional ?? (object)DBNull.Value);
             command.AddWithValue("@ProtocoloAutorizacao", nota.ProtocoloAutorizacao ?? (object)DBNull.Value);
             command.AddWithValue("@JustificativaRejeicao", nota.JustificativaRejeicao ?? (object)DBNull.Value);
             command.AddWithValue("@XmlRetorno", nota.XmlRetorno ?? (object)DBNull.Value);

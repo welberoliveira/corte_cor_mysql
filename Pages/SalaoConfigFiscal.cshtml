@@ -74,6 +74,112 @@
         </div>
 
         <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Regime Especial de Tributação</label>
+                <select asp-for="Configuracao.RegimeEspecialTributacao" class="form-control">
+                    <option value="0">Nenhum</option>
+                    <option value="1">Microempresa Municipal</option>
+                    <option value="2">Estimativa</option>
+                    <option value="3">Sociedade de Profissionais</option>
+                    <option value="4">Cooperativa</option>
+                    <option value="5">Microempreendedor Individual (MEI)</option>
+                    <option value="6">Microempresa ou Empresa de Pequeno Porte (ME/EPP)</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Exigibilidade do ISS</label>
+                <select asp-for="Configuracao.IssExigibilidade" class="form-control">
+                    <option value="1">Exigível</option>
+                    <option value="2">Não incidência</option>
+                    <option value="3">Isenção</option>
+                    <option value="4">Exportação</option>
+                    <option value="5">Imunidade</option>
+                    <option value="6">Exigibilidade Suspensa por Decisão Judicial</option>
+                    <option value="7">Exigibilidade Suspensa por Processo Administrativo</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">ISS Retido</label>
+                <select asp-for="Configuracao.IssRetido" class="form-control">
+                    <option value="1">Sim</option>
+                    <option value="2">Não</option>
+                </select>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Configuração NFC-e</h4>
+        <div class="card p-3 bg-light mb-4">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">CSC (Token)</label>
+                    <input type="text" asp-for="Configuracao.CSC" class="form-control" placeholder="Ex: 0123456789ABCDEF..." />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">ID CSC</label>
+                    <input type="text" asp-for="Configuracao.IdCSC" class="form-control" placeholder="000001" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Série NFC-e</label>
+                    <input type="number" asp-for="Configuracao.SerieNFCe" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Próximo Número NFC-e</label>
+                    <input type="number" asp-for="Configuracao.NumeroNFCe" class="form-control" />
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Configuração NFS-e Nacional</h4>
+        <div class="card p-3 bg-light mb-4">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Token NFS-e Nacional</label>
+                    <input type="text" asp-for="Configuracao.TokenNfse" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Série NFS-e</label>
+                    <input type="number" asp-for="Configuracao.SerieNFSe" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Próximo Número NFS-e</label>
+                    <input type="number" asp-for="Configuracao.NumeroNFSe" class="form-control" />
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Endereço e Contato do Prestador (Para NFS-e)</h4>
+        <div class="card p-3 bg-light mb-4">
+            <div class="row">
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">CEP</label>
+                    <input type="text" asp-for="Configuracao.EnderecoCep" class="form-control cep" />
+                </div>
+                <div class="col-md-7 mb-3">
+                    <label class="form-label">Logradouro</label>
+                    <input type="text" asp-for="Configuracao.EnderecoLogradouro" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Número</label>
+                    <input type="text" asp-for="Configuracao.EnderecoNumero" class="form-control" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Bairro</label>
+                    <input type="text" asp-for="Configuracao.EnderecoBairro" class="form-control" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" asp-for="Configuracao.Telefone" class="form-control telefone" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" asp-for="Configuracao.Email" class="form-control" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
             <div class="col-md-12 mb-3">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="emissaoAuto"
@@ -116,6 +222,8 @@
     <script>
         $(document).ready(function () {
             $('.cnpj').inputmask('99.999.999/9999-99');
+            $('.cep').inputmask('99999-999');
+            $('.telefone').inputmask('(99) 99999-9999');
 
             var initialUfId = '@(Model.Configuracao.CodigoUFIBGE)';
             var initialMunicipioId = '@(Model.Configuracao.CodigoMunicipioIBGE)';

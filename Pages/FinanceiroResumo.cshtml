@@ -1,0 +1,128 @@
+@page
+@model CorteCor.Pages.FinanceiroResumoModel
+@{
+    ViewData["Title"] = "Resumo Financeiro";
+}
+
+<div class="container-fluid px-4">
+    <h3 class="mt-4">Resumo Financeiro (Potencial)</h3>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Index">Dashboard</a></li>
+        <li class="breadcrumb-item active">Lucratividade por Categoria</li>
+    </ol>
+
+    <div class="row">
+        <!-- Card Produtos -->
+        <div class="col-xl-6 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Produtos (Mix de Venda)</h5>
+                    <div class="row">
+                        <div class="col-6">Venda Total: <strong>@Model.TotalVendaProdutos.ToString("C2")</strong></div>
+                        <div class="col-6 text-end">Margem: <span class="badge @(Model.MargemProdutos >= 0 ? "bg-success" : "bg-danger")">@Model.MargemProdutos.ToString("C2")</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Card Serviços -->
+        <div class="col-xl-6 col-md-6">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Serviços (Capacidade)</h5>
+                    <div class="row">
+                        <div class="col-6">Venda Total: <strong>@Model.TotalVendaServicos.ToString("C2")</strong></div>
+                        <div class="col-6 text-end">Margem: <span class="badge @(Model.MargemServicos >= 0 ? "bg-success" : "bg-danger")">@Model.MargemServicos.ToString("C2")</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Produtos -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table me-1"></i>
+            Lucratividade de Produtos por Categoria
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Categoria</th>
+                        <th>Itens</th>
+                        <th>Total Venda</th>
+                        <th>Total Custo</th>
+                        <th>Margem (R$)</th>
+                        <th>Margem (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.ResumoProdutos)
+                    {
+                        <tr>
+                            <td>@item.NomeCategoria</td>
+                            <td>@item.Quantidade</td>
+                            <td>@item.TotalVenda.ToString("C2")</td>
+                            <td>@item.TotalCusto.ToString("C2")</td>
+                            <td class="@(item.Margem >= 0 ? "text-success" : "text-danger") fw-bold">@item.Margem.ToString("C2")</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar @(item.PercentualMargem >= 20 ? "bg-success" : (item.PercentualMargem > 0 ? "bg-warning" : "bg-danger"))" 
+                                         role="progressbar" 
+                                         style="width: @(Math.Min(100, Math.Abs(item.PercentualMargem)))%;" 
+                                         aria-valuenow="@item.PercentualMargem" aria-valuemin="0" aria-valuemax="100">
+                                        @item.PercentualMargem.ToString("N0")%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tabela Serviços -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-cut me-1"></i>
+            Lucratividade de Serviços por Categoria
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Categoria</th>
+                        <th>Serviços</th>
+                        <th>Total Venda</th>
+                        <th>Total Custo</th>
+                        <th>Margem (R$)</th>
+                        <th>Margem (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.ResumoServicos)
+                    {
+                        <tr>
+                            <td>@item.NomeCategoria</td>
+                            <td>@item.Quantidade</td>
+                            <td>@item.TotalVenda.ToString("C2")</td>
+                            <td>@item.TotalCusto.ToString("C2")</td>
+                            <td class="@(item.Margem >= 0 ? "text-success" : "text-danger") fw-bold">@item.Margem.ToString("C2")</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar @(item.PercentualMargem >= 40 ? "bg-success" : (item.PercentualMargem > 10 ? "bg-warning" : "bg-danger"))" 
+                                         role="progressbar" 
+                                         style="width: @(Math.Min(100, Math.Abs(item.PercentualMargem)))%;" 
+                                         aria-valuenow="@item.PercentualMargem" aria-valuemin="0" aria-valuemax="100">
+                                        @item.PercentualMargem.ToString("N0")%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

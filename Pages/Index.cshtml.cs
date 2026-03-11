@@ -1,6 +1,7 @@
 using CorteCor.Models;
 using CorteCor.Handlers;
 using CorteCor.Handlers;
+using CorteCor.Logs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +36,13 @@ namespace CorteCor.Pages
 
             if (loginManager.AutenticarUsuario(email, password))
             {
+                // Registrar acesso bem-sucedido
+                try
+                {
+                    var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+                    new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", true);
+                }
+                catch { /* Não impedir login */ }
                 //buscar IdUsuario
                 using var connection = dbHandler.GetConnection();
                 string query = @"
@@ -102,6 +110,15 @@ namespace CorteCor.Pages
             else
             {
                 ErrorMessage = "Email ou senha incorretos.";
+
+                // Registrar tentativa falha
+                try
+                {
+                    var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+                    new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", false);
+                }
+                catch { /* Não impedir fluxo */ }
+
                 return Page();
             }
         }

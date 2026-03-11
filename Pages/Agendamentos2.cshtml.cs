@@ -27,6 +27,7 @@ namespace CorteCor.Pages
         private readonly NFCeEmissorService _nfceEmissorService;
         private readonly FiscalBuilderService _fiscalBuilderService;
         private readonly NotaFiscalLogHandler _notaFiscalLogHandler;
+        private readonly IValidaParametrosMunicipioService _validaParametrosMunicipioService;
 
         public Agendamentos2Model(
             ServicoHandler servicoHandler,
@@ -43,7 +44,8 @@ namespace CorteCor.Pages
             NFSeEmissorService nfseEmissorService,
             NFCeEmissorService nfceEmissorService,
             FiscalBuilderService fiscalBuilderService,
-            NotaFiscalLogHandler notaFiscalLogHandler)
+            NotaFiscalLogHandler notaFiscalLogHandler,
+            IValidaParametrosMunicipioService validaParametrosMunicipioService)
         {
             _servicoHandler = servicoHandler;
             _pessoaHandler = pessoaHandler;
@@ -60,6 +62,7 @@ namespace CorteCor.Pages
             _nfceEmissorService = nfceEmissorService;
             _fiscalBuilderService = fiscalBuilderService;
             _notaFiscalLogHandler = notaFiscalLogHandler;
+            _validaParametrosMunicipioService = validaParametrosMunicipioService;
         }
 
         public List<Servico> Servicos { get; set; } = new();
@@ -77,6 +80,9 @@ namespace CorteCor.Pages
         // FullCalendar espera: [{ id, title, start, end, color }]
         public IActionResult OnGetEvents(DateTime start, DateTime end)
         {
+            if (start.Kind == DateTimeKind.Utc) start = start.ToLocalTime();
+            if (end.Kind == DateTimeKind.Utc) end = end.ToLocalTime();
+
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
@@ -481,6 +487,9 @@ namespace CorteCor.Pages
 
                 if (isServicoNfse)
                 {
+                    await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, null, "Validação Sefin", "Validando regras municipais para NFS-e...");
+                    await _validaParametrosMunicipioService.ValidateAsync(configFiscal, servico);
+
                     await _notaFiscalLogHandler.LogarEtapaAsync(idSalao, req.IdAgendamento, null, "Início Emissão", "Iniciando processo de emissão de NFS-e (Serviço).");
                     var nfseObj = _fiscalBuilderService.MontarNFSe(configFiscal, cliente, servico, agendamento);
                     
@@ -500,7 +509,7 @@ namespace CorteCor.Pages
                         ChaveAcesso = retornoEmissao.ChaveAcesso,
                         NumeroRecibo = retornoEmissao.Protocolo, 
                         ProtocoloAutorizacao = retornoEmissao.Protocolo,
-                        JustificativaRejeicao = !retornoEmissao.Autorizada ? retornoEmissao.Motivo : null,
+                        JustificativaRejeicao = !retornoEmissao.Autorizada ? (retornoEmissao.Motivo.Length > 250 ? retornoEmissao.Motivo.Substring(0, 250) : retornoEmissao.Motivo) : null,
                         XmlEnvio = retornoEmissao.XmlEnvio,
                         XmlRetorno = retornoEmissao.XmlRetorno,
                         DataEmissao = DateTime.Now
@@ -544,7 +553,7 @@ namespace CorteCor.Pages
                         ChaveAcesso = retornoEmissaoNFCe.ChaveAcesso,
                         NumeroRecibo = retornoEmissaoNFCe.Protocolo, 
                         ProtocoloAutorizacao = retornoEmissaoNFCe.Protocolo,
-                        JustificativaRejeicao = !retornoEmissaoNFCe.Autorizada ? retornoEmissaoNFCe.Motivo : null,
+                        JustificativaRejeicao = !retornoEmissaoNFCe.Autorizada ? (retornoEmissaoNFCe.Motivo.Length > 250 ? retornoEmissaoNFCe.Motivo.Substring(0, 250) : retornoEmissaoNFCe.Motivo) : null,
                         XmlEnvio = retornoEmissaoNFCe.XmlEnvio,
                         XmlRetorno = retornoEmissaoNFCe.XmlRetorno,
                         DataEmissao = DateTime.Now
@@ -593,6 +602,8 @@ namespace CorteCor.Pages
 
         public IActionResult OnGetAvailableServices(DateTime start)
         {
+            if (start.Kind == DateTimeKind.Utc) start = start.ToLocalTime();
+
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 

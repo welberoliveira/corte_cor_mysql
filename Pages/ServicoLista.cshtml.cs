@@ -13,15 +13,25 @@ namespace CorteCor.Pages
     public class ServicoListaModel : PageModel
     {
         public List<Servico> Servicos { get; set; } = new();
+        public List<CategoriaProduto> Categorias { get; set; } = new();
+        public int? IdCategoria { get; set; }
         public string Mensagem { get; set; }
 
-        public void OnGet()
+        public void OnGet(int? idCategoria = null)
         {
-            int idSalao = 0;
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+            IdCategoria = idCategoria;
+            int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
+
+            var catHandler = new CategoriaProdutoHandler();
+            Categorias = catHandler.ListarPorSalao(idSalao) ?? new List<CategoriaProduto>();
 
             var handler = new ServicoHandler();
-            Servicos = handler.ListarPorSalao(idSalao) ?? new List<Servico>();
+            Servicos = handler.ListarPorSalao(idSalao, idCategoria) ?? new List<Servico>();
+
+            foreach (var s in Servicos)
+            {
+                s.CategoriaNome = Categorias.FirstOrDefault(c => c.IdCategoria == s.IdCategoria)?.Nome;
+            }
         }
 
         public void OnPost()

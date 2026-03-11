@@ -255,6 +255,7 @@
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios de E-mail</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FinanceiroResumo">Resumo de Lucratividade</a></li>
                                 </ul>
                             </li>
 
@@ -276,9 +277,14 @@
                                     Fiscal
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="FiscalDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoConfigFiscal">Configurações Fiscais</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index">Configurações do Sistema</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalEmitir">Emitir NFS-e Nacional</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Fiscal/NotaFiscalAvulsa">Nota Fiscal Avulsa</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLista">Notas Emitidas</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLogLista">Auditoria (Log Fiscal)</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CertificadoDiagnostico">Diagnóstico Certificado</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SistemaLogLista">Integrações / Logs Globais</a></li>
                                 </ul>
                             </li>
 
@@ -287,9 +293,12 @@
                                     Configurações
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="ConfiguracoesDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index"><i class="bi bi-gear-fill"></i> Geral / Financeiro</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresEmail">Fornecedores de Email</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresSMS">Fornecedores de SMS</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresWhatsapp">Fornecedores de Whatsapp</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/LogAcessosLista">Log de Acessos</a></li>
                                 </ul>
                             </li>
                            
@@ -318,12 +327,16 @@
                         <ul class="navbar-nav flex-grow-1">
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Principal
+                                    Produtos / Serviços
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="PessoaLista/">Clientes</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioLista">Funcionários</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/ServicoLista">Serviços</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ProdutoLista">Produtos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CategoriaProdutoLista">Categorias de Produtos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FinanceiroResumo">Resumo de Lucratividade</a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Pagamentos/Pendências</a></li>
                                 </ul>
                             </li>
@@ -350,9 +363,14 @@
                                     Fiscal
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="FiscalUserDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoConfigFiscal">Configurações Fiscais</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index">Configurações do Sistema</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalEmitir">Emitir NFS-e Nacional</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Fiscal/NotaFiscalAvulsa">Nota Fiscal Avulsa</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLista">Notas Emitidas</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLogLista">Auditoria (Log Fiscal)</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CertificadoDiagnostico">Diagnóstico Certificado</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SistemaLogLista">Integrações / Logs Globais</a></li>
                                 </ul>
                             </li>
 
@@ -361,6 +379,7 @@
                                     Configurações
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index"><i class="bi bi-gear-fill"></i> Geral / Financeiro / Fiscal</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLeitura">Dados do Salão</a></li>
                                     <li><hr class="dropdown-divider"></li>
 

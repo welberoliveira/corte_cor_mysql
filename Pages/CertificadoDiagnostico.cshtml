@@ -1,0 +1,161 @@
+@page
+@model CorteCor.Pages.CertificadoDiagnosticoModel
+@{
+    ViewData["Title"] = "Diagnóstico do Certificado Digital";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12 col-xl-8 offset-xl-2">
+
+            <div class="card">
+                <div class="card-header pb-0 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <p class="mb-0 font-weight-bolder">
+                            <i class="fas fa-shield-alt me-2"></i>Diagnóstico do Certificado Digital A1
+                        </p>
+                        <a asp-page="/SalaoConfigFiscal" class="btn btn-secondary btn-sm">Config. Fiscais</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-sm text-muted mb-3">
+                        Esta ferramenta carrega e valida o certificado digital (.pfx) armazenado nas suas Configurações Fiscais,
+                        verificando validade, chave privada e dados do emissor.
+                    </p>
+
+                    <form method="post">
+                        <button type="submit" class="btn btn-primary w-100 mb-4">
+                            Executar Diagnóstico do Certificado
+                        </button>
+                    </form>
+
+                    @if (Model.DiagnosticoRealizado)
+                    {
+                        @if (!string.IsNullOrEmpty(Model.ErroMensagem))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                <strong>Falha no Diagnóstico:</strong> @Model.ErroMensagem
+                            </div>
+                        }
+
+                        @if (Model.CertificadoEncontrado)
+                        {
+                            <!-- Status Badge -->
+                            <div class="alert alert-@Model.StatusCss text-center mb-4" role="alert">
+                                <h5 class="mb-0">@Model.StatusCertificado</h5>
+                            </div>
+
+                            <!-- Dados do Salão Configurado -->
+                            <div class="card card-body border mb-3">
+                                <h6 class="mb-3">Dados Fiscais Configurados</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <p class="text-xs text-uppercase text-muted mb-1">CNPJ</p>
+                                        <p class="font-weight-bold mb-0">@Model.CnpjConfigurado</p>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Razão Social</p>
+                                        <p class="font-weight-bold mb-0">@Model.RazaoSocial</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Ambiente</p>
+                                        <p class="font-weight-bold mb-0">
+                                            @(Model.AmbienteConfigurado == 1 ? "🟢 Produção" : "🟡 Homologação")
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Informações do Certificado -->
+                            <div class="card card-body border mb-3">
+                                <h6 class="mb-3">Informações do Certificado</h6>
+                                
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Subject (Titular)</p>
+                                        <p class="text-sm font-weight-bold mb-0" style="word-break: break-all;">@Model.Subject</p>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Issuer (Autoridade Certificadora)</p>
+                                        <p class="text-sm font-weight-bold mb-0" style="word-break: break-all;">@Model.Issuer</p>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Número de Série</p>
+                                        <p class="text-sm font-weight-bold mb-0" style="word-break: break-all;">@Model.SerialNumber</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Thumbprint (Impressão Digital)</p>
+                                        <p class="text-sm font-weight-bold mb-0" style="word-break: break-all;">@Model.Thumbprint</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Validade -->
+                            <div class="card card-body border mb-3">
+                                <h6 class="mb-3">Validade</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Válido Desde</p>
+                                        <p class="font-weight-bold mb-0">@Model.ValidoDe.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Válido Até</p>
+                                        <p class="font-weight-bold text-@Model.StatusCss mb-0">@Model.ValidoAte.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="text-xs text-uppercase text-muted mb-1">Dias Restantes</p>
+                                        <p class="font-weight-bold text-@Model.StatusCss mb-0">
+                                            @(Model.DiasRestantes > 0 ? Model.DiasRestantes + " dias" : "VENCIDO")
+                                        </p>
+                                    </div>
+                                </div>
+                                @if (Model.ValidadeArmazenada.HasValue)
+                                {
+                                    <div class="row mt-2">
+                                        <div class="col-12">
+                                            <p class="text-xs text-uppercase text-muted mb-1">Validade Armazenada no Banco de Dados</p>
+                                            <p class="text-sm mb-0">@Model.ValidadeArmazenada.Value.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Chave Privada -->
+                            <div class="card card-body border">
+                                <h6 class="mb-3">Chave Privada</h6>
+                                <div class="row">
+                                    <div class="col-12">
+                                        @if (Model.PossuiChavePrivada)
+                                        {
+                                            <span class="badge bg-success">
+                                                Chave Privada Presente
+                                            </span>
+                                            <p class="text-xs text-muted mt-2 mb-0">O certificado possui chave privada e pode realizar assinatura digital de XMLs.</p>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                Chave Privada AUSENTE
+                                            </span>
+                                            <p class="text-xs text-danger mt-2 mb-0">
+                                                <strong>PROBLEMA CRÍTICO:</strong> O certificado não contém chave privada. 
+                                                A assinatura XML para emissão de NFS-e falhará. 
+                                                Verifique se o arquivo .pfx foi exportado corretamente com a chave privada inclusa.
+                                            </p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

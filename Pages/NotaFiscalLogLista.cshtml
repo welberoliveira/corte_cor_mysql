@@ -12,7 +12,7 @@
                 <div class="card-header pb-0 border-bottom">
                     <div class="d-flex align-items-center justify-content-between">
                         <h6 class="mb-0">Histórico Transacional - Notas Fiscais</h6>
-                        <a href="/SalaoConfigFiscal" class="btn btn-sm btn-outline-primary mb-0">Configurações Fiscais</a>
+                        <a href="/SalaoConfigFiscal" class="btn btn-sm btn-primary mb-0">Configurações Fiscais</a>
                     </div>
                 </div>
                 <div class="card-body px-0 pt-0 pb-2">
@@ -37,22 +37,22 @@
                                                 <span class="text-xs font-weight-bold">@log.DataHora.ToString("dd/MM/yyyy HH:mm:ss")</span>
                                             </td>
                                             <td>
-                                                <span class="badge bg-gradient-info">@log.Etapa</span>
+                                                <span class="badge bg-gradient-info">@log.TipoEvento</span>
                                             </td>
                                             <td class="text-xs text-wrap" style="max-width: 300px;">
-                                                @(log.MensagemStatus.Length > 80 ? log.MensagemStatus.Substring(0, 80) + "..." : log.MensagemStatus)
+                                                @(log.Mensagem.Length > 80 ? log.Mensagem.Substring(0, 80) + "..." : log.Mensagem)
                                             </td>
                                             <td class="align-middle text-center text-sm">
                                                 <div class="d-flex flex-column justify-content-center">
                                                     @if(log.IdAgendamento.HasValue) { <span class="text-xs text-secondary mb-0">Age: #@log.IdAgendamento</span> }
-                                                    @if(log.IdNotaFiscal.HasValue) { <span class="text-xxs text-secondary">NF: @log.IdNotaFiscal.ToString().Substring(0, 8)...</span> }
+                                                    @if(log.IdNotaFiscal.HasValue) { <span class="text-xxs text-secondary">NF: @log.IdNotaFiscal.Value.ToString().Substring(0, 8)...</span> }
                                                 </div>
                                             </td>
                                             <td class="align-middle text-center">
-                                                @if (!string.IsNullOrEmpty(log.ConteudoXml))
+                                                @if (!string.IsNullOrEmpty(log.RequestPayload))
                                                 {
                                                     <button type="button" class="btn btn-link text-dark px-3 mb-0" 
-                                                            onclick="ShowXmlModal('@System.Web.HttpUtility.JavaScriptStringEncode(log.ConteudoXml)')">
+                                                            onclick="ShowXmlModal('@System.Web.HttpUtility.JavaScriptStringEncode(log.RequestPayload)')">
                                                         <i class="fas fa-file-code text-primary me-2" aria-hidden="true"></i>Ver XML
                                                     </button>
                                                 }

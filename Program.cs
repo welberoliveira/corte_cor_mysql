@@ -52,7 +52,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IDatabaseHandler, DatabaseHandler>();
-builder.Services.AddScoped<Salaoervice>();
+builder.Services.AddScoped<SalaoHandler>();
 builder.Services.AddScoped<ServicoHandler>();
 builder.Services.AddScoped<PessoaHandler>();
 builder.Services.AddScoped<AgendamentoHandler>();
@@ -62,6 +62,8 @@ builder.Services.AddScoped<SalaoConfigFiscalHandler>();
 builder.Services.AddScoped<NotaFiscalHandler>();
 builder.Services.AddScoped<NotaFiscalLogHandler>();
 builder.Services.AddScoped<PagamentoHandler>();
+builder.Services.AddScoped<FinanceiroHandler>();
+builder.Services.AddScoped<IntegracaoHandler>();
 builder.Services.AddScoped<MercadoPagoService>();
 builder.Services.AddScoped<ModeloEmailHandler>();
 builder.Services.AddScoped<ModeloSMSHandler>();
@@ -72,6 +74,8 @@ builder.Services.AddHttpClient<SMSMarketService>();
 builder.Services.AddScoped<ILembreteHandler, LembreteHandler>();
 builder.Services.AddScoped<LembreteService>();
 builder.Services.AddScoped<FornecedoresHandler>();
+builder.Services.AddHttpClient<ConsultaDocumentoService>();
+builder.Services.AddScoped<LogAcessoHandler>();
 builder.Services.AddHostedService<LembreteBackgroundService>();
 
 
@@ -83,6 +87,7 @@ builder.Services.AddTransient<NFSeEmissorService>();
 builder.Services.AddTransient<FiscalBuilderService>();
 builder.Services.AddTransient<FiscalActionService>();
 builder.Services.AddTransient<FiscalPdfGenerator>();
+builder.Services.AddTransient<IValidaParametrosMunicipioService, ValidaParametrosMunicipioService>();
 builder.Services.AddScoped<NotaFiscalEventoHandler>();
 builder.Services.AddScoped<NotaFiscalInutilizacaoHandler>();
 builder.Services.AddHostedService<NFSeVerificadorRetornoJob>();

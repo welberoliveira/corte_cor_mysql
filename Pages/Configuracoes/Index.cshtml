@@ -1,0 +1,801 @@
+@page
+@model CorteCor.Pages.Configuracoes.IndexModel
+@{
+    ViewData["Title"] = "Configurações do Sistema";
+}
+
+<style>
+    .required-label::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .legend-required {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="h3 mb-4"><i class="fas fa-cog"></i> Configurações <span class="text-muted small">| Gestão do Salão</span></h1>
+        </div>
+    </div>
+
+    @if (TempData["Mensagem"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @TempData["Mensagem"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["MensagemErro"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["MensagemErro"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <ul class="nav nav-tabs card-header-tabs" id="configTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="operacional-tab" data-bs-toggle="tab" data-bs-target="#operacional" type="button" role="tab"><i class="fas fa-desktop"></i> Operacional</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="unidade-tab" data-bs-toggle="tab" data-bs-target="#unidade" type="button" role="tab"><i class="fas fa-building"></i> Unidade</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="fiscal-tab" data-bs-toggle="tab" data-bs-target="#fiscal" type="button" role="tab"><i class="fas fa-file-invoice-dollar"></i> Dados Fiscais</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button" role="tab"><i class="fas fa-university"></i> Financeiro</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pagamentos-tab" data-bs-toggle="tab" data-bs-target="#pagamentos" type="button" role="tab"><i class="fas fa-credit-card"></i> Pagamentos</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="api-tab" data-bs-toggle="tab" data-bs-target="#api" type="button" role="tab"><i class="fas fa-key"></i> Integrações/API</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="configTabsContent">
+                
+                <!-- ABA OPERACIONAL -->
+                <div class="tab-pane fade show active" id="operacional" role="tabpanel">
+                    <form asp-page-handler="General" method="post">
+                        <div class="row">
+                            <div class="col-md-6 border-end">
+                                <h5 class="mb-1 text-primary border-bottom pb-2"><i class="fas fa-sliders-h"></i> Preferências da Interface</h5>
+                                <div class="legend-required"><span class="text-danger">*</span> Campos Obrigatórios</div>
+                                <input type="hidden" asp-for="ConfigGeral.IdSalao" />
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label required-label">Nome Fantasia (Exibição)</label>
+                                        <input type="text" asp-for="ConfigGeral.NomeFantasia" class="form-control" placeholder="Marca do Salão" required />
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Logo URL</label>
+                                        <input type="text" asp-for="ConfigGeral.LogoUrl" class="form-control" placeholder="http://..." />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Cor Principal do Tema</label>
+                                        <input type="color" asp-for="ConfigGeral.TemaCor" class="form-control form-control-color w-100" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="mb-3 text-primary border-bottom pb-2"><i class="fas fa-cogs"></i> Regras de Negócio</h5>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Antecedência mínima p/ Cancelamento (minutos)</label>
+                                        <input type="number" asp-for="ConfigGeral.MinutosAntecedencia" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" asp-for="ConfigGeral.ModoPDV">
+                                            <label class="form-check-label">Habilitar Frente de Caixa (PDV)</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" asp-for="ConfigGeral.ModoEstoque">
+                                            <label class="form-check-label">Controlar Estoque de Produtos</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" asp-for="ConfigGeral.AgendamentoOnline">
+                                            <label class="form-check-label">Liberar Agendamento Online pelo Site</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 border-top pt-3 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Configurações Operacionais</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ABA UNIDADE -->
+                <div class="tab-pane fade" id="unidade" role="tabpanel">
+                    <form asp-page-handler="Salao" method="post">
+                        <input type="hidden" asp-for="Salao.IdSalao" />
+                        <input type="hidden" asp-for="Salao.Status" />
+                        <input type="hidden" asp-for="Salao.DataCadastro" />
+                        
+                        <div class="row">
+                            <div class="col-md-7 border-end">
+                                <h5 class="mb-1 text-primary border-bottom pb-2"><i class="fas fa-id-card"></i> Identificação Jurídica</h5>
+                                <div class="legend-required"><span class="text-danger">*</span> Campos Obrigatórios</div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label font-weight-bold required-label">Razão Social</label>
+                                        <input type="text" asp-for="Salao.Nome" class="form-control" required title="Informe a Razão Social da empresa" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label required-label">CNPJ</label>
+                                        <input type="text" asp-for="Salao.CNPJ" class="form-control cnpj" required title="O CNPJ é obrigatório para emissão de notas" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Responsável</label>
+                                        <input type="text" asp-for="Salao.Responsavel" class="form-control" />
+                                    </div>
+                                </div>
+                                <h5 class="mb-3 mt-2 text-primary border-bottom pb-2"><i class="fas fa-map-marker-alt"></i> Endereço Principal</h5>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Logradouro, Nº, Bairro, Cidade - UF</label>
+                                        <textarea asp-for="Salao.Endereco" class="form-control" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <h5 class="mb-3 text-primary border-bottom pb-2"><i class="fas fa-headset"></i> Contato</h5>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">E-mail de Contato</label>
+                                        <input type="email" asp-for="Salao.Email" class="form-control" />
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Telefone Principal</label>
+                                        <input type="text" asp-for="Salao.Telefone" class="form-control phone" />
+                                    </div>
+                                </div>
+                                <div class="alert alert-light border small mt-3">
+                                    <i class="fas fa-info-circle text-info"></i> Estes dados são utilizados em recibos simples, comunicações e cabeçalhos internos. Para NF-e/NFS-e, utilize a aba de <strong>Dados Fiscais</strong>.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 border-top pt-3 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Dados da Unidade</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ABA FISCAL -->
+                <div class="tab-pane fade" id="fiscal" role="tabpanel">
+                    <form asp-page-handler="Fiscal" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="ConfigFiscal.IdConfigFiscal" />
+                        <input type="hidden" asp-for="ConfigFiscal.IdSalao" />
+                        
+                        <div class="row">
+                            <div class="col-md-8 border-end">
+                                <h6 class="text-secondary border-bottom pb-2 mb-1"><i class="fas fa-university"></i> Regime e Enquadramento</h6>
+                                <div class="legend-required"><span class="text-danger">*</span> Campos Obrigatórios</div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label required-label">Regime Tributário</label>
+                                        <select asp-for="ConfigFiscal.RegimeTributario" class="form-select" required>
+                                            <option value="1">Simples Nacional</option>
+                                            <option value="2">Simples Nacional - Excesso de Sublimite</option>
+                                            <option value="3">Regime Normal</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label required-label">Ambiente Sefaz / Prefeitura</label>
+                                        <select asp-for="ConfigFiscal.Ambiente" class="form-select" required>
+                                            <option value="2">Homologação (Testes)</option>
+                                            <option value="1">Produção (Real)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Insc. Estadual</label>
+                                        <input type="text" asp-for="ConfigFiscal.InscricaoEstadual" class="form-control" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Insc. Municipal</label>
+                                        <input type="text" asp-for="ConfigFiscal.InscricaoMunicipal" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch mb-4">
+                                    <input class="form-check-input" type="checkbox" asp-for="ConfigFiscal.EmissaoAutomatica">
+                                    <label class="form-check-label">Emitir Nota Fiscal Eletrônica automaticamente ao confirmar pagamento</label>
+                                </div>
+
+                                <h6 class="text-secondary border-bottom pb-2 mb-3"><i class="fas fa-certificate"></i> Certificado Digital (.PFX)</h6>
+                                <div class="bg-light p-3 border rounded mb-3">
+                                    <div class="row">
+                                        <div class="col-md-7 mb-3">
+                                            <label class="form-label">Anexar Certificado A1</label>
+                                            <input type="file" asp-for="CertificadoFile" class="form-control" accept=".pfx" />
+                                            <small class="text-muted">Apenas arquivos no formato .pfx</small>
+                                        </div>
+                                        <div class="col-md-5 mb-3">
+                                            <label class="form-label">Senha do Certificado</label>
+                                            <input type="password" asp-for="ConfigFiscal.CertificadoSenhaTexto" class="form-control" placeholder="Senha do arquivo" />
+                                        </div>
+                                    </div>
+                                    @if (Model.ConfigFiscal.CertificadoPfx != null)
+                                    {
+                                        <div class="alert alert-success py-1 small mb-0">
+                                            <i class="fas fa-check-circle"></i> Certificado atual está carregado. <br />
+                                            @if(Model.ConfigFiscal.CertificadoValidade.HasValue) {
+                                                <span>Validade: @Model.ConfigFiscal.CertificadoValidade.Value.ToShortDateString()</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <h6 class="text-secondary border-bottom pb-2 mb-3"><i class="fas fa-list-numeric"></i> Séries e Próximos Números</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small">Série NFCe</label>
+                                        <input type="number" asp-for="ConfigFiscal.SerieNFCe" class="form-control form-control-sm" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small">Próx. Nº NFCe</label>
+                                        <input type="number" asp-for="ConfigFiscal.NumeroNFCe" class="form-control form-control-sm" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small">Série NFSe</label>
+                                        <input type="number" asp-for="ConfigFiscal.SerieNFSe" class="form-control form-control-sm" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small">Próx. Nº NFSe</label>
+                                        <input type="number" asp-for="ConfigFiscal.NumeroNFSe" class="form-control form-control-sm" />
+                                    </div>
+                                </div>
+                                <h6 class="text-secondary border-bottom pb-2 mt-2 mb-3 small"><i class="fas fa-key"></i> Tokens Complementares</h6>
+                                <div class="mb-2">
+                                    <label class="form-label small">Token NFSe (Prefeitura)</label>
+                                    <input type="text" asp-for="ConfigFiscal.TokenNfse" class="form-control form-control-sm" />
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <label class="form-label small">CSC Token (NFCe)</label>
+                                        <input type="text" asp-for="ConfigFiscal.CSC" class="form-control form-control-sm" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Id CSC</label>
+                                        <input type="text" asp-for="ConfigFiscal.IdCSC" class="form-control form-control-sm" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6 class="text-secondary border-bottom pb-2 mb-3"><i class="fas fa-map-signs"></i> Endereço para Emissão (NF)</h6>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">CEP</label>
+                                <input type="text" asp-for="ConfigFiscal.EnderecoCep" class="form-control cep" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Logradouro / Bairro</label>
+                                <div class="input-group">
+                                    <input type="text" asp-for="ConfigFiscal.EnderecoLogradouro" class="form-control w-50" placeholder="Rua..." />
+                                    <input type="text" asp-for="ConfigFiscal.EnderecoBairro" class="form-control w-50" placeholder="Bairro..." />
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Cidade / UF</label>
+                                <div class="input-group">
+                                    <input type="text" asp-for="ConfigFiscal.EnderecoCidade" class="form-control w-75" />
+                                    <input type="text" asp-for="ConfigFiscal.EnderecoUF" class="form-control w-25 text-center" maxlength="2" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Todas as Configurações Fiscais</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ABA FINANCEIRO (Plano de Contas e Contas) -->
+                <div class="tab-pane fade" id="financeiro" role="tabpanel">
+                    <div class="row">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5><i class="fas fa-list-ol"></i> Plano de Contas</h5>
+                                <button type="button" class="btn btn-sm btn-success" onclick="abrirModalPlano()"><i class="fas fa-plus"></i> Novo Item</button>
+                            </div>
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descrição</th>
+                                        <th>Tipo</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in Model.PlanoContas)
+                                    {
+                                        <tr>
+                                            <td>@p.Codigo</td>
+                                            <td>@p.Descricao</td>
+                                            <td><span class="badge @(p.Tipo == "R" ? "bg-success" : "bg-danger")">@(p.Tipo == "R" ? "Receita" : "Despesa")</span></td>
+                                            <td>
+                                                <button type="button" class="btn btn-xs btn-primary" 
+                                                        onclick='editarPlano(@Json.Serialize(p))'><i class="fas fa-edit"></i></button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5><i class="fas fa-university"></i> Contas Caixa / Bancos</h5>
+                                <button type="button" class="btn btn-sm btn-success" onclick="abrirModalConta()"><i class="fas fa-plus"></i> Nova Conta</button>
+                            </div>
+                            <div class="list-group">
+                                @foreach (var c in Model.ContasCaixa)
+                                {
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@c.Nome</strong> <br />
+                                            <small class="text-muted">@c.Banco - Ag: @c.Agencia / Cc: @c.Conta</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-primary rounded-pill mb-1">R$ @c.SaldoInicial.ToString("N2")</span> <br />
+                                            <button type="button" class="btn btn-xs btn-link p-0" onclick='editarConta(@Json.Serialize(c))'>Editar</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA PAGAMENTOS (Pix e Meios) -->
+                <div class="tab-pane fade" id="pagamentos" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-5 border-end">
+                            <h6><i class="fab fa-pix text-info"></i> Pix Instantâneo</h6>
+                            <form asp-page-handler="Pix" method="post" enctype="multipart/form-data">
+                                <input type="hidden" asp-for="ConfigPix.IdSalao" />
+                                <div class="mb-3">
+                                    <label class="form-label">Provedor (PSP)</label>
+                                    <select asp-for="ConfigPix.PSP" class="form-select">
+                                        <option value="MercadoPago">Mercado Pago</option>
+                                        <option value="Efi">Efí (Gerencianet)</option>
+                                        <option value="Inter">Banco Inter</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Chave Pix</label>
+                                    <input type="text" asp-for="ConfigPix.ChavePix" class="form-control" placeholder="CNPJ, E-mail, Celular ou Chave Aleatória" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Client ID</label>
+                                    <input type="text" asp-for="ConfigPix.ClientId" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Client Secret</label>
+                                    <input type="password" asp-for="ConfigPix.ClientSecret" class="form-control" />
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="ConfigPix.Ativo">
+                                    <label class="form-check-label">Habilitar Pix Automático</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Salvar Configuração Pix</button>
+                            </form>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6><i class="fas fa-credit-card"></i> Outros Meios de Pagamento</h6>
+                                <button type="button" class="btn btn-xs btn-success" onclick="abrirModalMeio()"><i class="fas fa-plus"></i> Novo Meio</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover" style="font-size: 0.85rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Tipo</th>
+                                            <th>Gateway</th>
+                                            <th>Status</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var m in Model.MeiosPagamento)
+                                        {
+                                            <tr>
+                                                <td>@m.Nome</td>
+                                                <td>@m.Tipo</td>
+                                                <td>@(string.IsNullOrEmpty(m.Gateway) ? "Manual" : m.Gateway)</td>
+                                                <td>
+                                                    <span class="badge @(m.Ativo ? "bg-success" : "bg-secondary")">@(m.Ativo ? "Ativo" : "Inativo")</span>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-xs btn-link p-0" onclick='editarMeio(@Json.Serialize(m))'>Editar</button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA API -->
+                <div class="tab-pane fade" id="api" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-0"><i class="fas fa-plug text-dark"></i> Integrações via API</h6>
+                            <small class="text-muted">Use estas chaves para integrar o sistema com aplicações externas.</small>
+                        </div>
+                        <button type="button" class="btn btn-dark btn-sm" onclick="abrirModalApi()"><i class="fas fa-plus"></i> Gerar Novo Token</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover border">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Aplicação</th>
+                                    <th>Chave de API (API Key)</th>
+                                    <th>Criado em</th>
+                                    <th>Último Acesso</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var api in Model.Apis)
+                                {
+                                    <tr>
+                                        <td><strong>@api.NomeApp</strong></td>
+                                        <td><code>@api.ApiKey</code></td>
+                                        <td>@api.DataCriacao.ToShortDateString()</td>
+                                        <td>@(api.UltimoAcesso?.ToString("g") ?? "Nunca")</td>
+                                        <td>
+                                            <span class="badge @(api.Ativo ? "bg-success" : "bg-danger")">@(api.Ativo ? "Ativo" : "Suspenso")</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!Model.Apis.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">Nenhum token de API gerado ainda.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PLANO DE CONTAS -->
+<div class="modal fade" id="modalPlano" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-page-handler="PlanoContas" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Item do Plano de Contas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdPlano" id="plano_id" />
+                    <div class="mb-3">
+                        <label class="form-label">Código (Opcional)</label>
+                        <input type="text" name="Codigo" id="plano_codigo" class="form-control" placeholder="Ex: 1.01" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <input type="text" name="Descricao" id="plano_descricao" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <select name="Tipo" id="plano_tipo" class="form-select">
+                            <option value="R">Receita</option>
+                            <option value="D">Despesa</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONTA CAIXA -->
+<div class="modal fade" id="modalConta" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form asp-page-handler="ContaCaixa" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Conta Caixa / Banco</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdConta" id="conta_id" />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome Amigável</label>
+                            <input type="text" name="Nome" id="conta_nome" class="form-control" placeholder="Ex: Banco Itaú Principal" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select name="Tipo" id="conta_tipo" class="form-select">
+                                <option value="Banco">Banco / Conta Corrente</option>
+                                <option value="Caixa">Caixa Físico / Gaveta</option>
+                                <option value="Digital">Carteira Digital (Pix)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Banco</label>
+                            <input type="text" name="Banco" id="conta_banco" class="form-control" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Agência</label>
+                            <input type="text" name="Agencia" id="conta_agencia" class="form-control" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Conta</label>
+                            <input type="text" name="Conta" id="conta_conta" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Saldo Inicial / Atual</label>
+                        <input type="number" step="0.01" name="SaldoInicial" id="conta_saldo" class="form-control" value="0.00" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Conta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MEIO DE PAGAMENTO -->
+<div class="modal fade" id="modalMeio" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form asp-page-handler="MeioPagamento" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Meio de Pagamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdMeioPagamento" id="meio_id" />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome Exibido</label>
+                            <input type="text" name="Nome" id="meio_nome" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select name="Tipo" id="meio_tipo" class="form-select">
+                                <option value="Dinheiro">Dinheiro</option>
+                                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                <option value="Cartão de Débito">Cartão de Débito</option>
+                                <option value="Pix">Pix</option>
+                                <option value="Boleto">Boleto</option>
+                                <option value="Transferência">Transferência</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Gateway de Integração</label>
+                            <select name="Gateway" id="meio_gateway" class="form-select">
+                                <option value="">Nenhum (Manual)</option>
+                                <option value="MercadoPago">Mercado Pago</option>
+                                <option value="Efi">Efí</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Taxa %</label>
+                            <input type="number" step="0.01" name="TaxaPercentual" id="meio_taxa" class="form-control" value="0" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Prazo (Dias)</label>
+                            <input type="number" name="PrazoRecebimentoDias" id="meio_prazo" class="form-control" value="0" />
+                        </div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="Ativo" value="true" id="meio_ativo" checked>
+                        <label class="form-check-label">Habilitar este meio no checkout</label>
+                    </div>
+                    
+                    <div id="sectionMP" class="mt-3 p-3 bg-light border rounded" style="display:none">
+                        <h6>Configurações Mercado Pago</h6>
+                        <div class="mb-2">
+                            <label class="form-label small">Access Token (Produção)</label>
+                            <input type="password" name="MpAccessTokenProd" id="meio_mp_token" class="form-control form-control-sm" />
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="MpProduction" id="meio_mp_prod" value="true">
+                            <label class="form-check-label small">Modo Produção</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Meio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL API -->
+<div class="modal fade" id="modalApi" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-page-handler="Api" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Token de API</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nome da Aplicação / Finalidade</label>
+                        <input type="text" name="nomeApp" class="form-control" placeholder="Ex: App Mobile Cliente" required />
+                    </div>
+                    <div class="alert alert-info py-2 small">
+                        A chave de API será gerada automaticamente e poderá ser usada para autenticação via Header <code>X-Api-Key</code>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Gerar Token</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Manter aba ativa após refresh
+            var activeTab = localStorage.getItem('activeTab');
+            if (activeTab) {
+                var triggerEl = document.querySelector('#configTabs button[data-bs-target="' + activeTab + '"]');
+                if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            }
+
+            var tabEl = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabEl.forEach(function(el) {
+                el.addEventListener('shown.bs.tab', function (event) {
+                    localStorage.setItem('activeTab', event.target.getAttribute('data-bs-target'));
+                });
+            });
+
+            // Máscaras
+            if ($.fn.inputmask) {
+                $(".phone").inputmask("(99) 99999-9999");
+                $(".cep").inputmask("99999-999");
+                $(".cnpj").inputmask("99.999.999/9999-99");
+            } else {
+                // Fallback simples se inputmask não estiver carregado (embora deva estar via layout)
+                $(".phone").attr("placeholder", "(99) 99999-9999");
+                $(".cep").attr("placeholder", "99999-999");
+                $(".cnpj").attr("placeholder", "99.999.999/9999-99");
+            }
+        });
+
+        function abrirModalPlano() {
+            $('#plano_id').val(0);
+            $('#plano_codigo').val('');
+            $('#plano_descricao').val('');
+            $('#plano_tipo').val('R');
+            new bootstrap.Modal(document.getElementById('modalPlano')).show();
+        }
+
+        function editarPlano(p) {
+            $('#plano_id').val(p.idPlano);
+            $('#plano_codigo').val(p.codigo);
+            $('#plano_descricao').val(p.descricao);
+            $('#plano_tipo').val(p.tipo);
+            new bootstrap.Modal(document.getElementById('modalPlano')).show();
+        }
+
+        function abrirModalConta() {
+            $('#conta_id').val(0);
+            $('#conta_nome').val('');
+            $('#conta_tipo').val('Banco');
+            $('#conta_banco').val('');
+            $('#conta_agencia').val('');
+            $('#conta_conta').val('');
+            $('#conta_saldo').val('0.00');
+            new bootstrap.Modal(document.getElementById('modalConta')).show();
+        }
+
+        function editarConta(c) {
+            $('#conta_id').val(c.idConta);
+            $('#conta_nome').val(c.nome);
+            $('#conta_tipo').val(c.tipo);
+            $('#conta_banco').val(c.banco);
+            $('#conta_agencia').val(c.agencia);
+            $('#conta_conta').val(c.conta);
+            $('#conta_saldo').val(c.saldoInicial);
+            new bootstrap.Modal(document.getElementById('modalConta')).show();
+        }
+
+        function abrirModalMeio() {
+            $('#meio_id').val(0);
+            $('#meio_nome').val('');
+            $('#meio_tipo').val('Cartão de Crédito');
+            $('#meio_gateway').val('');
+            $('#meio_taxa').val('0');
+            $('#meio_prazo').val('0');
+            $('#meio_ativo').prop('checked', true);
+            $('#sectionMP').hide();
+            new bootstrap.Modal(document.getElementById('modalMeio')).show();
+        }
+
+        function editarMeio(m) {
+            $('#meio_id').val(m.idMeioPagamento);
+            $('#meio_nome').val(m.nome);
+            $('#meio_tipo').val(m.tipo);
+            $('#meio_gateway').val(m.gateway);
+            $('#meio_taxa').val(m.taxaPercentual);
+            $('#meio_prazo').val(m.prazoRecebimentoDias);
+            $('#meio_ativo').prop('checked', m.ativo);
+            
+            if (m.gateway === 'MercadoPago') {
+                $('#sectionMP').show();
+                $('#meio_mp_token').val(m.mpAccessTokenProd);
+                $('#meio_mp_prod').prop('checked', m.mpProduction);
+            } else {
+                $('#sectionMP').hide();
+            }
+            
+            new bootstrap.Modal(document.getElementById('modalMeio')).show();
+        }
+
+        $('#meio_gateway').on('change', function() {
+            if ($(this).val() === 'MercadoPago') $('#sectionMP').show();
+            else $('#sectionMP').hide();
+        });
+
+        function abrirModalApi() {
+            new bootstrap.Modal(document.getElementById('modalApi')).show();
+        }
+    </script>
+}

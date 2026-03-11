@@ -1,4 +1,5 @@
-using CorteCor.Models;
+ï»¿using CorteCor.Models;
+using CorteCor.Logs;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -38,10 +39,18 @@ namespace CorteCor.Pages
             var password = Request.Form["password"].ToString();
             var loginManager = new LoginManager();
 
-            // Tenta autenticar o usuário usando email e senha (a query interna do LoginManager também filtra por IdSalao)
-            if (loginManager.AutenticarAdministrador(email, password))
+            // Tenta autenticar o usuï¿½rio usando email e senha (a query interna do LoginManager tambï¿½m filtra por IdSalao)
+                        if (loginManager.AutenticarAdministrador(email, password))
             {
-                // Cria os claims do usuário autenticado, incluindo o IdSalao
+                // Registrar acesso bem-sucedido
+                try
+                {
+                    var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+                    new LogAcessoHandler().Registrar(email, ipOrigem, "Admin", true);
+                }
+                catch { }
+
+                // Cria os claims do usuï¿½rio autenticado, incluindo o IdSalao
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, email),
@@ -55,15 +64,25 @@ namespace CorteCor.Pages
                 // Efetua o login via Cookie Authentication
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
-                // Redireciona para a página protegida (por exemplo, o Painel)
+                // Redireciona para a pï¿½gina protegida (por exemplo, o Painel)
                 return Redirect(HttpContext.Request.PathBase + "/Painel");
             }
             else
             {
-                ErrorMessage = "Email ou senha incorretos.";
+                                ErrorMessage = "Email ou senha incorretos.";
+
+                // Registrar tentativa falha
+                try
+                {
+                    var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+                    new LogAcessoHandler().Registrar(email, ipOrigem, "Admin", false);
+                }
+                catch { }
+
                 return Page();
             }
         }
     }
 }
+
 

@@ -50,7 +50,13 @@ namespace CorteCor.Tests
                 _mockMeioPagamentoHandler.Object, // Pass it
                 _mockPagamentoHandler.Object,
                 _mockMpService.Object,
-                config
+                config,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
             );
 
             // Setup User Context

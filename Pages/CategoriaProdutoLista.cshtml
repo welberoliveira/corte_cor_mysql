@@ -1,0 +1,72 @@
+@page
+@model CorteCor.Pages.CategoriaProdutoListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        /* Adicione estilos mobile se necessário */
+    }
+</style>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>Lista de Categorias de Produtos</h4>
+        <a asp-page="/CategoriaProdutoCadastro" class="btn btn-primary">Cadastrar Nova</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info mt-2">
+            @Model.Mensagem
+        </div>
+    }
+
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Nome da Categoria</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Categorias != null && Model.Categorias.Any())
+            {
+                foreach (var categoria in Model.Categorias)
+                {
+                    <tr>
+                        <td>@categoria.Nome</td>
+                        <td>
+                            @if (categoria.Ativo)
+                            {
+                                <span class="badge bg-success">Ativo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Inativo</span>
+                            }
+                        </td>
+                        <td class="actions">
+                            <form method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@categoria.IdCategoria">
+                                <input type="hidden" name="action" value="alterar">
+                                <button type="submit" class="btn btn-info btn-sm">Alterar</button>
+                            </form>
+
+                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta categoria?');">
+                                <input type="hidden" name="id" value="@categoria.IdCategoria">
+                                <input type="hidden" name="action" value="excluir">
+                                <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3" class="text-center">Nenhuma categoria cadastrada.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

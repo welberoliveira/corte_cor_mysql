@@ -55,7 +55,13 @@ namespace CorteCor.Tests
                         services.AddScoped<MeioPagamentoHandler>();
                         services.AddHttpClient<BrevoEmailService>();
                         services.AddHttpClient<SMSMarketService>();
-                        
+                        services.AddScoped<SalaoConfigFiscalHandler>();
+                        services.AddScoped<NotaFiscalInutilizacaoHandler>();
+                        services.AddScoped<NotaFiscalHandler>();
+                        services.AddScoped<NotaFiscalLogHandler>();
+                        services.AddScoped<FiscalBuilderService>();
+                        services.AddHttpClient<NFSeEmissorService>();
+                        services.AddHttpClient<NFCeEmissorService>();
                         // Critical Fix Verification: Register ILembreteHandler -> LembreteHandler
                         services.AddScoped<ILembreteHandler, LembreteHandler>();
                         services.AddScoped<LembreteService>();
