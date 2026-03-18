@@ -41,7 +41,7 @@ namespace CorteCor.Handlers
             command.AddWithValue("@ProtocoloEvento", evento.ProtocoloEvento ?? (object)DBNull.Value);
             command.AddWithValue("@XmlEnvio", evento.XmlEnvio ?? (object)DBNull.Value);
             command.AddWithValue("@XmlRetorno", evento.XmlRetorno ?? (object)DBNull.Value);
-            command.AddWithValue("@Status", evento.Status);
+            command.AddWithValue("@Status", NormalizarStatus(evento.Status));
             command.AddWithValue("@DataRegistro", evento.DataRegistro == default ? DateTime.Now : evento.DataRegistro);
 
             await Task.Run(() => command.ExecuteNonQuery());
@@ -81,6 +81,32 @@ namespace CorteCor.Handlers
             }
 
             return eventos;
+        }
+
+        private static string NormalizarStatus(string? status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                return "Indefinido";
+            }
+
+            if (status.Contains("autoriz", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Autorizado";
+            }
+
+            if (status.Contains("rejeit", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Rejeitado";
+            }
+
+            if (status.Contains("erro", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Erro";
+            }
+
+            const int limiteLegado = 20;
+            return status.Length <= limiteLegado ? status : status[..limiteLegado];
         }
     }
 }

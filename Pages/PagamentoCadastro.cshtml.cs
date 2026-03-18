@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc; // Adicionado para JsonResult
@@ -44,7 +44,7 @@ namespace CorteCor.Pages
                     {
                         IdAgendamento = idAgendamento.Value,
                         Valor = servico?.Preco ?? 0,
-                        Descricao = servico != null ? $"Pagamento Ref. Serviço {servico.Nome}" : "",
+                        Descricao = servico != null ? $"Pagamento Ref. ServiÃ§o {servico.Nome}" : "",
                         Data = DateTime.Now,
                         NomeCliente = pessoa?.Nome,
                         NomeServico = servico?.Nome
@@ -63,7 +63,7 @@ namespace CorteCor.Pages
                 var servico = servicoHandler.ObterPorId(agendamento.IdServico);
                 if (servico != null)
                 {
-                    return new JsonResult(new { success = true, valor = servico.Preco, descricao = $"Pagamento Ref. Serviço {servico.Nome}" });
+                    return new JsonResult(new { success = true, valor = servico.Preco, descricao = $"Pagamento Ref. ServiÃ§o {servico.Nome}" });
                 }
             }
             return new JsonResult(new { success = false });
@@ -148,10 +148,10 @@ namespace CorteCor.Pages
                         var notaHandler = new NotaFiscalHandler(db);
 
                         var config = await configHandler.ObterPorSalaoAsync(idSalaoConfig);
-                        // Verifica se existe config fiscal para emissão e se a emissão automática está habilitada
+                        // Verifica se existe config fiscal para emissÃ£o e se a emissÃ£o automÃ¡tica estÃ¡ habilitada
                         if (config != null && config.EmissaoAutomatica)
                         {
-                            // Verifica se já não existe nota para este agendamento (previne duplicar)
+                            // Verifica se jÃ¡ nÃ£o existe nota para este agendamento (previne duplicar)
                             var notasExistentes = await notaHandler.ListarPorSalaoAsync(idSalaoConfig);
                             bool jaExiste = notasExistentes.Any(n => n.IdAgendamento == idAgendamento && n.Status != "Cancelada");
 
@@ -162,7 +162,7 @@ namespace CorteCor.Pages
                                     IdNotaFiscal = Guid.NewGuid(),
                                     IdSalao = idSalaoConfig,
                                     IdAgendamento = idAgendamento,
-                                    TipoNota = "NFS-e", // Padrão assumido para serviço de salão
+                                    TipoNota = "NFS-e", // PadrÃ£o assumido para serviÃ§o de salÃ£o
                                     Ambiente = config.Ambiente,
                                     Numero = 0, // A ser gerado pelo emissor fiscal
                                     Serie = 1,
@@ -173,14 +173,14 @@ namespace CorteCor.Pages
                                 };
 
                                 await notaHandler.InserirAsync(novaNota);
-                                Mensagem += " (Nota fiscal enfileirada para emissão automática!)";
+                                Mensagem += " (Nota fiscal enfileirada para emissÃ£o automÃ¡tica!)";
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        // Apenas logar, não deve quebrar a página de pagamento
-                        Console.WriteLine($"Erro ao gerar emissão fiscal automática: {ex.Message}");
+                        // Apenas logar, nÃ£o deve quebrar a pÃ¡gina de pagamento
+                        Console.WriteLine($"Erro ao gerar emissÃ£o fiscal automÃ¡tica: {ex.Message}");
                     }
                 }
             }
@@ -190,4 +190,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
 

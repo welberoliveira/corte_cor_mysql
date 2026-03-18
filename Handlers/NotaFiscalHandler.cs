@@ -42,6 +42,41 @@ namespace CorteCor.Handlers
             return notas;
         }
 
+        public async Task<NotaFiscal?> ObterPorChaveAsync(string chaveAcesso, int? idSalao = null)
+        {
+            // Tenta buscar tanto pela chave estadual quanto pela nacional (NFSe)
+            string query = @"
+                SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
+                       ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
+                       DataEmissao, DataAtualizacao
+                FROM CorteCor_NotaFiscal
+                WHERE (ChaveAcesso = @Chave OR ChaveAcessoNacional = @Chave)";
+
+            if (idSalao.HasValue)
+            {
+                query += " AND IdSalao = @IdSalao";
+            }
+
+            query += ";";
+
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@Chave", chaveAcesso);
+            if (idSalao.HasValue)
+            {
+                command.AddWithValue("@IdSalao", idSalao.Value);
+            }
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            if (reader.Read())
+            {
+                return MapFromReader(reader);
+            }
+
+            return null;
+        }
+
         public async Task<NotaFiscal?> ObterPorIdAsync(Guid idNotaFiscal, int idSalao)
         {
             string query = @"
@@ -164,6 +199,24 @@ namespace CorteCor.Handlers
             await Task.Run(() => command.ExecuteNonQuery());
         }
 
+        public async Task<int> ObterProximoNumeroAsync(int idSalao, string tipoNota, int serie, int ambiente)
+        {
+            string query = @"
+                SELECT ISNULL(MAX(Numero), 0) + 1
+                FROM CorteCor_NotaFiscal
+                WHERE IdSalao = @IdSalao AND TipoNota = @TipoNota AND Serie = @Serie AND Ambiente = @Ambiente;";
+
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@TipoNota", tipoNota);
+            command.AddWithValue("@Serie", serie);
+            command.AddWithValue("@Ambiente", ambiente);
+
+            var result = await Task.Run(() => command.ExecuteScalar());
+            return Convert.ToInt32(result);
+        }
+
         public async Task UpdateAsync(NotaFiscal nota)
         {
             string query = @"
@@ -193,5 +246,7 @@ namespace CorteCor.Handlers
 
             await Task.Run(() => command.ExecuteNonQuery());
         }
+
+        public async Task AtualizarAsync(NotaFiscal nota) => await UpdateAsync(nota);
     }
 }

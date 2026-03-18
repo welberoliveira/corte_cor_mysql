@@ -1,5 +1,6 @@
 @page
 @model CorteCor.Pages.Fiscal.NotaFiscalAvulsaModel
+@using CorteCor.Services
 @{
     ViewData["Title"] = "Nota Fiscal Avulsa Completa";
 }
@@ -10,10 +11,15 @@
             <h1><i class="bi bi-file-earmark-spreadsheet"></i> Nota Fiscal Avulsa</h1>
             <p class="text-muted">Emissão independente com todos os campos regulatórios</p>
         </div>
-        <div class="glass-card p-2 px-4">
-            <span class="badge @(Model.Input.Ambiente == 1 ? "bg-danger" : "bg-warning")">
-                <i class="bi bi-broadcast"></i> @(Model.Input.Ambiente == 1 ? "PRODUÇÃO" : "HOMOLOGAÇÃO")
-            </span>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="preencherDadosTesteNfseAvulsa()">
+                <i class="bi bi-magic"></i> Preencher Dados de Teste
+            </button>
+            <div class="glass-card p-2 px-4">
+                <span class="badge @(Model.Input.Ambiente == 1 ? "bg-danger" : "bg-warning")">
+                    <i class="bi bi-broadcast"></i> @(Model.Input.Ambiente == 1 ? "PRODUÇÃO" : "HOMOLOGAÇÃO")
+                </span>
+            </div>
         </div>
     </div>
 
@@ -22,6 +28,14 @@
         <div class="alert alert-@Model.MensagemTipo alert-dismissible fade show animate__animated animate__shakeX" role="alert">
             <i class="bi bi-info-circle-fill me-2"></i> @Model.Mensagem
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-warning">
+            <div class="fw-semibold mb-1">Revise os campos obrigatórios antes de emitir.</div>
+            <div asp-validation-summary="ModelOnly" class="mb-0"></div>
         </div>
     }
 
@@ -44,19 +58,36 @@
                         </div>
                          <div class="d-flex flex-column align-items-end gap-2">
                             <div class="d-flex gap-2">
-                                @if (!string.IsNullOrEmpty(Model.XmlRetorno))
+                                 @if (!string.IsNullOrEmpty(Model.XmlRetorno))
                                 {
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="downloadXml('retorno')">
-                                        <i class="bi bi-download"></i> Baixar XML Retorno
-                                    </button>
-                                    <textarea id="xmlRetornoContent" style="display:none">@Model.XmlRetorno</textarea>
+                                    <form method="post" asp-page-handler="DownloadXmlDb" class="d-inline">
+                                        <input type="hidden" name="chaveAcesso" value="@Model.ChaveAcesso" />
+                                        <input type="hidden" name="tipo" value="retorno" />
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-download"></i> Baixar XML Retorno
+                                        </button>
+                                    </form>
                                 }
                                 @if (!string.IsNullOrEmpty(Model.XmlEnvio))
                                 {
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick="downloadXml('envio')">
-                                        <i class="bi bi-code-slash"></i> XML Envio
-                                    </button>
-                                    <textarea id="xmlEnvioContent" style="display:none">@Model.XmlEnvio</textarea>
+                                    <form method="post" asp-page-handler="DownloadXmlDb" class="d-inline">
+                                        <input type="hidden" name="chaveAcesso" value="@Model.ChaveAcesso" />
+                                        <input type="hidden" name="tipo" value="envio" />
+                                        <button type="submit" class="btn btn-secondary btn-sm">
+                                            <i class="bi bi-code-slash"></i> XML Envio
+                                        </button>
+                                    </form>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.ChaveAcesso) && !string.IsNullOrEmpty(Model.Input.DestinatarioEmail))
+                                {
+                                    <form method="post" asp-page-handler="EnviarEmail" class="d-inline">
+                                        <input type="hidden" name="chaveAcesso" value="@Model.ChaveAcesso" />
+                                        <input type="hidden" name="emailDestino" value="@Model.Input.DestinatarioEmail" />
+                                        <input type="hidden" name="nomeDestino" value="@Model.Input.DestinatarioNome" />
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="bi bi-envelope"></i> Enviar E-mail
+                                        </button>
+                                    </form>
                                 }
                             </div>
                             
@@ -68,13 +99,55 @@
                                     <button class="btn btn-secondary" type="button" onclick="copyChave()">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
-                                    <button type="submit" asp-page-handler="Consultar" class="btn btn-primary">
+                                     <button type="submit" asp-page-handler="Consultar" class="btn btn-primary">
                                         <i class="bi bi-search"></i> Consultar Status SEFAZ
                                     </button>
+                                    @if (Model.RetornoResumoAtual?.PodeCancelar == true)
+                                    {
+                                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+                                            <i class="bi bi-x-circle"></i> Cancelar Nota
+                                        </button>
+                                    }
                                 </div>
                             }
                         </div>
                     </div>
+                    @if (Model.RetornoResumoAtual != null)
+                    {
+                        <hr class="my-3" />
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="border rounded-3 p-3 h-100 bg-light">
+                                    <div class="small text-muted">Status fiscal</div>
+                                    <div class="fw-semibold">@Model.RetornoResumoAtual.StatusFiscal</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded-3 p-3 h-100 bg-light">
+                                    <div class="small text-muted">Codigo</div>
+                                    <div class="fw-semibold">@(Model.RetornoResumoAtual.CodigoStatus ?? "-")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded-3 p-3 h-100 bg-light">
+                                    <div class="small text-muted">Protocolo</div>
+                                    <div class="fw-semibold text-break">@(Model.RetornoResumoAtual.Protocolo ?? "-")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded-3 p-3 h-100 bg-light">
+                                    <div class="small text-muted">Situacao operacional</div>
+                                    <div class="fw-semibold">@(Model.RetornoResumoAtual.OperacaoConcluida ? "Concluida" : "Pendente de analise")</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="border rounded-3 p-3 bg-light">
+                                    <div class="small text-muted mb-1">Mensagem retornada pelo provedor fiscal</div>
+                                    <div>@(Model.RetornoResumoAtual.MensagemRetorno ?? "Sem detalhe textual adicional no retorno.")</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -148,7 +221,7 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label asp-for="Input.Modelo" class="form-label"></label>
-                                    <select asp-for="Input.Modelo" class="form-select">
+                                    <select asp-for="Input.Modelo" class="form-select" onchange="this.form.submit()">
                                         @foreach (var mod in Model.ModelosList)
                                         {
                                             <option value="@mod.Value">@mod.Text</option>
@@ -157,7 +230,7 @@
                                 </div>
                                 <div class="col-md-8">
                                     <label asp-for="Input.NaturezaOperacao" class="form-label"></label>
-                                    <select asp-for="Input.NaturezaOperacao" class="form-select">
+                                    <select asp-for="Input.NaturezaOperacao" class="form-select" onchange="this.form.submit()">
                                         @foreach (var nat in Model.NaturezasList)
                                         {
                                             <option value="@nat">@nat</option>
@@ -335,7 +408,7 @@
                             <span class="text-muted small">Total da Nota:</span>
                             <span class="fs-4 fw-bold text-primary ms-2" id="totalNotaValue">R$ 0,00</span>
                         </div>
-                        <button type="submit" class="btn btn-primary pulse-button px-5">
+                        <button type="submit" name="btnEmitir" value="1" class="btn btn-primary pulse-button px-5">
                             <i class="bi bi-send-check-fill me-2"></i> Emitir Nota Fiscal
                         </button>
                     </div>
@@ -343,6 +416,295 @@
             </div>
         </div>
     </form>
+
+    <!-- Histórico de Notas (Fase 7) -->
+    <div class="mt-5 animate__animated animate__fadeInUp">
+        <ul class="nav nav-tabs mb-3" id="fiscalTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="notas-tab" data-bs-toggle="tab" data-bs-target="#notas" type="button" role="tab" aria-selected="true">
+                    <i class="bi bi-clock-history"></i> Notas Recentes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="inut-tab" data-bs-toggle="tab" data-bs-target="#inut" type="button" role="tab" aria-selected="false">
+                    <i class="bi bi-slash-circle"></i> Inutilizações
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="fiscalTabsContent">
+            <div class="tab-pane fade show active" id="notas" role="tabpanel">
+                <div class="glass-card">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle custom-table">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Tipo</th>
+                                    <th>Número/Série</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var nota in Model.NotasEmitidas)
+                                {
+                                    var acoes = NotaFiscalAvulsaService.ObterAcoesDisponiveis(nota);
+                                    <tr>
+                                        <td class="small">@nota.DataEmissao.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <span class="badge bg-secondary">@nota.TipoNota</span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">@nota.Numero</div>
+                                            <div class="text-muted small">Série @nota.Serie</div>
+                                        </td>
+                                        <td class="fw-bold">@nota.ValorTotal.ToString("C")</td>
+                                        <td>
+                                            <span class="badge @acoes.ClasseStatus">@nota.Status</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex gap-1 justify-content-end">
+                                                <form method="post" asp-page-handler="Consultar" class="d-inline">
+                                                    <input type="hidden" name="ChaveAcesso" value="@acoes.ChaveFiscal" />
+                                                    <button type="submit" class="btn btn-outline-primary btn-sm" title="Consultar Status">
+                                                        <i class="bi bi-search"></i>
+                                                    </button>
+                                                </form>
+
+                                                <form method="post" asp-page-handler="VerHistorico" class="d-inline">
+                                                    <input type="hidden" name="ChaveAcesso" value="@acoes.ChaveFiscal" />
+                                                    <button type="submit" class="btn btn-outline-dark btn-sm" title="Ver Histórico">
+                                                        <i class="bi bi-clock-history"></i>
+                                                    </button>
+                                                </form>
+
+                                                @if (acoes.PodeBaixarXml)
+                                                {
+                                                    <form method="post" asp-page-handler="DownloadXmlDb" class="d-inline">
+                                                        <input type="hidden" name="chaveAcesso" value="@acoes.ChaveFiscal" />
+                                                        <input type="hidden" name="tipo" value="@acoes.TipoXmlPreferencial" />
+                                                        <button type="submit" class="btn btn-outline-secondary btn-sm" title="Baixar XML">
+                                                            <i class="bi bi-file-earmark-code"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                @if (acoes.PodeGerarPdf)
+                                                {
+                                                    <form method="post" asp-page-handler="GerarPdf" class="d-inline">
+                                                        <input type="hidden" name="chaveAcesso" value="@acoes.ChaveFiscal" />
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Baixar PDF">
+                                                            <i class="bi bi-file-pdf"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                @if (acoes.PodeCancelar)
+                                                {
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                            data-bs-toggle="modal" data-bs-target="#modalCancelar"
+                                                            onclick="document.getElementById('chaveCancelarInput').value='@acoes.ChaveFiscal'; document.getElementById('chaveCancelarDisplay').value='@acoes.ChaveFiscal';">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                }
+
+                                                @if (acoes.PodeCartaCorrecao)
+                                                {
+                                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                                            title="Carta de Correcao"
+                                                            data-bs-toggle="modal" data-bs-target="#modalCorrecao"
+                                                            onclick="document.getElementById('chaveCorrecaoInput').value='@acoes.ChaveFiscal'; document.getElementById('chaveCorrecaoDisplay').value='@acoes.ChaveFiscal';">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                    </button>
+                                                }
+
+                                                @if (acoes.PodeEnviarEmail)
+                                                {
+                                                    <button type="button" class="btn btn-outline-success btn-sm"
+                                                            title="Enviar por E-mail"
+                                                            data-bs-toggle="modal" data-bs-target="#modalEmailNota"
+                                                            onclick="document.getElementById('chaveEmailInput').value='@acoes.ChaveFiscal'; document.getElementById('nomeEmailDisplay').value=''; document.getElementById('emailDestinoInput').value='';">
+                                                        <i class="bi bi-envelope"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (Model.NotasEmitidas.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">Nenhuma nota encontrada no histórico local.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.NotaHistoricoSelecionada != null)
+            {
+                <div class="mt-4" id="historico-nota-detalhe">
+                    <div class="glass-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1">Histórico da Nota @Model.NotaHistoricoSelecionada.Numero</h5>
+                                <div class="small text-muted">
+                                    @Model.NotaHistoricoSelecionada.TipoNota | Série @Model.NotaHistoricoSelecionada.Serie | Status @Model.NotaHistoricoSelecionada.Status
+                                </div>
+                            </div>
+                            <div class="small font-monospace text-muted">@((Model.NotaHistoricoSelecionada.ChaveAcesso ?? Model.NotaHistoricoSelecionada.ChaveAcessoNacional) ?? "-")</div>
+                        </div>
+
+                        @if (Model.RetornoResumoHistorico != null)
+                        {
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <div class="border rounded-3 p-3 h-100 bg-light">
+                                        <div class="small text-muted">Codigo SEFAZ/Prefeitura</div>
+                                        <div class="fw-semibold">@(Model.RetornoResumoHistorico.CodigoStatus ?? "-")</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded-3 p-3 h-100 bg-light">
+                                        <div class="small text-muted">Protocolo atual</div>
+                                        <div class="fw-semibold text-break">@(Model.RetornoResumoHistorico.Protocolo ?? "-")</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded-3 p-3 h-100 bg-light">
+                                        <div class="small text-muted">Chave vinculada</div>
+                                        <div class="fw-semibold text-break">@(Model.RetornoResumoHistorico.ChaveAcesso ?? "-")</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded-3 p-3 h-100 bg-light">
+                                        <div class="small text-muted">Operacao</div>
+                                        <div class="fw-semibold">@(Model.RetornoResumoHistorico.OperacaoConcluida ? "Concluida" : "Exige revisao")</div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="border rounded-3 p-3 bg-light">
+                                        <div class="small text-muted mb-1">Resumo do retorno tecnico</div>
+                                        <div>@(Model.RetornoResumoHistorico.MensagemRetorno ?? "Sem mensagem textual registrada para esta nota.")</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row g-4">
+                            <div class="col-md-5">
+                                <h6 class="mb-2">Eventos Fiscais</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover custom-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Data</th>
+                                                <th>Evento</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var evento in Model.EventosHistorico)
+                                            {
+                                                <tr>
+                                                    <td class="small">@evento.DataRegistro.ToString("dd/MM/yyyy HH:mm")</td>
+                                                    <td class="small">@evento.TipoEvento</td>
+                                                    <td class="small">@evento.Status</td>
+                                                </tr>
+                                            }
+                                            @if (Model.EventosHistorico.Count == 0)
+                                            {
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-muted small py-3">Nenhum evento fiscal registrado.</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="col-md-7">
+                                <h6 class="mb-2">Logs Técnicos</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover custom-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Data</th>
+                                                <th>Etapa</th>
+                                                <th>Mensagem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var log in Model.LogsHistorico)
+                                            {
+                                                <tr>
+                                                    <td class="small">@log.DataHora.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                                    <td class="small">@log.TipoEvento</td>
+                                                    <td class="small">@(string.IsNullOrWhiteSpace(log.Mensagem) ? "-" : log.Mensagem)</td>
+                                                </tr>
+                                            }
+                                            @if (Model.LogsHistorico.Count == 0)
+                                            {
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-muted small py-3">Nenhum log técnico registrado para esta nota.</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="tab-pane fade" id="inut" role="tabpanel">
+                <div class="glass-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Histórico de Inutilizações (NF-e/NFC-e)</h5>
+                        <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalInutilizar">
+                            <i class="bi bi-slash-circle"></i> Nova Inutilização
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Modelo/Série</th>
+                                    <th>Faixa</th>
+                                    <th>Status</th>
+                                    <th>Protocolo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var inut in Model.Inutilizacoes)
+                                {
+                                    <tr>
+                                        <td>@inut.DataInutilizacao.ToString("dd/MM/yyyy")</td>
+                                        <td>@inut.Modelo (Série @inut.Serie)</td>
+                                        <td>@inut.NumeroInicial - @inut.NumeroFinal</td>
+                                        <td><span class="badge @(inut.Status.Contains("102") ? "bg-success" : "bg-danger")">@inut.Status</span></td>
+                                        <td class="small font-monospace">@inut.Protocolo</td>
+                                    </tr>
+                                }
+                                @if (Model.Inutilizacoes.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">Nenhuma inutilização registrada.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Styles {
@@ -473,6 +835,8 @@
                 $("#totalNotaValue").text("R$ " + grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
             }
 
+            window.calculateTotals = calculateTotals;
+
             // Bind calculation to inputs
             $(document).on("input", ".qty-input, .price-input", calculateTotals);
 
@@ -548,5 +912,251 @@
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         }
+
+        function preencherDadosTesteNfseAvulsa() {
+            const setFieldValue = (field, value, options = {}) => {
+                if (!field) {
+                    return;
+                }
+
+                field.value = value;
+
+                if (options.triggerInput !== false) {
+                    field.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+
+                if (options.triggerChange) {
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            };
+
+            const setValue = (selector, value, options = {}) => {
+                const field = document.querySelector(selector);
+                if (!field) {
+                    return;
+                }
+
+                setFieldValue(field, value, options);
+            };
+
+            const setIfEmpty = (selector, value) => {
+                const field = document.querySelector(selector);
+                if (!field || (field.value && field.value.trim() !== '')) {
+                    return;
+                }
+
+                setValue(selector, value);
+            };
+
+            const setFirst = (selectors, value, options = {}) => {
+                for (const selector of selectors) {
+                    const field = document.querySelector(selector);
+                    if (field) {
+                        setFieldValue(field, value, options);
+                        return;
+                    }
+                }
+            };
+
+            setFirst(['#Input_Ambiente', 'select[name="Input.Ambiente"]'], '2');
+            // Estes selects possuem onchange com submit automatico, entao nao disparamos change aqui.
+            setFirst(['#Input_Modelo', 'select[name="Input.Modelo"]'], 'NFSE', { triggerChange: false });
+            setFirst(['#Input_NaturezaOperacao', 'select[name="Input.NaturezaOperacao"]'], 'Prestacao de servico', { triggerChange: false });
+            setFirst(['#Input_Serie', 'input[name="Input.Serie"]'], '1');
+            setIfEmpty('#Input_Numero', '1');
+            setIfEmpty('input[name="Input.Numero"]', '1');
+
+            const dataEmissaoField = document.querySelector('#Input_DataEmissao') ?? document.querySelector('input[name="Input.DataEmissao"]');
+            if (dataEmissaoField && !dataEmissaoField.value) {
+                const serverValue = dataEmissaoField.getAttribute('value');
+                if (serverValue) {
+                    setFieldValue(dataEmissaoField, serverValue, { triggerChange: false });
+                }
+            }
+
+            setFirst(['#Input_EmitenteNome', 'input[name="Input.EmitenteNome"]'], 'TONNI TECNOLOGIA LTDA');
+            setFirst(['#Input_EmitenteCnpj', 'input[name="Input.EmitenteCnpj"]'], '49358717000107');
+            setFirst(['#Input_EmitenteIM', 'input[name="Input.EmitenteIM"]'], '101477');
+            setFirst(['#Input_EmitenteCRT', 'select[name="Input.EmitenteCRT"]'], '1');
+            setFirst(['#Input_EmitenteLogradouro', 'input[name="Input.EmitenteLogradouro"]'], 'M II');
+            setFirst(['#Input_EmitenteNumero', 'input[name="Input.EmitenteNumero"]'], '601');
+            setFirst(['#Input_EmitenteBairro', 'input[name="Input.EmitenteBairro"]'], 'SAO GERALDO II');
+            setFirst(['#Input_EmitenteCidade', 'input[name="Input.EmitenteCidade"]'], 'Montes Claros');
+            setFirst(['#Input_EmitenteUF', 'input[name="Input.EmitenteUF"]'], 'MG');
+            setFirst(['#Input_EmitenteCodMun', 'select[name="Input.EmitenteCodMun"]'], '3143302');
+
+            setFirst(['#Input_DestinatarioNome', 'input[name="Input.DestinatarioNome"]'], 'JEANE FERREIRA DA SILVA');
+            setFirst(['#Input_DestinatarioCpfCnpj', 'input[name="Input.DestinatarioCpfCnpj"]'], '05528366640');
+            setFirst(['#Input_DestinatarioLogradouro', 'input[name="Input.DestinatarioLogradouro"]'], 'rua joaquim pereira');
+            setFirst(['#Input_DestinatarioNumero', 'input[name="Input.DestinatarioNumero"]'], '521');
+            setFirst(['#Input_DestinatarioBairro', 'input[name="Input.DestinatarioBairro"]'], 'Santa Rita');
+            setFirst(['#Input_DestinatarioCidade', 'input[name="Input.DestinatarioCidade"]'], 'Montes Claros');
+            setFirst(['#Input_DestinatarioUF', 'input[name="Input.DestinatarioUF"]'], 'MG');
+            setFirst(['#Input_DestinatarioCodMun', 'select[name="Input.DestinatarioCodMun"]'], '3143302');
+            setFirst(['#Input_DestinatarioEmail', 'input[name="Input.DestinatarioEmail"]'], 'welberoliveira3@gmail.com');
+
+            setValue('input[name="Input.Itens[0].CProd"]', '1');
+            setValue('input[name="Input.Itens[0].XProd"]', 'Licenciamento de software em homologacao');
+            setValue('input[name="Input.Itens[0].NCM"]', '00');
+            setValue('input[name="Input.Itens[0].CodigoTributacao"]', '010501');
+            setValue('input[name="Input.Itens[0].AliquotaISS"]', '5');
+            setValue('input[name="Input.Itens[0].qCom"]', '1');
+            setValue('input[name="Input.Itens[0].vUnCom"]', '100');
+            setValue('input[name="Input.Itens[0].vProd"]', '100.00');
+
+            if (typeof window.calculateTotals === 'function') {
+                window.calculateTotals();
+            }
+
+            const firstTabButton = document.getElementById('ident-tab');
+            if (firstTabButton && window.bootstrap?.Tab) {
+                window.bootstrap.Tab.getOrCreateInstance(firstTabButton).show();
+            }
+        }
     </script>
 }
+
+<!-- Modal Cancelamento -->
+<div class="modal fade" id="modalCancelar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-x-circle-fill me-2"></i> Cancelar Nota Fiscal</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Cancelar">
+                <div class="modal-body">
+                    <input type="hidden" name="ChaveAcesso" id="chaveCancelarInput" value="@Model.ChaveAcesso" />
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle"></i> Atenção: O cancelamento é irreversível após autorizado pela SEFAZ.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chave de Acesso</label>
+                        <input type="text" id="chaveCancelarDisplay" class="form-control font-monospace bg-light" value="@Model.ChaveAcesso" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Justificativa (Mínimo 15 caracteres)</label>
+                        <textarea name="Justificativa" class="form-control" rows="3" required minlength="15" placeholder="Ex: Erro no preenchimento dos valores dos itens ou dados do destinatário."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Cancelamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Inutilização -->
+<!-- Modal Envio de E-mail -->
+<div class="modal fade" id="modalEmailNota" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-envelope-fill me-2"></i> Enviar Nota por E-mail</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="EnviarEmail">
+                <div class="modal-body">
+                    <input type="hidden" name="ChaveAcesso" id="chaveEmailInput" value="@Model.ChaveAcesso" />
+                    <div class="mb-3">
+                        <label class="form-label">Nome do destinatario</label>
+                        <input type="text" class="form-control" name="nomeDestino" id="nomeEmailDisplay" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail do destinatario</label>
+                        <input type="email" class="form-control" name="emailDestino" id="emailDestinoInput" required />
+                        <div class="form-text">O envio anexara o PDF e os XMLs disponiveis da nota.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-success">Enviar E-mail</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalInutilizar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-slash-circle me-2"></i> Inutilizar Faixa de Números</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Inutilizar">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ano</label>
+                            <input type="number" name="ano" class="form-control" value="@DateTime.Now.Year" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Série</label>
+                            <input type="number" name="serie" class="form-control" value="@Model.Input.Serie" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Modelo</label>
+                            <select name="tipoNota" class="form-select">
+                                <option value="NF-e">55 - NF-e</option>
+                                <option value="NFC-e">65 - NFC-e</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nº Inicial</label>
+                            <input type="number" name="numInicial" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nº Final</label>
+                            <input type="number" name="numFinal" class="form-control" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Justificativa (Mín. 15 caracteres)</label>
+                            <textarea name="justificativa" class="form-control" rows="3" required minlength="15" placeholder="Ex: Erro de sequência no software ou salto de numeração."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-warning">Enviar Inutilização</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Carta de Correção -->
+<div class="modal fade" id="modalCorrecao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i> Carta de Correção (CC-e)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="CartaCorrecao">
+                <div class="modal-body">
+                    <input type="hidden" name="ChaveAcesso" id="chaveCorrecaoInput" />
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle"></i> Use para corrigir erros leves (ex: descrição, CFOP, dados cadastrais). Não pode corrigir valores, impostos ou destinatário.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chave de Acesso</label>
+                        <input type="text" id="chaveCorrecaoDisplay" class="form-control font-monospace bg-light" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Texto da Correção (Mínimo 15 caracteres)</label>
+                        <textarea name="textoCorrecao" class="form-control" rows="4" required minlength="15" placeholder="Descreva detalhadamente o que está sendo corrigido."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-info">Enviar Correção</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

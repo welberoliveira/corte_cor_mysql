@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Threading.Tasks;
 using CorteCor.Models;
 
@@ -20,11 +19,11 @@ namespace CorteCor.Handlers
         {
             string query = @"
                 INSERT INTO CorteCor_NotaFiscalInutilizacao (
-                    IdInutilizacao, IdSalao, Ano, Modelo, Serie, NumeroInicial, NumeroFinal, 
-                    Justificativa, Status, Protocolo, XmlRetorno, DataInutilizacao
+                    IdInutilizacao, IdSalao, Ano, Serie, NumeroInicial, NumeroFinal, TipoNota, 
+                    Justificativa, Protocolo, XmlEnvio, XmlRetorno, Status, DataInutilizacao
                 ) VALUES (
-                    @IdInutilizacao, @IdSalao, @Ano, @Modelo, @Serie, @NumeroInicial, @NumeroFinal, 
-                    @Justificativa, @Status, @Protocolo, @XmlRetorno, @DataInutilizacao
+                    @IdInutilizacao, @IdSalao, @Ano, @Serie, @NumeroInicial, @NumeroFinal, @TipoNota, 
+                    @Justificativa, @Protocolo, @XmlEnvio, @XmlRetorno, @Status, @DataInutilizacao
                 );";
 
             using var connection = _dbHandler.GetConnection();
@@ -36,14 +35,15 @@ namespace CorteCor.Handlers
             command.AddWithValue("@IdInutilizacao", inut.IdInutilizacao);
             command.AddWithValue("@IdSalao", inut.IdSalao);
             command.AddWithValue("@Ano", inut.Ano);
-            command.AddWithValue("@Modelo", inut.Modelo);
             command.AddWithValue("@Serie", inut.Serie);
             command.AddWithValue("@NumeroInicial", inut.NumeroInicial);
             command.AddWithValue("@NumeroFinal", inut.NumeroFinal);
+            command.AddWithValue("@TipoNota", (inut.Modelo == 55 ? "NF-e" : "NFC-e"));
             command.AddWithValue("@Justificativa", inut.Justificativa);
-            command.AddWithValue("@Status", inut.Status);
             command.AddWithValue("@Protocolo", inut.Protocolo ?? (object)DBNull.Value);
+            command.AddWithValue("@XmlEnvio", (object)DBNull.Value); // Não salvamos o XML de envio separadamente se preferir, mas está na tabela
             command.AddWithValue("@XmlRetorno", inut.XmlRetorno ?? (object)DBNull.Value);
+            command.AddWithValue("@Status", inut.Status ?? "");
             command.AddWithValue("@DataInutilizacao", inut.DataInutilizacao == default ? DateTime.Now : inut.DataInutilizacao);
 
             await Task.Run(() => command.ExecuteNonQuery());
@@ -52,13 +52,7 @@ namespace CorteCor.Handlers
         public async Task<List<NotaFiscalInutilizacao>> ListarPorSalaoAsync(int idSalao)
         {
             var lista = new List<NotaFiscalInutilizacao>();
-
-            string query = @"
-                SELECT IdInutilizacao, IdSalao, Ano, Modelo, Serie, NumeroInicial, NumeroFinal, 
-                       Justificativa, Status, Protocolo, XmlRetorno, DataInutilizacao
-                FROM CorteCor_NotaFiscalInutilizacao
-                WHERE IdSalao = @IdSalao
-                ORDER BY DataInutilizacao DESC;";
+            string query = "SELECT * FROM CorteCor_NotaFiscalInutilizacao WHERE IdSalao = @IdSalao ORDER BY DataInutilizacao DESC";
 
             using var connection = _dbHandler.GetConnection();
             using var command = connection.CreateCommand(query);
@@ -72,18 +66,17 @@ namespace CorteCor.Handlers
                     IdInutilizacao = Guid.Parse(reader["IdInutilizacao"].ToString()),
                     IdSalao = Convert.ToInt32(reader["IdSalao"]),
                     Ano = Convert.ToInt32(reader["Ano"]),
-                    Modelo = Convert.ToInt32(reader["Modelo"]),
                     Serie = Convert.ToInt32(reader["Serie"]),
                     NumeroInicial = Convert.ToInt32(reader["NumeroInicial"]),
                     NumeroFinal = Convert.ToInt32(reader["NumeroFinal"]),
+                    Modelo = reader["TipoNota"].ToString() == "NF-e" ? 55 : 65,
                     Justificativa = reader["Justificativa"].ToString(),
-                    Status = reader["Status"].ToString(),
-                    Protocolo = reader["Protocolo"] is DBNull ? null : reader["Protocolo"].ToString(),
-                    XmlRetorno = reader["XmlRetorno"] is DBNull ? null : reader["XmlRetorno"].ToString(),
+                    Protocolo = reader["Protocolo"]?.ToString(),
+                    XmlRetorno = reader["XmlRetorno"]?.ToString(),
+                    Status = reader["Status"]?.ToString(),
                     DataInutilizacao = Convert.ToDateTime(reader["DataInutilizacao"])
                 });
             }
-
             return lista;
         }
     }

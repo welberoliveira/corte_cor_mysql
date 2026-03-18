@@ -85,12 +85,9 @@
                                                         </button>
                                                     </form>
 
-                                                    <form method="post" asp-page-handler="EnviarEmail" style="display:inline;">
-                                                        <input type="hidden" name="idNota" value="@nota.IdNotaFiscal" />
-                                                        <button type="submit" class="btn btn-sm btn-success" title="Enviar por E-mail">
-                                                            <i class="bi bi-envelope"></i> E-mail
-                                                        </button>
-                                                    </form>
+                                                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#emailModal-@nota.IdNotaFiscal" title="Enviar por E-mail">
+                                                        <i class="bi bi-envelope"></i> E-mail
+                                                    </button>
 
                                                     <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#cancelModal-@nota.IdNotaFiscal" title="Cancelar Nota">
                                                         <i class="bi bi-x-circle"></i> Cancelar
@@ -128,6 +125,36 @@
                                                   <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                                                     <button type="submit" class="btn btn-danger">Confirmar Cancelamento</button>
+                                                  </div>
+                                              </form>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <!-- Modal Envio de Email -->
+                                        <div class="modal fade" id="emailModal-@nota.IdNotaFiscal" tabindex="-1" aria-labelledby="emailModalLabel-@nota.IdNotaFiscal" aria-hidden="true">
+                                          <div class="modal-dialog">
+                                            <div class="modal-content">
+                                              <form method="post" asp-page-handler="EnviarEmail">
+                                                  <div class="modal-header">
+                                                    <h5 class="modal-title" id="emailModalLabel-@nota.IdNotaFiscal">Enviar Nota @nota.Numero por E-mail</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                  </div>
+                                                  <div class="modal-body">
+                                                    <input type="hidden" name="idNota" value="@nota.IdNotaFiscal" />
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-start d-block">Nome do destinatario</label>
+                                                        <input class="form-control" name="nomeDestino" value="" />
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-start d-block">E-mail do destinatario</label>
+                                                        <input class="form-control" name="emailDestino" type="email" required />
+                                                        <div class="form-text">O envio anexara o PDF e os XMLs disponiveis da nota.</div>
+                                                    </div>
+                                                  </div>
+                                                  <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                                    <button type="submit" class="btn btn-success">Enviar E-mail</button>
                                                   </div>
                                               </form>
                                             </div>

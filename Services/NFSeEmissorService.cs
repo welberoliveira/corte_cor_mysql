@@ -25,11 +25,11 @@ namespace CorteCor.Services
             _logHandler = logHandler;
         }
 
-        public async Task<RetornoEmissaoDto> EmitirNFSeAsync(SalaoConfigFiscal config, object xmlBuilderNfse, int? idAgendamento)
+        public async Task<RetornoEmissaoDto> EmitirNFSeAsync(SalaoConfigFiscal config, object xmlBuilderNfse, int? idAgendamento, Guid? idNotaFiscal = null)
         {
             var retorno = new RetornoEmissaoDto { Autorizada = false };
             string xmlEnvio = "";
-            var nfseLogId = Guid.NewGuid();
+            var nfseLogId = idNotaFiscal ?? Guid.NewGuid();
 
             try
             {
@@ -98,7 +98,9 @@ namespace CorteCor.Services
                         
                         retorno.Autorizada = true;
                         retorno.Motivo = "NFS-e Nacional emitido com sucesso na PGN.";
-                        retorno.Protocolo = $"CHAVE: {chave} | NUM: {nfseNum}";
+                        retorno.ChaveAcesso = chave == "-" ? null : chave;
+                        retorno.NumeroDocumentoFiscal = nfseNum == "-" ? null : nfseNum;
+                        retorno.Protocolo = retorno.ChaveAcesso ?? retorno.NumeroDocumentoFiscal ?? "Autorizada";
                         retorno.XmlEnvio = xmlEnvio;
                         retorno.XmlRetorno = xmlStringRetorno;
                         await _logHandler.LogarEtapaAsync(config.IdSalao, idAgendamento, nfseLogId, "Retorno PGN Sucesso", $"Emissão Efetuada. {retorno.Protocolo}", xmlStringRetorno);

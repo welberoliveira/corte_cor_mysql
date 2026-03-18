@@ -8,7 +8,7 @@ namespace CorteCor.Services
 {
     public class FiscalBuilderService
     {
-        public NFe MontarNFCe(SalaoConfigFiscal config, Pessoa cliente, CorteCor.Models.Servico servico, Agendamento agendamento)
+        public NFe MontarNFCe(SalaoConfigFiscal config, Pessoa cliente, CorteCor.Models.Servico servico, Agendamento agendamento, int? serie = null, int? numero = null)
         {
             var infNfe = new InfNFe
             {
@@ -18,8 +18,8 @@ namespace CorteCor.Services
                     CUF = (UFBrasil)config.CodigoUFIBGE,
                     NatOp = "Venda Presencial", // Definimento base de NFC-e
                     Mod = ModeloDFe.NFCe,
-                    Serie = config.SerieNFCe,
-                    NNF = config.NumeroNFCe, 
+                    Serie = serie ?? config.SerieNFCe,
+                    NNF = numero ?? config.NumeroNFCe, 
                     DhEmi = DateTime.Now,
                     TpNF = TipoOperacao.Saida,
                     IdDest = DestinoOperacao.OperacaoInterna,
@@ -108,7 +108,7 @@ namespace CorteCor.Services
             return nfe;
         }
 
-        public object MontarNFSe(SalaoConfigFiscal config, Pessoa cliente, CorteCor.Models.Servico servico, Agendamento agendamento)
+        public object MontarNFSe(SalaoConfigFiscal config, Pessoa cliente, CorteCor.Models.Servico servico, Agendamento agendamento, int? serie = null, int? numero = null)
         {
             // Montar o Id conforme padrão TSIdDPS do XSD Nacional:
             // DPS (3) + cMunEmi (7) + tpInscFed (1 = 1:CPF, 2:CNPJ) + cpfCnpj (14 padded) + serie (5) + nDPS (15)
@@ -116,8 +116,8 @@ namespace CorteCor.Services
             string cnpjLimpo = (config.Cnpj ?? "").Replace(".", "").Replace("/", "").Replace("-", "");
             string tpInscFed = cnpjLimpo.Length <= 11 ? "1" : "2";
             string cpfCnpjPadded = cnpjLimpo.PadLeft(14, '0');
-            string serieDPS = config.SerieNFSe.ToString().PadLeft(5, '0'); 
-            string numeroDPS = config.NumeroNFSe.ToString(); 
+            string serieDPS = (serie ?? config.SerieNFSe).ToString().PadLeft(5, '0'); 
+            string numeroDPS = (numero ?? config.NumeroNFSe).ToString(); 
             string idDPS = $"DPS{config.CodigoMunicipioIBGE.ToString().PadLeft(7, '0')}{tpInscFed}{cpfCnpjPadded}{serieDPS}{numeroDPS.PadLeft(15, '0')}";
 
             var dps = new Unimake.Business.DFe.Xml.NFSe.NACIONAL.DPS

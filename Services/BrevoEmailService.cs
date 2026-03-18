@@ -12,6 +12,13 @@ using System.Linq;
 
 namespace CorteCor.Services
 {
+    public class EmailAttachment
+    {
+        public string Name { get; set; } = string.Empty;
+        public byte[] Content { get; set; } = Array.Empty<byte>();
+        public string ContentType { get; set; } = "application/octet-stream";
+    }
+
     public class BrevoEmailService
     {
         private readonly HttpClient _httpClient;
@@ -96,28 +103,51 @@ namespace CorteCor.Services
 
         public virtual async Task<(bool Success, string ErrorMessage)> EnviarEmailGenericoAsync(string emailDestino, string nomeDestino, string assunto, string corpoHtml)
         {
+            return await EnviarEmailComAnexosAsync(emailDestino, nomeDestino, assunto, corpoHtml, null);
+        }
+
+        public virtual async Task<(bool Success, string ErrorMessage)> EnviarEmailComAnexosAsync(
+            string emailDestino,
+            string nomeDestino,
+            string assunto,
+            string corpoHtml,
+            IEnumerable<EmailAttachment>? anexos)
+        {
             var fornecedor = _fornecedoresHandler.ObterEmailAtivo();
-            if (fornecedor == null || fornecedor.Nome != "Brevo")
+            if (fornecedor == null || !fornecedor.Nome.Equals("Brevo", StringComparison.OrdinalIgnoreCase))
             {
                 return (false, "Brevo is not the active email provider or doesn't exist.");
             }
-            string apiKeyEmail = fornecedor.ApiKey;
 
             try
             {
+                var attachments = anexos?
+                    .Where(a => a != null && !string.IsNullOrWhiteSpace(a.Name) && a.Content.Length > 0)
+                    .Select(a => new
+                    {
+                        name = a.Name,
+                        content = Convert.ToBase64String(a.Content)
+                    })
+                    .ToArray();
+
                 var payload = new
                 {
-                    sender = new { name = "CorteCor", email = "no-reply@cortecor.com.br" },
+                    sender = new
+                    {
+                        name = string.IsNullOrWhiteSpace(fornecedor.RemetenteNome) ? "CorteCor" : fornecedor.RemetenteNome,
+                        email = string.IsNullOrWhiteSpace(fornecedor.RemetenteEmail) ? "no-reply@cortecor.com.br" : fornecedor.RemetenteEmail
+                    },
                     to = new[] { new { email = emailDestino, name = nomeDestino } },
                     subject = assunto,
-                    htmlContent = corpoHtml
+                    htmlContent = corpoHtml,
+                    attachment = attachments != null && attachments.Length > 0 ? attachments : null
                 };
 
                 var jsonPayload = JsonSerializer.Serialize(payload);
                 var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
                 var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
-                request.Headers.Add("api-key", apiKeyEmail);
+                request.Headers.Add("api-key", fornecedor.ApiKey);
                 request.Content = content;
 
                 var response = await _httpClient.SendAsync(request);
@@ -126,13 +156,11 @@ namespace CorteCor.Services
                 {
                     return (true, null);
                 }
-                else
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    string msg = $"Error sending email: {response.StatusCode} - {error}";
-                    Console.WriteLine($"[BrevoEmailService] {msg}");
-                    return (false, msg);
-                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                string msg = $"Error sending email: {response.StatusCode} - {error}";
+                Console.WriteLine($"[BrevoEmailService] {msg}");
+                return (false, msg);
             }
             catch (Exception ex)
             {

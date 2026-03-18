@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CorteCor.Pages
 {
-    [Authorize]
+    [Authorize(Policy = "UsuarioPolicy")]
     public class NotaFiscalLogListaModel : PageModel
     {
         private readonly NotaFiscalLogHandler _logHandler;

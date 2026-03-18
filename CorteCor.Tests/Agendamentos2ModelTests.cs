@@ -26,6 +26,7 @@ namespace CorteCor.Tests
         private readonly Mock<PagamentoHandler> _mockPagamentoHandler;
         private readonly Mock<MeioPagamentoHandler> _mockMeioPagamentoHandler; // Added
         private readonly Mock<MercadoPagoService> _mockMpService;
+        private readonly Mock<IValidaParametrosMunicipioService> _mockValidaParametrosMunicipioService;
         private readonly Agendamentos2Model _pageModel;
 
         public Agendamentos2ModelTests()
@@ -37,6 +38,7 @@ namespace CorteCor.Tests
             _mockFsHandler = new Mock<FuncionarioServicoHandler>((IDatabaseHandler)null);
             _mockPagamentoHandler = new Mock<PagamentoHandler>((IDatabaseHandler)null);
             _mockMeioPagamentoHandler = new Mock<MeioPagamentoHandler>((IDatabaseHandler)null); // Init
+            _mockValidaParametrosMunicipioService = new Mock<IValidaParametrosMunicipioService>();
             
             var config = new FakeConfiguration();
             _mockMpService = new Mock<MercadoPagoService>(config, (System.Net.Http.HttpClient)null);
@@ -56,7 +58,8 @@ namespace CorteCor.Tests
                 null,
                 null,
                 null,
-                null
+                null,
+                _mockValidaParametrosMunicipioService.Object
             );
 
             // Setup User Context
@@ -83,7 +86,7 @@ namespace CorteCor.Tests
                     new Agendamento { IdAgendamento = 1, DataHora = start, Status = "Agendado", IdServico = 1, IdPessoa = 1 }
                 });
 
-            _mockServicoHandler.Setup(h => h.ListarPorSalao(1))
+            _mockServicoHandler.Setup(h => h.ListarPorSalao(1, It.IsAny<int?>()))
                 .Returns(new List<Servico> { new Servico { IdServico = 1, Nome = "Corte", Duracao = TimeSpan.FromMinutes(30) } });
             
             _mockPessoaHandler.Setup(h => h.ListarPorSalao(1))
@@ -126,7 +129,7 @@ namespace CorteCor.Tests
                 seg = true, seg_ini = TimeSpan.FromHours(8), seg_fim = TimeSpan.FromHours(18) 
             });
             
-            _mockAgendamentoHandler.Setup(h => h.VerificarDisponibilidade(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), null))
+            _mockAgendamentoHandler.Setup(h => h.VerificarDisponibilidade(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int?>()))
                 .Returns(true);
 
             _mockAgendamentoHandler.Setup(h => h.CadastrarAgendamento(It.IsAny<Agendamento>()))

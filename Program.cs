@@ -1,8 +1,10 @@
 ﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Globalization;
 using CorteCor;
@@ -10,6 +12,16 @@ using CorteCor.Services;
 using CorteCor.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+var dataProtectionPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtection-Keys");
+Directory.CreateDirectory(dataProtectionPath);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
+    .SetApplicationName("CorteCor");
 
 // Adiciona serviços ao container.
 builder.Services.AddRazorPages();
@@ -76,7 +88,6 @@ builder.Services.AddScoped<LembreteService>();
 builder.Services.AddScoped<FornecedoresHandler>();
 builder.Services.AddHttpClient<ConsultaDocumentoService>();
 builder.Services.AddScoped<LogAcessoHandler>();
-builder.Services.AddHostedService<LembreteBackgroundService>();
 
 
 // Serviços Fiscais
@@ -87,10 +98,17 @@ builder.Services.AddTransient<NFSeEmissorService>();
 builder.Services.AddTransient<FiscalBuilderService>();
 builder.Services.AddTransient<FiscalActionService>();
 builder.Services.AddTransient<FiscalPdfGenerator>();
+builder.Services.AddTransient<FiscalOrigemPreparationService>();
 builder.Services.AddTransient<IValidaParametrosMunicipioService, ValidaParametrosMunicipioService>();
+builder.Services.AddTransient<NotaFiscalAvulsaService>();
 builder.Services.AddScoped<NotaFiscalEventoHandler>();
 builder.Services.AddScoped<NotaFiscalInutilizacaoHandler>();
-builder.Services.AddHostedService<NFSeVerificadorRetornoJob>();
+
+if (BancoConfigurado(builder.Configuration))
+{
+    builder.Services.AddHostedService<LembreteBackgroundService>();
+    builder.Services.AddHostedService<NFSeVerificadorRetornoJob>();
+}
 
 // Configurar cultura para pt-BR
 var cultureInfo = new CultureInfo("pt-BR");
@@ -189,4 +207,18 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
+
+static bool BancoConfigurado(ConfigurationManager configuration)
+{
+    var configuredConnectionString =
+        Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? configuration.GetConnectionString("DefaultConnection")
+        ?? Environment.GetEnvironmentVariable("ConnectionStrings__TonniDb")
+        ?? configuration.GetConnectionString("TonniDb");
+
+    var connectionString = DatabaseHandler.ResolverConnectionString(configuredConnectionString);
+
+    return !string.IsNullOrWhiteSpace(connectionString);
+}
+
 

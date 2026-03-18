@@ -559,6 +559,7 @@ public class RetornoEmissaoDto
 {
     public bool Autorizada { get; set; }
     public string? ChaveAcesso { get; set; }
+    public string? NumeroDocumentoFiscal { get; set; }
     public string? Protocolo { get; set; }
     public string? XmlEnvio { get; set; }
     public string? XmlRetorno { get; set; }

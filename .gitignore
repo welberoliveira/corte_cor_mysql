@@ -399,3 +399,23 @@ FodyWeavers.xsd
 
 appsettings.json
 appsettings.Development.json
+
+# Local runtime, browser automation, and temporary diagnostics
+.npm-cache/
+.npm-cache-temp/
+.playwright-browsers/
+.playwright-cli/
+.pwcli-local/
+App_Data/DataProtection-Keys/
+output/
+tempbuild*/
+run_*.log
+*.err.log
+build_errors.txt
+test_output.txt
+types_output.txt
+nacional_config.txt
+temp_anexo_ii.xlsx
+temp_inut_dump.txt
+temp_nfse_xsd.zip
+temp_validate_cancel.csx

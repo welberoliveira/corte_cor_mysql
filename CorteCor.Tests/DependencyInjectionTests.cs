@@ -1,4 +1,3 @@
-using CorteCor.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,6 +28,15 @@ namespace CorteCor.Tests
                     webBuilder.UseTestServer();
                     webBuilder.ConfigureServices(services =>
                     {
+                        var configuration = new ConfigurationBuilder()
+                            .AddInMemoryCollection(new Dictionary<string, string?>
+                            {
+                                ["FiscalSettings:MasterKey"] = "12345678901234567890123456789012",
+                                ["ConnectionStrings:DefaultConnection"] = "Server=(localdb)\\MSSQLLocalDB;Database=Fake;Trusted_Connection=True;"
+                            })
+                            .Build();
+
+                        services.AddSingleton<IConfiguration>(configuration);
                         services.AddRazorPages();
                         services.AddLogging();
                         services.AddHttpClient();
@@ -42,26 +50,37 @@ namespace CorteCor.Tests
                         var mockDbHandler = new Mock<IDatabaseHandler>();
                         services.AddScoped<IDatabaseHandler>(_ => mockDbHandler.Object);
                         
-                        services.AddScoped<Salaoervice>(); // Note typo in original Program.cs: Salaoervice
+                        services.AddScoped<SalaoHandler>();
                         services.AddScoped<ServicoHandler>();
                         services.AddScoped<PessoaHandler>();
                         services.AddScoped<AgendamentoHandler>();
                         services.AddScoped<FuncionarioHandler>();
                         services.AddScoped<FuncionarioServicoHandler>();
                         services.AddScoped<PagamentoHandler>();
+                        services.AddScoped<FinanceiroHandler>();
+                        services.AddScoped<IntegracaoHandler>();
                         services.AddScoped<MercadoPagoService>();
                         services.AddScoped<ModeloEmailHandler>();
                         services.AddScoped<ModeloSMSHandler>();
                         services.AddScoped<MeioPagamentoHandler>();
                         services.AddHttpClient<BrevoEmailService>();
                         services.AddHttpClient<SMSMarketService>();
+                        services.AddHttpClient<ConsultaDocumentoService>();
                         services.AddScoped<SalaoConfigFiscalHandler>();
                         services.AddScoped<NotaFiscalInutilizacaoHandler>();
                         services.AddScoped<NotaFiscalHandler>();
                         services.AddScoped<NotaFiscalLogHandler>();
+                        services.AddSingleton<ICriptografiaService, CriptografiaService>();
+                        services.AddScoped<CertificadoFiscalFactory>();
                         services.AddScoped<FiscalBuilderService>();
-                        services.AddHttpClient<NFSeEmissorService>();
-                        services.AddHttpClient<NFCeEmissorService>();
+                        services.AddScoped<FiscalActionService>();
+                        services.AddScoped<FiscalPdfGenerator>();
+                        services.AddScoped<FiscalOrigemPreparationService>();
+                        services.AddScoped<IValidaParametrosMunicipioService, ValidaParametrosMunicipioService>();
+                        services.AddScoped<NotaFiscalEventoHandler>();
+                        services.AddScoped<NotaFiscalAvulsaService>();
+                        services.AddTransient<NFSeEmissorService>();
+                        services.AddTransient<NFCeEmissorService>();
                         // Critical Fix Verification: Register ILembreteHandler -> LembreteHandler
                         services.AddScoped<ILembreteHandler, LembreteHandler>();
                         services.AddScoped<LembreteService>();

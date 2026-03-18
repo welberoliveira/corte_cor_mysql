@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Security.Claims;
-using CorteCor.Models;
 using CorteCor.Handlers;
+using CorteCor.Models;
 using CorteCor.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CorteCor.Pages
 {
+    [Authorize(Policy = "UsuarioPolicy")]
     public class SalaoConfigFiscalModel : PageModel
     {
         private readonly SalaoConfigFiscalHandler _configHandler;
@@ -19,11 +20,11 @@ namespace CorteCor.Pages
         }
 
         [BindProperty]
-        public SalaoConfigFiscal Configuracao { get; set; }
+        public SalaoConfigFiscal Configuracao { get; set; } = new();
 
         public bool PossuiCertificadoSalvo { get; set; }
-        public string Mensagem { get; set; }
-        public string Erro { get; set; }
+        public string Mensagem { get; set; } = string.Empty;
+        public string Erro { get; set; } = string.Empty;
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -31,11 +32,7 @@ namespace CorteCor.Pages
             if (string.IsNullOrEmpty(salaoIdStr)) return RedirectToPage("/Index");
 
             var idSalao = int.Parse(salaoIdStr);
-
-            // Fetch from database
-            var configData = await _configHandler.ObterPorSalaoAsync(idSalao);
-            Configuracao = configData ?? new SalaoConfigFiscal { IdSalao = idSalao, Ambiente = 2 };
-
+            Configuracao = await _configHandler.ObterPorSalaoAsync(idSalao) ?? new SalaoConfigFiscal { IdSalao = idSalao, Ambiente = 2 };
             PossuiCertificadoSalvo = Configuracao.CertificadoPfx != null && Configuracao.CertificadoPfx.Length > 0;
             return Page();
         }
@@ -48,16 +45,11 @@ namespace CorteCor.Pages
             try
             {
                 Configuracao.IdSalao = int.Parse(salaoIdStr);
+                Configuracao.Cnpj = Configuracao.Cnpj?.Replace(".", "", StringComparison.Ordinal).Replace("/", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal);
+                Configuracao.EnderecoCep = Configuracao.EnderecoCep?.Replace("-", "", StringComparison.Ordinal);
+                Configuracao.Telefone = Configuracao.Telefone?.Replace("(", "", StringComparison.Ordinal).Replace(")", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal).Replace(" ", "", StringComparison.Ordinal);
 
-                // Limpezas de input
-                if (!string.IsNullOrEmpty(Configuracao.Cnpj)) Configuracao.Cnpj = Configuracao.Cnpj.Replace(".", "").Replace("/", "").Replace("-", "");
-                if (!string.IsNullOrEmpty(Configuracao.EnderecoCep)) Configuracao.EnderecoCep = Configuracao.EnderecoCep.Replace("-", "");
-                if (!string.IsNullOrEmpty(Configuracao.Telefone)) Configuracao.Telefone = Configuracao.Telefone.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "");
-
-                // Obter configuração existente
                 var configAtual = await _configHandler.ObterPorSalaoAsync(Configuracao.IdSalao);
-
-                // Processar upload de Certificado Novo
                 if (certificadoFile != null && certificadoFile.Length > 0)
                 {
                     if (string.IsNullOrEmpty(senhaCertificado))
@@ -66,34 +58,28 @@ namespace CorteCor.Pages
                         return Page();
                     }
 
-                    using (var ms = new MemoryStream())
-                    {
-                        await certificadoFile.CopyToAsync(ms);
-                        Configuracao.CertificadoPfx = ms.ToArray();
-                    }
-
-                    // Encriptar a senha a ser salva com AES-256
+                    using var ms = new MemoryStream();
+                    await certificadoFile.CopyToAsync(ms);
+                    Configuracao.CertificadoPfx = ms.ToArray();
                     Configuracao.CertificadoSenha = _criptoService.Criptografar(senhaCertificado);
                 }
                 else if (configAtual != null)
                 {
-                    // Manter o certificado antigo preservado caso a config já exista
                     Configuracao.CertificadoPfx = configAtual.CertificadoPfx;
                     Configuracao.CertificadoSenha = configAtual.CertificadoSenha;
                 }
 
                 Configuracao.DataAtualizacao = DateTime.Now;
-
                 if (configAtual == null)
                 {
                     await _configHandler.AddAsync(Configuracao);
-                    Mensagem = "Configurações Fiscais criadas com sucesso!";
+                    Mensagem = "Configurações fiscais criadas com sucesso.";
                 }
                 else
                 {
                     Configuracao.IdConfigFiscal = configAtual.IdConfigFiscal;
                     await _configHandler.UpdateAsync(Configuracao);
-                    Mensagem = "Configurações Fiscais atualizadas com sucesso!";
+                    Mensagem = "Configurações fiscais atualizadas com sucesso.";
                 }
 
                 PossuiCertificadoSalvo = Configuracao.CertificadoPfx != null && Configuracao.CertificadoPfx.Length > 0;

@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace CorteCor.Pages
 {
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "UsuarioPolicy")]
     public class NotaFiscalInutilizacaoModel : PageModel
     {
         private readonly NotaFiscalInutilizacaoHandler _inutHandler;
@@ -52,26 +53,41 @@ namespace CorteCor.Pages
 
                 if (numeroFinal < numeroInicial)
                 {
-                    Erro = "O Número Final não pode ser menor do que o Inicial.";
+                    Erro = "O NÃºmero Final nÃ£o pode ser menor do que o Inicial.";
                     return RedirectToPage();
                 }
 
                 if (string.IsNullOrWhiteSpace(justificativa) || justificativa.Length < 15)
                 {
-                    Erro = "Justificativa muito curta. Informe no mínimo 15 caracteres.";
+                    Erro = "Justificativa muito curta. Informe no mÃ­nimo 15 caracteres.";
                     return RedirectToPage();
                 }
 
                 var config = await _configHandler.ObterPorSalaoAsync(idSalao);
                 if (config == null)
                 {
-                    Erro = "Configuração Fiscal do salão não preenchida. Configure-a primeiro.";
+                    Erro = "ConfiguraÃ§Ã£o Fiscal do salÃ£o nÃ£o preenchida. Configure-a primeiro.";
                     return RedirectToPage();
                 }
 
-                // Dispara o serviço Fiscal responsável por solicitar Inutilizacao na Sefaz
-                var inut = await _fiscalActionService.InutilizarNfceAsync(config, ano, serie, numeroInicial, numeroFinal, justificativa);
-                inut.IdSalao = idSalao;
+                // Dispara o serviÃ§o Fiscal responsÃ¡vel por solicitar Inutilizacao na Sefaz
+                // Por padrÃ£o nesta pÃ¡gina legada, usamos NFC-e (Modelo 65)
+                var evento = await _fiscalActionService.InutilizarNfceAsync(config, ano, serie, numeroInicial, numeroFinal, justificativa, "NFC-e");
+                
+                var inut = new NotaFiscalInutilizacao
+                {
+                    IdSalao = idSalao,
+                    Ano = ano,
+                    Modelo = 65,
+                    Serie = serie,
+                    NumeroInicial = numeroInicial,
+                    NumeroFinal = numeroFinal,
+                    Justificativa = justificativa,
+                    Status = evento.Status,
+                    Protocolo = evento.ProtocoloEvento,
+                    XmlRetorno = evento.XmlRetorno,
+                    DataInutilizacao = DateTime.Now
+                };
 
                 // Registra banco
                 await _inutHandler.InserirAsync(inut);
@@ -87,3 +103,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

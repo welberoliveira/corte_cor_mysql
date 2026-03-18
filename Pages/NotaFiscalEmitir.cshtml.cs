@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -10,24 +10,21 @@ using CorteCor.Handlers;
 
 namespace CorteCor.Pages
 {
-    [Authorize]
+    [Authorize(Policy = "UsuarioPolicy")]
     public class NotaFiscalEmitirModel : PageModel
     {
-        private readonly NFSeEmissorService _emissorService;
-        private readonly FiscalBuilderService _builderService;
+        private readonly NotaFiscalAvulsaService _notaFiscalAvulsaService;
         private readonly SalaoConfigFiscalHandler _configLogHandler;
         private readonly NotaFiscalLogHandler _sistemaLog;
         private readonly IValidaParametrosMunicipioService _validaParametrosMunicipioService;
 
         public NotaFiscalEmitirModel(
-            NFSeEmissorService emissorService, 
-            FiscalBuilderService builderService,
+            NotaFiscalAvulsaService notaFiscalAvulsaService,
             SalaoConfigFiscalHandler configLogHandler,
             NotaFiscalLogHandler sistemaLog,
             IValidaParametrosMunicipioService validaParametrosMunicipioService)
         {
-            _emissorService = emissorService;
-            _builderService = builderService;
+            _notaFiscalAvulsaService = notaFiscalAvulsaService;
             _configLogHandler = configLogHandler;
             _sistemaLog = sistemaLog;
             _validaParametrosMunicipioService = validaParametrosMunicipioService;
@@ -61,42 +58,68 @@ namespace CorteCor.Pages
                 var config = await _configLogHandler.ObterPorSalaoAsync(idSalao);
                 if (config == null || string.IsNullOrEmpty(config.InscricaoMunicipal))
                 {
-                    TempData["ErrorMessage"] = "Configuração Fiscal do Salão não encontrada ou incompleta. Verifique a Inscrição Municipal.";
+                    TempData["ErrorMessage"] = "ConfiguraÃ§Ã£o Fiscal do SalÃ£o nÃ£o encontrada ou incompleta. Verifique a InscriÃ§Ã£o Municipal.";
                     return Page();
                 }
 
-                // Mock objetos temporários apenas para usar o construtor existente
                 var cliente = new CorteCor.Models.Pessoa { Nome = Input.CpfCnpjDestinatario == null ? "Consumidor Final" : Input.NomeRazaoSocial, CpfCnpj = Input.CpfCnpjDestinatario };
                 var servico = new CorteCor.Models.Servico { Nome = Input.DescricaoServico, Preco = Input.ValorServico, CodigoTributacaoMunicipio = Input.CodigoTributacaoNacional };
                 var age = new CorteCor.Models.Agendamento { DataHora = DateTime.Now };
 
-                // Build DPS (Nacional)
                 await _validaParametrosMunicipioService.ValidateAsync(config, servico);
-                var dps = _builderService.MontarNFSe(config, cliente, servico, age);
-                
-                // Emite NFS-e (Nota: A assinatura espera int? idAgendamento como 3º argumento e o nome é EmitirNFSeAsync)
-                var result = await _emissorService.EmitirNFSeAsync(config, dps, null);
+                var result = await _notaFiscalAvulsaService.EmitirAsync(idSalao, new NotaFiscalAvulsaRequest
+                {
+                    Modelo = "NFSE",
+                    Ambiente = config.Ambiente,
+                    Serie = config.SerieNFSe,
+                    Numero = config.NumeroNFSe,
+                    DataEmissao = age.DataHora,
+                    EmitenteCnpj = config.Cnpj,
+                    EmitenteNome = config.RazaoSocial,
+                    EmitenteIM = config.InscricaoMunicipal,
+                    EmitenteIE = config.InscricaoEstadual,
+                    EmitenteCRT = config.RegimeTributario == 0 ? 1 : config.RegimeTributario,
+                    EmitenteLogradouro = config.EnderecoLogradouro,
+                    EmitenteNumero = config.EnderecoNumero,
+                    EmitenteBairro = config.EnderecoBairro,
+                    EmitenteCep = config.EnderecoCep,
+                    EmitenteCidade = config.EnderecoCidade,
+                    EmitenteUF = config.EnderecoUF,
+                    EmitenteCodMun = config.CodigoMunicipioIBGE,
+                    DestinatarioNome = cliente.Nome,
+                    DestinatarioCpfCnpj = cliente.CpfCnpj,
+                    Itens = new List<NotaFiscalAvulsaItemRequest>
+                    {
+                        new NotaFiscalAvulsaItemRequest
+                        {
+                            XProd = servico.Nome,
+                            VUnCom = servico.Preco,
+                            CodigoTributacao = servico.CodigoTributacaoMunicipio
+                        }
+                    }
+                }, userName);
 
                 // Loga Global
                 await _sistemaLog.InserirAsync(new NotaFiscalLog
                 {
                     IdSalao = idSalao,
-                    TipoEvento = result.Autorizada ? "EmissaoNFSeNacional_Sucesso" : "EmissaoNFSeNacional_Rejeicao",
+                    IdNotaFiscal = result.IdNotaFiscal,
+                    TipoEvento = result.MensagemTipo == "success" ? "EmissaoNFSeNacional_Sucesso" : "EmissaoNFSeNacional_Rejeicao",
                     RequestPayload = result.XmlEnvio,
                     ResponsePayload = result.XmlRetorno,
-                    Mensagem = result.Motivo ?? "Processamento concluído",
-                    CodigoErro = result.Autorizada ? null : "Erro Sefaz Nacional",
+                    Mensagem = result.Mensagem,
+                    CodigoErro = result.MensagemTipo == "success" ? null : "Erro Sefaz Nacional",
                     Usuario = userName
                 });
 
-                if (result.Autorizada)
+                if (result.MensagemTipo == "success")
                 {
-                    TempData["SuccessMessage"] = "NFS-e Nacional ou RPS Lote enviado com sucesso! " + result.Motivo;
+                    TempData["SuccessMessage"] = "NFS-e emitida com sucesso! " + result.Mensagem;
                     return RedirectToPage("/NotaFiscalLogLista");
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Falha ao emitir NFS-e Nacional: " + result.Motivo;
+                    TempData["ErrorMessage"] = "Falha ao emitir NFS-e Nacional: " + result.Mensagem;
                     return Page();
                 }
             }
@@ -112,7 +135,7 @@ namespace CorteCor.Pages
                     Usuario = userName
                 });
 
-                TempData["ErrorMessage"] = "Erro interno ao gerar NFS-e Padrão Nacional. Verifique a tela de Logs do Sistema.";
+                TempData["ErrorMessage"] = "Erro interno ao gerar NFS-e PadrÃ£o Nacional. Verifique a tela de Logs do Sistema.";
                 return Page();
             }
         }
@@ -123,19 +146,20 @@ namespace CorteCor.Pages
         [Display(Name = "CPF/CNPJ Tomador (Opcional)")]
         public string CpfCnpjDestinatario { get; set; }
 
-        [Display(Name = "Nome/Razão Social Tomador")]
+        [Display(Name = "Nome/RazÃ£o Social Tomador")]
         public string NomeRazaoSocial { get; set; }
 
-        [Required(ErrorMessage = "O Valor do Serviço é obrigatório")]
-        [Display(Name = "Valor do Serviço (R$)")]
+        [Required(ErrorMessage = "O Valor do ServiÃ§o Ã© obrigatÃ³rio")]
+        [Display(Name = "Valor do ServiÃ§o (R$)")]
         public decimal ValorServico { get; set; }
 
-        [Required(ErrorMessage = "A Descrição do Serviço é obrigatória")]
-        [Display(Name = "Descrição do Serviço")]
+        [Required(ErrorMessage = "A DescriÃ§Ã£o do ServiÃ§o Ã© obrigatÃ³ria")]
+        [Display(Name = "DescriÃ§Ã£o do ServiÃ§o")]
         public string DescricaoServico { get; set; }
 
-        [Required(ErrorMessage = "O Código de Tributação Nacional é obrigatório (ex: 06.01)")]
-        [Display(Name = "Cód. Tributação Nacional")]
+        [Required(ErrorMessage = "O CÃ³digo de TributaÃ§Ã£o Nacional Ã© obrigatÃ³rio (ex: 06.01)")]
+        [Display(Name = "CÃ³d. TributaÃ§Ã£o Nacional")]
         public string CodigoTributacaoNacional { get; set; }
     }
 }
+

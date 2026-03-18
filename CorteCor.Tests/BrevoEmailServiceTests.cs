@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace CorteCor.Tests
 {
@@ -150,6 +151,46 @@ namespace CorteCor.Tests
             // Assert
             Assert.True(result.Success);
             Assert.Null(result.ErrorMessage);
+        }
+
+        [Fact]
+        public async Task EnviarEmailComAnexosAsync_DeveEnviarPayloadComAttachment()
+        {
+            string? payloadCapturado = null;
+
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+                {
+                    payloadCapturado = req.Content == null ? null : req.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                })
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.Accepted
+                });
+
+            var result = await _service.EnviarEmailComAnexosAsync(
+                "nf@test.com",
+                "Cliente Fiscal",
+                "Envio de nota",
+                "<p>Segue anexo.</p>",
+                new[]
+                {
+                    new EmailAttachment
+                    {
+                        Name = "nota.pdf",
+                        Content = Encoding.UTF8.GetBytes("pdf"),
+                        ContentType = "application/pdf"
+                    }
+                });
+
+            Assert.True(result.Success);
+            Assert.NotNull(payloadCapturado);
+            Assert.Contains("\"attachment\"", payloadCapturado);
+            Assert.Contains("nota.pdf", payloadCapturado);
         }
     }
 }

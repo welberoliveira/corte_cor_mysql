@@ -15,6 +15,13 @@ namespace CorteCor.Pages
 {
     public class LoginModel : PageModel
     {
+        private readonly IDatabaseHandler _dbHandler;
+
+        public LoginModel(IDatabaseHandler dbHandler)
+        {
+            _dbHandler = dbHandler;
+        }
+
         public string ErrorMessage { get; set; }
         public string NomeSalao { get; set; }
 
@@ -26,8 +33,6 @@ namespace CorteCor.Pages
         public async Task<IActionResult> OnPostAsync()
         {
             ViewData["HideMenu"] = "true";
-
-            var dbHandler = new DatabaseHandler();
 
             var email = Request.Form["email"].ToString();
             var password = Request.Form["password"].ToString();
@@ -44,7 +49,7 @@ namespace CorteCor.Pages
                 }
                 catch { /* Não impedir login */ }
                 //buscar IdUsuario
-                using var connection = dbHandler.GetConnection();
+                using var connection = _dbHandler.GetConnection();
                 string query = @"
                     SELECT IdUsuario
                     FROM CorteCor_Usuario 
@@ -83,7 +88,7 @@ namespace CorteCor.Pages
 
                 // ---- Verificação de Limites (Email e SMS) ----
                 try {
-                    var lembreteHandler = new LembreteHandler(dbHandler);
+                    var lembreteHandler = new LembreteHandler(_dbHandler);
                     
                     // Email
                     if (lembreteHandler.VerificarLimiteEmail(Usuario.IdSalao, out int envEmail, out int limEmail))

@@ -1,4 +1,4 @@
-using CorteCor.Logs;
+ï»¿using CorteCor.Logs;
 using System;
 using System.Data.SqlClient;
 
@@ -17,28 +17,39 @@ public interface IDatabaseHandler
 
 public class DatabaseHandler : IDatabaseHandler
 {
+    private const string LegacyFallbackConnectionString =
+        "Server=websql3.internetbrasil.net;Database=tonni;User Id=tonni;Password=bW3M*60ZccuD;";
+
     private readonly string ConnectionString;
     private readonly Log _logger = new Log();
+    private readonly IConfiguration? _configuration;
 
-    public DatabaseHandler()
+    public DatabaseHandler(IConfiguration? configuration = null)
     {
+        _configuration = configuration;
         var updatedPath = AppDomain.CurrentDomain.BaseDirectory;
-        // Ajuste para quando rodar local vs publicado, se necessário.
-        // Mas o appsettings.json costuma estar no BaseDirectory.
-
-        var builder = new ConfigurationBuilder()
+        var config = _configuration ?? new ConfigurationBuilder()
             .SetBasePath(updatedPath)
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
 
-        var config = builder.Build();
-        ConnectionString = config.GetConnectionString("DefaultConnection") 
-                           ?? "Server=websql3.internetbrasil.net;Database=tonni;User Id=tonni;Password=bW3M*60ZccuD;";
+        var configuredConnectionString =
+            Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? config.GetConnectionString("DefaultConnection")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__TonniDb")
+            ?? config.GetConnectionString("TonniDb")
+            ?? string.Empty;
+
+        ConnectionString = ResolverConnectionString(configuredConnectionString);
     }
 
     public IDbConnection GetConnection()
     {
         try
         {
+            ValidarConnectionString(ConnectionString);
             var connection = new SqlConnection(ConnectionString);
             connection.Open();
             return connection;
@@ -75,5 +86,27 @@ public class DatabaseHandler : IDatabaseHandler
             throw;
         }
     }
+
+    public static string ResolverConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString) ||
+            connectionString.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase))
+        {
+            return LegacyFallbackConnectionString;
+        }
+
+        return connectionString;
+    }
+
+    private static void ValidarConnectionString(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "A connection string do banco nao foi configurada. Defina ConnectionStrings__DefaultConnection " +
+                "ou preencha DefaultConnection em appsettings.Development.json.");
+        }
+    }
 }
 }
+
