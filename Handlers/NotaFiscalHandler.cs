@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using CorteCor.Models;
+using CorteCor.Services;
 
 namespace CorteCor.Handlers
 {
@@ -40,6 +41,116 @@ namespace CorteCor.Handlers
             }
 
             return notas;
+        }
+
+        public async Task<PagedResult<NotaFiscal>> ListarPorSalaoPaginadoAsync(int idSalao, int page = 1, int pageSize = 10)
+        {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 10 : pageSize;
+
+            using var connection = _dbHandler.GetConnection();
+
+            using var countCommand = connection.CreateCommand("SELECT COUNT(1) FROM CorteCor_NotaFiscal WHERE IdSalao = @IdSalao;");
+            countCommand.AddWithValue("@IdSalao", idSalao);
+            var totalCount = Convert.ToInt32(await Task.Run(() => countCommand.ExecuteScalar()));
+
+            var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
+            var result = new PagedResult<NotaFiscal>
+            {
+                TotalCount = totalCount,
+                PageIndex = page,
+                PageSize = pageSize
+            };
+
+            if (totalCount == 0)
+            {
+                return result;
+            }
+
+            string query = @"
+                SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
+                       ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
+                       DataEmissao, DataAtualizacao
+                FROM CorteCor_NotaFiscal
+                WHERE IdSalao = @IdSalao
+                ORDER BY DataEmissao DESC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@Offset", (page - 1) * pageSize);
+            command.AddWithValue("@PageSize", pageSize);
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            while (reader.Read())
+            {
+                result.Items.Add(MapFromReader(reader));
+            }
+
+            return result;
+        }
+
+        public virtual async Task<List<NotaFiscal>> ListarPorAgendamentoAsync(int idSalao, int idAgendamento)
+        {
+            var notas = new List<NotaFiscal>();
+
+            string query = @"
+                SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
+                       ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
+                       DataEmissao, DataAtualizacao
+                FROM CorteCor_NotaFiscal
+                WHERE IdSalao = @IdSalao AND IdAgendamento = @IdAgendamento
+                ORDER BY DataEmissao DESC, DataAtualizacao DESC;";
+
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@IdAgendamento", idAgendamento);
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            while (reader.Read())
+            {
+                notas.Add(MapFromReader(reader));
+            }
+
+            return notas;
+        }
+
+        public virtual async Task<NotaFiscal?> ObterNotaAtivaPorAgendamentoAsync(int idSalao, int idAgendamento)
+        {
+            string query = @"
+                SELECT TOP 1
+                       IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
+                       ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
+                       DataEmissao, DataAtualizacao
+                FROM CorteCor_NotaFiscal
+                WHERE IdSalao = @IdSalao
+                  AND IdAgendamento = @IdAgendamento
+                  AND Status NOT IN (@Cancelada, @Rejeitada)
+                ORDER BY DataEmissao DESC, DataAtualizacao DESC;";
+
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@IdAgendamento", idAgendamento);
+            command.AddWithValue("@Cancelada", NotaFiscalStatus.Cancelada);
+            command.AddWithValue("@Rejeitada", NotaFiscalStatus.Rejeitada);
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            if (reader.Read())
+            {
+                return MapFromReader(reader);
+            }
+
+            return null;
         }
 
         public async Task<NotaFiscal?> ObterPorChaveAsync(string chaveAcesso, int? idSalao = null)
@@ -221,12 +332,16 @@ namespace CorteCor.Handlers
         {
             string query = @"
                 UPDATE CorteCor_NotaFiscal 
-                SET Status = @Status,
+                SET IdAgendamento = ISNULL(@IdAgendamento, IdAgendamento),
+                    IdVendaProduto = ISNULL(@IdVendaProduto, IdVendaProduto),
+                    Status = @Status,
                     ChaveAcesso = ISNULL(@ChaveAcesso, ChaveAcesso),
                     ChaveAcessoNacional = ISNULL(@ChaveAcessoNacional, ChaveAcessoNacional),
                     NumeroNFSeNacional = ISNULL(@NumeroNFSeNacional, NumeroNFSeNacional),
+                    NumeroRecibo = ISNULL(@NumeroRecibo, NumeroRecibo),
                     ProtocoloAutorizacao = ISNULL(@ProtocoloAutorizacao, ProtocoloAutorizacao),
                     JustificativaRejeicao = ISNULL(@JustificativaRejeicao, JustificativaRejeicao),
+                    XmlEnvio = ISNULL(@XmlEnvio, XmlEnvio),
                     XmlRetorno = ISNULL(@XmlRetorno, XmlRetorno),
                     DataAtualizacao = @DataAtualizacao
                 WHERE IdNotaFiscal = @IdNotaFiscal;";
@@ -234,12 +349,16 @@ namespace CorteCor.Handlers
             using var connection = _dbHandler.GetConnection();
             using var command = connection.CreateCommand(query);
 
+            command.AddWithValue("@IdAgendamento", nota.IdAgendamento ?? (object)DBNull.Value);
+            command.AddWithValue("@IdVendaProduto", nota.IdVendaProduto ?? (object)DBNull.Value);
             command.AddWithValue("@Status", nota.Status);
             command.AddWithValue("@ChaveAcesso", nota.ChaveAcesso ?? (object)DBNull.Value);
             command.AddWithValue("@ChaveAcessoNacional", nota.ChaveAcessoNacional ?? (object)DBNull.Value);
             command.AddWithValue("@NumeroNFSeNacional", nota.NumeroNFSeNacional ?? (object)DBNull.Value);
+            command.AddWithValue("@NumeroRecibo", nota.NumeroRecibo ?? (object)DBNull.Value);
             command.AddWithValue("@ProtocoloAutorizacao", nota.ProtocoloAutorizacao ?? (object)DBNull.Value);
             command.AddWithValue("@JustificativaRejeicao", nota.JustificativaRejeicao ?? (object)DBNull.Value);
+            command.AddWithValue("@XmlEnvio", nota.XmlEnvio ?? (object)DBNull.Value);
             command.AddWithValue("@XmlRetorno", nota.XmlRetorno ?? (object)DBNull.Value);
             command.AddWithValue("@DataAtualizacao", DateTime.Now);
             command.AddWithValue("@IdNotaFiscal", nota.IdNotaFiscal);

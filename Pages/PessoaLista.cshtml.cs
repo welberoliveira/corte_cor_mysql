@@ -1,72 +1,83 @@
-using CorteCor.Models;
 using CorteCor.Handlers;
+using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Mvc; 
-
 
 namespace CorteCor.Pages
 {
     [Authorize(Policy = "UsuarioPolicy")]
     public class PessoaListaModel : PageModel
     {
-        public PagedResult<Pessoa> Pessoas { get; set; } = new PagedResult<Pessoa>();
-        public string Mensagem { get; set; }
+        private readonly PessoaHandler _pessoaHandler;
+
+        public PessoaListaModel(PessoaHandler pessoaHandler)
+        {
+            _pessoaHandler = pessoaHandler;
+        }
+
+        public PagedResult<Pessoa> Pessoas { get; set; } = new();
+        public string Mensagem { get; set; } = string.Empty;
+        public string MensagemTipo { get; set; } = "info";
 
         [BindProperty(SupportsGet = true)]
         public int p { get; set; } = 1;
 
+        [BindProperty(SupportsGet = true)]
+        public string? q { get; set; }
+
         public void OnGet()
         {
-            int idSalao = 0;
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
-
-            var handler = new PessoaHandler();
-            var todasPessoas = handler.ListarPorSalao(idSalao);
-            
-            // Apply memory pagination to maintain PagedResult
-            int pageIndex = p > 0 ? p : 1;
-            int pageSize = 10;
-            
-            Pessoas = new PagedResult<Pessoa> 
+            if (!TryObterIdSalao(out var idSalao))
             {
-                PageIndex = pageIndex,
-                PageSize = pageSize,
-                TotalCount = todasPessoas.Count,
-                Items = todasPessoas.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList()
-            };
+                Pessoas = new PagedResult<Pessoa> { PageIndex = 1, PageSize = 10 };
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                return;
+            }
+
+            Pessoas = _pessoaHandler.ListarPaginadoPorSalao(idSalao, q, p, 10);
         }
 
-        public void OnPost()
+        public IActionResult OnPost(int id, string action, string? q, int p = 1)
         {
-            var handler = new PessoaHandler();
+            if (action == "alterar")
+            {
+                return Redirect($"{HttpContext.Request.PathBase}/PessoaCadastro?id={id}");
+            }
 
-            int id = int.Parse(Request.Form["id"]);
-            string action = Request.Form["action"];
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                OnGet();
+                return Page();
+            }
 
             if (action == "excluir")
             {
                 try
                 {
-                    int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
-                    handler.ExcluirPorSalao(id, idSalao);
-                    Mensagem = "Pessoa excluída com sucesso.";
+                    _pessoaHandler.ExcluirPorSalao(id, idSalao);
+                    Mensagem = "Pessoa excluida com sucesso.";
+                    MensagemTipo = "success";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível excluir esta Pessoa porque ela está associada a outros registros.";
+                    Mensagem = "Nao foi possivel excluir esta pessoa porque ela esta associada a outros registros.";
+                    MensagemTipo = "warning";
                 }
             }
-            else if (action == "alterar")
-            {
-                Response.Redirect(HttpContext.Request.PathBase + $"/PessoaCadastro?id={id}");
-            }
 
+            this.q = q;
+            this.p = p;
             OnGet();
+            return Page();
+        }
+
+        private bool TryObterIdSalao(out int idSalao)
+        {
+            return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
         }
     }
 }
-

@@ -79,5 +79,69 @@ namespace CorteCor.Handlers
             }
             return lista;
         }
+
+        public async Task<PagedResult<NotaFiscalInutilizacao>> ListarPorSalaoPaginadoAsync(int idSalao, int page = 1, int pageSize = 10)
+        {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 10 : pageSize;
+
+            using var connection = _dbHandler.GetConnection();
+
+            using var countCommand = connection.CreateCommand("SELECT COUNT(1) FROM CorteCor_NotaFiscalInutilizacao WHERE IdSalao = @IdSalao;");
+            countCommand.AddWithValue("@IdSalao", idSalao);
+            var totalCount = Convert.ToInt32(await Task.Run(() => countCommand.ExecuteScalar()));
+
+            var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
+            var result = new PagedResult<NotaFiscalInutilizacao>
+            {
+                TotalCount = totalCount,
+                PageIndex = page,
+                PageSize = pageSize
+            };
+
+            if (totalCount == 0)
+            {
+                return result;
+            }
+
+            string query = @"
+                SELECT * 
+                FROM CorteCor_NotaFiscalInutilizacao
+                WHERE IdSalao = @IdSalao
+                ORDER BY DataInutilizacao DESC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@Offset", (page - 1) * pageSize);
+            command.AddWithValue("@PageSize", pageSize);
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            while (reader.Read())
+            {
+                result.Items.Add(new NotaFiscalInutilizacao
+                {
+                    IdInutilizacao = Guid.Parse(reader["IdInutilizacao"].ToString()),
+                    IdSalao = Convert.ToInt32(reader["IdSalao"]),
+                    Ano = Convert.ToInt32(reader["Ano"]),
+                    Serie = Convert.ToInt32(reader["Serie"]),
+                    NumeroInicial = Convert.ToInt32(reader["NumeroInicial"]),
+                    NumeroFinal = Convert.ToInt32(reader["NumeroFinal"]),
+                    Modelo = reader["TipoNota"].ToString() == "NF-e" ? 55 : 65,
+                    Justificativa = reader["Justificativa"].ToString(),
+                    Protocolo = reader["Protocolo"]?.ToString(),
+                    XmlRetorno = reader["XmlRetorno"]?.ToString(),
+                    Status = reader["Status"]?.ToString(),
+                    DataInutilizacao = Convert.ToDateTime(reader["DataInutilizacao"])
+                });
+            }
+
+            return result;
+        }
     }
 }

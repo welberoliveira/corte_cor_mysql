@@ -53,6 +53,9 @@ namespace CorteCor.Tests
                         services.AddScoped<SalaoHandler>();
                         services.AddScoped<ServicoHandler>();
                         services.AddScoped<PessoaHandler>();
+                        services.AddScoped<ProdutoHandler>();
+                        services.AddScoped<CategoriaProdutoHandler>();
+                        services.AddScoped<ItemListaServicoHandler>();
                         services.AddScoped<AgendamentoHandler>();
                         services.AddScoped<FuncionarioHandler>();
                         services.AddScoped<FuncionarioServicoHandler>();
@@ -76,6 +79,8 @@ namespace CorteCor.Tests
                         services.AddScoped<FiscalActionService>();
                         services.AddScoped<FiscalPdfGenerator>();
                         services.AddScoped<FiscalOrigemPreparationService>();
+                        services.AddScoped<AgendamentoPreparationService>();
+                        services.AddScoped<AgendamentoFiscalPreparationService>();
                         services.AddScoped<IValidaParametrosMunicipioService, ValidaParametrosMunicipioService>();
                         services.AddScoped<NotaFiscalEventoHandler>();
                         services.AddScoped<NotaFiscalAvulsaService>();

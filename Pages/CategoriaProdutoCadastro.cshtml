@@ -9,21 +9,21 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success mt-3">@Model.Mensagem</div>
+        <div class="alert alert-@Model.MensagemTipo mt-3">@Model.Mensagem</div>
     }
 
     <form method="post" class="mt-4">
-        <input type="hidden" name="id" value="@Model.Categoria?.IdCategoria">
         <input type="hidden" name="action" value="salvar">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <div class="row">
             <div class="col-md-9 form-group">
                 <label for="nome" class="form-label">Nome da Categoria</label>
-                <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Categoria?.Nome">
+                <input asp-for="Categoria.Nome" id="nome" class="form-control" required>
             </div>
             <div class="col-md-3 form-group d-flex align-items-end mb-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="ativo" name="ativo" @(Model.Categoria == null || Model.Categoria.Ativo ? "checked" : "")>
+                    <input asp-for="Categoria.Ativo" class="form-check-input" id="ativo">
                     <label class="form-check-label" for="ativo">Ativo</label>
                 </div>
             </div>

@@ -1,21 +1,22 @@
 @page
 @model CorteCor.Pages.FuncionarioCadastroModel
 @{
-    ViewData["Title"] = "Cadastro de Funcion·rios";
+    ViewData["Title"] = "Cadastro de Funcion√°rios";
 }
 
 <div class="container">
-    <h4>@Model.ButtonText Funcion·rio</h4>
+    <h4>@Model.ButtonText Funcion√°rio</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success">
+        <div class="alert alert-@Model.MensagemTipo">
             @Model.Mensagem
         </div>
     }
 
     <form method="post">
         <input type="hidden" name="id" value="@Model.Funcionario?.IdFuncionario">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <div class="form-group">
             <label for="nome">Nome</label>
@@ -24,7 +25,10 @@
 
         <hr />
 
-        <h5>Disponibilidade</h5>
+        <div class="d-flex justify-content-between align-items-center">
+            <h5>Disponibilidade</h5>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="copiarSemanaUtil">Copiar segunda para dias uteis</button>
+        </div>
 
         <!-- SEG -->
         <div class="border rounded p-3 mb-3">
@@ -35,7 +39,7 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    <label for="seg_ini">InÌcio</label>
+                    <label for="seg_ini">In√≠cio</label>
                     <input type="time" id="seg_ini" name="seg_ini" class="form-control"
                            value="@(Model.Funcionario?.seg_ini?.ToString(@"hh\:mm") ?? "")">
                 </div>
@@ -51,12 +55,12 @@
         <div class="border rounded p-3 mb-3">
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="ter" name="ter" value="true" @(Model.Funcionario?.ter == true ? "checked" : "")>
-                <label class="form-check-label" for="ter">TerÁa-feira</label>
+                <label class="form-check-label" for="ter">Ter√ßa-feira</label>
             </div>
 
             <div class="row">
                 <div class="col-md-6">
-                    <label for="ter_ini">InÌcio</label>
+                    <label for="ter_ini">In√≠cio</label>
                     <input type="time" id="ter_ini" name="ter_ini" class="form-control"
                            value="@(Model.Funcionario?.ter_ini?.ToString(@"hh\:mm") ?? "")">
                 </div>
@@ -77,7 +81,7 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    <label for="qua_ini">InÌcio</label>
+                    <label for="qua_ini">In√≠cio</label>
                     <input type="time" id="qua_ini" name="qua_ini" class="form-control"
                            value="@(Model.Funcionario?.qua_ini?.ToString(@"hh\:mm") ?? "")">
                 </div>
@@ -98,7 +102,7 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    <label for="qui_ini">InÌcio</label>
+                    <label for="qui_ini">In√≠cio</label>
                     <input type="time" id="qui_ini" name="qui_ini" class="form-control"
                            value="@(Model.Funcionario?.qui_ini?.ToString(@"hh\:mm") ?? "")">
                 </div>
@@ -119,7 +123,7 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    <label for="sex_ini">InÌcio</label>
+                    <label for="sex_ini">In√≠cio</label>
                     <input type="time" id="sex_ini" name="sex_ini" class="form-control"
                            value="@(Model.Funcionario?.sex_ini?.ToString(@"hh\:mm") ?? "")">
                 </div>
@@ -135,12 +139,12 @@
         <div class="border rounded p-3 mb-3">
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="sab" name="sab" value="true" @(Model.Funcionario?.sab == true ? "checked" : "")>
-                <label class="form-check-label" for="sab">S·bado</label>
+                <label class="form-check-label" for="sab">S√°bado</label>
             </div>
 
             <div class="row">
                 <div class="col-md-6">
-                    <label for="sab_ini">InÌcio</label>
+                    <label for="sab_ini">In√≠cio</label>
                     <input type="time" id="sab_ini" name="sab_ini" class="form-control"
                            value="@(Model.Funcionario?.sab_ini?.ToString(@"hh\:mm") ?? "")">
                 </div>
@@ -161,7 +165,7 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    <label for="dom_ini">InÌcio</label>
+                    <label for="dom_ini">In√≠cio</label>
                     <input type="time" id="dom_ini" name="dom_ini" class="form-control"
                            value="@(Model.Funcionario?.dom_ini?.ToString(@"hh\:mm") ?? "")">
                 </div>
@@ -178,5 +182,20 @@
 </div>
 
 <script>
-    // Checkbox n„o enviado quando desmarcado; garantimos campos vazios no back-end.
+    document.getElementById('copiarSemanaUtil')?.addEventListener('click', function () {
+        const inicio = document.getElementById('seg_ini')?.value;
+        const fim = document.getElementById('seg_fim')?.value;
+        if (!inicio || !fim) {
+            return;
+        }
+
+        ['ter', 'qua', 'qui', 'sex'].forEach(function (dia) {
+            const check = document.getElementById(dia);
+            const ini = document.getElementById(dia + '_ini');
+            const end = document.getElementById(dia + '_fim');
+            if (check) check.checked = true;
+            if (ini) ini.value = inicio;
+            if (end) end.value = fim;
+        });
+    });
 </script>

@@ -1,56 +1,83 @@
-﻿using CorteCor.Models;
 using CorteCor.Handlers;
+using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 
 namespace CorteCor.Pages
 {
     [Authorize(Policy = "UsuarioPolicy")]
     public class FuncionarioListaModel : PageModel
     {
-        public List<Funcionario> Funcionarios { get; set; } = new();
-        public string Mensagem { get; set; }
+        private readonly FuncionarioHandler _funcionarioHandler;
+
+        public PagedResult<Funcionario> Funcionarios { get; set; } = new();
+        public string Mensagem { get; set; } = string.Empty;
+        public string MensagemTipo { get; set; } = "info";
+
+        [BindProperty(SupportsGet = true)]
+        public string? q { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int p { get; set; } = 1;
+
+        public FuncionarioListaModel(FuncionarioHandler funcionarioHandler)
+        {
+            _funcionarioHandler = funcionarioHandler;
+        }
 
         public void OnGet()
         {
-            int idSalao = 0;
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Funcionarios = new PagedResult<Funcionario> { PageIndex = 1, PageSize = 10 };
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                return;
+            }
 
-            var handler = new FuncionarioHandler();
-            Funcionarios = handler.ListarPorSalao(idSalao) ?? new List<Funcionario>();
+            Funcionarios = _funcionarioHandler.ListarPaginadoPorSalao(idSalao, q, p, 10);
         }
 
-        public void OnPost()
+        public IActionResult OnPost(int id, string action, string? q, int p = 1)
         {
-            var handler = new FuncionarioHandler();
+            if (action == "alterar")
+            {
+                return Redirect($"{HttpContext.Request.PathBase}/FuncionarioCadastro?id={id}");
+            }
 
-            int id = int.Parse(Request.Form["id"]);
-            string action = Request.Form["action"];
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                OnGet();
+                return Page();
+            }
 
             if (action == "excluir")
             {
                 try
                 {
-                    int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
-                    handler.ExcluirPorSalao(id, idSalao);
-                    Mensagem = "Funcionário excluído com sucesso.";
+                    _funcionarioHandler.ExcluirPorSalao(id, idSalao);
+                    Mensagem = "Funcionario excluido com sucesso.";
+                    MensagemTipo = "success";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível excluir este Funcionário porque ele está associado a outros registros.";
+                    Mensagem = "Nao foi possivel excluir este funcionario porque ele esta associado a outros registros.";
+                    MensagemTipo = "warning";
                 }
             }
-            else if (action == "alterar")
-            {
-                Response.Redirect(HttpContext.Request.PathBase + $"/FuncionarioCadastro?id={id}");
-            }
 
+            this.q = q;
+            this.p = p;
             OnGet();
+            return Page();
+        }
+
+        private bool TryObterIdSalao(out int idSalao)
+        {
+            return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
         }
     }
 }
-

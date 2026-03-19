@@ -1,66 +1,92 @@
-﻿using CorteCor.Models;
 using CorteCor.Handlers;
+using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 
 namespace CorteCor.Pages
 {
     [Authorize(Policy = "UsuarioPolicy")]
     public class ServicoListaModel : PageModel
     {
-        public List<Servico> Servicos { get; set; } = new();
+        private readonly CategoriaProdutoHandler _categoriaHandler;
+        private readonly ServicoHandler _servicoHandler;
+
+        public PagedResult<Servico> Servicos { get; set; } = new();
         public List<CategoriaProduto> Categorias { get; set; } = new();
         public int? IdCategoria { get; set; }
-        public string Mensagem { get; set; }
+        public string? q { get; set; }
+        public bool incluirArquivados { get; set; }
+        public int p { get; set; } = 1;
+        public string Mensagem { get; set; } = string.Empty;
+        public string MensagemTipo { get; set; } = "info";
 
-        public void OnGet(int? idCategoria = null)
+        public ServicoListaModel(CategoriaProdutoHandler categoriaHandler, ServicoHandler servicoHandler)
+        {
+            _categoriaHandler = categoriaHandler;
+            _servicoHandler = servicoHandler;
+        }
+
+        public void OnGet(int? idCategoria = null, string? q = null, bool incluirArquivados = false, int p = 1)
         {
             IdCategoria = idCategoria;
-            int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
+            this.q = q;
+            this.incluirArquivados = incluirArquivados;
+            this.p = p;
 
-            var catHandler = new CategoriaProdutoHandler();
-            Categorias = catHandler.ListarPorSalao(idSalao) ?? new List<CategoriaProduto>();
-
-            var handler = new ServicoHandler();
-            Servicos = handler.ListarPorSalao(idSalao, idCategoria) ?? new List<Servico>();
-
-            foreach (var s in Servicos)
+            if (!TryObterIdSalao(out var idSalao))
             {
-                s.CategoriaNome = Categorias.FirstOrDefault(c => c.IdCategoria == s.IdCategoria)?.Nome;
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                return;
+            }
+
+            Categorias = _categoriaHandler.ListarPorSalao(idSalao)?.Where(c => c.Ativo).ToList() ?? new List<CategoriaProduto>();
+            Servicos = _servicoHandler.ListarPaginadoPorSalao(idSalao, idCategoria, q, incluirArquivados, p, 10);
+
+            foreach (var servico in Servicos.Items)
+            {
+                servico.CategoriaNome = Categorias.FirstOrDefault(c => c.IdCategoria == servico.IdCategoria)?.Nome;
             }
         }
 
-        public void OnPost()
+        public IActionResult OnPost(int id, string action, int? idCategoria, string? q, bool incluirArquivados, int p = 1)
         {
-            var handler = new ServicoHandler();
+            if (action == "alterar")
+            {
+                return Redirect($"{HttpContext.Request.PathBase}/ServicoCadastro?id={id}");
+            }
 
-            int id = int.Parse(Request.Form["id"]);
-            string action = Request.Form["action"];
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                OnGet(idCategoria, q, incluirArquivados, p);
+                return Page();
+            }
 
             if (action == "excluir")
             {
                 try
                 {
-                    int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
-                    handler.ExcluirPorSalao(id, idSalao);
-                    Mensagem = "Serviço excluído com sucesso.";
+                    _servicoHandler.ExcluirPorSalao(id, idSalao);
+                    Mensagem = "Servico excluido com sucesso.";
+                    MensagemTipo = "success";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível excluir este Serviço porque ele está associado a outros registros.";
+                    Mensagem = "Nao foi possivel excluir este servico porque ele esta associado a outros registros.";
+                    MensagemTipo = "warning";
                 }
             }
-            else if (action == "alterar")
-            {
-                Response.Redirect(HttpContext.Request.PathBase + $"/ServicoCadastro?id={id}");
-            }
 
-            OnGet();
+            OnGet(idCategoria, q, incluirArquivados, p);
+            return Page();
+        }
+
+        private bool TryObterIdSalao(out int idSalao)
+        {
+            return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
         }
     }
 }
-

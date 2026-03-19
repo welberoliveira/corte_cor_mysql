@@ -1165,6 +1165,99 @@ namespace CorteCor.Handlers
             return funcionarios;
         }
 
+        public virtual Funcionario? ObterPorIdESalao(int idFuncionario, int idSalao)
+        {
+            var funcionario = ObterPorId(idFuncionario);
+            return funcionario != null && funcionario.IdSalao == idSalao ? funcionario : null;
+        }
+
+        public PagedResult<Funcionario> ListarPaginadoPorSalao(int idSalao, string? pesquisa, int pageIndex, int pageSize)
+        {
+            var result = new PagedResult<Funcionario>
+            {
+                PageIndex = pageIndex < 1 ? 1 : pageIndex,
+                PageSize = pageSize < 1 ? 10 : pageSize
+            };
+
+            var filtro = string.IsNullOrWhiteSpace(pesquisa) ? null : $"%{pesquisa.Trim()}%";
+
+            using (var connection = _dbHandler.GetConnection())
+            {
+                string countQuery = @"
+        SELECT COUNT(*)
+        FROM CorteCor_Funcionario
+        WHERE IdSalao = @IdSalao
+          AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa);";
+
+                using (var countCommand = connection.CreateCommand(countQuery))
+                {
+                    countCommand.AddWithValue("@IdSalao", idSalao);
+                    countCommand.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    result.TotalCount = Convert.ToInt32(countCommand.ExecuteScalar());
+                }
+
+                string query = @"
+        SELECT IdFuncionario, Nome,
+               seg, seg_ini, seg_fim,
+               ter, ter_ini, ter_fim,
+               qua, qua_ini, qua_fim,
+               qui, qui_ini, qui_fim,
+               sex, sex_ini, sex_fim,
+               sab, sab_ini, sab_fim,
+               dom, dom_ini, dom_fim,
+               IdSalao
+        FROM CorteCor_Funcionario
+        WHERE IdSalao = @IdSalao
+          AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa)
+        ORDER BY Nome
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                using (var command = connection.CreateCommand(query))
+                {
+                    command.AddWithValue("@IdSalao", idSalao);
+                    command.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    command.AddWithValue("@Offset", (result.PageIndex - 1) * result.PageSize);
+                    command.AddWithValue("@PageSize", result.PageSize);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            result.Items.Add(new Funcionario
+                            {
+                                IdFuncionario = reader["IdFuncionario"] is DBNull ? 0 : Convert.ToInt32(reader["IdFuncionario"]),
+                                Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                                seg = reader["seg"] is DBNull ? false : Convert.ToBoolean(reader["seg"]),
+                                seg_ini = reader["seg_ini"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["seg_ini"],
+                                seg_fim = reader["seg_fim"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["seg_fim"],
+                                ter = reader["ter"] is DBNull ? false : Convert.ToBoolean(reader["ter"]),
+                                ter_ini = reader["ter_ini"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["ter_ini"],
+                                ter_fim = reader["ter_fim"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["ter_fim"],
+                                qua = reader["qua"] is DBNull ? false : Convert.ToBoolean(reader["qua"]),
+                                qua_ini = reader["qua_ini"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["qua_ini"],
+                                qua_fim = reader["qua_fim"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["qua_fim"],
+                                qui = reader["qui"] is DBNull ? false : Convert.ToBoolean(reader["qui"]),
+                                qui_ini = reader["qui_ini"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["qui_ini"],
+                                qui_fim = reader["qui_fim"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["qui_fim"],
+                                sex = reader["sex"] is DBNull ? false : Convert.ToBoolean(reader["sex"]),
+                                sex_ini = reader["sex_ini"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["sex_ini"],
+                                sex_fim = reader["sex_fim"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["sex_fim"],
+                                sab = reader["sab"] is DBNull ? false : Convert.ToBoolean(reader["sab"]),
+                                sab_ini = reader["sab_ini"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["sab_ini"],
+                                sab_fim = reader["sab_fim"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["sab_fim"],
+                                dom = reader["dom"] is DBNull ? false : Convert.ToBoolean(reader["dom"]),
+                                dom_ini = reader["dom_ini"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["dom_ini"],
+                                dom_fim = reader["dom_fim"] is DBNull ? (TimeSpan?)null : (TimeSpan)reader["dom_fim"],
+                                IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public void Atualizar(Funcionario funcionario)
         {
             string query = @"
@@ -1391,7 +1484,7 @@ namespace CorteCor.Handlers
             return servicos;
         }
 
-        public List<Servico> ListarPorSalao(int idSalao, int? idCategoria = null)
+        public virtual List<Servico> ListarPorSalao(int idSalao, int? idCategoria = null)
         {
             string query = @"
         SELECT IdServico, Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, IdCategoria, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
@@ -1434,6 +1527,113 @@ namespace CorteCor.Handlers
                 }
             }
             return servicos;
+        }
+
+        public virtual Servico? ObterPorIdESalao(int idServico, int idSalao)
+        {
+            var servico = ObterPorId(idServico);
+            return servico != null && servico.IdSalao == idSalao ? servico : null;
+        }
+
+        public bool ExisteNomePorSalao(string nome, int idSalao, int? ignorarIdServico = null)
+        {
+            string query = @"
+        SELECT COUNT(*)
+        FROM CorteCor_Servico
+        WHERE IdSalao = @IdSalao
+          AND Nome = @Nome
+          AND (@IgnorarIdServico IS NULL OR IdServico <> @IgnorarIdServico);";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                command.AddWithValue("@Nome", nome?.Trim() ?? "");
+                command.AddWithValue("@IgnorarIdServico", (object?)ignorarIdServico ?? DBNull.Value);
+                return Convert.ToInt32(command.ExecuteScalar()) > 0;
+            }
+        }
+
+        public PagedResult<Servico> ListarPaginadoPorSalao(int idSalao, int? idCategoria, string? pesquisa, bool incluirArquivados, int pageIndex, int pageSize)
+        {
+            var result = new PagedResult<Servico>
+            {
+                PageIndex = pageIndex < 1 ? 1 : pageIndex,
+                PageSize = pageSize < 1 ? 10 : pageSize
+            };
+
+            var filtro = string.IsNullOrWhiteSpace(pesquisa) ? null : $"%{pesquisa.Trim()}%";
+
+            using (var connection = _dbHandler.GetConnection())
+            {
+                string countQuery = @"
+        SELECT COUNT(*)
+        FROM CorteCor_Servico
+        WHERE IdSalao = @IdSalao
+          AND (@IdCategoria IS NULL OR IdCategoria = @IdCategoria)
+          AND (@IncluirArquivados = 1 OR ISNULL(Arquivado, 0) = 0)
+          AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa OR Tags LIKE @Pesquisa);";
+
+                using (var countCommand = connection.CreateCommand(countQuery))
+                {
+                    countCommand.AddWithValue("@IdSalao", idSalao);
+                    countCommand.AddWithValue("@IdCategoria", (object?)idCategoria ?? DBNull.Value);
+                    countCommand.AddWithValue("@IncluirArquivados", incluirArquivados);
+                    countCommand.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    result.TotalCount = Convert.ToInt32(countCommand.ExecuteScalar());
+                }
+
+                string query = @"
+        SELECT IdServico, Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, IdCategoria, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
+               Tags, Anotacoes, ItemListaServicoLC116, IdCnae, CodTributacaoNacional, CodNBS, Arquivado
+        FROM CorteCor_Servico
+        WHERE IdSalao = @IdSalao
+          AND (@IdCategoria IS NULL OR IdCategoria = @IdCategoria)
+          AND (@IncluirArquivados = 1 OR ISNULL(Arquivado, 0) = 0)
+          AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa OR Tags LIKE @Pesquisa)
+        ORDER BY Nome
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                using (var command = connection.CreateCommand(query))
+                {
+                    command.AddWithValue("@IdSalao", idSalao);
+                    command.AddWithValue("@IdCategoria", (object?)idCategoria ?? DBNull.Value);
+                    command.AddWithValue("@IncluirArquivados", incluirArquivados);
+                    command.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    command.AddWithValue("@Offset", (result.PageIndex - 1) * result.PageSize);
+                    command.AddWithValue("@PageSize", result.PageSize);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            result.Items.Add(new Servico
+                            {
+                                IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
+                                Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                                Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
+                                PrecoCusto = reader["PrecoCusto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PrecoCusto"]),
+                                MargemContribuicao = reader["MargemContribuicao"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["MargemContribuicao"]),
+                                Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
+                                IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                                IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),
+                                CodigoTributacaoMunicipio = reader["CodigoTributacaoMunicipio"] is DBNull ? "" : reader["CodigoTributacaoMunicipio"].ToString(),
+                                Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
+                                AliquotaISS = reader["AliquotaISS"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["AliquotaISS"]),
+                                Tags = reader["Tags"] is DBNull ? null : reader["Tags"].ToString(),
+                                Anotacoes = reader["Anotacoes"] is DBNull ? null : reader["Anotacoes"].ToString(),
+                                ItemListaServicoLC116 = reader["ItemListaServicoLC116"] is DBNull ? null : reader["ItemListaServicoLC116"].ToString(),
+                                IdCnae = reader["IdCnae"] is DBNull ? null : reader["IdCnae"].ToString(),
+                                CodTributacaoNacional = reader["CodTributacaoNacional"] is DBNull ? null : reader["CodTributacaoNacional"].ToString(),
+                                CodNBS = reader["CodNBS"] is DBNull ? null : reader["CodNBS"].ToString(),
+                                Arquivado = reader["Arquivado"] is DBNull ? false : Convert.ToBoolean(reader["Arquivado"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
         public void Atualizar(Servico servico)
@@ -2106,6 +2306,143 @@ namespace CorteCor.Handlers
             }
 
             return pessoas;
+        }
+
+        public PagedResult<Pessoa> ListarPaginadoPorSalao(int idSalao, string? pesquisa, int pageIndex, int pageSize)
+        {
+            var result = new PagedResult<Pessoa>
+            {
+                PageIndex = pageIndex < 1 ? 1 : pageIndex,
+                PageSize = pageSize < 1 ? 10 : pageSize
+            };
+
+            var filtro = string.IsNullOrWhiteSpace(pesquisa) ? null : $"%{pesquisa.Trim()}%";
+
+            using (var connection = _dbHandler.GetConnection())
+            {
+                string countQuery = @"
+        SELECT COUNT(*)
+        FROM CorteCor_Pessoa
+        WHERE IdSalao = @IdSalao
+          AND (Excluido = 0 OR Excluido IS NULL)
+          AND (
+                @Pesquisa IS NULL
+                OR Nome LIKE @Pesquisa
+                OR Email LIKE @Pesquisa
+                OR Telefone LIKE @Pesquisa
+                OR CpfCnpj LIKE @Pesquisa
+              );";
+
+                using (var countCommand = connection.CreateCommand(countQuery))
+                {
+                    countCommand.AddWithValue("@IdSalao", idSalao);
+                    countCommand.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    result.TotalCount = Convert.ToInt32(countCommand.ExecuteScalar());
+                }
+
+                string query = @"
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj,
+               IsCliente, IsFornecedor, IsTransportador
+        FROM CorteCor_Pessoa
+        WHERE IdSalao = @IdSalao
+          AND (Excluido = 0 OR Excluido IS NULL)
+          AND (
+                @Pesquisa IS NULL
+                OR Nome LIKE @Pesquisa
+                OR Email LIKE @Pesquisa
+                OR Telefone LIKE @Pesquisa
+                OR CpfCnpj LIKE @Pesquisa
+              )
+        ORDER BY Nome
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                using (var command = connection.CreateCommand(query))
+                {
+                    command.AddWithValue("@IdSalao", idSalao);
+                    command.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    command.AddWithValue("@Offset", (result.PageIndex - 1) * result.PageSize);
+                    command.AddWithValue("@PageSize", result.PageSize);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            result.Items.Add(new Pessoa
+                            {
+                                IdPessoa = reader["IdPessoa"] is DBNull ? 0 : Convert.ToInt32(reader["IdPessoa"]),
+                                Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                                Telefone = reader["Telefone"] is DBNull ? "" : reader["Telefone"].ToString(),
+                                Email = reader["Email"] is DBNull ? "" : reader["Email"].ToString(),
+                                DataNascimento = reader["DataNascimento"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataNascimento"]),
+                                IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                                Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"]),
+                                CpfCnpj = reader["CpfCnpj"] is DBNull ? "" : reader["CpfCnpj"].ToString(),
+                                IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
+                                IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                                IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public bool ExisteCpfCnpjPorSalao(string cpfCnpj, int idSalao, int? ignorarIdPessoa = null)
+        {
+            if (string.IsNullOrWhiteSpace(cpfCnpj))
+            {
+                return false;
+            }
+
+            string query = @"
+        SELECT COUNT(*)
+        FROM CorteCor_Pessoa
+        WHERE IdSalao = @IdSalao
+          AND CpfCnpj = @CpfCnpj
+          AND (Excluido = 0 OR Excluido IS NULL)
+          AND (@IgnorarIdPessoa IS NULL OR IdPessoa <> @IgnorarIdPessoa);";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                command.AddWithValue("@CpfCnpj", cpfCnpj);
+                command.AddWithValue("@IgnorarIdPessoa", (object?)ignorarIdPessoa ?? DBNull.Value);
+                return Convert.ToInt32(command.ExecuteScalar()) > 0;
+            }
+        }
+
+        public bool ExisteEmailPorSalao(string email, int idSalao, int? ignorarIdPessoa = null)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return false;
+            }
+
+            string query = @"
+        SELECT COUNT(*)
+        FROM CorteCor_Pessoa
+        WHERE IdSalao = @IdSalao
+          AND Email = @Email
+          AND (Excluido = 0 OR Excluido IS NULL)
+          AND (@IgnorarIdPessoa IS NULL OR IdPessoa <> @IgnorarIdPessoa);";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                command.AddWithValue("@Email", email.Trim());
+                command.AddWithValue("@IgnorarIdPessoa", (object?)ignorarIdPessoa ?? DBNull.Value);
+                return Convert.ToInt32(command.ExecuteScalar()) > 0;
+            }
+        }
+
+        public virtual Pessoa? ObterPorIdESalao(int idPessoa, int idSalao)
+        {
+            var pessoa = ObterPorId(idPessoa);
+            return pessoa != null && pessoa.IdSalao == idSalao ? pessoa : null;
         }
 
         public void Atualizar(Pessoa pessoa)
@@ -4588,7 +4925,7 @@ namespace CorteCor.Handlers
 
         public override void Excluir(int id)
         {
-            string query = "DELETE FROM CorteCor_CategoriaProduto WHERE IdCategoria = @IdCategoria";
+            string query = "UPDATE CorteCor_CategoriaProduto SET Ativo = 0 WHERE IdCategoria = @IdCategoria";
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
             {
@@ -4599,7 +4936,7 @@ namespace CorteCor.Handlers
 
         public void ExcluirPorSalao(int idCategoria, int idSalao)
         {
-            string query = "DELETE FROM CorteCor_CategoriaProduto WHERE IdCategoria = @IdCategoria AND IdSalao = @IdSalao";
+            string query = "UPDATE CorteCor_CategoriaProduto SET Ativo = 0 WHERE IdCategoria = @IdCategoria AND IdSalao = @IdSalao";
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
             {
@@ -4670,6 +5007,114 @@ namespace CorteCor.Handlers
                 }
             }
             return lista;
+        }
+
+        public CategoriaProduto? ObterPorIdESalao(int idCategoria, int idSalao)
+        {
+            string query = @"SELECT * FROM CorteCor_CategoriaProduto WHERE IdCategoria = @IdCategoria AND IdSalao = @IdSalao";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdCategoria", idCategoria);
+                command.AddWithValue("@IdSalao", idSalao);
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read()) return null;
+
+                    return new CategoriaProduto
+                    {
+                        IdCategoria = reader["IdCategoria"] is DBNull ? 0 : Convert.ToInt32(reader["IdCategoria"]),
+                        IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                        Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                        Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
+                        DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"])
+                    };
+                }
+            }
+        }
+
+        public bool ExisteNomePorSalao(string nome, int idSalao, int? ignorarIdCategoria = null)
+        {
+            string query = @"
+                SELECT COUNT(*)
+                FROM CorteCor_CategoriaProduto
+                WHERE IdSalao = @IdSalao
+                  AND Nome = @Nome
+                  AND (@IgnorarIdCategoria IS NULL OR IdCategoria <> @IgnorarIdCategoria);";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                command.AddWithValue("@Nome", nome?.Trim() ?? "");
+                command.AddWithValue("@IgnorarIdCategoria", (object?)ignorarIdCategoria ?? DBNull.Value);
+                return Convert.ToInt32(command.ExecuteScalar()) > 0;
+            }
+        }
+
+        public PagedResult<CategoriaProduto> ListarPaginadoPorSalao(int idSalao, string? pesquisa, bool incluirInativas, int pageIndex, int pageSize)
+        {
+            var result = new PagedResult<CategoriaProduto>
+            {
+                PageIndex = pageIndex < 1 ? 1 : pageIndex,
+                PageSize = pageSize < 1 ? 10 : pageSize
+            };
+
+            var filtro = string.IsNullOrWhiteSpace(pesquisa) ? null : $"%{pesquisa.Trim()}%";
+
+            using (var connection = _dbHandler.GetConnection())
+            {
+                string countQuery = @"
+                SELECT COUNT(*)
+                FROM CorteCor_CategoriaProduto
+                WHERE IdSalao = @IdSalao
+                  AND (@IncluirInativas = 1 OR Ativo = 1)
+                  AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa);";
+
+                using (var countCommand = connection.CreateCommand(countQuery))
+                {
+                    countCommand.AddWithValue("@IdSalao", idSalao);
+                    countCommand.AddWithValue("@IncluirInativas", incluirInativas);
+                    countCommand.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    result.TotalCount = Convert.ToInt32(countCommand.ExecuteScalar());
+                }
+
+                string query = @"
+                SELECT *
+                FROM CorteCor_CategoriaProduto
+                WHERE IdSalao = @IdSalao
+                  AND (@IncluirInativas = 1 OR Ativo = 1)
+                  AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa)
+                ORDER BY Nome
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                using (var command = connection.CreateCommand(query))
+                {
+                    command.AddWithValue("@IdSalao", idSalao);
+                    command.AddWithValue("@IncluirInativas", incluirInativas);
+                    command.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    command.AddWithValue("@Offset", (result.PageIndex - 1) * result.PageSize);
+                    command.AddWithValue("@PageSize", result.PageSize);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            result.Items.Add(new CategoriaProduto
+                            {
+                                IdCategoria = reader["IdCategoria"] is DBNull ? 0 : Convert.ToInt32(reader["IdCategoria"]),
+                                IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                                Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                                Ativo = reader["Ativo"] is DBNull ? false : Convert.ToBoolean(reader["Ativo"]),
+                                DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
     }
 
@@ -4858,6 +5303,81 @@ namespace CorteCor.Handlers
             return produtos.Count > 0 ? produtos[0] : null;
         }
 
+        public Produto? ObterPorIdESalao(int idProduto, int idSalao)
+        {
+            string query = @"SELECT * FROM CorteCor_Produto WHERE IdProduto = @IdProduto AND IdSalao = @IdSalao AND (Excluido = 0 OR Excluido IS NULL)";
+            var parametros = new Dictionary<string, object>
+            {
+                { "@IdProduto", idProduto },
+                { "@IdSalao", idSalao }
+            };
+            var produtos = LerListaProdutos(query, parametros);
+            return produtos.Count > 0 ? produtos[0] : null;
+        }
+
+        public PagedResult<Produto> ListarPaginadoPorSalao(int idSalao, int? idCategoria, string? pesquisa, bool incluirArquivados, int pageIndex, int pageSize)
+        {
+            var result = new PagedResult<Produto>
+            {
+                PageIndex = pageIndex < 1 ? 1 : pageIndex,
+                PageSize = pageSize < 1 ? 10 : pageSize
+            };
+
+            var filtro = string.IsNullOrWhiteSpace(pesquisa) ? null : $"%{pesquisa.Trim()}%";
+
+            using (var connection = _dbHandler.GetConnection())
+            {
+                string countQuery = @"
+                SELECT COUNT(*)
+                FROM CorteCor_Produto
+                WHERE IdSalao = @IdSalao
+                  AND (Excluido = 0 OR Excluido IS NULL)
+                  AND (@IdCategoria IS NULL OR IdCategoria = @IdCategoria)
+                  AND (@IncluirArquivados = 1 OR ISNULL(Arquivado, 0) = 0)
+                  AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa OR CodigoProprio LIKE @Pesquisa OR Tags LIKE @Pesquisa);";
+
+                using (var countCommand = connection.CreateCommand(countQuery))
+                {
+                    countCommand.AddWithValue("@IdSalao", idSalao);
+                    countCommand.AddWithValue("@IdCategoria", (object?)idCategoria ?? DBNull.Value);
+                    countCommand.AddWithValue("@IncluirArquivados", incluirArquivados);
+                    countCommand.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    result.TotalCount = Convert.ToInt32(countCommand.ExecuteScalar());
+                }
+
+                string query = @"
+                SELECT *
+                FROM CorteCor_Produto
+                WHERE IdSalao = @IdSalao
+                  AND (Excluido = 0 OR Excluido IS NULL)
+                  AND (@IdCategoria IS NULL OR IdCategoria = @IdCategoria)
+                  AND (@IncluirArquivados = 1 OR ISNULL(Arquivado, 0) = 0)
+                  AND (@Pesquisa IS NULL OR Nome LIKE @Pesquisa OR CodigoProprio LIKE @Pesquisa OR Tags LIKE @Pesquisa)
+                ORDER BY Nome
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                using (var command = connection.CreateCommand(query))
+                {
+                    command.AddWithValue("@IdSalao", idSalao);
+                    command.AddWithValue("@IdCategoria", (object?)idCategoria ?? DBNull.Value);
+                    command.AddWithValue("@IncluirArquivados", incluirArquivados);
+                    command.AddWithValue("@Pesquisa", (object?)filtro ?? DBNull.Value);
+                    command.AddWithValue("@Offset", (result.PageIndex - 1) * result.PageSize);
+                    command.AddWithValue("@PageSize", result.PageSize);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            result.Items.Add(MapProduto(reader));
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         private List<Produto> LerListaProdutos(string query, Dictionary<string, object> parametros = null)
         {
             var lista = new List<Produto>();
@@ -4876,46 +5396,51 @@ namespace CorteCor.Handlers
                 {
                     while (reader.Read())
                     {
-                        lista.Add(new Produto
-                        {
-                            IdProduto = reader["IdProduto"] is DBNull ? 0 : Convert.ToInt32(reader["IdProduto"]),
-                            IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
-                            Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
-                            CodigoProprio = reader["CodigoProprio"] is DBNull ? null : reader["CodigoProprio"].ToString(),
-                            IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),
-                            Tags = reader["Tags"] is DBNull ? null : reader["Tags"].ToString(),
-                            TipoUso = reader["TipoUso"] is DBNull ? null : reader["TipoUso"].ToString(),
-                            Arquivado = reader["Arquivado"] is DBNull ? false : Convert.ToBoolean(reader["Arquivado"]),
-                            Anotacoes = reader["Anotacoes"] is DBNull ? null : reader["Anotacoes"].ToString(),
-                            PrecoCusto = reader["PrecoCusto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PrecoCusto"]),
-                            PrecoVenda = reader["PrecoVenda"] is DBNull ? 0m : Convert.ToDecimal(reader["PrecoVenda"]),
-                            MargemContribuicao = reader["MargemContribuicao"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["MargemContribuicao"]),
-                            ControlarEstoque = reader["ControlarEstoque"] is DBNull ? false : Convert.ToBoolean(reader["ControlarEstoque"]),
-                            EstoqueAtual = reader["EstoqueAtual"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["EstoqueAtual"]),
-                            EstoqueMinimo = reader["EstoqueMinimo"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["EstoqueMinimo"]),
-                            Origem = reader["Origem"] is DBNull ? (int?)null : Convert.ToInt32(reader["Origem"]),
-                            ReferenciaEAN = reader["ReferenciaEAN"] is DBNull ? null : reader["ReferenciaEAN"].ToString(),
-                            PesoLiquido = reader["PesoLiquido"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PesoLiquido"]),
-                            PesoBruto = reader["PesoBruto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PesoBruto"]),
-                            NCM = reader["NCM"] is DBNull ? null : reader["NCM"].ToString(),
-                            CEST = reader["CEST"] is DBNull ? null : reader["CEST"].ToString(),
-                            UnidadeComercial = reader["UnidadeComercial"] is DBNull ? null : reader["UnidadeComercial"].ToString(),
-                            ExcecaoIPI = reader["ExcecaoIPI"] is DBNull ? (int?)null : Convert.ToInt32(reader["ExcecaoIPI"]),
-                            CodBeneficioFiscalUF = reader["CodBeneficioFiscalUF"] is DBNull ? null : reader["CodBeneficioFiscalUF"].ToString(),
-                            UnidadeTributadaDiferente = reader["UnidadeTributadaDiferente"] is DBNull ? false : Convert.ToBoolean(reader["UnidadeTributadaDiferente"]),
-                            EANTributada = reader["EANTributada"] is DBNull ? null : reader["EANTributada"].ToString(),
-                            UnidadeTributada = reader["UnidadeTributada"] is DBNull ? null : reader["UnidadeTributada"].ToString(),
-                            QuantidadeTributada = reader["QuantidadeTributada"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["QuantidadeTributada"]),
-                            IgnorarTribPrecoVenda = reader["IgnorarTribPrecoVenda"] is DBNull ? false : Convert.ToBoolean(reader["IgnorarTribPrecoVenda"]),
-                            AnotacoesFiscaisNFe = reader["AnotacoesFiscaisNFe"] is DBNull ? null : reader["AnotacoesFiscaisNFe"].ToString(),
-                            GrupoTributarioVinculado = reader["GrupoTributarioVinculado"] is DBNull ? (int?)null : Convert.ToInt32(reader["GrupoTributarioVinculado"]),
-                            DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"]),
-                            Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
-                        });
+                        lista.Add(MapProduto(reader));
                     }
                 }
             }
             return lista;
+        }
+
+        private static Produto MapProduto(IDataReader reader)
+        {
+            return new Produto
+            {
+                IdProduto = reader["IdProduto"] is DBNull ? 0 : Convert.ToInt32(reader["IdProduto"]),
+                IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                CodigoProprio = reader["CodigoProprio"] is DBNull ? null : reader["CodigoProprio"].ToString(),
+                IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),
+                Tags = reader["Tags"] is DBNull ? null : reader["Tags"].ToString(),
+                TipoUso = reader["TipoUso"] is DBNull ? null : reader["TipoUso"].ToString(),
+                Arquivado = reader["Arquivado"] is DBNull ? false : Convert.ToBoolean(reader["Arquivado"]),
+                Anotacoes = reader["Anotacoes"] is DBNull ? null : reader["Anotacoes"].ToString(),
+                PrecoCusto = reader["PrecoCusto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PrecoCusto"]),
+                PrecoVenda = reader["PrecoVenda"] is DBNull ? 0m : Convert.ToDecimal(reader["PrecoVenda"]),
+                MargemContribuicao = reader["MargemContribuicao"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["MargemContribuicao"]),
+                ControlarEstoque = reader["ControlarEstoque"] is DBNull ? false : Convert.ToBoolean(reader["ControlarEstoque"]),
+                EstoqueAtual = reader["EstoqueAtual"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["EstoqueAtual"]),
+                EstoqueMinimo = reader["EstoqueMinimo"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["EstoqueMinimo"]),
+                Origem = reader["Origem"] is DBNull ? (int?)null : Convert.ToInt32(reader["Origem"]),
+                ReferenciaEAN = reader["ReferenciaEAN"] is DBNull ? null : reader["ReferenciaEAN"].ToString(),
+                PesoLiquido = reader["PesoLiquido"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PesoLiquido"]),
+                PesoBruto = reader["PesoBruto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PesoBruto"]),
+                NCM = reader["NCM"] is DBNull ? null : reader["NCM"].ToString(),
+                CEST = reader["CEST"] is DBNull ? null : reader["CEST"].ToString(),
+                UnidadeComercial = reader["UnidadeComercial"] is DBNull ? null : reader["UnidadeComercial"].ToString(),
+                ExcecaoIPI = reader["ExcecaoIPI"] is DBNull ? (int?)null : Convert.ToInt32(reader["ExcecaoIPI"]),
+                CodBeneficioFiscalUF = reader["CodBeneficioFiscalUF"] is DBNull ? null : reader["CodBeneficioFiscalUF"].ToString(),
+                UnidadeTributadaDiferente = reader["UnidadeTributadaDiferente"] is DBNull ? false : Convert.ToBoolean(reader["UnidadeTributadaDiferente"]),
+                EANTributada = reader["EANTributada"] is DBNull ? null : reader["EANTributada"].ToString(),
+                UnidadeTributada = reader["UnidadeTributada"] is DBNull ? null : reader["UnidadeTributada"].ToString(),
+                QuantidadeTributada = reader["QuantidadeTributada"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["QuantidadeTributada"]),
+                IgnorarTribPrecoVenda = reader["IgnorarTribPrecoVenda"] is DBNull ? false : Convert.ToBoolean(reader["IgnorarTribPrecoVenda"]),
+                AnotacoesFiscaisNFe = reader["AnotacoesFiscaisNFe"] is DBNull ? null : reader["AnotacoesFiscaisNFe"].ToString(),
+                GrupoTributarioVinculado = reader["GrupoTributarioVinculado"] is DBNull ? (int?)null : Convert.ToInt32(reader["GrupoTributarioVinculado"]),
+                DataCadastro = reader["DataCadastro"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataCadastro"]),
+                Excluido = reader["Excluido"] is DBNull ? false : Convert.ToBoolean(reader["Excluido"])
+            };
         }
     }
 

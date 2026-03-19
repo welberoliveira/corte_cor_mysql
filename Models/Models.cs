@@ -99,6 +99,8 @@ public class PessoaFicha
 public class Funcionario
 {
     public int IdFuncionario { get; set; }
+    [Required(ErrorMessage = "Informe o nome do funcionário.")]
+    [StringLength(120, ErrorMessage = "O nome do funcionário deve ter no máximo 120 caracteres.")]
     public string Nome { get; set; }
 
     public bool seg { get; set; }
@@ -135,7 +137,10 @@ public class Funcionario
 public class Servico
 {
     public int IdServico { get; set; }
+    [Required(ErrorMessage = "Informe o nome do serviço.")]
+    [StringLength(160, ErrorMessage = "O nome do serviço deve ter no máximo 160 caracteres.")]
     public string Nome { get; set; }
+    [Range(typeof(decimal), "0", "9999999", ErrorMessage = "O preço do serviço deve ser maior ou igual a zero.")]
     public decimal Preco { get; set; }
     public decimal? PrecoCusto { get; set; }
     public decimal? MargemContribuicao { get; set; }
@@ -168,14 +173,19 @@ public class FuncionarioServico
 public class Pessoa
 {
     public int IdPessoa { get; set; }
+    [Required(ErrorMessage = "Informe o nome da pessoa.")]
+    [StringLength(160, ErrorMessage = "O nome deve ter no máximo 160 caracteres.")]
     public string Nome { get; set; }
+    [Phone(ErrorMessage = "Informe um telefone válido.")]
     public string Telefone { get; set; }
+    [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
     public string Email { get; set; }
     public DateTime? DataNascimento { get; set; }
     public int IdSalao { get; set; }
     public bool Excluido { get; set; }
 
     // Campos Fiscais e de Endereço
+    [StringLength(18, ErrorMessage = "CPF/CNPJ deve ter no máximo 18 caracteres.")]
     public string? CpfCnpj { get; set; }
     public string? InscricaoEstadual { get; set; }
     public string? InscricaoMunicipal { get; set; }
@@ -571,6 +581,8 @@ public class CategoriaProduto
 {
     public int IdCategoria { get; set; }
     public int IdSalao { get; set; }
+    [Required(ErrorMessage = "Informe o nome da categoria.")]
+    [StringLength(120, ErrorMessage = "O nome da categoria deve ter no máximo 120 caracteres.")]
     public string Nome { get; set; }
     public bool Ativo { get; set; }
     public DateTime DataCadastro { get; set; }
@@ -580,6 +592,8 @@ public class Produto
 {
     public int IdProduto { get; set; }
     public int IdSalao { get; set; }
+    [Required(ErrorMessage = "Informe o nome do produto.")]
+    [StringLength(160, ErrorMessage = "O nome do produto deve ter no máximo 160 caracteres.")]
     public string Nome { get; set; }
     public string? CodigoProprio { get; set; }
     public int? IdCategoria { get; set; }
@@ -590,6 +604,7 @@ public class Produto
     public string? Anotacoes { get; set; }
     
     public decimal? PrecoCusto { get; set; }
+    [Range(typeof(decimal), "0", "9999999", ErrorMessage = "O preço de venda deve ser maior ou igual a zero.")]
     public decimal PrecoVenda { get; set; }
     public decimal? MargemContribuicao { get; set; }
     

@@ -8,16 +8,33 @@
     <div class="col-md-10">
         <h2>@ViewData["Title"]</h2>
     </div>
-    <div class="col-md-2">
-        <a class="btn btn-primary pull-right" asp-page="/PessoaCadastro">Nova Pessoa</a>
+    <div class="col-md-2 text-end">
+        <a class="btn btn-primary" asp-page="/PessoaCadastro">Nova Pessoa</a>
     </div>
 </div>
 <br />
 
 @if (!string.IsNullOrEmpty(Model.Mensagem))
 {
-    <div class="alert alert-info">@Model.Mensagem</div>
+    <div class="alert alert-@Model.MensagemTipo">@Model.Mensagem</div>
 }
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="q" class="form-label">Buscar por nome, CPF/CNPJ, telefone ou e-mail</label>
+                <input type="text" id="q" name="q" value="@Model.q" class="form-control" placeholder="Digite sua busca">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+            </div>
+            <div class="col-md-2">
+                <a asp-page="/PessoaLista" class="btn btn-link">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div class="table-responsive">
     <table class="table table-striped table-hover">
@@ -26,29 +43,49 @@
                 <th>Nome</th>
                 <th>Telefone</th>
                 <th class="d-none d-md-table-cell">Email</th>
+                <th class="d-none d-md-table-cell">CPF/CNPJ</th>
+                <th class="d-none d-md-table-cell">Tipo</th>
                 <th class="d-none d-md-table-cell">Data Nascimento</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var Pessoa in Model.Pessoas.Items)
+            @foreach (var pessoa in Model.Pessoas.Items)
             {
                 <tr>
-                    <td>@Pessoa.Nome</td>
-                    <td>@Pessoa.Telefone</td>
-                    <td class="d-none d-md-table-cell">@Pessoa.Email</td>
-                    <td class="d-none d-md-table-cell">@(Pessoa.DataNascimento.HasValue ? Pessoa.DataNascimento.Value.ToShortDateString() : "")</td>
+                    <td>@pessoa.Nome</td>
+                    <td>@pessoa.Telefone</td>
+                    <td class="d-none d-md-table-cell">@pessoa.Email</td>
+                    <td class="d-none d-md-table-cell">@pessoa.CpfCnpj</td>
+                    <td class="d-none d-md-table-cell">
+                        @if (pessoa.IsCliente)
+                        {
+                            <span class="badge bg-primary me-1">Cliente</span>
+                        }
+                        @if (pessoa.IsFornecedor)
+                        {
+                            <span class="badge bg-warning text-dark me-1">Fornecedor</span>
+                        }
+                        @if (pessoa.IsTransportador)
+                        {
+                            <span class="badge bg-info text-dark">Transportador</span>
+                        }
+                    </td>
+                    <td class="d-none d-md-table-cell">@(pessoa.DataNascimento.HasValue ? pessoa.DataNascimento.Value.ToShortDateString() : "")</td>
                     <td class="actions">
                         <form method="post" style="display: inline;">
-                            <button name="id" value="@Pessoa.IdPessoa" class="btn btn-info" type="submit"
-                                formaction="?handler=Alterar">Alterar</button>
+                            <input type="hidden" name="id" value="@pessoa.IdPessoa">
                             <input type="hidden" name="action" value="alterar">
+                            <input type="hidden" name="q" value="@Model.q">
+                            <input type="hidden" name="p" value="@Model.Pessoas.PageIndex">
+                            <button class="btn btn-info" type="submit">Alterar</button>
                         </form>
 
-                        <form method="post" style="display: inline;"
-                            onsubmit="return confirm('Tem certeza que deseja excluir esta Pessoa?');">
-                            <input type="hidden" name="id" value="@Pessoa.IdPessoa">
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta pessoa?');">
+                            <input type="hidden" name="id" value="@pessoa.IdPessoa">
                             <input type="hidden" name="action" value="excluir">
+                            <input type="hidden" name="q" value="@Model.q">
+                            <input type="hidden" name="p" value="@Model.Pessoas.PageIndex">
                             <button class="btn btn-danger">Excluir</button>
                         </form>
                     </td>
@@ -58,19 +95,18 @@
     </table>
 </div>
 
-<!-- Pagination Controls -->
 @if (Model.Pessoas.TotalPages > 1)
 {
-    <nav aria-label="Page navigation">
+    <nav aria-label="Paginacao de pessoas">
         <ul class="pagination justify-content-center">
             <li class="page-item @(Model.Pessoas.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link" href="?p=@(Model.Pessoas.PageIndex - 1)" tabindex="-1">Anterior</a>
+                <a class="page-link" href="?p=@(Model.Pessoas.PageIndex - 1)&q=@Model.q" tabindex="-1">Anterior</a>
             </li>
             <li class="page-item disabled">
-                <span class="page-link">Página @Model.Pessoas.PageIndex de @Model.Pessoas.TotalPages</span>
+                <span class="page-link">Pagina @Model.Pessoas.PageIndex de @Model.Pessoas.TotalPages</span>
             </li>
             <li class="page-item @(Model.Pessoas.HasNextPage ? "" : "disabled")">
-                <a class="page-link" href="?p=@(Model.Pessoas.PageIndex + 1)">Próxima</a>
+                <a class="page-link" href="?p=@(Model.Pessoas.PageIndex + 1)&q=@Model.q">Proxima</a>
             </li>
         </ul>
     </nav>

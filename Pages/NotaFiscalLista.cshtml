@@ -26,6 +26,13 @@
     {
             <div class="alert alert-danger">@Model.Erro</div>
     }
+    @if (!string.IsNullOrEmpty(Model.FiltroDescricao))
+    {
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <span>@Model.FiltroDescricao</span>
+                <a asp-page="/NotaFiscalLista" class="btn btn-sm btn-outline-secondary">Limpar filtro</a>
+            </div>
+    }
 
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">

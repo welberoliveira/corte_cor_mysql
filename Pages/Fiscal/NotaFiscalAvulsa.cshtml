@@ -154,6 +154,9 @@
     }
 
     <form method="post" enctype="multipart/form-data" id="nfeForm">
+        <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+        <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+        <input type="hidden" name="Aba" value="@Model.AbaAtiva" />
         <div class="row">
             <!-- Sidebar: Configurações Rápidas & Logs -->
             <div class="col-md-3">
@@ -421,19 +424,19 @@
     <div class="mt-5 animate__animated animate__fadeInUp">
         <ul class="nav nav-tabs mb-3" id="fiscalTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="notas-tab" data-bs-toggle="tab" data-bs-target="#notas" type="button" role="tab" aria-selected="true">
+                <button class="nav-link @(Model.AbaAtiva == "notas" ? "active" : "")" id="notas-tab" data-bs-toggle="tab" data-bs-target="#notas" type="button" role="tab" aria-selected="@(Model.AbaAtiva == "notas" ? "true" : "false")">
                     <i class="bi bi-clock-history"></i> Notas Recentes
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="inut-tab" data-bs-toggle="tab" data-bs-target="#inut" type="button" role="tab" aria-selected="false">
+                <button class="nav-link @(Model.AbaAtiva == "inut" ? "active" : "")" id="inut-tab" data-bs-toggle="tab" data-bs-target="#inut" type="button" role="tab" aria-selected="@(Model.AbaAtiva == "inut" ? "true" : "false")">
                     <i class="bi bi-slash-circle"></i> Inutilizações
                 </button>
             </li>
         </ul>
         
         <div class="tab-content" id="fiscalTabsContent">
-            <div class="tab-pane fade show active" id="notas" role="tabpanel">
+            <div class="tab-pane fade @(Model.AbaAtiva == "notas" ? "show active" : "")" id="notas" role="tabpanel">
                 <div class="glass-card">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle custom-table">
@@ -464,17 +467,24 @@
                                         <td>
                                             <span class="badge @acoes.ClasseStatus">@nota.Status</span>
                                         </td>
-                                        <td class="text-end">
-                                            <div class="d-flex gap-1 justify-content-end">
-                                                <form method="post" asp-page-handler="Consultar" class="d-inline">
+                                        <td class="text-end nota-acoes-cell">
+                                            <div class="nota-acoes-wrap">
+                                                <form method="post" asp-page-handler="Consultar" class="nota-acao-form">
                                                     <input type="hidden" name="ChaveAcesso" value="@acoes.ChaveFiscal" />
-                                                    <button type="submit" class="btn btn-outline-primary btn-sm" title="Consultar Status">
+                                                    <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                                                    <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                                                    <input type="hidden" name="Aba" value="notas" />
+                                                    <button type="submit" class="btn btn-sm nota-acao-btn nota-acao-primary" title="Consultar Status">
                                                         <i class="bi bi-search"></i>
+                                                        <span class="nota-acao-label">Consultar</span>
                                                     </button>
                                                 </form>
 
                                                 <form method="post" asp-page-handler="VerHistorico" class="d-inline">
                                                     <input type="hidden" name="ChaveAcesso" value="@acoes.ChaveFiscal" />
+                                                    <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                                                    <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                                                    <input type="hidden" name="Aba" value="notas" />
                                                     <button type="submit" class="btn btn-outline-dark btn-sm" title="Ver Histórico">
                                                         <i class="bi bi-clock-history"></i>
                                                     </button>
@@ -485,6 +495,9 @@
                                                     <form method="post" asp-page-handler="DownloadXmlDb" class="d-inline">
                                                         <input type="hidden" name="chaveAcesso" value="@acoes.ChaveFiscal" />
                                                         <input type="hidden" name="tipo" value="@acoes.TipoXmlPreferencial" />
+                                                        <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                                                        <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                                                        <input type="hidden" name="Aba" value="notas" />
                                                         <button type="submit" class="btn btn-outline-secondary btn-sm" title="Baixar XML">
                                                             <i class="bi bi-file-earmark-code"></i>
                                                         </button>
@@ -495,6 +508,9 @@
                                                 {
                                                     <form method="post" asp-page-handler="GerarPdf" class="d-inline">
                                                         <input type="hidden" name="chaveAcesso" value="@acoes.ChaveFiscal" />
+                                                        <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                                                        <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                                                        <input type="hidden" name="Aba" value="notas" />
                                                         <button type="submit" class="btn btn-outline-danger btn-sm" title="Baixar PDF">
                                                             <i class="bi bi-file-pdf"></i>
                                                         </button>
@@ -542,6 +558,30 @@
                             </tbody>
                         </table>
                     </div>
+                    @if (Model.NotasEmitidasPaginadas.TotalPages > 1)
+                    {
+                        <nav aria-label="Paginacao de notas recentes" class="mt-3">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                <li class="page-item @(Model.NotasEmitidasPaginadas.HasPreviousPage ? "" : "disabled")">
+                                    <a class="page-link"
+                                       asp-page="/Fiscal/NotaFiscalAvulsa"
+                                       asp-route-NotasPage="@(Model.NotasEmitidasPaginadas.PageIndex - 1)"
+                                       asp-route-InutilizacoesPage="@Model.InutilizacoesPaginadas.PageIndex"
+                                       asp-route-Aba="notas">Anterior</a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Pagina @Model.NotasEmitidasPaginadas.PageIndex de @Model.NotasEmitidasPaginadas.TotalPages</span>
+                                </li>
+                                <li class="page-item @(Model.NotasEmitidasPaginadas.HasNextPage ? "" : "disabled")">
+                                    <a class="page-link"
+                                       asp-page="/Fiscal/NotaFiscalAvulsa"
+                                       asp-route-NotasPage="@(Model.NotasEmitidasPaginadas.PageIndex + 1)"
+                                       asp-route-InutilizacoesPage="@Model.InutilizacoesPaginadas.PageIndex"
+                                       asp-route-Aba="notas">Proxima</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
                 </div>
             </div>
 
@@ -662,7 +702,7 @@
                 </div>
             }
 
-            <div class="tab-pane fade" id="inut" role="tabpanel">
+            <div class="tab-pane fade @(Model.AbaAtiva == "inut" ? "show active" : "")" id="inut" role="tabpanel">
                 <div class="glass-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Histórico de Inutilizações (NF-e/NFC-e)</h5>
@@ -701,6 +741,30 @@
                             </tbody>
                         </table>
                     </div>
+                    @if (Model.InutilizacoesPaginadas.TotalPages > 1)
+                    {
+                        <nav aria-label="Paginacao de inutilizacoes" class="mt-3">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                <li class="page-item @(Model.InutilizacoesPaginadas.HasPreviousPage ? "" : "disabled")">
+                                    <a class="page-link"
+                                       asp-page="/Fiscal/NotaFiscalAvulsa"
+                                       asp-route-NotasPage="@Model.NotasEmitidasPaginadas.PageIndex"
+                                       asp-route-InutilizacoesPage="@(Model.InutilizacoesPaginadas.PageIndex - 1)"
+                                       asp-route-Aba="inut">Anterior</a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Pagina @Model.InutilizacoesPaginadas.PageIndex de @Model.InutilizacoesPaginadas.TotalPages</span>
+                                </li>
+                                <li class="page-item @(Model.InutilizacoesPaginadas.HasNextPage ? "" : "disabled")">
+                                    <a class="page-link"
+                                       asp-page="/Fiscal/NotaFiscalAvulsa"
+                                       asp-route-NotasPage="@Model.NotasEmitidasPaginadas.PageIndex"
+                                       asp-route-InutilizacoesPage="@(Model.InutilizacoesPaginadas.PageIndex + 1)"
+                                       asp-route-Aba="inut">Proxima</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
                 </div>
             </div>
         </div>
@@ -815,6 +879,129 @@
         .table > :not(caption) > * > * {
             padding: 0.75rem;
         }
+
+        .nota-acoes-cell {
+            min-width: 300px;
+        }
+
+        .nota-acoes-wrap {
+            display: flex !important;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-left: auto;
+            max-width: 100%;
+        }
+
+        .nota-acao-form {
+            margin: 0;
+        }
+
+        .nota-acao-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            min-height: 34px;
+            padding: 0.38rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 0.78rem;
+            font-weight: 600;
+            line-height: 1.1;
+            white-space: nowrap;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease, background-color 0.18s ease;
+        }
+
+        .nota-acao-btn:hover,
+        .nota-acao-btn:focus {
+            transform: translateY(-1px);
+            color: #fff !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+            filter: brightness(0.96);
+        }
+
+        .nota-acao-btn i {
+            font-size: 0.9rem;
+        }
+
+        .nota-acao-primary {
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+        }
+
+        .nota-acao-primary:hover,
+        .nota-acao-primary:focus {
+            background: #1d4ed8 !important;
+            border-color: #1d4ed8 !important;
+        }
+
+        .nota-acao-dark {
+            background: #1f2937 !important;
+            border-color: #1f2937 !important;
+        }
+
+        .nota-acao-dark:hover,
+        .nota-acao-dark:focus {
+            background: #111827 !important;
+            border-color: #111827 !important;
+        }
+
+        .nota-acao-secondary {
+            background: #64748b !important;
+            border-color: #64748b !important;
+        }
+
+        .nota-acao-secondary:hover,
+        .nota-acao-secondary:focus {
+            background: #475569 !important;
+            border-color: #475569 !important;
+        }
+
+        .nota-acao-danger {
+            background: #dc2626 !important;
+            border-color: #dc2626 !important;
+        }
+
+        .nota-acao-danger:hover,
+        .nota-acao-danger:focus {
+            background: #b91c1c !important;
+            border-color: #b91c1c !important;
+        }
+
+        .nota-acao-info {
+            background: #0891b2 !important;
+            border-color: #0891b2 !important;
+        }
+
+        .nota-acao-info:hover,
+        .nota-acao-info:focus {
+            background: #0e7490 !important;
+            border-color: #0e7490 !important;
+        }
+
+        .nota-acao-success {
+            background: #15803d !important;
+            border-color: #15803d !important;
+        }
+
+        .nota-acao-success:hover,
+        .nota-acao-success:focus {
+            background: #166534 !important;
+            border-color: #166534 !important;
+        }
+
+        @@media (max-width: 992px) {
+            .nota-acoes-cell {
+                min-width: 220px;
+            }
+
+            .nota-acoes-wrap {
+                justify-content: flex-start;
+            }
+        }
     </style>
 }
 
@@ -886,10 +1073,104 @@
             // Initial calculation
             calculateTotals();
 
+            decorarAcoesNotasRecentes();
+            sincronizarAbaFiscal();
+
             // Auto-scroll logs
             var logContent = document.getElementById("logContent");
             if(logContent) logContent.scrollTop = logContent.scrollHeight;
         });
+
+        function decorarAcoesNotasRecentes() {
+            const containers = document.querySelectorAll('#notas .custom-table tbody td .d-flex.gap-1.justify-content-end, #notas .custom-table tbody td .nota-acoes-wrap');
+
+            containers.forEach((container) => {
+                container.classList.add('nota-acoes-wrap');
+
+                const cell = container.closest('td');
+                if (cell) {
+                    cell.classList.add('nota-acoes-cell');
+                }
+
+                container.querySelectorAll('form').forEach((form) => {
+                    form.classList.add('nota-acao-form');
+                });
+
+                container.querySelectorAll('button').forEach((button) => {
+                    const config = obterConfigBotaoNotaRecente(button);
+
+                    button.classList.remove(
+                        'btn-outline-primary',
+                        'btn-outline-dark',
+                        'btn-outline-secondary',
+                        'btn-outline-danger',
+                        'btn-outline-info',
+                        'btn-outline-success'
+                    );
+
+                    button.classList.add('nota-acao-btn', config.classe);
+
+                    if (!button.querySelector('.nota-acao-label')) {
+                        const label = document.createElement('span');
+                        label.className = 'nota-acao-label';
+                        label.textContent = config.texto;
+                        button.appendChild(label);
+                    }
+                });
+            });
+        }
+
+        function obterConfigBotaoNotaRecente(button) {
+            const title = (button.getAttribute('title') || '').toLowerCase();
+            const target = button.getAttribute('data-bs-target') || '';
+
+            if (title.includes('consultar')) {
+                return { texto: 'Consultar', classe: 'nota-acao-primary' };
+            }
+
+            if (title.includes('hist')) {
+                return { texto: 'Histórico', classe: 'nota-acao-dark' };
+            }
+
+            if (title.includes('xml')) {
+                return { texto: 'XML', classe: 'nota-acao-secondary' };
+            }
+
+            if (title.includes('pdf')) {
+                return { texto: 'PDF', classe: 'nota-acao-danger' };
+            }
+
+            if (target === '#modalCancelar') {
+                return { texto: 'Cancelar', classe: 'nota-acao-danger' };
+            }
+
+            if (target === '#modalCorrecao' || title.includes('correc')) {
+                return { texto: 'CC-e', classe: 'nota-acao-info' };
+            }
+
+            if (target === '#modalEmailNota' || title.includes('mail')) {
+                return { texto: 'E-mail', classe: 'nota-acao-success' };
+            }
+
+            return { texto: 'Ação', classe: 'nota-acao-secondary' };
+        }
+
+        function sincronizarAbaFiscal() {
+            const atualizarCampos = (aba) => {
+                document.querySelectorAll('input[name="Aba"]').forEach((input) => {
+                    input.value = aba;
+                });
+            };
+
+            atualizarCampos('@Model.AbaAtiva');
+
+            document.querySelectorAll('#fiscalTabs button[data-bs-toggle="tab"]').forEach((button) => {
+                button.addEventListener('shown.bs.tab', function () {
+                    const destino = this.getAttribute('data-bs-target')?.replace('#', '') || 'notas';
+                    atualizarCampos(destino);
+                });
+            });
+        }
 
         function copyChave() {
             var copyText = document.getElementById("chaveAcessoCopiada");
@@ -1025,6 +1306,9 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="Cancelar">
+                <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                <input type="hidden" name="Aba" value="@Model.AbaAtiva" />
                 <div class="modal-body">
                     <input type="hidden" name="ChaveAcesso" id="chaveCancelarInput" value="@Model.ChaveAcesso" />
                     <div class="alert alert-warning small">
@@ -1058,6 +1342,9 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="EnviarEmail">
+                <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                <input type="hidden" name="Aba" value="@Model.AbaAtiva" />
                 <div class="modal-body">
                     <input type="hidden" name="ChaveAcesso" id="chaveEmailInput" value="@Model.ChaveAcesso" />
                     <div class="mb-3">
@@ -1087,6 +1374,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="Inutilizar">
+                <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                <input type="hidden" name="Aba" value="inut" />
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -1138,6 +1428,9 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="CartaCorrecao">
+                <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
+                <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
+                <input type="hidden" name="Aba" value="@Model.AbaAtiva" />
                 <div class="modal-body">
                     <input type="hidden" name="ChaveAcesso" id="chaveCorrecaoInput" />
                     <div class="alert alert-info small">

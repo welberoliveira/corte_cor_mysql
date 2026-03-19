@@ -9,12 +9,13 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success mt-3">@Model.Mensagem</div>
+        <div class="alert alert-@Model.MensagemTipo mt-3">@Model.Mensagem</div>
     }
 
     <form method="post" class="mt-4">
         <input type="hidden" name="id" value="@Model.Produto?.IdProduto">
         <input type="hidden" name="action" value="salvar">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <!-- Tabs Navigation -->
         <ul class="nav nav-tabs" id="produtoTabs" role="tablist">

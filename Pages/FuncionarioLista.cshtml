@@ -1,70 +1,106 @@
 @page
 @model CorteCor.Pages.FuncionarioListaModel
 
-
-
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h4>Lista de Funcionários</h4>
-        <div>
+        <h4>Lista de Funcionarios</h4>
+        <div class="d-flex gap-2 flex-wrap">
             <a asp-page="/FuncionarioCadastro" class="btn btn-primary">Cadastrar Novo</a>
-            <a asp-page="/ServicoCadastro" class="btn btn-secondary">Cadastrar Serviços</a>
-            <a asp-page="/FuncionarioServicoLista" class="btn btn-info">Listar todos serviços</a>
+            <a asp-page="/ServicoCadastro" class="btn btn-secondary">Cadastrar Servicos</a>
+            <a asp-page="/FuncionarioServicoLista" class="btn btn-info">Listar Todos Servicos</a>
         </div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert">
+        <div class="alert alert-@Model.MensagemTipo mt-2">
             @Model.Mensagem
         </div>
     }
 
-    <table>
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th class="d-none d-md-table-cell">Seg</th>
-                <th class="d-none d-md-table-cell">Ter</th>
-                <th class="d-none d-md-table-cell">Qua</th>
-                <th class="d-none d-md-table-cell">Qui</th>
-                <th class="d-none d-md-table-cell">Sex</th>
-                <th class="d-none d-md-table-cell">Sab</th>
-                <th class="d-none d-md-table-cell">Dom</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var Funcionario in Model.Funcionarios)
-            {
+    <div class="card mt-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="q" class="form-label">Buscar funcionario</label>
+                    <input type="text" id="q" name="q" value="@Model.q" class="form-control" placeholder="Digite o nome do funcionario">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-page="/FuncionarioLista" class="btn btn-link">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive mt-3">
+        <table class="table table-striped">
+            <thead>
                 <tr>
-                    <td>@Funcionario.Nome</td>
-                    <td class="d-none d-md-table-cell">@(Funcionario.seg ? "Sim" : "Não")</td>
-                    <td class="d-none d-md-table-cell">@(Funcionario.ter ? "Sim" : "Não")</td>
-                    <td class="d-none d-md-table-cell">@(Funcionario.qua ? "Sim" : "Não")</td>
-                    <td class="d-none d-md-table-cell">@(Funcionario.qui ? "Sim" : "Não")</td>
-                    <td class="d-none d-md-table-cell">@(Funcionario.sex ? "Sim" : "Não")</td>
-                    <td class="d-none d-md-table-cell">@(Funcionario.sab ? "Sim" : "Não")</td>
-                    <td class="d-none d-md-table-cell">@(Funcionario.dom ? "Sim" : "Não")</td>
-                    <td class="actions">
-                        <form method="post" style="display: inline;">
-                            <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
-                            <input type="hidden" name="action" value="alterar">
-                            <button class="btn btn-info">Alterar</button>
-                        </form>
-
-                        <a href="/FuncionarioServicoCadastro?idFuncionario=@Funcionario.IdFuncionario"
-                            class="btn btn-warning">Vincular Serviços</a>
-
-                        <form method="post" style="display: inline;"
-                            onsubmit="return confirm('Tem certeza que deseja excluir este Funcionário?');">
-                            <input type="hidden" name="id" value="@Funcionario.IdFuncionario">
-                            <input type="hidden" name="action" value="excluir">
-                            <button class="btn btn-danger">Excluir</button>
-                        </form>
-                    </td>
+                    <th>Nome</th>
+                    <th class="d-none d-md-table-cell">Seg</th>
+                    <th class="d-none d-md-table-cell">Ter</th>
+                    <th class="d-none d-md-table-cell">Qua</th>
+                    <th class="d-none d-md-table-cell">Qui</th>
+                    <th class="d-none d-md-table-cell">Sex</th>
+                    <th class="d-none d-md-table-cell">Sab</th>
+                    <th class="d-none d-md-table-cell">Dom</th>
+                    <th>Acoes</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var funcionario in Model.Funcionarios.Items)
+                {
+                    <tr>
+                        <td>@funcionario.Nome</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.seg ? "Sim" : "Nao")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.ter ? "Sim" : "Nao")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.qua ? "Sim" : "Nao")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.qui ? "Sim" : "Nao")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.sex ? "Sim" : "Nao")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.sab ? "Sim" : "Nao")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.dom ? "Sim" : "Nao")</td>
+                        <td class="actions">
+                            <form method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@funcionario.IdFuncionario">
+                                <input type="hidden" name="action" value="alterar">
+                                <input type="hidden" name="q" value="@Model.q">
+                                <input type="hidden" name="p" value="@Model.Funcionarios.PageIndex">
+                                <button class="btn btn-info">Alterar</button>
+                            </form>
+
+                            <a href="/FuncionarioServicoCadastro?idFuncionario=@funcionario.IdFuncionario" class="btn btn-warning">Vincular Servicos</a>
+
+                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este funcionario?');">
+                                <input type="hidden" name="id" value="@funcionario.IdFuncionario">
+                                <input type="hidden" name="action" value="excluir">
+                                <input type="hidden" name="q" value="@Model.q">
+                                <input type="hidden" name="p" value="@Model.Funcionarios.PageIndex">
+                                <button class="btn btn-danger">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Funcionarios.TotalPages > 1)
+    {
+        <nav aria-label="Paginacao de funcionarios">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.Funcionarios.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Funcionarios.PageIndex - 1)&q=@Model.q">Anterior</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Pagina @Model.Funcionarios.PageIndex de @Model.Funcionarios.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.Funcionarios.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Funcionarios.PageIndex + 1)&q=@Model.q">Proxima</a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

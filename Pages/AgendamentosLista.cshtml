@@ -11,7 +11,6 @@
         </div>
     </div>
 
-    <!-- Filtros -->
     <div class="card mb-3 shadow-sm border-0">
         <div class="card-header bg-white font-weight-bold text-primary">
             <i class="fas fa-filter"></i> Filtros
@@ -19,9 +18,8 @@
         <div class="card-body">
             <form method="get">
                 <div class="row">
-                    <!-- Linha 1 -->
                     <div class="col-md-3 form-group">
-                        <label class="font-weight-bold">Data Início</label>
+                        <label class="font-weight-bold">Data Inicio</label>
                         <input type="date" class="form-control" asp-for="DataInicio">
                     </div>
                     <div class="col-md-3 form-group">
@@ -35,29 +33,28 @@
                         </select>
                     </div>
                     <div class="col-md-3 form-group">
-                        <label class="font-weight-bold">Serviço</label>
+                        <label class="font-weight-bold">Servico</label>
                         <select class="form-control" asp-for="IdServico" asp-items="@(new SelectList(Model.ServicosOptions, "IdServico", "Nome"))">
                             <option value="">Todos</option>
                         </select>
                     </div>
-                    
-                    <!-- Linha 2 -->
+
                     <div class="col-md-3 form-group">
                         <label class="font-weight-bold">Cliente</label>
                         <select class="form-control" asp-for="IdPessoa" asp-items="@(new SelectList(Model.PessoasOptions, "IdPessoa", "Nome"))">
                             <option value="">Todos</option>
                         </select>
                     </div>
-                     <div class="col-md-3 form-group">
-                        <label class="font-weight-bold">Funcionário</label>
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold">Funcionario</label>
                         <select class="form-control" asp-for="IdFuncionario" asp-items="@(new SelectList(Model.FuncionariosOptions, "IdFuncionario", "Nome"))">
                             <option value="">Todos</option>
                         </select>
                     </div>
                     <div class="col-md-6 form-group d-flex align-items-end justify-content-end">
-                         <div class="form-check mr-4 mb-2">
+                        <div class="form-check mr-4 mb-2">
                             <input type="checkbox" class="form-check-input" asp-for="MostrarExcluidos">
-                            <label class="form-check-label font-weight-bold" asp-for="MostrarExcluidos">Mostrar Excluídos</label>
+                            <label class="form-check-label font-weight-bold" asp-for="MostrarExcluidos">Mostrar Excluidos</label>
                         </div>
                         <div>
                             <a href="/AgendamentosLista" class="btn btn-secondary mr-2">
@@ -78,17 +75,18 @@
         <div class="alert alert-info">@Model.Mensagem</div>
     }
 
-    <!-- Tabela -->
     <div class="table-responsive">
         <table class="table table-hover cc-table">
             <thead>
                 <tr>
                     <th>Data/Hora</th>
                     <th>Status</th>
-                    <th>Serviço</th>
+                    <th>Fiscal</th>
+                    <th>Servico</th>
                     <th>Cliente</th>
-                    <th>Funcionário</th>
-                    <th>Excluído?</th>
+                    <th>Funcionario</th>
+                    <th>Acoes</th>
+                    <th>Excluido?</th>
                 </tr>
             </thead>
             <tbody>
@@ -97,27 +95,44 @@
                     <tr class="@(item.Excluido ? "table-danger text-decoration-line-through" : "")">
                         <td>@item.DataHora.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>
-                            <span class="badge badge-pill @(item.Status == "Agendado" ? "badge-success" : (item.Status == "Cancelado" ? "badge-danger" : "badge-secondary"))">
+                            <span class="badge badge-pill @Model.GetStatusBadgeClass(item.Status)">
                                 @item.Status
                             </span>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1">
+                                <span class="badge @Model.GetFiscalBadgeClass(item.IdAgendamento)">@Model.GetFiscalStatus(item.IdAgendamento)</span>
+                                <small class="text-muted">@Model.GetFiscalDescricao(item.IdAgendamento)</small>
+                            </div>
                         </td>
                         <td>@Model.GetServicoNome(item.IdServico)</td>
                         <td>@Model.GetPessoaNome(item.IdPessoa)</td>
                         <td>@Model.GetFuncionarioNome(item.IdFuncionario)</td>
-                        <td>@(item.Excluido ? "Sim" : "Não")</td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(Model.GetNotaFiscalUrl(item.IdAgendamento)))
+                            {
+                                <a class="btn btn-sm btn-outline-dark" href="@Model.GetNotaFiscalUrl(item.IdAgendamento)">
+                                    <i class="bi bi-box-arrow-up-right"></i> Nota Fiscal
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Sem acao fiscal</span>
+                            }
+                        </td>
+                        <td>@(item.Excluido ? "Sim" : "Nao")</td>
                     </tr>
                 }
-                 @if (!Model.Agendamentos.Items.Any())
+                @if (!Model.Agendamentos.Items.Any())
                 {
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">Ainda não há agendamentos com estes filtros.</td>
+                        <td colspan="8" class="text-center py-4 text-muted">Ainda nao ha agendamentos com estes filtros.</td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-    
-    <!-- Pagination Controls -->
+
     @if (Model.Agendamentos.TotalPages > 1)
     {
         <nav aria-label="Page navigation" class="mt-3">
@@ -131,7 +146,7 @@
                     if (Model.IdPessoa.HasValue) queryParams.Add("IdPessoa", Model.IdPessoa.Value.ToString());
                     if (Model.IdFuncionario.HasValue) queryParams.Add("IdFuncionario", Model.IdFuncionario.Value.ToString());
                     if (Model.MostrarExcluidos) queryParams.Add("MostrarExcluidos", "true");
-                    
+
                     string GetLink(int page)
                     {
                         var dict = new Dictionary<string, string>(queryParams);
@@ -144,10 +159,10 @@
                     <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex - 1)" tabindex="-1">Anterior</a>
                 </li>
                 <li class="page-item disabled">
-                    <span class="page-link">Página @Model.Agendamentos.PageIndex de @Model.Agendamentos.TotalPages</span>
+                    <span class="page-link">Pagina @Model.Agendamentos.PageIndex de @Model.Agendamentos.TotalPages</span>
                 </li>
                 <li class="page-item @(Model.Agendamentos.HasNextPage ? "" : "disabled")">
-                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex + 1)">Próxima</a>
+                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex + 1)">Proxima</a>
                 </li>
             </ul>
         </nav>

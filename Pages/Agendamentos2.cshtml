@@ -313,8 +313,15 @@
                     </select>
                 </div>
 
-                <div class="text-muted small">
-
+                <div id="fiscalResumoBox" class="alert alert-light border d-none mb-0">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="small text-uppercase text-muted fw-semibold">Situação Fiscal</span>
+                            <span id="fiscalStatusBadge" class="badge bg-secondary">Sem nota</span>
+                            <span id="fiscalNumeroTexto" class="small text-muted"></span>
+                        </div>
+                        <div id="fiscalMensagem" class="small text-muted"></div>
+                    </div>
                 </div>
             </div>
 
@@ -325,6 +332,8 @@
                 <button type="button" id="btnAlterar" class="btn btn-success d-none">Alterar</button>
                 <button type="button" id="btnEmitirNota" class="btn btn-warning d-none"><i class="bi bi-receipt"></i>
                     Emitir Nota Fiscal</button>
+                <button type="button" id="btnAbrirNota" class="btn btn-outline-dark d-none"><i class="bi bi-box-arrow-up-right"></i>
+                    Abrir Nota Fiscal</button>
                 <button type="button" id="btnExcluir" class="btn btn-danger d-none">Excluir</button>
                 <button type="button" id="btnPagar" class="btn btn-primary d-none">Pagar Agora</button>
             </div>
@@ -486,11 +495,13 @@
             // limpa campos
             document.getElementById('idPessoa').value = '';
             document.getElementById('idServico').value = '';
+            resetFiscalState();
 
             // Toggle botões
             document.getElementById('btnSalvar').classList.remove('d-none');
             document.getElementById('btnAlterar').classList.add('d-none');
             document.getElementById('btnEmitirNota').classList.add('d-none');
+            document.getElementById('btnAbrirNota').classList.add('d-none');
             document.getElementById('btnExcluir').classList.add('d-none');
             document.getElementById('btnPagar').classList.add('d-none');
 
@@ -530,6 +541,57 @@
             // Vamos manter padrao de exibicao texto para Fim, ou mudar para datetime-local readonly.
             // O original era: input type="text" readonly. formatLocal(end).
             document.getElementById('fim').value = formatLocal(selectionEnd);
+        }
+
+        function resetFiscalState() {
+            const box = document.getElementById('fiscalResumoBox');
+            const badge = document.getElementById('fiscalStatusBadge');
+            const numero = document.getElementById('fiscalNumeroTexto');
+            const mensagem = document.getElementById('fiscalMensagem');
+            const btnAbrirNota = document.getElementById('btnAbrirNota');
+
+            box.classList.add('d-none');
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Sem nota';
+            numero.textContent = '';
+            mensagem.textContent = '';
+            btnAbrirNota.classList.add('d-none');
+            btnAbrirNota.dataset.url = '';
+        }
+
+        function aplicarFiscalState(fiscal) {
+            const box = document.getElementById('fiscalResumoBox');
+            const badge = document.getElementById('fiscalStatusBadge');
+            const numero = document.getElementById('fiscalNumeroTexto');
+            const mensagem = document.getElementById('fiscalMensagem');
+            const btnAbrirNota = document.getElementById('btnAbrirNota');
+
+            resetFiscalState();
+
+            if (!fiscal) {
+                return;
+            }
+
+            box.classList.remove('d-none');
+            badge.className = `badge ${fiscal.classeStatusFiscal || 'bg-secondary'}`;
+            badge.textContent = fiscal.statusFiscal || 'Sem nota';
+            numero.textContent = fiscal.numeroNota
+                ? `${fiscal.tipoNota || 'Nota'} ${fiscal.numeroNota}/${fiscal.serieNota || 1}`
+                : '';
+            mensagem.textContent = fiscal.mensagem || '';
+
+            if (fiscal.podeAbrirNota && fiscal.urlLista) {
+                btnAbrirNota.classList.remove('d-none');
+                btnAbrirNota.dataset.url = fiscal.urlLista;
+            }
+        }
+
+        function abrirNotaFiscalRelacionada() {
+            const btnAbrirNota = document.getElementById('btnAbrirNota');
+            const url = btnAbrirNota.dataset.url;
+            if (url) {
+                window.location.href = url;
+            }
         }
 
 
@@ -700,13 +762,37 @@
                 body: JSON.stringify({ idAgendamento: parseInt(id) })
             });
 
-            if (resp.ok) {
-                const data = await resp.json();
-                Swal.fire('Sucesso', data.message || 'Nota fiscal enfileirada para emissão.', 'success');
-                modal.hide();
-            } else {
+            if (!resp.ok) {
                 await showError(resp, 'Erro ao emitir nota fiscal.');
+                return;
             }
+
+            const data = await resp.json();
+            aplicarFiscalState(data.fiscal);
+            document.getElementById('btnEmitirNota').classList.toggle('d-none', !(data.fiscal && data.fiscal.podeEmitir));
+
+            if (data.success) {
+                calendar.refetchEvents();
+
+                const resultado = await Swal.fire({
+                    title: 'Sucesso',
+                    text: data.message || 'Nota fiscal emitida com sucesso.',
+                    icon: 'success',
+                    showCancelButton: !!data.redirectUrl,
+                    confirmButtonText: data.redirectUrl ? 'Abrir nota' : 'Fechar',
+                    cancelButtonText: 'Continuar no agendamento'
+                });
+
+                if (resultado.isConfirmed && data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+                    return;
+                }
+
+                modal.hide();
+                return;
+            }
+
+            await Swal.fire('Atenção', data.message || 'Não foi possível emitir a nota fiscal.', 'warning');
         }
 
         /* funções do modal novo - acionado pelo botão*/
@@ -902,30 +988,28 @@
                     // Status
                     document.getElementById('rowStatus').classList.remove('d-none');
                     document.getElementById('idStatus').value = data.status;
+                    aplicarFiscalState(data.fiscal);
 
                     recalcularFimPeloServico();
 
-                    // Bloqueio se Pago
-                    const isPago = data.status === 'Pago';
-                    document.getElementById('inicio').readOnly = isPago;
-                    document.getElementById('idPessoa').disabled = isPago;
-                    document.getElementById('idServico').disabled = isPago;
-                    document.getElementById('idStatus').disabled = isPago;
+                    const canEdit = !!data.canEdit;
+                    const canDelete = !!data.canDelete;
+                    const canPay = !!data.canPay;
+                    const fiscalPodeEmitir = !!data.fiscal?.podeEmitir;
+                    const fiscalPodeAbrirNota = !!data.fiscal?.podeAbrirNota && !!data.fiscal?.urlLista;
+
+                    document.getElementById('inicio').readOnly = !canEdit;
+                    document.getElementById('idPessoa').disabled = !canEdit;
+                    document.getElementById('idServico').disabled = !canEdit;
+                    document.getElementById('idStatus').disabled = !canEdit;
 
                     // Toggle botões
                     document.getElementById('btnSalvar').classList.add('d-none');
-
-                    if (isPago) {
-                        document.getElementById('btnAlterar').classList.add('d-none');
-                        document.getElementById('btnExcluir').classList.add('d-none');
-                        document.getElementById('btnPagar').classList.add('d-none');
-                        document.getElementById('btnEmitirNota').classList.remove('d-none');
-                    } else {
-                        document.getElementById('btnAlterar').classList.remove('d-none');
-                        document.getElementById('btnExcluir').classList.remove('d-none');
-                        document.getElementById('btnPagar').classList.remove('d-none');
-                        document.getElementById('btnEmitirNota').classList.add('d-none');
-                    }
+                    document.getElementById('btnAlterar').classList.toggle('d-none', !canEdit);
+                    document.getElementById('btnExcluir').classList.toggle('d-none', !canDelete);
+                    document.getElementById('btnPagar').classList.toggle('d-none', !canPay);
+                    document.getElementById('btnEmitirNota').classList.toggle('d-none', !fiscalPodeEmitir);
+                    document.getElementById('btnAbrirNota').classList.toggle('d-none', !fiscalPodeAbrirNota);
 
                     modal.show();
                 }
@@ -948,6 +1032,7 @@
             document.getElementById('btnExcluir').addEventListener('click', excluirAgendamento);
             document.getElementById('btnPagar').addEventListener('click', iniciarPagamento);
             document.getElementById('btnEmitirNota').addEventListener('click', emitirNotaFiscal);
+            document.getElementById('btnAbrirNota').addEventListener('click', abrirNotaFiscalRelacionada);
 
 
 

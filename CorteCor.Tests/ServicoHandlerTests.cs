@@ -56,6 +56,7 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["Duracao"]).Returns(TimeSpan.FromMinutes(30));
 
             _mockReader.Setup(r => r["IdSalao"]).Returns(1);
+            SetupServicoReaderDefaults(_mockReader);
 
             // Act
             var result = _handler.ListarPorSalao(1);
@@ -102,6 +103,7 @@ namespace CorteCor.Tests
             _mockReader.Setup(r => r["Preco"]).Returns(50m);
             _mockReader.Setup(r => r["Duracao"]).Returns(TimeSpan.FromMinutes(30));
             _mockReader.Setup(r => r["IdSalao"]).Returns(1);
+            SetupServicoReaderDefaults(_mockReader);
 
             // Act
             var result = _handler.ObterPorId(1);
@@ -119,6 +121,52 @@ namespace CorteCor.Tests
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
+
+        [Fact]
+        public void ExisteNomePorSalao_DeveConsultarConsiderandoServicoIgnorado()
+        {
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(1);
+
+            var result = _handler.ExisteNomePorSalao("Corte", 1, 7);
+
+            Assert.True(result);
+            _mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(sql =>
+                sql.Contains("Nome = @Nome") &&
+                sql.Contains("@IgnorarIdServico")), Times.Once);
+        }
+
+        [Fact]
+        public void ListarPaginadoPorSalao_DeveAplicarFiltrosDeCategoriaPesquisaEArquivados()
+        {
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(0);
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            _mockReader.Setup(r => r.Read()).Returns(false);
+
+            var result = _handler.ListarPaginadoPorSalao(1, 5, "corte", false, 1, 10);
+
+            Assert.Equal(0, result.TotalCount);
+            _mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(sql =>
+                sql.Contains("@IdCategoria IS NULL OR IdCategoria = @IdCategoria") &&
+                sql.Contains("@Pesquisa IS NULL") &&
+                sql.Contains("@IncluirArquivados = 1 OR ISNULL(Arquivado, 0) = 0")), Times.AtLeastOnce);
+        }
+
+        private static void SetupServicoReaderDefaults(Mock<IDataReader> reader)
+        {
+            reader.Setup(r => r["PrecoCusto"]).Returns(DBNull.Value);
+            reader.Setup(r => r["MargemContribuicao"]).Returns(DBNull.Value);
+            reader.Setup(r => r["IdCategoria"]).Returns(DBNull.Value);
+            reader.Setup(r => r["CodigoTributacaoMunicipio"]).Returns(DBNull.Value);
+            reader.Setup(r => r["Cnae"]).Returns(DBNull.Value);
+            reader.Setup(r => r["AliquotaISS"]).Returns(DBNull.Value);
+            reader.Setup(r => r["Tags"]).Returns(DBNull.Value);
+            reader.Setup(r => r["Anotacoes"]).Returns(DBNull.Value);
+            reader.Setup(r => r["ItemListaServicoLC116"]).Returns(DBNull.Value);
+            reader.Setup(r => r["IdCnae"]).Returns(DBNull.Value);
+            reader.Setup(r => r["CodTributacaoNacional"]).Returns(DBNull.Value);
+            reader.Setup(r => r["CodNBS"]).Returns(DBNull.Value);
+            reader.Setup(r => r["Arquivado"]).Returns(false);
         }
     }
 }

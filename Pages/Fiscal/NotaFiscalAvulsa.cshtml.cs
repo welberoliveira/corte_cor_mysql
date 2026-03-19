@@ -20,6 +20,15 @@ namespace CorteCor.Pages.Fiscal
         [BindProperty]
         public InputModel Input { get; set; } = new();
 
+        [BindProperty(SupportsGet = true)]
+        public int NotasPage { get; set; } = 1;
+
+        [BindProperty(SupportsGet = true)]
+        public int InutilizacoesPage { get; set; } = 1;
+
+        [BindProperty(SupportsGet = true)]
+        public string Aba { get; set; } = "notas";
+
         public class InputModel : IValidatableObject
         {
             [Display(Name = "Certificado Digital (.pfx)")]
@@ -217,6 +226,8 @@ namespace CorteCor.Pages.Fiscal
         public Guid? IdNotaFiscalEmitida { get; set; }
         public bool HasSavedCertificate { get; set; }
         public List<string> Logs { get; set; } = new();
+        public PagedResult<NotaFiscal> NotasEmitidasPaginadas { get; set; } = new() { PageIndex = 1, PageSize = 10 };
+        public PagedResult<NotaFiscalInutilizacao> InutilizacoesPaginadas { get; set; } = new() { PageIndex = 1, PageSize = 10 };
         public List<NotaFiscal> NotasEmitidas { get; set; } = new();
         public List<NotaFiscalInutilizacao> Inutilizacoes { get; set; } = new();
         public NotaFiscalRetornoResumo? RetornoResumoAtual { get; set; }
@@ -224,6 +235,7 @@ namespace CorteCor.Pages.Fiscal
         public NotaFiscalRetornoResumo? RetornoResumoHistorico { get; set; }
         public List<NotaFiscalEvento> EventosHistorico { get; set; } = new();
         public List<NotaFiscalLog> LogsHistorico { get; set; } = new();
+        public string AbaAtiva => string.Equals(Aba, "inut", StringComparison.OrdinalIgnoreCase) ? "inut" : "notas";
 
         public List<SelectModel> ModelosList { get; set; } = new()
         {
@@ -277,7 +289,7 @@ namespace CorteCor.Pages.Fiscal
         {
             await CarregarContextoAsync();
             var idSalao = ObterIdSalaoAtual();
-            var contexto = await _notaFiscalAvulsaService.ObterContextoTelaAsync(idSalao, Input.Modelo, Input.Ambiente, Input.Serie, 0);
+            var contexto = await _notaFiscalAvulsaService.ObterContextoTelaAsync(idSalao, Input.Modelo, Input.Ambiente, Input.Serie, 0, NotasPage, InutilizacoesPage);
             var tipoNota = NotaFiscalAvulsaService.InferirTipoNota(Input.Modelo);
             Input.Numero = contexto.NumeroSugerido;
             Logs.Add($"Numero sugerido para {tipoNota}: {Input.Numero}");
@@ -416,7 +428,7 @@ namespace CorteCor.Pages.Fiscal
             if (isAutoSubmit)
             {
                 var tipoNota = NotaFiscalAvulsaService.InferirTipoNota(Input.Modelo);
-                var contexto = await _notaFiscalAvulsaService.ObterContextoTelaAsync(idSalao, Input.Modelo, Input.Ambiente, Input.Serie, 0);
+                var contexto = await _notaFiscalAvulsaService.ObterContextoTelaAsync(idSalao, Input.Modelo, Input.Ambiente, Input.Serie, 0, NotasPage, InutilizacoesPage);
                 Input.Numero = contexto.NumeroSugerido;
                 Logs.Add($"Auto-sugestao para {tipoNota}: {Input.Numero}");
                 ModelState.Clear();
@@ -449,7 +461,11 @@ namespace CorteCor.Pages.Fiscal
         private async Task CarregarContextoAsync()
         {
             var idSalao = ObterIdSalaoAtual();
-            var contexto = await _notaFiscalAvulsaService.ObterContextoTelaAsync(idSalao, Input.Modelo, Input.Ambiente, Input.Serie, Input.Numero);
+            NotasPage = NotasPage < 1 ? 1 : NotasPage;
+            InutilizacoesPage = InutilizacoesPage < 1 ? 1 : InutilizacoesPage;
+            Aba = string.IsNullOrWhiteSpace(Aba) ? "notas" : Aba;
+
+            var contexto = await _notaFiscalAvulsaService.ObterContextoTelaAsync(idSalao, Input.Modelo, Input.Ambiente, Input.Serie, Input.Numero, NotasPage, InutilizacoesPage);
 
             Input.Ambiente = contexto.Ambiente;
             Input.Serie = contexto.Serie;
@@ -480,6 +496,8 @@ namespace CorteCor.Pages.Fiscal
                 });
             }
 
+            NotasEmitidasPaginadas = contexto.NotasEmitidasPaginadas;
+            InutilizacoesPaginadas = contexto.InutilizacoesPaginadas;
             NotasEmitidas = contexto.NotasEmitidas;
             Inutilizacoes = contexto.Inutilizacoes;
             if (TempData["SuccessMessage"] is string success && string.IsNullOrWhiteSpace(Mensagem))

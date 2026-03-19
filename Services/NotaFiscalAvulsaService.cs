@@ -143,6 +143,8 @@ namespace CorteCor.Services
             CodigoTributacao = "010501",
             AliquotaISS = 5
         };
+        public PagedResult<NotaFiscal> NotasEmitidasPaginadas { get; set; } = new();
+        public PagedResult<NotaFiscalInutilizacao> InutilizacoesPaginadas { get; set; } = new();
         public List<NotaFiscal> NotasEmitidas { get; set; } = new();
         public List<NotaFiscalInutilizacao> Inutilizacoes { get; set; } = new();
     }
@@ -230,7 +232,15 @@ namespace CorteCor.Services
             return result;
         }
 
-        public async Task<NotaFiscalAvulsaTelaContexto> ObterContextoTelaAsync(int idSalao, string modelo, int ambienteInformado, int serieInformada, int numeroInformado)
+        public async Task<NotaFiscalAvulsaTelaContexto> ObterContextoTelaAsync(
+            int idSalao,
+            string modelo,
+            int ambienteInformado,
+            int serieInformada,
+            int numeroInformado,
+            int notasPage = 1,
+            int inutilizacoesPage = 1,
+            int pageSize = 10)
         {
             var config = await _configHandler.ObterPorSalaoAsync(idSalao);
             var tipoNota = InferirTipoNota(modelo);
@@ -244,6 +254,9 @@ namespace CorteCor.Services
             var numero = numeroInformado > 1
                 ? numeroInformado
                 : await _notaHandler.ObterProximoNumeroAsync(idSalao, tipoNota, serie, ambiente);
+
+            var notasPaginadas = await _notaHandler.ListarPorSalaoPaginadoAsync(idSalao, notasPage, pageSize);
+            var inutilizacoesPaginadas = await _inutHandler.ListarPorSalaoPaginadoAsync(idSalao, inutilizacoesPage, pageSize);
 
             return new NotaFiscalAvulsaTelaContexto
             {
@@ -263,8 +276,10 @@ namespace CorteCor.Services
                 EmitenteCidade = config?.EnderecoCidade,
                 EmitenteUF = config?.EnderecoUF,
                 EmitenteCodMun = config?.CodigoMunicipioIBGE ?? 0,
-                NotasEmitidas = await ListarNotasRecentesAsync(idSalao, 20),
-                Inutilizacoes = await _inutHandler.ListarPorSalaoAsync(idSalao)
+                NotasEmitidasPaginadas = notasPaginadas,
+                InutilizacoesPaginadas = inutilizacoesPaginadas,
+                NotasEmitidas = notasPaginadas.Items,
+                Inutilizacoes = inutilizacoesPaginadas.Items
             };
         }
 

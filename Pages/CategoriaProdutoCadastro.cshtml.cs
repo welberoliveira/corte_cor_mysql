@@ -9,64 +9,86 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class CategoriaProdutoCadastroModel : PageModel
     {
+        private readonly CategoriaProdutoHandler _categoriaHandler;
+
         [BindProperty]
-        public CategoriaProduto Categoria { get; set; }
-        public string Mensagem { get; set; }
+        public CategoriaProduto Categoria { get; set; } = new CategoriaProduto();
+
+        public string Mensagem { get; set; } = string.Empty;
+        public string MensagemTipo { get; set; } = "success";
         public string ButtonText { get; set; } = "Cadastrar";
+
+        public CategoriaProdutoCadastroModel(CategoriaProdutoHandler categoriaHandler)
+        {
+            _categoriaHandler = categoriaHandler;
+        }
 
         public void OnGet(int? id)
         {
-            if (id.HasValue && id > 0)
-            {
-                int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
-                var handler = new CategoriaProdutoHandler();
-                
-                var lista = handler.ListarPorSalao(idSalao);
-                Categoria = lista?.FirstOrDefault(c => c.IdCategoria == id.Value);
-
-                if (Categoria != null)
-                {
-                    ButtonText = "Atualizar";
-                }
-                else
-                {
-                    Categoria = new CategoriaProduto { Ativo = true };
-                }
-            }
-            else
+            if (!TryObterIdSalao(out var idSalao))
             {
                 Categoria = new CategoriaProduto { Ativo = true };
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                return;
             }
+
+            if (id.HasValue && id > 0)
+            {
+                Categoria = _categoriaHandler.ObterPorIdESalao(id.Value, idSalao) ?? new CategoriaProduto { Ativo = true };
+                ButtonText = Categoria.IdCategoria > 0 ? "Atualizar" : "Cadastrar";
+                return;
+            }
+
+            Categoria = new CategoriaProduto { Ativo = true };
         }
 
         public IActionResult OnPost()
         {
-            var handler = new CategoriaProdutoHandler();
-            string action = Request.Form["action"];
-
-            if (action == "salvar" && Categoria != null)
+            if (!TryObterIdSalao(out var idSalao))
             {
-                int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
-                Categoria.IdSalao = idSalao;
-
-                // Lê checkbox "ativo" manualmente do form para mapear checked
-                Categoria.Ativo = Request.Form["ativo"] == "on";
-
-                if (Categoria.IdCategoria > 0)
-                {
-                    handler.Atualizar(Categoria);
-                    Mensagem = "Categoria atualizada com sucesso.";
-                    ButtonText = "Atualizar";
-                }
-                else
-                {
-                    Categoria.DataCadastro = DateTime.Now;
-                    Categoria.IdCategoria = handler.CadastrarCategoria(Categoria);
-                    Mensagem = "Categoria cadastrada com sucesso.";
-                    ButtonText = "Atualizar";
-                }
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                return Page();
             }
+
+            ButtonText = Categoria.IdCategoria > 0 ? "Atualizar" : "Cadastrar";
+            Categoria.IdSalao = idSalao;
+            Categoria.Nome = (Categoria.Nome ?? string.Empty).Trim();
+
+            if (!ModelState.IsValid)
+            {
+                Mensagem = "Revise os campos obrigatorios da categoria.";
+                MensagemTipo = "danger";
+                return Page();
+            }
+
+            if (_categoriaHandler.ExisteNomePorSalao(Categoria.Nome, idSalao, Categoria.IdCategoria > 0 ? Categoria.IdCategoria : null))
+            {
+                Mensagem = "Ja existe uma categoria com esse nome.";
+                MensagemTipo = "warning";
+                return Page();
+            }
+
+            if (Categoria.IdCategoria > 0)
+            {
+                _categoriaHandler.Atualizar(Categoria);
+                Mensagem = "Categoria atualizada com sucesso.";
+                MensagemTipo = "success";
+                return Page();
+            }
+
+            Categoria.DataCadastro = DateTime.Now;
+            Categoria.IdCategoria = _categoriaHandler.CadastrarCategoria(Categoria);
+            Mensagem = "Categoria cadastrada com sucesso.";
+            MensagemTipo = "success";
+            ButtonText = "Atualizar";
             return Page();
+        }
+
+        private bool TryObterIdSalao(out int idSalao)
+        {
+            return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
         }
     }
 }

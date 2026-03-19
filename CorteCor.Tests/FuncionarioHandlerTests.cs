@@ -134,6 +134,21 @@ namespace CorteCor.Tests
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
         }
 
+        [Fact]
+        public void ListarPaginadoPorSalao_DeveAplicarPesquisaPorNome()
+        {
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(1);
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            _mockReader.Setup(r => r.Read()).Returns(false);
+
+            var result = _handler.ListarPaginadoPorSalao(1, "func", 1, 10);
+
+            Assert.Equal(1, result.TotalCount);
+            _mockCommand.VerifySet(cmd => cmd.CommandText = It.Is<string>(sql =>
+                sql.Contains("Nome LIKE @Pesquisa") &&
+                sql.Contains("ORDER BY Nome")), Times.AtLeastOnce);
+        }
+
         private void SetupFuncionarioReaderDefaults(Mock<IDataReader> reader)
         {
             var days = new[] { "seg", "ter", "qua", "qui", "sex", "sab", "dom" };

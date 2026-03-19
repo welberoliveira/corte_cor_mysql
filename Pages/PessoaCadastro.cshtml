@@ -16,6 +16,7 @@
 
     <form method="post">
         <input type="hidden" name="id" value="@Model.Pessoa?.IdPessoa">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <div class="row mb-3">
             <div class="col-md-12">
@@ -51,10 +52,10 @@
             </div>
         </div>
 
-        @* ── Campos CNPJ (ReceitaWS - preenchidos automaticamente) ── *@
+        @* â”€â”€ Campos CNPJ (ReceitaWS - preenchidos automaticamente) â”€â”€ *@
         <div class="row" id="cnpjFieldsRow">
             <div class="col-md-4 form-group">
-                <label for="razaoSocial">Razão Social</label>
+                <label for="razaoSocial">RazÃ£o Social</label>
                 <input type="text" id="razaoSocial" name="razaoSocial" class="form-control" value="@Model.Pessoa?.RazaoSocial">
             </div>
             <div class="col-md-4 form-group">
@@ -84,7 +85,7 @@
                 <input type="text" id="nomeContato" name="nomeContato" class="form-control" value="@Model.Pessoa?.NomeContato">
             </div>
             <div class="col-md-4 form-group">
-                <label for="pais">País</label>
+                <label for="pais">PaÃ­s</label>
                 <input type="text" id="pais" name="pais" class="form-control" value="@Model.Pessoa?.Pais">
             </div>
             <div class="col-md-4 form-group">
@@ -95,21 +96,21 @@
 
         <div class="row">
             <div class="col-md-4 form-group">
-                <label for="dataNascimento">Data Nasc. / Fundação</label>
+                <label for="dataNascimento">Data Nasc. / FundaÃ§Ã£o</label>
                 <input type="date" id="dataNascimento" name="dataNascimento" class="form-control"
                        value="@(Model.Pessoa?.DataNascimento?.ToString("yyyy-MM-dd") ?? "")">
             </div>
             <div class="col-md-4 form-group">
-                <label for="inscricaoEstadual">Inscrição Estadual</label>
+                <label for="inscricaoEstadual">InscriÃ§Ã£o Estadual</label>
                 <input type="text" id="inscricaoEstadual" name="inscricaoEstadual" class="form-control" value="@Model.Pessoa?.InscricaoEstadual">
             </div>
             <div class="col-md-4 form-group">
-                <label for="inscricaoMunicipal">Inscrição Municipal</label>
+                <label for="inscricaoMunicipal">InscriÃ§Ã£o Municipal</label>
                 <input type="text" id="inscricaoMunicipal" name="inscricaoMunicipal" class="form-control" value="@Model.Pessoa?.InscricaoMunicipal">
             </div>
         </div>
 
-        <h5 class="mt-4">Endereço</h5>
+        <h5 class="mt-4">EndereÃ§o</h5>
         <hr />
         
         <div class="row">
@@ -127,7 +128,7 @@
                 <input type="text" id="logradouro" name="logradouro" class="form-control" value="@Model.Pessoa?.Logradouro">
             </div>
             <div class="col-md-2 form-group">
-                <label for="numero">Número</label>
+                <label for="numero">NÃºmero</label>
                 <input type="text" id="numero" name="numero" class="form-control" value="@Model.Pessoa?.Numero">
             </div>
         </div>
@@ -158,7 +159,12 @@
             </div>
         </div>
 
-        <h5 class="mt-4">Endereço de Entrega</h5>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <h5 class="mb-0">EndereÃ§o de Entrega</h5>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="copiarEnderecoEntrega">
+                Copiar endereÃ§o principal
+            </button>
+        </div>
         <hr />
         <div class="row">
             <div class="col-md-3 form-group">
@@ -170,7 +176,7 @@
                 <input type="text" id="entLogradouro" name="entLogradouro" class="form-control" value="@Model.Pessoa?.EntLogradouro">
             </div>
             <div class="col-md-2 form-group">
-                <label for="entNumero">Número</label>
+                <label for="entNumero">NÃºmero</label>
                 <input type="text" id="entNumero" name="entNumero" class="form-control" value="@Model.Pessoa?.EntNumero">
             </div>
         </div>
@@ -201,7 +207,7 @@
         </div>
         <div class="row">
             <div class="col-md-4 form-group">
-                <label for="entNome">Nome/Razão Social (Entrega)</label>
+                <label for="entNome">Nome/RazÃ£o Social (Entrega)</label>
                 <input type="text" id="entNome" name="entNome" class="form-control" value="@Model.Pessoa?.EntNome">
             </div>
             <div class="col-md-4 form-group">
@@ -209,7 +215,7 @@
                 <input type="text" id="entCpfCnpj" name="entCpfCnpj" class="form-control" value="@Model.Pessoa?.EntCpfCnpj">
             </div>
             <div class="col-md-4 form-group">
-                <label for="entInscricaoEstadual">Inscrição Estadual (Entrega)</label>
+                <label for="entInscricaoEstadual">InscriÃ§Ã£o Estadual (Entrega)</label>
                 <input type="text" id="entInscricaoEstadual" name="entInscricaoEstadual" class="form-control" value="@Model.Pessoa?.EntInscricaoEstadual">
             </div>
         </div>
@@ -224,7 +230,7 @@
             </div>
         </div>
 
-        <h5 class="mt-4">Informações Fiscais</h5>
+        <h5 class="mt-4">InformaÃ§Ãµes Fiscais</h5>
         <hr />
         <div class="row">
             <div class="col-md-3 form-group align-self-end">
@@ -239,7 +245,7 @@
                     <option value="">Selecione...</option>
                     @if(Model.Pessoa?.IndicadorIE == 1) { <option value="1" selected>1 - Contribuinte ICMS</option> } else { <option value="1">1 - Contribuinte ICMS</option> }
                     @if(Model.Pessoa?.IndicadorIE == 2) { <option value="2" selected>2 - Contribuinte Isento</option> } else { <option value="2">2 - Contribuinte Isento</option> }
-                    @if(Model.Pessoa?.IndicadorIE == 9) { <option value="9" selected>9 - Não Contribuinte</option> } else { <option value="9">9 - Não Contribuinte</option> }
+                    @if(Model.Pessoa?.IndicadorIE == 9) { <option value="9" selected>9 - NÃ£o Contribuinte</option> } else { <option value="9">9 - NÃ£o Contribuinte</option> }
                 </select>
             </div>
             <div class="col-md-3 form-group">
@@ -252,7 +258,7 @@
             </div>
         </div>
 
-        <h5 class="mt-4">Outras Informações</h5>
+        <h5 class="mt-4">Outras InformaÃ§Ãµes</h5>
         <hr />
         <div class="row">
             <div class="col-md-4 form-group">
@@ -260,7 +266,7 @@
                 <input type="date" id="dataComemorativa" name="dataComemorativa" class="form-control" value="@(Model.Pessoa?.DataComemorativa?.ToString("yyyy-MM-dd") ?? "")">
             </div>
             <div class="col-md-8 form-group">
-                <label for="descricaoComemoracao">Descrição da Comemoração</label>
+                <label for="descricaoComemoracao">DescriÃ§Ã£o da ComemoraÃ§Ã£o</label>
                 <input type="text" id="descricaoComemoracao" name="descricaoComemoracao" class="form-control" value="@Model.Pessoa?.DescricaoComemoracao">
             </div>
         </div>
@@ -276,7 +282,7 @@
                 <textarea id="basesLegais" name="basesLegais" class="form-control" rows="3">@Model.Pessoa?.BasesLegais</textarea>
             </div>
             <div class="col-md-6 form-group">
-                <label for="observacoes">Observações</label>
+                <label for="observacoes">ObservaÃ§Ãµes</label>
                 <textarea id="observacoes" name="observacoes" class="form-control" rows="3">@Model.Pessoa?.Observacoes</textarea>
             </div>
         </div>
@@ -321,22 +327,22 @@
 
 <script>
     $(document).ready(function () {
-        // ── Máscaras ──
+        // â”€â”€ MÃ¡scaras â”€â”€
         $("#telefone").inputmask("(99) 99999-9999");
         $("#cep").inputmask("99999-999");
 
-        // ── Máscara dinâmica CPF/CNPJ ──
-        // Permite digitação livre e formata no blur conforme quantidade de dígitos
+        // â”€â”€ MÃ¡scara dinÃ¢mica CPF/CNPJ â”€â”€
+        // Permite digitaÃ§Ã£o livre e formata no blur conforme quantidade de dÃ­gitos
         var cpfCnpjField = $("#cpfCnpj");
         
-        // Limitar a 14 dígitos numéricos (tamanho máximo do CNPJ)
+        // Limitar a 14 dÃ­gitos numÃ©ricos (tamanho mÃ¡ximo do CNPJ)
         cpfCnpjField.attr("maxlength", "18"); // 18 = CNPJ formatado (99.999.999/9999-99)
         
         cpfCnpjField.on("input", function () {
-            // Remove tudo que não é número
+            // Remove tudo que nÃ£o Ã© nÃºmero
             var val = $(this).val().replace(/\D/g, "");
             
-            // Limitar a 14 dígitos
+            // Limitar a 14 dÃ­gitos
             if (val.length > 14) val = val.substring(0, 14);
             
             // Formatar enquanto digita
@@ -356,11 +362,11 @@
             $(this).val(val);
         });
 
-        // ── Auto-preenchimento CNPJ (blur) ──
+        // â”€â”€ Auto-preenchimento CNPJ (blur) â”€â”€
         cpfCnpjField.on("blur", function () {
             var val = $(this).val().replace(/\D/g, "");
             
-            // Só consultar se for CNPJ (14 dígitos)
+            // SÃ³ consultar se for CNPJ (14 dÃ­gitos)
             if (val.length !== 14) return;
 
             $("#cpfCnpjSpinner").show();
@@ -370,7 +376,7 @@
                 .then(function (data) {
                     $("#cpfCnpjSpinner").hide();
                     if (data.sucesso) {
-                        // Limpar todos os campos da empresa e endereço antes de preencher
+                        // Limpar todos os campos da empresa e endereÃ§o antes de preencher
                         $("#nome").val("");
                         $("#razaoSocial").val("");
                         $("#nomeFantasia").val("");
@@ -393,7 +399,7 @@
                         $("#nomeFantasia").val(data.nomeFantasia);
                         $("#cnae").val(data.cnae);
                         
-                        // Preencher telefone, email e data de fundação
+                        // Preencher telefone, email e data de fundaÃ§Ã£o
                         if (data.telefone) $("#telefone").val(data.telefone);
                         if (data.email) $("#email").val(data.email);
                         if (data.dataFundacao) {
@@ -404,7 +410,7 @@
                             }
                         }
 
-                        // Preencher endereço da empresa
+                        // Preencher endereÃ§o da empresa
                         if (data.cep) {
                             $("#cep").val(data.cep.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"));
                         }
@@ -415,12 +421,12 @@
                         if (data.cidade) $("#cidade").val(data.cidade);
                         if (data.uf) $("#uf").val(data.uf);
                         
-                        // Se o nome estiver vazio, preencher com a razão social
+                        // Se o nome estiver vazio, preencher com a razÃ£o social
                         if (!$("#nome").val()) {
                             $("#nome").val(data.nomeFantasia || data.razaoSocial);
                         }
                     } else {
-                        alert("CNPJ: " + (data.mensagem || "Não encontrado."));
+                        alert("CNPJ: " + (data.mensagem || "NÃ£o encontrado."));
                     }
                 })
                 .catch(function (err) {
@@ -429,7 +435,7 @@
                 });
         });
 
-        // ── Auto-preenchimento CEP (blur) ──
+        // â”€â”€ Auto-preenchimento CEP (blur) â”€â”€
         $("#cep").on("blur", function () {
             var val = $(this).val().replace(/\D/g, "");
             
@@ -447,16 +453,42 @@
                         $("#cidade").val(data.cidade);
                         $("#uf").val(data.uf);
                         
-                        // Focar no campo Número após preencher
+                        // Focar no campo NÃºmero apÃ³s preencher
                         $("#numero").focus();
                     } else {
-                        alert("CEP: " + (data.mensagem || "Não encontrado."));
+                        alert("CEP: " + (data.mensagem || "NÃ£o encontrado."));
                     }
                 })
                 .catch(function (err) {
                     $("#cepSpinner").hide();
                     console.error("Erro ao consultar CEP:", err);
                 });
+        });
+
+        $("#copiarEnderecoEntrega").on("click", function () {
+            $("#entCep").val($("#cep").val());
+            $("#entLogradouro").val($("#logradouro").val());
+            $("#entNumero").val($("#numero").val());
+            $("#entComplemento").val($("#complemento").val());
+            $("#entBairro").val($("#bairro").val());
+            $("#entCidade").val($("#cidade").val());
+            $("#entUf").val($("#uf").val());
+
+            if (!$("#entNome").val()) {
+                $("#entNome").val($("#razaoSocial").val() || $("#nome").val());
+            }
+
+            if (!$("#entCpfCnpj").val()) {
+                $("#entCpfCnpj").val($("#cpfCnpj").val());
+            }
+
+            if (!$("#entEmail").val()) {
+                $("#entEmail").val($("#email").val());
+            }
+
+            if (!$("#entTelefone").val()) {
+                $("#entTelefone").val($("#telefone").val());
+            }
         });
     });
 </script>

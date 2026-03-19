@@ -15,7 +15,14 @@ namespace CorteCor.Handlers
             _dbHandler = dbHandler;
         }
 
-        public async Task LogarEtapaAsync(int idSalao, int? idAgendamento, Guid? idNotaFiscal, string etapa, string mensagemStatus, string? conteudoXml = null)
+        public async Task LogarEtapaAsync(
+            int idSalao,
+            int? idAgendamento,
+            Guid? idNotaFiscal,
+            string etapa,
+            string mensagemStatus,
+            string? conteudoXml = null,
+            string? usuario = null)
         {
             var log = new NotaFiscalLog
             {
@@ -25,7 +32,8 @@ namespace CorteCor.Handlers
                 DataHora = DateTime.Now,
                 TipoEvento = etapa,
                 Mensagem = mensagemStatus,
-                RequestPayload = conteudoXml ?? string.Empty
+                RequestPayload = conteudoXml ?? string.Empty,
+                Usuario = usuario
             };
 
             await InserirAsync(log);

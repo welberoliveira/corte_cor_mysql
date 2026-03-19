@@ -15,10 +15,33 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-info mt-2">
+        <div class="alert alert-@Model.MensagemTipo mt-2">
             @Model.Mensagem
         </div>
     }
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="q" class="form-label">Buscar por nome</label>
+                    <input type="text" id="q" name="q" value="@Model.q" class="form-control" placeholder="Digite o nome da categoria">
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" id="incluirInativas" name="incluirInativas" value="true" @(Model.incluirInativas ? "checked" : "")>
+                        <label class="form-check-label" for="incluirInativas">Mostrar inativas</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+                <div class="col-md-2 text-end">
+                    <a asp-page="/CategoriaProdutoLista" class="btn btn-link">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <table class="table table-striped mt-3">
         <thead>
@@ -29,9 +52,9 @@
             </tr>
         </thead>
         <tbody>
-            @if (Model.Categorias != null && Model.Categorias.Any())
+            @if (Model.Categorias.Items != null && Model.Categorias.Items.Any())
             {
-                foreach (var categoria in Model.Categorias)
+                foreach (var categoria in Model.Categorias.Items)
                 {
                     <tr>
                         <td>@categoria.Nome</td>
@@ -49,13 +72,19 @@
                             <form method="post" style="display: inline;">
                                 <input type="hidden" name="id" value="@categoria.IdCategoria">
                                 <input type="hidden" name="action" value="alterar">
+                                <input type="hidden" name="q" value="@Model.q">
+                                <input type="hidden" name="incluirInativas" value="@Model.incluirInativas">
+                                <input type="hidden" name="p" value="@Model.Categorias.PageIndex">
                                 <button type="submit" class="btn btn-info btn-sm">Alterar</button>
                             </form>
 
                             <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta categoria?');">
                                 <input type="hidden" name="id" value="@categoria.IdCategoria">
                                 <input type="hidden" name="action" value="excluir">
-                                <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                                <input type="hidden" name="q" value="@Model.q">
+                                <input type="hidden" name="incluirInativas" value="@Model.incluirInativas">
+                                <input type="hidden" name="p" value="@Model.Categorias.PageIndex">
+                                <button type="submit" class="btn btn-danger btn-sm">Inativar</button>
                             </form>
                         </td>
                     </tr>
@@ -69,4 +98,21 @@
             }
         </tbody>
     </table>
+
+    @if (Model.Categorias.TotalPages > 1)
+    {
+        <nav aria-label="Paginacao de categorias">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.Categorias.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Categorias.PageIndex - 1)&q=@Model.q&incluirInativas=@Model.incluirInativas">Anterior</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Pagina @Model.Categorias.PageIndex de @Model.Categorias.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.Categorias.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Categorias.PageIndex + 1)&q=@Model.q&incluirInativas=@Model.incluirInativas">Proxima</a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

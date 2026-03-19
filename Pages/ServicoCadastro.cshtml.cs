@@ -1,122 +1,117 @@
-using CorteCor.Models;
 using CorteCor.Handlers;
+using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Globalization;
 
 namespace CorteCor.Pages
 {
     [Authorize(Policy = "UsuarioPolicy")]
     public class ServicoCadastroModel : PageModel
     {
-        public Servico Servico { get; set; }
-        public List<ItemListaServico> ItensLC116 { get; set; }
-        public List<CategoriaProduto> Categorias { get; set; }
-        public string ButtonText = "Cadastrar";
-        public string Mensagem { get; set; }
+        private readonly ServicoHandler _servicoHandler;
+        private readonly CategoriaProdutoHandler _categoriaHandler;
+        private readonly ItemListaServicoHandler _itemListaServicoHandler;
+
+        public Servico Servico { get; set; } = new();
+        public List<ItemListaServico> ItensLC116 { get; set; } = new();
+        public List<CategoriaProduto> Categorias { get; set; } = new();
+        public string ButtonText { get; set; } = "Cadastrar";
+        public string Mensagem { get; set; } = string.Empty;
+        public string MensagemTipo { get; set; } = "success";
+        public bool ServicoFiscalIncompleto { get; set; }
+
+        public ServicoCadastroModel(
+            ServicoHandler servicoHandler,
+            CategoriaProdutoHandler categoriaHandler,
+            ItemListaServicoHandler itemListaServicoHandler)
+        {
+            _servicoHandler = servicoHandler;
+            _categoriaHandler = categoriaHandler;
+            _itemListaServicoHandler = itemListaServicoHandler;
+        }
 
         public void OnGet(int? id)
         {
-            var itemHandler = new ItemListaServicoHandler();
-            ItensLC116 = itemHandler.Listar() ?? new List<ItemListaServico>();
+            CarregarListas();
+
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                return;
+            }
 
             if (id.HasValue)
             {
-                int idSalao = 0;
-                int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
-
-                var handler = new ServicoHandler();
-                Servico = handler.ObterPorId(id.Value);
-
-                if (Servico != null && Servico.IdSalao != idSalao)
+                Servico = _servicoHandler.ObterPorIdESalao(id.Value, idSalao) ?? new Servico();
+                if (Servico.IdServico > 0)
                 {
-                    Response.Redirect(HttpContext.Request.PathBase + $"/ServicoLista");
-                    return;
+                    ButtonText = "Atualizar";
                 }
-
-                ButtonText = "Atualizar";
             }
 
-            CarregarCategorias();
+            AtualizarAvisoFiscal();
         }
 
-        private void CarregarCategorias()
+        private void CarregarListas()
         {
-            int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
-            var catHandler = new CategoriaProdutoHandler();
-            Categorias = catHandler.ListarPorSalao(idSalao)?.Where(c => c.Ativo).ToList() ?? new List<CategoriaProduto>();
+            ItensLC116 = _itemListaServicoHandler.Listar() ?? new List<ItemListaServico>();
+            if (TryObterIdSalao(out var idSalao))
+            {
+                Categorias = _categoriaHandler.ListarPorSalao(idSalao)?.Where(c => c.Ativo).ToList() ?? new List<CategoriaProduto>();
+            }
         }
 
         private static decimal ParsePrecoBR(string valor)
         {
             if (string.IsNullOrWhiteSpace(valor)) return 0m;
-
-            // Ex: "1.234,56" -> "1234.56"
             valor = valor.Trim().Replace(".", "").Replace(",", ".");
-            return decimal.Parse(valor, System.Globalization.CultureInfo.InvariantCulture);
+            return decimal.Parse(valor, CultureInfo.InvariantCulture);
         }
 
         private static TimeSpan ParseDuracao(string valor)
         {
             if (string.IsNullOrWhiteSpace(valor)) return TimeSpan.Zero;
-
-            // Esperado do input type="time": "HH:mm"
-            if (TimeSpan.TryParseExact(valor.Trim(), @"hh\:mm",
-                System.Globalization.CultureInfo.InvariantCulture,
-                out var ts))
+            if (TimeSpan.TryParseExact(valor.Trim(), @"hh\:mm", CultureInfo.InvariantCulture, out var ts))
+            {
                 return ts;
+            }
 
-            // fallback
-            return TimeSpan.Parse(valor, System.Globalization.CultureInfo.InvariantCulture);
+            return TimeSpan.Parse(valor, CultureInfo.InvariantCulture);
         }
 
-
-        public void OnPost()
+        public IActionResult OnPost()
         {
-            int id = 0;
-            int.TryParse(Request.Form["id"], out id);
+            CarregarListas();
 
-            int idSalao = 0;
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Mensagem = "Nao foi possivel identificar o salao atual.";
+                MensagemTipo = "danger";
+                return Page();
+            }
+
+            int.TryParse(Request.Form["id"], out var id);
 
             decimal preco = ParsePrecoBR(Request.Form["preco"]);
-            
-            decimal? precoCusto = null;
-            if (!string.IsNullOrWhiteSpace(Request.Form["precoCusto"]))
-            {
-                precoCusto = ParsePrecoBR(Request.Form["precoCusto"]);
-            }
+            decimal? precoCusto = string.IsNullOrWhiteSpace(Request.Form["precoCusto"]) ? null : ParsePrecoBR(Request.Form["precoCusto"]);
+            decimal? margemContribuicao = string.IsNullOrWhiteSpace(Request.Form["margemContribuicao"]) ? null : ParsePrecoBR(Request.Form["margemContribuicao"]);
+            decimal? aliquotaIss = string.IsNullOrWhiteSpace(Request.Form["aliquotaISS"]) ? null : ParsePrecoBR(Request.Form["aliquotaISS"]);
 
-            decimal? margemContribuicao = null;
-            if (!string.IsNullOrWhiteSpace(Request.Form["margemContribuicao"]))
-            {
-                margemContribuicao = ParsePrecoBR(Request.Form["margemContribuicao"]);
-            }
-
-            TimeSpan duracao = ParseDuracao(Request.Form["duracao"]);
-
-            decimal? aliquotaIss = null;
-            if (!string.IsNullOrWhiteSpace(Request.Form["aliquotaISS"]))
-            {
-                aliquotaIss = ParsePrecoBR(Request.Form["aliquotaISS"]);
-            }
-
-            var servico = new Servico
+            Servico = new Servico
             {
                 IdServico = id,
-                Nome = Request.Form["nome"],
+                Nome = Request.Form["nome"].ToString().Trim(),
                 Preco = preco,
                 PrecoCusto = precoCusto,
                 MargemContribuicao = margemContribuicao,
-
-                Duracao = duracao,
+                Duracao = ParseDuracao(Request.Form["duracao"]),
                 IdSalao = idSalao,
-
                 CodigoTributacaoMunicipio = Request.Form["codigoTributacaoMunicipio"],
                 Cnae = Request.Form["cnae"].ToString()?.Replace(".", "").Replace("-", "").Replace("/", ""),
                 AliquotaISS = aliquotaIss,
-
                 Tags = Request.Form["tags"],
                 Anotacoes = Request.Form["anotacoes"],
                 ItemListaServicoLC116 = Request.Form["itemListaServicoLC116"],
@@ -127,47 +122,137 @@ namespace CorteCor.Pages
                 Arquivado = Request.Form["arquivado"] == "on"
             };
 
-            var handler = new ServicoHandler();
+            ButtonText = Servico.IdServico > 0 ? "Atualizar" : "Cadastrar";
+            AtualizarAvisoFiscal();
 
-            if (id > 0)
+            if (!ValidarServico())
             {
-                handler.Atualizar(servico);
-                Mensagem = "Serviço atualizado com sucesso!";
+                return Page();
+            }
+
+            if (Servico.IdServico > 0)
+            {
+                _servicoHandler.Atualizar(Servico);
+                Mensagem = "Servico atualizado com sucesso.";
             }
             else
             {
-                id = handler.CadastrarServico(servico);
-                Mensagem = "Serviço cadastrado com sucesso!";
+                Servico.IdServico = _servicoHandler.CadastrarServico(Servico);
+                Mensagem = "Servico cadastrado com sucesso.";
+                ButtonText = "Atualizar";
             }
 
-            // Redirect back to edit mode
-            Response.Redirect(HttpContext.Request.PathBase + $"/ServicoCadastro?id={id}&success=1");
+            MensagemTipo = "success";
+            AtualizarAvisoFiscal();
+            return Page();
         }
 
         public IActionResult OnPostSaveCategory(string nome, string descricao)
         {
-            if (string.IsNullOrWhiteSpace(nome))
-                return new Microsoft.AspNetCore.Mvc.JsonResult(new { success = false, message = "Nome é obrigatório." });
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                return new JsonResult(new { success = false, message = "Salao nao identificado." });
+            }
 
-            int idSalao = int.Parse(User.FindFirst("IdSalao")?.Value ?? "0");
-            var cat = new CategoriaProduto
+            nome = (nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+            {
+                return new JsonResult(new { success = false, message = "Nome e obrigatorio." });
+            }
+
+            if (_categoriaHandler.ExisteNomePorSalao(nome, idSalao))
+            {
+                return new JsonResult(new { success = false, message = "Ja existe uma categoria com esse nome." });
+            }
+
+            var categoria = new CategoriaProduto
             {
                 Nome = nome,
                 IdSalao = idSalao,
                 Ativo = true,
-                DataCadastro = System.DateTime.Now
+                DataCadastro = DateTime.Now
             };
 
-            var catHandler = new CategoriaProdutoHandler();
-            int id = catHandler.CadastrarCategoria(cat);
+            int id = _categoriaHandler.CadastrarCategoria(categoria);
+            return id > 0
+                ? new JsonResult(new { success = true, id, nome })
+                : new JsonResult(new { success = false, message = "Erro ao cadastrar categoria." });
+        }
 
-            if (id > 0)
+        private bool ValidarServico()
+        {
+            if (string.IsNullOrWhiteSpace(Servico.Nome))
             {
-                return new Microsoft.AspNetCore.Mvc.JsonResult(new { success = true, id = id, nome = nome });
+                Mensagem = "Informe o nome do servico.";
+                MensagemTipo = "warning";
+                return false;
             }
 
-            return new Microsoft.AspNetCore.Mvc.JsonResult(new { success = false, message = "Erro ao cadastrar categoria." });
+            if (_servicoHandler.ExisteNomePorSalao(Servico.Nome, Servico.IdSalao, Servico.IdServico > 0 ? Servico.IdServico : null))
+            {
+                Mensagem = "Ja existe um servico com esse nome.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (Servico.Preco < 0)
+            {
+                Mensagem = "O preco de venda nao pode ser negativo.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (Servico.PrecoCusto.HasValue && Servico.PrecoCusto < 0)
+            {
+                Mensagem = "O preco de custo nao pode ser negativo.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (Servico.Duracao <= TimeSpan.Zero)
+            {
+                Mensagem = "Informe uma duracao maior que zero.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (Servico.AliquotaISS.HasValue && (Servico.AliquotaISS < 0 || Servico.AliquotaISS > 100))
+            {
+                Mensagem = "A aliquota ISS deve estar entre 0 e 100.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            var preencheuAlgumCampoFiscal = !string.IsNullOrWhiteSpace(Servico.CodigoTributacaoMunicipio)
+                || !string.IsNullOrWhiteSpace(Servico.CodTributacaoNacional)
+                || !string.IsNullOrWhiteSpace(Servico.ItemListaServicoLC116)
+                || !string.IsNullOrWhiteSpace(Servico.CodNBS)
+                || !string.IsNullOrWhiteSpace(Servico.Cnae)
+                || Servico.AliquotaISS.HasValue;
+
+            if (preencheuAlgumCampoFiscal)
+            {
+                if (string.IsNullOrWhiteSpace(Servico.CodTributacaoNacional) || string.IsNullOrWhiteSpace(Servico.ItemListaServicoLC116))
+                {
+                    Mensagem = "Para usar o servico na emissao fiscal, preencha o codigo de tributacao nacional e o item da LC 116/03.";
+                    MensagemTipo = "warning";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void AtualizarAvisoFiscal()
+        {
+            ServicoFiscalIncompleto = !Servico.Arquivado
+                && (string.IsNullOrWhiteSpace(Servico.CodTributacaoNacional)
+                    || string.IsNullOrWhiteSpace(Servico.ItemListaServicoLC116));
+        }
+
+        private bool TryObterIdSalao(out int idSalao)
+        {
+            return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
         }
     }
 }
-

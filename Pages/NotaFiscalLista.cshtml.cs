@@ -22,6 +22,14 @@ namespace CorteCor.Pages
 
         public IList<NotaFiscal> Notas { get; set; } = new List<NotaFiscal>();
 
+        [BindProperty(SupportsGet = true)]
+        public Guid? IdNotaFiscal { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? IdAgendamento { get; set; }
+
+        public string FiltroDescricao { get; set; } = string.Empty;
+
         [TempData]
         public string Mensagem { get; set; } = string.Empty;
 
@@ -34,7 +42,23 @@ namespace CorteCor.Pages
             if (string.IsNullOrEmpty(salaoIdStr)) return RedirectToPage("/Index");
 
             var idSalao = int.Parse(salaoIdStr);
-            Notas = await _notaHandler.ListarPorSalaoAsync(idSalao) ?? new List<NotaFiscal>();
+            var notas = await _notaHandler.ListarPorSalaoAsync(idSalao) ?? new List<NotaFiscal>();
+
+            if (IdAgendamento.HasValue)
+            {
+                notas = notas.Where(n => n.IdAgendamento == IdAgendamento.Value).ToList();
+                FiltroDescricao = $"Exibindo notas vinculadas ao agendamento #{IdAgendamento.Value}.";
+            }
+
+            if (IdNotaFiscal.HasValue)
+            {
+                notas = notas.Where(n => n.IdNotaFiscal == IdNotaFiscal.Value).ToList();
+                FiltroDescricao = string.IsNullOrWhiteSpace(FiltroDescricao)
+                    ? "Exibindo a nota fiscal selecionada."
+                    : $"{FiltroDescricao} Filtro adicional pela nota selecionada.";
+            }
+
+            Notas = notas;
             return Page();
         }
 
