@@ -47,7 +47,7 @@
                     <th class="d-none d-md-table-cell">Sex</th>
                     <th class="d-none d-md-table-cell">Sab</th>
                     <th class="d-none d-md-table-cell">Dom</th>
-                    <th>Acoes</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -55,13 +55,13 @@
                 {
                     <tr>
                         <td>@funcionario.Nome</td>
-                        <td class="d-none d-md-table-cell">@(funcionario.seg ? "Sim" : "Nao")</td>
-                        <td class="d-none d-md-table-cell">@(funcionario.ter ? "Sim" : "Nao")</td>
-                        <td class="d-none d-md-table-cell">@(funcionario.qua ? "Sim" : "Nao")</td>
-                        <td class="d-none d-md-table-cell">@(funcionario.qui ? "Sim" : "Nao")</td>
-                        <td class="d-none d-md-table-cell">@(funcionario.sex ? "Sim" : "Nao")</td>
-                        <td class="d-none d-md-table-cell">@(funcionario.sab ? "Sim" : "Nao")</td>
-                        <td class="d-none d-md-table-cell">@(funcionario.dom ? "Sim" : "Nao")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.seg ? "Sim" : "Não")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.ter ? "Sim" : "Não")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.qua ? "Sim" : "Não")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.qui ? "Sim" : "Não")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.sex ? "Sim" : "Não")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.sab ? "Sim" : "Não")</td>
+                        <td class="d-none d-md-table-cell">@(funcionario.dom ? "Sim" : "Não")</td>
                         <td class="actions">
                             <form method="post" style="display: inline;">
                                 <input type="hidden" name="id" value="@funcionario.IdFuncionario">
@@ -89,16 +89,16 @@
 
     @if (Model.Funcionarios.TotalPages > 1)
     {
-        <nav aria-label="Paginacao de funcionarios">
+        <nav aria-label="Paginação de funcionários">
             <ul class="pagination justify-content-center">
                 <li class="page-item @(Model.Funcionarios.HasPreviousPage ? "" : "disabled")">
                     <a class="page-link" href="?p=@(Model.Funcionarios.PageIndex - 1)&q=@Model.q">Anterior</a>
                 </li>
                 <li class="page-item disabled">
-                    <span class="page-link">Pagina @Model.Funcionarios.PageIndex de @Model.Funcionarios.TotalPages</span>
+                    <span class="page-link">Página @Model.Funcionarios.PageIndex de @Model.Funcionarios.TotalPages</span>
                 </li>
                 <li class="page-item @(Model.Funcionarios.HasNextPage ? "" : "disabled")">
-                    <a class="page-link" href="?p=@(Model.Funcionarios.PageIndex + 1)&q=@Model.q">Proxima</a>
+                    <a class="page-link" href="?p=@(Model.Funcionarios.PageIndex + 1)&q=@Model.q">Próxima</a>
                 </li>
             </ul>
         </nav>

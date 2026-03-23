@@ -3,7 +3,7 @@
 
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h4>Lista de Servicos</h4>
+        <h4>Lista de Serviços</h4>
         <a asp-page="/ServicoCadastro" class="btn btn-primary">Cadastrar Novo</a>
     </div>
 
@@ -51,10 +51,10 @@
                 <tr>
                     <th>Nome</th>
                     <th>Categoria</th>
-                    <th>Preco</th>
-                    <th>Duracao</th>
+                    <th>Preço</th>
+                    <th>Duração</th>
                     <th>Status</th>
-                    <th>Acoes</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,7 +86,7 @@
                                 <button class="btn btn-info">Alterar</button>
                             </form>
 
-                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este servico?');">
+                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este serviço?');">
                                 <input type="hidden" name="id" value="@servico.IdServico">
                                 <input type="hidden" name="action" value="excluir">
                                 <input type="hidden" name="idCategoria" value="@Model.IdCategoria">
@@ -104,16 +104,16 @@
 
     @if (Model.Servicos.TotalPages > 1)
     {
-        <nav aria-label="Paginacao de servicos">
+        <nav aria-label="Paginação de serviços">
             <ul class="pagination justify-content-center">
                 <li class="page-item @(Model.Servicos.HasPreviousPage ? "" : "disabled")">
                     <a class="page-link" href="?p=@(Model.Servicos.PageIndex - 1)&q=@Model.q&idCategoria=@Model.IdCategoria&incluirArquivados=@Model.incluirArquivados">Anterior</a>
                 </li>
                 <li class="page-item disabled">
-                    <span class="page-link">Pagina @Model.Servicos.PageIndex de @Model.Servicos.TotalPages</span>
+                    <span class="page-link">Página @Model.Servicos.PageIndex de @Model.Servicos.TotalPages</span>
                 </li>
                 <li class="page-item @(Model.Servicos.HasNextPage ? "" : "disabled")">
-                    <a class="page-link" href="?p=@(Model.Servicos.PageIndex + 1)&q=@Model.q&idCategoria=@Model.IdCategoria&incluirArquivados=@Model.incluirArquivados">Proxima</a>
+                    <a class="page-link" href="?p=@(Model.Servicos.PageIndex + 1)&q=@Model.q&idCategoria=@Model.IdCategoria&incluirArquivados=@Model.incluirArquivados">Próxima</a>
                 </li>
             </ul>
         </nav>

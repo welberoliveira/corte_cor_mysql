@@ -49,12 +49,12 @@
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Nome / Codigo</th>
+                    <th>Nome / Código</th>
                     <th>Categoria</th>
                     <th>Estoque</th>
-                    <th>Preco de Venda</th>
+                    <th>Preço de Venda</th>
                     <th>Status</th>
-                    <th>Acoes</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -79,7 +79,7 @@
                                 }
                                 else
                                 {
-                                    <span class="text-muted">Nao controla</span>
+                                    <span class="text-muted">Não controla</span>
                                 }
                             </td>
                             <td>R$ @produto.PrecoVenda.ToString("0.00")</td>
@@ -129,16 +129,16 @@
 
     @if (Model.Produtos.TotalPages > 1)
     {
-        <nav aria-label="Paginacao de produtos">
+        <nav aria-label="Paginação de produtos">
             <ul class="pagination justify-content-center">
                 <li class="page-item @(Model.Produtos.HasPreviousPage ? "" : "disabled")">
                     <a class="page-link" href="?p=@(Model.Produtos.PageIndex - 1)&q=@Model.q&idCategoria=@Model.IdCategoria&incluirArquivados=@Model.incluirArquivados">Anterior</a>
                 </li>
                 <li class="page-item disabled">
-                    <span class="page-link">Pagina @Model.Produtos.PageIndex de @Model.Produtos.TotalPages</span>
+                    <span class="page-link">Página @Model.Produtos.PageIndex de @Model.Produtos.TotalPages</span>
                 </li>
                 <li class="page-item @(Model.Produtos.HasNextPage ? "" : "disabled")">
-                    <a class="page-link" href="?p=@(Model.Produtos.PageIndex + 1)&q=@Model.q&idCategoria=@Model.IdCategoria&incluirArquivados=@Model.incluirArquivados">Proxima</a>
+                    <a class="page-link" href="?p=@(Model.Produtos.PageIndex + 1)&q=@Model.q&idCategoria=@Model.IdCategoria&incluirArquivados=@Model.incluirArquivados">Próxima</a>
                 </li>
             </ul>
         </nav>

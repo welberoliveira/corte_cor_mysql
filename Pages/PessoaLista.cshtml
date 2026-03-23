@@ -97,16 +97,16 @@
 
 @if (Model.Pessoas.TotalPages > 1)
 {
-    <nav aria-label="Paginacao de pessoas">
+    <nav aria-label="Paginação de pessoas">
         <ul class="pagination justify-content-center">
             <li class="page-item @(Model.Pessoas.HasPreviousPage ? "" : "disabled")">
                 <a class="page-link" href="?p=@(Model.Pessoas.PageIndex - 1)&q=@Model.q" tabindex="-1">Anterior</a>
             </li>
             <li class="page-item disabled">
-                <span class="page-link">Pagina @Model.Pessoas.PageIndex de @Model.Pessoas.TotalPages</span>
+                <span class="page-link">Página @Model.Pessoas.PageIndex de @Model.Pessoas.TotalPages</span>
             </li>
             <li class="page-item @(Model.Pessoas.HasNextPage ? "" : "disabled")">
-                <a class="page-link" href="?p=@(Model.Pessoas.PageIndex + 1)&q=@Model.q">Proxima</a>
+                <a class="page-link" href="?p=@(Model.Pessoas.PageIndex + 1)&q=@Model.q">Próxima</a>
             </li>
         </ul>
     </nav>

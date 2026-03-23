@@ -19,7 +19,7 @@
             <form method="get">
                 <div class="row">
                     <div class="col-md-3 form-group">
-                        <label class="font-weight-bold">Data Inicio</label>
+                        <label class="font-weight-bold">Data Início</label>
                         <input type="date" class="form-control" asp-for="DataInicio">
                     </div>
                     <div class="col-md-3 form-group">
@@ -33,7 +33,7 @@
                         </select>
                     </div>
                     <div class="col-md-3 form-group">
-                        <label class="font-weight-bold">Servico</label>
+                        <label class="font-weight-bold">Serviço</label>
                         <select class="form-control" asp-for="IdServico" asp-items="@(new SelectList(Model.ServicosOptions, "IdServico", "Nome"))">
                             <option value="">Todos</option>
                         </select>
@@ -46,7 +46,7 @@
                         </select>
                     </div>
                     <div class="col-md-3 form-group">
-                        <label class="font-weight-bold">Funcionario</label>
+                        <label class="font-weight-bold">Funcionário</label>
                         <select class="form-control" asp-for="IdFuncionario" asp-items="@(new SelectList(Model.FuncionariosOptions, "IdFuncionario", "Nome"))">
                             <option value="">Todos</option>
                         </select>
@@ -54,7 +54,7 @@
                     <div class="col-md-6 form-group d-flex align-items-end justify-content-end">
                         <div class="form-check mr-4 mb-2">
                             <input type="checkbox" class="form-check-input" asp-for="MostrarExcluidos">
-                            <label class="form-check-label font-weight-bold" asp-for="MostrarExcluidos">Mostrar Excluidos</label>
+                            <label class="form-check-label font-weight-bold" asp-for="MostrarExcluidos">Mostrar Excluídos</label>
                         </div>
                         <div>
                             <a href="/AgendamentosLista" class="btn btn-secondary mr-2">
@@ -82,11 +82,11 @@
                     <th>Data/Hora</th>
                     <th>Status</th>
                     <th>Fiscal</th>
-                    <th>Servico</th>
+                    <th>Serviço</th>
                     <th>Cliente</th>
-                    <th>Funcionario</th>
-                    <th>Acoes</th>
-                    <th>Excluido?</th>
+                    <th>Funcionário</th>
+                    <th>Ações</th>
+                    <th>Excluído?</th>
                 </tr>
             </thead>
             <tbody>
@@ -111,22 +111,22 @@
                         <td>
                             @if (!string.IsNullOrWhiteSpace(Model.GetNotaFiscalUrl(item.IdAgendamento)))
                             {
-                                <a class="btn btn-sm btn-outline-dark" href="@Model.GetNotaFiscalUrl(item.IdAgendamento)">
+                                <a class="btn btn-sm btn-dark" href="@Model.GetNotaFiscalUrl(item.IdAgendamento)">
                                     <i class="bi bi-box-arrow-up-right"></i> Nota Fiscal
                                 </a>
                             }
                             else
                             {
-                                <span class="text-muted small">Sem acao fiscal</span>
+                                <span class="text-muted small">Sem ação fiscal</span>
                             }
                         </td>
-                        <td>@(item.Excluido ? "Sim" : "Nao")</td>
+                        <td>@(item.Excluido ? "Sim" : "Não")</td>
                     </tr>
                 }
                 @if (!Model.Agendamentos.Items.Any())
                 {
                     <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">Ainda nao ha agendamentos com estes filtros.</td>
+                        <td colspan="8" class="text-center py-4 text-muted">Ainda não há agendamentos com estes filtros.</td>
                     </tr>
                 }
             </tbody>
@@ -159,10 +159,10 @@
                     <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex - 1)" tabindex="-1">Anterior</a>
                 </li>
                 <li class="page-item disabled">
-                    <span class="page-link">Pagina @Model.Agendamentos.PageIndex de @Model.Agendamentos.TotalPages</span>
+                    <span class="page-link">Página @Model.Agendamentos.PageIndex de @Model.Agendamentos.TotalPages</span>
                 </li>
                 <li class="page-item @(Model.Agendamentos.HasNextPage ? "" : "disabled")">
-                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex + 1)">Proxima</a>
+                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex + 1)">Próxima</a>
                 </li>
             </ul>
         </nav>

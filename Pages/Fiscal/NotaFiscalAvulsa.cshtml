@@ -12,7 +12,7 @@
             <p class="text-muted">Emissão independente com todos os campos regulatórios</p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-outline-primary btn-sm" onclick="preencherDadosTesteNfseAvulsa()">
+            <button type="button" class="btn btn-primary btn-sm" onclick="preencherDadosTesteNfseAvulsa()">
                 <i class="bi bi-magic"></i> Preencher Dados de Teste
             </button>
             <div class="glass-card p-2 px-4">
@@ -124,7 +124,7 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="border rounded-3 p-3 h-100 bg-light">
-                                    <div class="small text-muted">Codigo</div>
+                                    <div class="small text-muted">Código</div>
                                     <div class="fw-semibold">@(Model.RetornoResumoAtual.CodigoStatus ?? "-")</div>
                                 </div>
                             </div>
@@ -136,8 +136,8 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="border rounded-3 p-3 h-100 bg-light">
-                                    <div class="small text-muted">Situacao operacional</div>
-                                    <div class="fw-semibold">@(Model.RetornoResumoAtual.OperacaoConcluida ? "Concluida" : "Pendente de analise")</div>
+                                    <div class="small text-muted">Situação operacional</div>
+                                    <div class="fw-semibold">@(Model.RetornoResumoAtual.OperacaoConcluida ? "Concluída" : "Pendente de análise")</div>
                                 </div>
                             </div>
                             <div class="col-12">
@@ -331,7 +331,7 @@
                                     <input asp-for="Input.DestinatarioIE" class="form-control" />
                                 </div>
                                 <div class="col-md-8">
-                                    <label class="form-label">Endereco (Logradouro, Nº)</label>
+                                    <label class="form-label">Endereço (Logradouro, Nº)</label>
                                     <div class="input-group">
                                         <input asp-for="Input.DestinatarioLogradouro" class="form-control" />
                                         <input asp-for="Input.DestinatarioNumero" class="form-control w-25" placeholder="S/N" />
@@ -485,7 +485,7 @@
                                                     <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
                                                     <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
                                                     <input type="hidden" name="Aba" value="notas" />
-                                                    <button type="submit" class="btn btn-outline-dark btn-sm" title="Ver Histórico">
+                                                    <button type="submit" class="btn btn-dark btn-sm" title="Ver Histórico">
                                                         <i class="bi bi-clock-history"></i>
                                                     </button>
                                                 </form>
@@ -498,7 +498,7 @@
                                                         <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
                                                         <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
                                                         <input type="hidden" name="Aba" value="notas" />
-                                                        <button type="submit" class="btn btn-outline-secondary btn-sm" title="Baixar XML">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" title="Baixar XML">
                                                             <i class="bi bi-file-earmark-code"></i>
                                                         </button>
                                                     </form>
@@ -511,7 +511,7 @@
                                                         <input type="hidden" name="NotasPage" value="@Model.NotasEmitidasPaginadas.PageIndex" />
                                                         <input type="hidden" name="InutilizacoesPage" value="@Model.InutilizacoesPaginadas.PageIndex" />
                                                         <input type="hidden" name="Aba" value="notas" />
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Baixar PDF">
+                                                        <button type="submit" class="btn btn-danger btn-sm" title="Baixar PDF">
                                                             <i class="bi bi-file-pdf"></i>
                                                         </button>
                                                     </form>
@@ -519,7 +519,7 @@
 
                                                 @if (acoes.PodeCancelar)
                                                 {
-                                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                    <button type="button" class="btn btn-danger btn-sm" 
                                                             data-bs-toggle="modal" data-bs-target="#modalCancelar"
                                                             onclick="document.getElementById('chaveCancelarInput').value='@acoes.ChaveFiscal'; document.getElementById('chaveCancelarDisplay').value='@acoes.ChaveFiscal';">
                                                         <i class="bi bi-x-circle"></i>
@@ -528,8 +528,8 @@
 
                                                 @if (acoes.PodeCartaCorrecao)
                                                 {
-                                                    <button type="button" class="btn btn-outline-info btn-sm"
-                                                            title="Carta de Correcao"
+                                                    <button type="button" class="btn btn-info btn-sm"
+                                                            title="Carta de Correção"
                                                             data-bs-toggle="modal" data-bs-target="#modalCorrecao"
                                                             onclick="document.getElementById('chaveCorrecaoInput').value='@acoes.ChaveFiscal'; document.getElementById('chaveCorrecaoDisplay').value='@acoes.ChaveFiscal';">
                                                         <i class="bi bi-pencil-square"></i>
@@ -538,7 +538,7 @@
 
                                                 @if (acoes.PodeEnviarEmail)
                                                 {
-                                                    <button type="button" class="btn btn-outline-success btn-sm"
+                                                    <button type="button" class="btn btn-success btn-sm"
                                                             title="Enviar por E-mail"
                                                             data-bs-toggle="modal" data-bs-target="#modalEmailNota"
                                                             onclick="document.getElementById('chaveEmailInput').value='@acoes.ChaveFiscal'; document.getElementById('nomeEmailDisplay').value=''; document.getElementById('emailDestinoInput').value='';">
@@ -560,7 +560,7 @@
                     </div>
                     @if (Model.NotasEmitidasPaginadas.TotalPages > 1)
                     {
-                        <nav aria-label="Paginacao de notas recentes" class="mt-3">
+                        <nav aria-label="Paginação de notas recentes" class="mt-3">
                             <ul class="pagination pagination-sm justify-content-center mb-0">
                                 <li class="page-item @(Model.NotasEmitidasPaginadas.HasPreviousPage ? "" : "disabled")">
                                     <a class="page-link"
@@ -570,14 +570,14 @@
                                        asp-route-Aba="notas">Anterior</a>
                                 </li>
                                 <li class="page-item disabled">
-                                    <span class="page-link">Pagina @Model.NotasEmitidasPaginadas.PageIndex de @Model.NotasEmitidasPaginadas.TotalPages</span>
+                                    <span class="page-link">Página @Model.NotasEmitidasPaginadas.PageIndex de @Model.NotasEmitidasPaginadas.TotalPages</span>
                                 </li>
                                 <li class="page-item @(Model.NotasEmitidasPaginadas.HasNextPage ? "" : "disabled")">
                                     <a class="page-link"
                                        asp-page="/Fiscal/NotaFiscalAvulsa"
                                        asp-route-NotasPage="@(Model.NotasEmitidasPaginadas.PageIndex + 1)"
                                        asp-route-InutilizacoesPage="@Model.InutilizacoesPaginadas.PageIndex"
-                                       asp-route-Aba="notas">Proxima</a>
+                                       asp-route-Aba="notas">Próxima</a>
                                 </li>
                             </ul>
                         </nav>
@@ -604,7 +604,7 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-3">
                                     <div class="border rounded-3 p-3 h-100 bg-light">
-                                        <div class="small text-muted">Codigo SEFAZ/Prefeitura</div>
+                                        <div class="small text-muted">Código SEFAZ/Prefeitura</div>
                                         <div class="fw-semibold">@(Model.RetornoResumoHistorico.CodigoStatus ?? "-")</div>
                                     </div>
                                 </div>
@@ -622,13 +622,13 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="border rounded-3 p-3 h-100 bg-light">
-                                        <div class="small text-muted">Operacao</div>
-                                        <div class="fw-semibold">@(Model.RetornoResumoHistorico.OperacaoConcluida ? "Concluida" : "Exige revisao")</div>
+                                        <div class="small text-muted">Operação</div>
+                                        <div class="fw-semibold">@(Model.RetornoResumoHistorico.OperacaoConcluida ? "Concluída" : "Exige revisão")</div>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="border rounded-3 p-3 bg-light">
-                                        <div class="small text-muted mb-1">Resumo do retorno tecnico</div>
+                                        <div class="small text-muted mb-1">Resumo do retorno técnico</div>
                                         <div>@(Model.RetornoResumoHistorico.MensagemRetorno ?? "Sem mensagem textual registrada para esta nota.")</div>
                                     </div>
                                 </div>
@@ -706,7 +706,7 @@
                 <div class="glass-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Histórico de Inutilizações (NF-e/NFC-e)</h5>
-                        <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalInutilizar">
+                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalInutilizar">
                             <i class="bi bi-slash-circle"></i> Nova Inutilização
                         </button>
                     </div>
@@ -743,7 +743,7 @@
                     </div>
                     @if (Model.InutilizacoesPaginadas.TotalPages > 1)
                     {
-                        <nav aria-label="Paginacao de inutilizacoes" class="mt-3">
+                        <nav aria-label="Paginação de inutilizações" class="mt-3">
                             <ul class="pagination pagination-sm justify-content-center mb-0">
                                 <li class="page-item @(Model.InutilizacoesPaginadas.HasPreviousPage ? "" : "disabled")">
                                     <a class="page-link"
@@ -753,14 +753,14 @@
                                        asp-route-Aba="inut">Anterior</a>
                                 </li>
                                 <li class="page-item disabled">
-                                    <span class="page-link">Pagina @Model.InutilizacoesPaginadas.PageIndex de @Model.InutilizacoesPaginadas.TotalPages</span>
+                                    <span class="page-link">Página @Model.InutilizacoesPaginadas.PageIndex de @Model.InutilizacoesPaginadas.TotalPages</span>
                                 </li>
                                 <li class="page-item @(Model.InutilizacoesPaginadas.HasNextPage ? "" : "disabled")">
                                     <a class="page-link"
                                        asp-page="/Fiscal/NotaFiscalAvulsa"
                                        asp-route-NotasPage="@Model.NotasEmitidasPaginadas.PageIndex"
                                        asp-route-InutilizacoesPage="@(Model.InutilizacoesPaginadas.PageIndex + 1)"
-                                       asp-route-Aba="inut">Proxima</a>
+                                       asp-route-Aba="inut">Próxima</a>
                                 </li>
                             </ul>
                         </nav>
@@ -1100,12 +1100,12 @@
                     const config = obterConfigBotaoNotaRecente(button);
 
                     button.classList.remove(
-                        'btn-outline-primary',
-                        'btn-outline-dark',
-                        'btn-outline-secondary',
-                        'btn-outline-danger',
-                        'btn-outline-info',
-                        'btn-outline-success'
+                        'btn-primary',
+                        'btn-dark',
+                        'btn-secondary',
+                        'btn-danger',
+                        'btn-info',
+                        'btn-success'
                     );
 
                     button.classList.add('nota-acao-btn', config.classe);
@@ -1240,9 +1240,9 @@
             };
 
             setFirst(['#Input_Ambiente', 'select[name="Input.Ambiente"]'], '2');
-            // Estes selects possuem onchange com submit automatico, entao nao disparamos change aqui.
+            // Estes selects possuem onchange com submit automático, então não disparamos change aqui.
             setFirst(['#Input_Modelo', 'select[name="Input.Modelo"]'], 'NFSE', { triggerChange: false });
-            setFirst(['#Input_NaturezaOperacao', 'select[name="Input.NaturezaOperacao"]'], 'Prestacao de servico', { triggerChange: false });
+            setFirst(['#Input_NaturezaOperacao', 'select[name="Input.NaturezaOperacao"]'], 'Prestação de serviço', { triggerChange: false });
             setFirst(['#Input_Serie', 'input[name="Input.Serie"]'], '1');
             setIfEmpty('#Input_Numero', '1');
             setIfEmpty('input[name="Input.Numero"]', '1');

@@ -1,11 +1,11 @@
 @page
 @model CorteCor.Pages.ServicoCadastroModel
 @{
-    ViewData["Title"] = "Cadastro de ServiÃ§os";
+    ViewData["Title"] = "Cadastro de Serviços";
 }
 
 <div class="container">
-    <h4>@Model.ButtonText ServiÃ§o</h4>
+    <h4>@Model.ButtonText Serviço</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -17,7 +17,7 @@
     @if (Model.ServicoFiscalIncompleto)
     {
         <div class="alert alert-warning">
-            Este servico ainda esta incompleto para emissao fiscal. Preencha ao menos o item LC 116/03 e o codigo de tributacao nacional.
+            Este serviço ainda está incompleto para emissão fiscal. Preencha ao menos o item LC 116/03 e o código de tributação nacional.
         </div>
     }
 
@@ -31,13 +31,13 @@
                 <button class="nav-link active" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button" role="tab">Dados Gerais</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="preco-tab" data-bs-toggle="tab" data-bs-target="#tab-preco" type="button" role="tab">PreÃ§o</button>
+                <button class="nav-link" id="preco-tab" data-bs-toggle="tab" data-bs-target="#tab-preco" type="button" role="tab">Preço</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="fiscal-tab" data-bs-toggle="tab" data-bs-target="#fiscal" type="button" role="tab">InformaÃ§Ãµes Fiscais</button>
+                <button class="nav-link" id="fiscal-tab" data-bs-toggle="tab" data-bs-target="#fiscal" type="button" role="tab">Informações Fiscais</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="outros-tab" data-bs-toggle="tab" data-bs-target="#outros" type="button" role="tab">Outras InformaÃ§Ãµes</button>
+                <button class="nav-link" id="outros-tab" data-bs-toggle="tab" data-bs-target="#outros" type="button" role="tab">Outras Informações</button>
             </li>
         </ul>
 
@@ -48,7 +48,7 @@
             <div class="tab-pane fade show active" id="geral" role="tabpanel">
                 <div class="row">
                     <div class="col-md-5 form-group">
-                        <label for="nome" class="form-label">Nome do ServiÃ§o</label>
+                        <label for="nome" class="form-label">Nome do Serviço</label>
                         <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Servico?.Nome">
                     </div>
                     <div class="col-md-4 form-group">
@@ -71,7 +71,7 @@
                         </select>
                     </div>
                     <div class="col-md-3 form-group">
-                        <label for="duracao" class="form-label">DuraÃ§Ã£o</label>
+                        <label for="duracao" class="form-label">Duração</label>
                         <input type="time" id="duracao" name="duracao" class="form-control" required step="60"
                             value="@(Model.Servico != null ? Model.Servico.Duracao.ToString(@"hh\:mm") : "")">
                         <small class="form-text text-muted">Ex: 00:30</small>
@@ -87,28 +87,28 @@
                 </div>
             </div>
 
-            <!-- PreÃ§o -->
+            <!-- Preço -->
             <div class="tab-pane fade" id="tab-preco" role="tabpanel">
                 <div class="row">
                     <div class="col-md-4 form-group">
-                        <label for="precoCusto" class="form-label">PreÃ§o de Custo (Custos VariÃ¡veis + Despesas VariÃ¡veis)</label>
+                        <label for="precoCusto" class="form-label">Preço de Custo (Custos Variáveis + Despesas Variáveis)</label>
                         <input type="text" id="precoCusto" name="precoCusto" class="form-control"
                             value="@(Model.Servico?.PrecoCusto != null ? Model.Servico.PrecoCusto.Value.ToString("0.00").Replace('.', ',') : "")">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label for="preco" class="form-label">PreÃ§o de Venda (R$)</label>
+                        <label for="preco" class="form-label">Preço de Venda (R$)</label>
                         <input type="text" id="preco" name="preco" class="form-control" required
                             value="@(Model.Servico != null ? Model.Servico.Preco.ToString("0.00").Replace('.', ',') : "")">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label for="margemContribuicao" class="form-label">Margem ContribuiÃ§Ã£o (%)</label>
+                        <label for="margemContribuicao" class="form-label">Margem Contribuição (%)</label>
                         <input type="text" id="margemContribuicao" name="margemContribuicao" class="form-control" readonly tabindex="-1"
                             value="@(Model.Servico?.MargemContribuicao != null ? Model.Servico.MargemContribuicao.Value.ToString("0.00").Replace('.', ',') : "")">
                     </div>
                 </div>
             </div>
 
-            <!-- InformaÃ§Ãµes Fiscais -->
+            <!-- Informações Fiscais -->
             <div class="tab-pane fade" id="fiscal" role="tabpanel">
                 <div class="row">
                     <div class="col-md-4 form-group">
@@ -116,11 +116,11 @@
                         <input type="text" id="cnae" name="cnae" class="form-control" value="@Model.Servico?.Cnae" maxlength="7">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label for="idCnae" class="form-label">CÃ³digo IBGE MunicÃ­pio (idCnae)</label>
+                        <label for="idCnae" class="form-label">Código IBGE Município (idCnae)</label>
                         <input type="text" id="idCnae" name="idCnae" class="form-control" value="@Model.Servico?.IdCnae" maxlength="7">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label for="aliquotaISS" class="form-label">AlÃ­quota ISS (%)</label>
+                        <label for="aliquotaISS" class="form-label">Alíquota ISS (%)</label>
                         <input type="text" id="aliquotaISS" name="aliquotaISS" class="form-control"
                             value="@(Model.Servico?.AliquotaISS != null ? Model.Servico.AliquotaISS.Value.ToString("0.00").Replace('.', ',') : "")">
                     </div>
@@ -142,10 +142,10 @@
                                 }
                             }
                         </select>
-                        <small class="form-text text-muted">Selecione o cÃ³digo de tributaÃ§Ã£o.</small>
+                        <small class="form-text text-muted">Selecione o código de tributação.</small>
                     </div>
                     <div class="col-md-6 form-group">
-                        <label for="codigoTributacaoMunicipio" class="form-label">CÃ³digo TributaÃ§Ã£o MunicÃ­pio</label>
+                        <label for="codigoTributacaoMunicipio" class="form-label">Código Tributação Município</label>
                         <input type="text" id="codigoTributacaoMunicipio" name="codigoTributacaoMunicipio" class="form-control"
                             value="@Model.Servico?.CodigoTributacaoMunicipio" maxlength="20">
                     </div>
@@ -153,27 +153,27 @@
 
                 <div class="row mt-3">
                     <div class="col-md-6 form-group">
-                        <label for="codTributacaoNacional" class="form-label">CÃ³digo TributaÃ§Ã£o Nacional</label>
+                        <label for="codTributacaoNacional" class="form-label">Código Tributação Nacional</label>
                         <input type="text" id="codTributacaoNacional" name="codTributacaoNacional" class="form-control" value="@Model.Servico?.CodTributacaoNacional" maxlength="6">
                     </div>
                     <div class="col-md-6 form-group">
-                        <label for="codNBS" class="form-label">CÃ³digo NBS</label>
+                        <label for="codNBS" class="form-label">Código NBS</label>
                         <input type="text" id="codNBS" name="codNBS" class="form-control" value="@Model.Servico?.CodNBS" maxlength="9">
                     </div>
                 </div>
             </div>
 
-            <!-- Outras InformaÃ§Ãµes -->
+            <!-- Outras Informações -->
             <div class="tab-pane fade" id="outros" role="tabpanel">
                 <div class="row">
                     <div class="col-md-12 form-group">
-                        <label for="tags" class="form-label">Tags (separadas por vÃ­rgula)</label>
-                        <input type="text" id="tags" name="tags" class="form-control" value="@Model.Servico?.Tags" placeholder="Ex: Cabelo, Quimica, Vip">
+                        <label for="tags" class="form-label">Tags (separadas por vírgula)</label>
+                        <input type="text" id="tags" name="tags" class="form-control" value="@Model.Servico?.Tags" placeholder="Ex: Cabelo, Química, Vip">
                     </div>
                 </div>
                 <div class="row mt-3">
                     <div class="col-md-12 form-group">
-                        <label for="anotacoes" class="form-label">AnotaÃ§Ãµes Internas</label>
+                        <label for="anotacoes" class="form-label">Anotações Internas</label>
                         <textarea id="anotacoes" name="anotacoes" class="form-control" rows="3">@Model.Servico?.Anotacoes</textarea>
                     </div>
                 </div>
@@ -196,10 +196,10 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label for="catNome" class="form-label">Nome</label>
-                    <input type="text" id="catNome" class="form-control" placeholder="Ex: Cortes, QuÃ­mica">
+                    <input type="text" id="catNome" class="form-control" placeholder="Ex: Cortes, Química">
                 </div>
                 <div class="mb-3">
-                    <label for="catDescricao" class="form-label">DescriÃ§Ã£o (Opcional)</label>
+                    <label for="catDescricao" class="form-label">Descrição (Opcional)</label>
                     <textarea id="catDescricao" class="form-control" rows="2"></textarea>
                 </div>
                 <div id="catMensagem" class="alert d-none"></div>
@@ -214,7 +214,7 @@
 
     <script>
         $(document).ready(function () {
-            // mÃ¡scara simples BR: 1.234,56
+            // máscara simples BR: 1.234,56
             $("#preco, #precoCusto, #aliquotaISS").inputmask("decimal", {
                 radixPoint: ",",
                 groupSeparator: ".",
@@ -254,7 +254,7 @@
                 let desc = $("#catDescricao").val();
 
                 if (!nome) {
-                    $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("O nome Ã© obrigatÃ³rio.");
+                    $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("O nome é obrigatório.");
                     return;
                 }
 
@@ -284,7 +284,7 @@
                         }
                     },
                     error: function() {
-                        $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("Erro de conexÃ£o.");
+                        $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("Erro de conexão.");
                     },
                     complete: function() {
                         $("#btnSalvarCategoria").prop("disabled", false).text("Salvar");
