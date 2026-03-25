@@ -73,6 +73,8 @@
                     </td>
                     <td class="d-none d-md-table-cell">@(pessoa.DataNascimento.HasValue ? pessoa.DataNascimento.Value.ToShortDateString() : "")</td>
                     <td class="actions">
+                        <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@pessoa.IdPessoa">CRM</a>
+
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@pessoa.IdPessoa">
                             <input type="hidden" name="action" value="alterar">

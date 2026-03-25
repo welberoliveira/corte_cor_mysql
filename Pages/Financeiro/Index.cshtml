@@ -1,0 +1,298 @@
+﻿@page
+@model CorteCor.Pages.Financeiro.IndexModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Financeiro";
+    var fluxoLabels = Model.Dashboard.FluxoCaixa.Select(f => f.Data.ToString("dd/MM")).ToList();
+    var fluxoEntradas = Model.Dashboard.FluxoCaixa.Select(f => f.Entradas).ToList();
+    var fluxoSaidas = Model.Dashboard.FluxoCaixa.Select(f => f.Saidas).ToList();
+    var formaLabels = Model.Dashboard.ReceitasPorForma.Select(r => r.Nome).ToList();
+    var formaValores = Model.Dashboard.ReceitasPorForma.Select(r => r.Valor).ToList();
+    var despesaLabels = Model.Dashboard.DespesasPorPlano.Select(r => r.Nome).ToList();
+    var despesaValores = Model.Dashboard.DespesasPorPlano.Select(r => r.Valor).ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Dashboard Financeiro</h2>
+        <div class="text-muted">Visão consolidada de caixa, títulos, resultado e concentração de receitas.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-primary" asp-page="/Financeiro/Lancamentos">Lançamentos</a>
+        <a class="btn btn-outline-dark" asp-page="/Financeiro/Relatorios">Relatórios</a>
+        <a class="btn btn-outline-secondary" asp-page="/Financeiro/PlanoContas">Plano de Contas</a>
+        <a class="btn btn-outline-secondary" asp-page="/Financeiro/ContasCaixa">Contas Caixa</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Data início</label>
+                <input type="date" class="form-control" name="dataInicio" value="@Model.DataInicio.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data fim</label>
+                <input type="date" class="form-control" name="dataFim" value="@Model.DataFim.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-6 text-md-end">
+                <button class="btn btn-primary" type="submit">Atualizar painel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">Receitas liquidadas</div>
+                <div class="fs-4 fw-bold text-success">R$ @Model.Dashboard.ReceitasLiquidadas.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">Despesas liquidadas</div>
+                <div class="fs-4 fw-bold text-danger">R$ @Model.Dashboard.DespesasLiquidadas.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">Saldo operacional</div>
+                <div class="fs-4 fw-bold @(Model.Dashboard.SaldoOperacional >= 0 ? "text-primary" : "text-danger")">R$ @Model.Dashboard.SaldoOperacional.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">Saldo projetado</div>
+                <div class="fs-4 fw-bold @(Model.Dashboard.SaldoProjetado >= 0 ? "text-primary" : "text-danger")">R$ @Model.Dashboard.SaldoProjetado.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">A receber aberto</div>
+                <div class="fs-5 fw-semibold">R$ @Model.Dashboard.AReceberAberto.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">A pagar aberto</div>
+                <div class="fs-5 fw-semibold">R$ @Model.Dashboard.APagarAberto.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">Títulos vencidos</div>
+                <div class="fs-5 fw-semibold">@Model.Dashboard.QuantidadeTitulosVencidos</div>
+                <div class="small text-danger">Receitas vencidas: R$ @Model.Dashboard.ReceitasVencidas.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="small text-muted">Ticket médio recebido</div>
+                <div class="fs-5 fw-semibold">R$ @Model.Dashboard.TicketMedioRecebido.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-7">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Fluxo de caixa</div>
+            <div class="card-body">
+                <canvas id="fluxoChart" height="110"></canvas>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">DRE gerencial</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Grupo</th>
+                                <th class="text-end">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var linha in Model.Dashboard.DreGerencial)
+                            {
+                                <tr>
+                                    <td>@linha.Grupo</td>
+                                    <td class="text-end @(linha.Valor >= 0 ? "text-success" : "text-danger") fw-semibold">R$ @linha.Valor.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Títulos críticos</div>
+            <div class="card-body">
+                @if (Model.Dashboard.TitulosCriticos.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Descrição</th>
+                                    <th>Pessoa</th>
+                                    <th>Vencimento</th>
+                                    <th class="text-end">Valor aberto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Dashboard.TitulosCriticos)
+                                {
+                                    <tr>
+                                        <td><span class="badge @(item.Tipo == "Receber" ? "bg-success" : "bg-danger")">@item.Tipo</span></td>
+                                        <td>@item.Descricao</td>
+                                        <td>@(string.IsNullOrWhiteSpace(item.NomePessoa) ? "-" : item.NomePessoa)</td>
+                                        <td>@item.DataVencimento.ToString("dd/MM/yyyy")</td>
+                                        <td class="text-end fw-semibold">R$ @item.ValorAberto.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Nenhum título crítico no momento.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Receitas por forma</div>
+            <div class="card-body">
+                <canvas id="formaChart" height="180"></canvas>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Despesas por plano</div>
+            <div class="card-body">
+                <canvas id="despesaChart" height="180"></canvas>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Top clientes por recebimento</div>
+            <div class="card-body">
+                @if (Model.Dashboard.TopClientes.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var cliente in Model.Dashboard.TopClientes)
+                        {
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between gap-2">
+                                    <div>
+                                        <div class="fw-semibold">@cliente.NomeCliente</div>
+                                        <div class="small text-muted">@cliente.Quantidade recebimentos</div>
+                                    </div>
+                                    <div class="fw-semibold">R$ @cliente.Valor.ToString("N2")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Ainda não há recebimentos liquidados no período.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const fluxoCtx = document.getElementById('fluxoChart');
+        if (fluxoCtx) {
+            new Chart(fluxoCtx, {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(JsonSerializer.Serialize(fluxoLabels)),
+                    datasets: [
+                        {
+                            label: 'Entradas',
+                            data: @Html.Raw(JsonSerializer.Serialize(fluxoEntradas)),
+                            borderColor: '#16a34a',
+                            backgroundColor: 'rgba(22,163,74,0.12)',
+                            tension: 0.25
+                        },
+                        {
+                            label: 'Saídas',
+                            data: @Html.Raw(JsonSerializer.Serialize(fluxoSaidas)),
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220,38,38,0.12)',
+                            tension: 0.25
+                        }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        const formaCtx = document.getElementById('formaChart');
+        if (formaCtx) {
+            new Chart(formaCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: @Html.Raw(JsonSerializer.Serialize(formaLabels)),
+                    datasets: [{
+                        data: @Html.Raw(JsonSerializer.Serialize(formaValores)),
+                        backgroundColor: ['#2563eb','#16a34a','#f59e0b','#7c3aed','#ef4444','#0ea5e9','#64748b']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        const despesaCtx = document.getElementById('despesaChart');
+        if (despesaCtx) {
+            new Chart(despesaCtx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(JsonSerializer.Serialize(despesaLabels)),
+                    datasets: [{
+                        label: 'Despesas',
+                        data: @Html.Raw(JsonSerializer.Serialize(despesaValores)),
+                        backgroundColor: '#f97316'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    </script>
+}
+

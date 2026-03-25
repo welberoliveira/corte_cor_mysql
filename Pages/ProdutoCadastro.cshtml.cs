@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +34,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 Produto = new Produto { DataCadastro = DateTime.Now, ControlarEstoque = true };
                 return;
@@ -57,7 +57,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return Page();
             }
@@ -94,7 +94,7 @@ namespace CorteCor.Pages
                 var existente = _produtoHandler.ObterPorIdESalao(Produto.IdProduto, idSalao);
                 if (existente == null)
                 {
-                    Mensagem = "Produto nao encontrado para o salao atual.";
+                    Mensagem = "Produto não encontrado para o salão atual.";
                     MensagemTipo = "danger";
                     return Page();
                 }
@@ -118,18 +118,18 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                return new JsonResult(new { success = false, message = "Salao nao identificado." });
+                return new JsonResult(new { success = false, message = "Salão não identificado." });
             }
 
             nome = (nome ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(nome))
             {
-                return new JsonResult(new { success = false, message = "Nome e obrigatorio." });
+                return new JsonResult(new { success = false, message = "Nome é obrigatório." });
             }
 
             if (_categoriaHandler.ExisteNomePorSalao(nome, idSalao))
             {
-                return new JsonResult(new { success = false, message = "Ja existe uma categoria com esse nome." });
+                return new JsonResult(new { success = false, message = "Já existe uma categoria com esse nome." });
             }
 
             var categoria = new CategoriaProduto
@@ -168,14 +168,14 @@ namespace CorteCor.Pages
 
             if (Produto.PrecoVenda < 0)
             {
-                Mensagem = "O preco de venda nao pode ser negativo.";
+                Mensagem = "O preço de venda não pode ser negativo.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (Produto.PrecoCusto.HasValue && Produto.PrecoCusto < 0)
             {
-                Mensagem = "O preco de custo nao pode ser negativo.";
+                Mensagem = "O preço de custo não pode ser negativo.";
                 MensagemTipo = "warning";
                 return false;
             }
@@ -184,7 +184,7 @@ namespace CorteCor.Pages
             {
                 if (Produto.EstoqueAtual.HasValue && Produto.EstoqueAtual < 0 || Produto.EstoqueMinimo.HasValue && Produto.EstoqueMinimo < 0)
                 {
-                    Mensagem = "Os valores de estoque nao podem ser negativos.";
+                    Mensagem = "Os valores de estoque não podem ser negativos.";
                     MensagemTipo = "warning";
                     return false;
                 }
@@ -192,21 +192,21 @@ namespace CorteCor.Pages
 
             if (!string.IsNullOrWhiteSpace(Produto.NCM) && !Regex.IsMatch(Produto.NCM, @"^\d{8}$"))
             {
-                Mensagem = "O NCM deve conter exatamente 8 digitos.";
+                Mensagem = "O NCM deve conter exatamente 8 dígitos.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(Produto.CEST) && !Regex.IsMatch(Produto.CEST, @"^\d{7}$"))
             {
-                Mensagem = "O CEST deve conter exatamente 7 digitos.";
+                Mensagem = "O CEST deve conter exatamente 7 dígitos.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(Produto.ReferenciaEAN) && !Regex.IsMatch(Produto.ReferenciaEAN, @"^\d{8,14}$"))
             {
-                Mensagem = "O GTIN/EAN deve conter entre 8 e 14 digitos numericos.";
+                Mensagem = "O GTIN/EAN deve conter entre 8 e 14 dígitos numéricos.";
                 MensagemTipo = "warning";
                 return false;
             }
@@ -238,3 +238,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

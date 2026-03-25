@@ -78,6 +78,8 @@ builder.Services.AddScoped<NotaFiscalHandler>();
 builder.Services.AddScoped<NotaFiscalLogHandler>();
 builder.Services.AddScoped<PagamentoHandler>();
 builder.Services.AddScoped<FinanceiroHandler>();
+builder.Services.AddScoped<IFinanceiroModuloHandler, FinanceiroModuloHandler>();
+builder.Services.AddScoped<FinanceiroService>();
 builder.Services.AddScoped<IntegracaoHandler>();
 builder.Services.AddScoped<MercadoPagoService>();
 builder.Services.AddScoped<ModeloEmailHandler>();
@@ -86,9 +88,17 @@ builder.Services.AddScoped<MeioPagamentoHandler>();
 builder.Services.AddHttpClient<BrevoEmailService>();
 //builder.Services.AddScoped<BrevoEmailService>(); // Removido pois AddHttpClient já registra
 builder.Services.AddHttpClient<SMSMarketService>();
+builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 builder.Services.AddScoped<ILembreteHandler, LembreteHandler>();
 builder.Services.AddScoped<LembreteService>();
 builder.Services.AddScoped<FornecedoresHandler>();
+builder.Services.AddScoped<ICrmHandler, CrmHandler>();
+builder.Services.AddScoped<CrmService>();
+builder.Services.AddScoped<PedidoHandler>();
+builder.Services.AddScoped<PedidoService>();
+builder.Services.AddScoped<VendaEstoqueHandler>();
+builder.Services.AddScoped<VendaFiscalPreparationService>();
+builder.Services.AddScoped<VendaService>();
 builder.Services.AddHttpClient<ConsultaDocumentoService>();
 builder.Services.AddScoped<LogAcessoHandler>();
 

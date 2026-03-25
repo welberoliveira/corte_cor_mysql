@@ -1,0 +1,151 @@
+@page
+@model CorteCor.Pages.CRM.OportunidadesModel
+@{
+    ViewData["Title"] = "Oportunidades CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="mb-1">Oportunidades CRM</h2>
+        <div class="text-muted">Pipeline comercial e oportunidades abertas com clientes.</div>
+    </div>
+    <a class="btn btn-link" asp-page="/CRM/Index">Voltar ao CRM</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Nova oportunidade</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Salvar" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" asp-for="NovaOportunidade.IdPessoa">
+                            <option value="">Selecione</option>
+                            @foreach (var cliente in Model.Clientes)
+                            {
+                                <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Título</label>
+                        <input class="form-control" asp-for="NovaOportunidade.Titulo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Etapa</label>
+                        <select class="form-select" asp-for="NovaOportunidade.IdEtapa">
+                            @foreach (var etapa in Model.Etapas)
+                            {
+                                <option value="@etapa.IdEtapa">@etapa.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Origem</label>
+                        <input class="form-control" asp-for="NovaOportunidade.Origem" placeholder="Indicação, Instagram, Site..." />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Valor estimado</label>
+                        <input type="number" class="form-control" asp-for="NovaOportunidade.ValorEstimado" step="0.01" min="0" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Probabilidade</label>
+                        <input type="number" class="form-control" asp-for="NovaOportunidade.Probabilidade" min="0" max="100" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Previsão</label>
+                        <input type="date" class="form-control" asp-for="NovaOportunidade.PrevisaoFechamento" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" asp-for="NovaOportunidade.Descricao" rows="4"></textarea>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-success" type="submit">Salvar Oportunidade</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" asp-for="IdPessoa">
+                            <option value="">Todos</option>
+                            @foreach (var cliente in Model.Clientes)
+                            {
+                                <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" asp-for="Status">
+                            <option value="">Todos</option>
+                            <option value="Aberta">Aberta</option>
+                            <option value="Ganha">Ganha</option>
+                            <option value="Perdida">Perdida</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-secondary" type="submit">Filtrar</button>
+                        <a class="btn btn-link" asp-page="/CRM/Oportunidades">Limpar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            @foreach (var etapa in Model.Etapas)
+            {
+                var oportunidadesDaEtapa = Model.Oportunidades.Where(o => o.IdEtapa == etapa.IdEtapa).ToList();
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white fw-semibold d-flex justify-content-between">
+                            <span>@etapa.Nome</span>
+                            <span class="badge bg-dark">@oportunidadesDaEtapa.Count</span>
+                        </div>
+                        <div class="card-body d-flex flex-column gap-3">
+                            @if (oportunidadesDaEtapa.Any())
+                            {
+                                @foreach (var oportunidade in oportunidadesDaEtapa)
+                                {
+                                    <div class="border rounded p-3 bg-light-subtle">
+                                        <div class="fw-semibold">@oportunidade.Titulo</div>
+                                        <div class="small text-muted">@oportunidade.NomePessoa</div>
+                                        <div class="small text-muted">R$ @oportunidade.ValorEstimado.ToString("N2") • @oportunidade.Probabilidade%</div>
+                                        <div class="small text-muted mb-2">Previsão: @(oportunidade.PrevisaoFechamento?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            @foreach (var destino in Model.Etapas.Where(e => e.IdEtapa != etapa.IdEtapa))
+                                            {
+                                                <form method="post" asp-page-handler="Mover">
+                                                    <input type="hidden" name="idOportunidade" value="@oportunidade.IdOportunidade" />
+                                                    <input type="hidden" name="idEtapa" value="@destino.IdEtapa" />
+                                                    <button class="btn btn-sm btn-outline-primary" type="submit">@destino.Nome</button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-muted">Sem oportunidades nesta etapa.</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

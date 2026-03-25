@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +28,7 @@ namespace CorteCor.Pages
             if (!TryObterIdSalao(out var idSalao))
             {
                 Categoria = new CategoriaProduto { Ativo = true };
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -47,7 +47,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return Page();
             }
@@ -58,14 +58,14 @@ namespace CorteCor.Pages
 
             if (!ModelState.IsValid)
             {
-                Mensagem = "Revise os campos obrigatorios da categoria.";
+                Mensagem = "Revise os campos obrigatórios da categoria.";
                 MensagemTipo = "danger";
                 return Page();
             }
 
             if (_categoriaHandler.ExisteNomePorSalao(Categoria.Nome, idSalao, Categoria.IdCategoria > 0 ? Categoria.IdCategoria : null))
             {
-                Mensagem = "Ja existe uma categoria com esse nome.";
+                Mensagem = "Já existe uma categoria com esse nome.";
                 MensagemTipo = "warning";
                 return Page();
             }
@@ -92,3 +92,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

@@ -211,7 +211,7 @@ namespace CorteCor.Services
             var cert = await ObterCertificadoAsync(idSalao, request, config);
             if (cert == null)
             {
-                throw new InvalidOperationException("Certificado digital nao selecionado ou senha invalida.");
+                throw new InvalidOperationException("Certificado digital não selecionado ou senha inválida.");
             }
 
             await _logHandler.LogarEtapaAsync(idSalao, null, notaId, "INICIO_AVULSA", $"Emitindo {tipoNota} serie {request.Serie} numero {request.Numero}");
@@ -289,9 +289,9 @@ namespace CorteCor.Services
 
             var result = new NotaFiscalOperacaoResult { ChaveAcesso = chaveAcesso };
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
-                ?? throw new InvalidOperationException("Nota nao encontrada para a chave informada.");
+                ?? throw new InvalidOperationException("Nota não encontrada para a chave informada.");
             var config = await _configHandler.ObterPorSalaoAsync(idSalao)
-                ?? throw new InvalidOperationException("Configuracao fiscal nao encontrada.");
+                ?? throw new InvalidOperationException("Configuração fiscal não encontrada.");
             var cert = new CertificadoFiscalFactory(_criptoService).InstanciarCertificado(config);
             var chaveFiscalNormalizada = string.Equals(nota.TipoNota, "NFS-e", StringComparison.OrdinalIgnoreCase)
                 ? PrimeiroValorPreenchido(ObterChaveFiscal(nota), chaveAcesso)
@@ -342,7 +342,7 @@ namespace CorteCor.Services
                     }
                     else if (EhErroConsultaChaveNfse(result.XmlRetorno))
                     {
-                        // Nao rebaixa o estado local por uma consulta nacional inconclusiva.
+                        // Não rebaixa o estado local por uma consulta nacional inconclusiva.
                         novoStatus = nota.Status;
                     }
                 }
@@ -469,10 +469,10 @@ namespace CorteCor.Services
             ValidarTextoMinimo(justificativa, 15, "Informe uma justificativa com no minimo 15 caracteres.");
 
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
-                ?? throw new InvalidOperationException("Nota nao encontrada para cancelamento.");
+                ?? throw new InvalidOperationException("Nota não encontrada para cancelamento.");
             ValidarNotaParaCancelamento(nota);
             var config = await _configHandler.ObterPorSalaoAsync(idSalao)
-                ?? throw new InvalidOperationException("Configuracao fiscal nao encontrada.");
+                ?? throw new InvalidOperationException("Configuração fiscal não encontrada.");
 
             var chaveFiscalNormalizada = string.Equals(nota.TipoNota, "NFS-e", StringComparison.OrdinalIgnoreCase)
                 ? PrimeiroValorPreenchido(ObterChaveFiscal(nota), chaveAcesso)
@@ -525,7 +525,7 @@ namespace CorteCor.Services
             ValidarFaixaInutilizacao(ano, serie, numInicial, numFinal, tipoNota);
 
             var config = await _configHandler.ObterPorSalaoAsync(idSalao)
-                ?? throw new InvalidOperationException("Configuracao fiscal nao encontrada.");
+                ?? throw new InvalidOperationException("Configuração fiscal não encontrada.");
             var evento = await _fiscalAction.InutilizarNfceAsync(config, ano, serie, numInicial, numFinal, justificativa, tipoNota);
 
             var inutilizacao = new NotaFiscalInutilizacao
@@ -563,15 +563,15 @@ namespace CorteCor.Services
 
         public async Task<NotaFiscalOperacaoResult> CartaCorrecaoAsync(int idSalao, string chaveAcesso, string textoCorrecao)
         {
-            ValidarChaveFiscal(chaveAcesso, "enviar carta de correcao");
-            ValidarTextoMinimo(textoCorrecao, 15, "A correcao deve ter no minimo 15 caracteres.");
+            ValidarChaveFiscal(chaveAcesso, "enviar carta de correção");
+            ValidarTextoMinimo(textoCorrecao, 15, "A correção deve ter no mínimo 15 caracteres.");
 
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
-                ?? throw new InvalidOperationException("Nota nao encontrada.");
+                ?? throw new InvalidOperationException("Nota não encontrada.");
             ValidarCartaCorrecaoParaTipoNota(nota.TipoNota);
             ValidarNotaParaCartaCorrecao(nota);
             var config = await _configHandler.ObterPorSalaoAsync(idSalao)
-                ?? throw new InvalidOperationException("Configuracao fiscal nao encontrada.");
+                ?? throw new InvalidOperationException("Configuração fiscal não encontrada.");
             var eventos = await _eventoHandler.ListarPorNotaAsync(nota.IdNotaFiscal);
             var sequencia = eventos.Count(e => e.TipoEvento == "CC-e") + 1;
 
@@ -590,7 +590,7 @@ namespace CorteCor.Services
                 XmlEnvio = evento.XmlEnvio,
                 XmlRetorno = evento.XmlRetorno,
                 ProtocoloAutorizacao = evento.ProtocoloEvento,
-                Mensagem = MontarMensagemOperacao("Carta de correcao", evento.Status, evento.XmlRetorno),
+                Mensagem = MontarMensagemOperacao("Carta de correção", evento.Status, evento.XmlRetorno),
                 MensagemTipo = evento.Status.Contains("135") ? "success" : "warning",
                 RetornoResumo = CriarResumoRetorno(
                     evento.XmlRetorno,
@@ -605,7 +605,7 @@ namespace CorteCor.Services
             ValidarChaveFiscal(chaveAcesso, "gerar PDF");
 
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
-                ?? throw new InvalidOperationException("Nota nao encontrada.");
+                ?? throw new InvalidOperationException("Nota não encontrada.");
             var bytes = await _pdfGenerator.GerarPdfAsync(nota);
             return (bytes, $"DANFE_{nota.TipoNota}_{nota.Numero}.pdf");
         }
@@ -616,7 +616,7 @@ namespace CorteCor.Services
             ValidarEmailDestino(emailDestino);
 
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
-                ?? throw new InvalidOperationException("Nota nao encontrada.");
+                ?? throw new InvalidOperationException("Nota não encontrada.");
 
             if (!string.Equals(nota.Status, NotaFiscalStatus.Autorizada, StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(nota.Status, NotaFiscalStatus.Cancelada, StringComparison.OrdinalIgnoreCase))
@@ -703,11 +703,11 @@ namespace CorteCor.Services
             ValidarTipoXmlSolicitado(tipo);
 
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
-                ?? throw new InvalidOperationException("Nota nao encontrada.");
+                ?? throw new InvalidOperationException("Nota não encontrada.");
             var xml = tipo == "retorno" ? nota.XmlRetorno : nota.XmlEnvio;
             if (string.IsNullOrWhiteSpace(xml))
             {
-                throw new InvalidOperationException("XML nao encontrado para a nota informada.");
+                throw new InvalidOperationException("XML não encontrado para a nota informada.");
             }
 
             return (Encoding.UTF8.GetBytes(xml), $"NotaFiscal_{nota.TipoNota}_{nota.Numero}_{tipo}.xml");
@@ -718,7 +718,7 @@ namespace CorteCor.Services
             ValidarChaveFiscal(chaveAcesso, "consultar o historico");
 
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
-                ?? throw new InvalidOperationException("Nota nao encontrada.");
+                ?? throw new InvalidOperationException("Nota não encontrada.");
 
             return new NotaFiscalHistoricoResult
             {
@@ -856,11 +856,11 @@ namespace CorteCor.Services
                     CRT = (CRT)request.EmitenteCRT,
                     EnderEmit = new EnderEmit
                     {
-                        XLgr = request.EmitenteLogradouro ?? "Endereco nao informado",
+                        XLgr = request.EmitenteLogradouro ?? "Endereço não informado",
                         Nro = request.EmitenteNumero ?? "SN",
-                        XBairro = request.EmitenteBairro ?? "Bairro nao informado",
+                        XBairro = request.EmitenteBairro ?? "Bairro não informado",
                         CMun = request.EmitenteCodMun,
-                        XMun = request.EmitenteCidade ?? "Cidade nao informada",
+                        XMun = request.EmitenteCidade ?? "Cidade não informada",
                         UF = GetUfBrasil(request.EmitenteUF),
                         CEP = LimparCep(request.EmitenteCep),
                         CPais = 1058,
@@ -1038,11 +1038,11 @@ namespace CorteCor.Services
                 IndIEDest = IndicadorIEDestinatario.NaoContribuinte,
                 EnderDest = new EnderDest
                 {
-                    XLgr = request.DestinatarioLogradouro ?? "Endereco nao informado",
+                    XLgr = request.DestinatarioLogradouro ?? "Endereço não informado",
                     Nro = request.DestinatarioNumero ?? "SN",
-                    XBairro = request.DestinatarioBairro ?? "Bairro nao informado",
+                    XBairro = request.DestinatarioBairro ?? "Bairro não informado",
                     CMun = request.DestinatarioCodMun,
-                    XMun = request.DestinatarioCidade ?? "Cidade nao informada",
+                    XMun = request.DestinatarioCidade ?? "Cidade não informada",
                     UF = GetUfBrasil(request.DestinatarioUF),
                     CEP = LimparCep(request.DestinatarioCep)
                 }
@@ -1188,7 +1188,7 @@ namespace CorteCor.Services
         {
             var conteudo = PrimeiroValorPreenchido(status, ExtrairMensagemRetorno(xmlRetorno), xmlRetorno) ?? string.Empty;
             return conteudo.Contains("E0840", StringComparison.OrdinalIgnoreCase) ||
-                   conteudo.Contains("ja esta vinculado", StringComparison.OrdinalIgnoreCase) ||
+                   conteudo.Contains("já está vinculado", StringComparison.OrdinalIgnoreCase) ||
                    conteudo.Contains("já está vinculado", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -1196,8 +1196,8 @@ namespace CorteCor.Services
         {
             var conteudo = PrimeiroValorPreenchido(ExtrairMensagemRetorno(xmlRetorno), xmlRetorno) ?? string.Empty;
             return conteudo.Contains("E2406", StringComparison.OrdinalIgnoreCase) ||
-                   conteudo.Contains("chave de acesso consultada deve conter 50 numeros", StringComparison.OrdinalIgnoreCase) ||
-                   conteudo.Contains("chave de acesso consultada deve conter 50 nÃºmeros", StringComparison.OrdinalIgnoreCase);
+                   conteudo.Contains("chave de acesso consultada deve conter 50 números", StringComparison.OrdinalIgnoreCase) ||
+                   conteudo.Contains("chave de acesso consultada deve conter 50 numeros", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string? ExtrairIdDps(string? xml)
@@ -1428,28 +1428,28 @@ namespace CorteCor.Services
             var anoAtual = DateTime.Now.Year;
             if (ano < 2000 || ano > anoAtual + 1)
             {
-                throw new InvalidOperationException("Informe um ano valido para inutilizacao.");
+                throw new InvalidOperationException("Informe um ano válido para inutilização.");
             }
 
             if (serie <= 0)
             {
-                throw new InvalidOperationException("A serie deve ser maior que zero.");
+                throw new InvalidOperationException("A série deve ser maior que zero.");
             }
 
             if (numInicial <= 0 || numFinal <= 0)
             {
-                throw new InvalidOperationException("Os numeros da faixa devem ser maiores que zero.");
+                throw new InvalidOperationException("Os números da faixa devem ser maiores que zero.");
             }
 
             if (numFinal < numInicial)
             {
-                throw new InvalidOperationException("O numero final nao pode ser menor que o numero inicial.");
+                throw new InvalidOperationException("O número final não pode ser menor que o número inicial.");
             }
 
             if (!string.Equals(tipoNota, "NF-e", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(tipoNota, "NFC-e", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("A inutilizacao avulsa suporta apenas NF-e e NFC-e.");
+                throw new InvalidOperationException("A inutilização avulsa suporta apenas NF-e e NFC-e.");
             }
         }
 
@@ -1457,7 +1457,7 @@ namespace CorteCor.Services
         {
             if (string.Equals(tipoNota, "NFS-e", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("Carta de correcao nao esta disponivel para NFS-e na tela avulsa.");
+                throw new InvalidOperationException("Carta de correção não está disponível para NFS-e na tela avulsa.");
             }
         }
 
@@ -1769,12 +1769,12 @@ namespace CorteCor.Services
         {
             if (string.Equals(nota.Status, NotaFiscalStatus.Cancelada, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("A nota ja esta cancelada.");
+                throw new InvalidOperationException("A nota já está cancelada.");
             }
 
             if (string.Equals(nota.Status, NotaFiscalStatus.Inutilizada, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("Notas inutilizadas nao podem ser canceladas.");
+                throw new InvalidOperationException("Notas inutilizadas não podem ser canceladas.");
             }
 
             if (!string.Equals(nota.Status, NotaFiscalStatus.Autorizada, StringComparison.OrdinalIgnoreCase))
@@ -1787,7 +1787,7 @@ namespace CorteCor.Services
         {
             if (!string.Equals(nota.Status, NotaFiscalStatus.Autorizada, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("A carta de correcao exige uma nota autorizada.");
+                throw new InvalidOperationException("A carta de correção exige uma nota autorizada.");
             }
         }
 
@@ -1812,7 +1812,7 @@ namespace CorteCor.Services
             }
             catch (FormatException)
             {
-                throw new InvalidOperationException("Informe um e-mail de destino valido para enviar a nota.");
+                throw new InvalidOperationException("Informe um e-mail de destino válido para enviar a nota.");
             }
         }
 
@@ -1821,7 +1821,7 @@ namespace CorteCor.Services
             if (!string.Equals(tipo, "envio", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(tipo, "retorno", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("Tipo de XML invalido. Use envio ou retorno.");
+                throw new InvalidOperationException("Tipo de XML inválido. Use envio ou retorno.");
             }
         }
 
@@ -1849,8 +1849,8 @@ namespace CorteCor.Services
                  string.Equals(statusFiscal, NotaFiscalStatus.Cancelada, StringComparison.OrdinalIgnoreCase)))
             {
                 mensagemRetorno = string.Equals(statusFiscal, NotaFiscalStatus.Cancelada, StringComparison.OrdinalIgnoreCase)
-                    ? "Status reconciliado a partir do evento de cancelamento ja registrado."
-                    : "Status reconciliado a partir das evidencias locais da emissao autorizada.";
+                    ? "Status reconciliado a partir do evento de cancelamento já registrado."
+                    : "Status reconciliado a partir das evidências locais da emissão autorizada.";
             }
 
             return new NotaFiscalRetornoResumo

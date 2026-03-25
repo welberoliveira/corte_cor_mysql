@@ -3,11 +3,11 @@
 
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h4>Lista de Funcionarios</h4>
+        <h4>Lista de Funcionários</h4>
         <div class="d-flex gap-2 flex-wrap">
             <a asp-page="/FuncionarioCadastro" class="btn btn-primary">Cadastrar Novo</a>
-            <a asp-page="/ServicoCadastro" class="btn btn-secondary">Cadastrar Servicos</a>
-            <a asp-page="/FuncionarioServicoLista" class="btn btn-info">Listar Todos Servicos</a>
+            <a asp-page="/ServicoCadastro" class="btn btn-secondary">Cadastrar Serviços</a>
+            <a asp-page="/FuncionarioServicoLista" class="btn btn-info">Listar Todos os Serviços</a>
         </div>
     </div>
 
@@ -22,8 +22,8 @@
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
                 <div class="col-md-6">
-                    <label for="q" class="form-label">Buscar funcionario</label>
-                    <input type="text" id="q" name="q" value="@Model.q" class="form-control" placeholder="Digite o nome do funcionario">
+                    <label for="q" class="form-label">Buscar funcionário</label>
+                    <input type="text" id="q" name="q" value="@Model.q" class="form-control" placeholder="Digite o nome do funcionário">
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
@@ -71,9 +71,9 @@
                                 <button class="btn btn-info">Alterar</button>
                             </form>
 
-                            <a href="/FuncionarioServicoCadastro?idFuncionario=@funcionario.IdFuncionario" class="btn btn-warning">Vincular Servicos</a>
+                            <a href="/FuncionarioServicoCadastro?idFuncionario=@funcionario.IdFuncionario" class="btn btn-warning">Vincular Serviços</a>
 
-                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este funcionario?');">
+                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este funcionário?');">
                                 <input type="hidden" name="id" value="@funcionario.IdFuncionario">
                                 <input type="hidden" name="action" value="excluir">
                                 <input type="hidden" name="q" value="@Model.q">

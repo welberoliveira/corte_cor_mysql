@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +36,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "";
                 MensagemTipo = "danger";
                 return;
             }
@@ -59,7 +59,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "";
                 MensagemTipo = "danger";
                 OnGet(idCategoria, q, incluirArquivados, p);
                 return Page();
@@ -90,3 +90,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
+

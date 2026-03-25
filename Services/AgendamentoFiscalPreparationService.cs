@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using System;
 using System.Collections.Generic;
@@ -55,7 +55,7 @@ namespace CorteCor.Services
         public virtual async Task<FiscalOrigemEnvelope> PrepararEnvelopeAsync(int idSalao, int idAgendamento)
         {
             var agendamento = _agendamentoHandler.ObterPorId(idAgendamento)
-                ?? throw new InvalidOperationException("Agendamento nao encontrado.");
+                ?? throw new InvalidOperationException("Agendamento não encontrado.");
 
             if (AgendamentoStatus.Normalizar(agendamento.Status) != AgendamentoStatus.Pago)
             {
@@ -65,13 +65,13 @@ namespace CorteCor.Services
             var servico = _servicoHandler.ObterPorId(agendamento.IdServico);
             if (servico == null || servico.IdSalao != idSalao)
             {
-                throw new InvalidOperationException("Servico do agendamento nao encontrado para este salao.");
+                throw new InvalidOperationException("Serviço do agendamento não encontrado para este salão.");
             }
 
             var cliente = _pessoaHandler.ObterPorId(agendamento.IdPessoa);
             if (cliente == null || cliente.IdSalao != idSalao)
             {
-                throw new InvalidOperationException("Cliente do agendamento nao encontrado para este salao.");
+                throw new InvalidOperationException("Cliente do agendamento não encontrado para este salão.");
             }
 
             var codigoTributacao = ObterCodigoTributacaoServico(servico);
@@ -139,7 +139,7 @@ namespace CorteCor.Services
             {
                 result.Mensagem = result.PodeEmitir
                     ? "Agendamento pago e pronto para emitir nota fiscal."
-                    : "Agendamento ainda nao possui nota fiscal vinculada.";
+                    : "Agendamento ainda não possui nota fiscal vinculada.";
                 return result;
             }
 
@@ -151,8 +151,8 @@ namespace CorteCor.Services
             result.ClasseStatusFiscal = NotaFiscalAvulsaService.ObterClasseStatus(notaReferencia.Status);
             result.ChaveFiscal = NotaFiscalAvulsaService.ObterChaveFiscal(notaReferencia);
             result.Mensagem = notaAtiva != null
-                ? $"Ja existe {notaReferencia.TipoNota} {notaReferencia.Numero}/{notaReferencia.Serie} com status {notaReferencia.Status}."
-                : $"Ultima nota vinculada: {notaReferencia.TipoNota} {notaReferencia.Numero}/{notaReferencia.Serie} com status {notaReferencia.Status}.";
+                ? $"Já existe {notaReferencia.TipoNota} {notaReferencia.Numero}/{notaReferencia.Serie} com status {notaReferencia.Status}."
+                : $"Última nota vinculada: {notaReferencia.TipoNota} {notaReferencia.Numero}/{notaReferencia.Serie} com status {notaReferencia.Status}.";
 
             return result;
         }
@@ -215,7 +215,7 @@ namespace CorteCor.Services
             string origemAcionamento = "Manual")
         {
             var agendamento = _agendamentoHandler.ObterPorId(idAgendamento)
-                ?? throw new InvalidOperationException("Agendamento nao encontrado.");
+                ?? throw new InvalidOperationException("Agendamento não encontrado.");
 
             var situacaoFiscal = await ObterSituacaoFiscalAsync(idSalao, idAgendamento, agendamento.Status);
             if (!situacaoFiscal.PodeEmitir)
@@ -234,7 +234,7 @@ namespace CorteCor.Services
                 idAgendamento,
                 null,
                 "PREPARACAO_AGENDAMENTO",
-                $"Preparando emissao fiscal a partir do agendamento. Origem do disparo: {origemNormalizada}.",
+                $"Preparando emissão fiscal a partir do agendamento. Origem do disparo: {origemNormalizada}.",
                 usuario: usuario);
 
             var request = await PrepararRequestAsync(idSalao, idAgendamento);
@@ -299,7 +299,7 @@ namespace CorteCor.Services
             }
 
             throw new InvalidOperationException(
-                $"O servico '{servico.Nome}' nao possui codigo de tributacao fiscal valido. Revise a aba de informacoes fiscais do servico.");
+                $"O serviço '{servico.Nome}' não possui código de tributação fiscal válido. Revise a aba de informações fiscais do serviço.");
         }
 
         private static string? NormalizarSomenteDigitos(string? valor)
@@ -314,3 +314,4 @@ namespace CorteCor.Services
         }
     }
 }
+

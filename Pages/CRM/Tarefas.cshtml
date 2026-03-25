@@ -1,0 +1,179 @@
+@page
+@model CorteCor.Pages.CRM.TarefasModel
+@{
+    ViewData["Title"] = "Tarefas CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="mb-1">Tarefas CRM</h2>
+        <div class="text-muted">Follow-ups, retornos e ações pendentes com clientes.</div>
+    </div>
+    <a class="btn btn-link" asp-page="/CRM/Index">Voltar ao CRM</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Nova tarefa</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Salvar" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" asp-for="NovaTarefa.IdPessoa">
+                            <option value="">Sem cliente vinculado</option>
+                            @foreach (var cliente in Model.Clientes)
+                            {
+                                <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Título</label>
+                        <input class="form-control" asp-for="NovaTarefa.Titulo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Prioridade</label>
+                        <select class="form-select" asp-for="NovaTarefa.Prioridade">
+                            <option>Baixa</option>
+                            <option>Media</option>
+                            <option>Alta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Canal sugerido</label>
+                        <select class="form-select" asp-for="NovaTarefa.CanalSugerido">
+                            <option value="">Indefinido</option>
+                            <option>Email</option>
+                            <option>SMS</option>
+                            <option>WhatsApp</option>
+                            <option>Telefone</option>
+                            <option>Presencial</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Vencimento</label>
+                        <input type="datetime-local" class="form-control" asp-for="NovaTarefa.DataVencimento" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" asp-for="NovaTarefa.Descricao" rows="4"></textarea>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-primary" type="submit">Salvar Tarefa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" asp-for="IdPessoa">
+                            <option value="">Todos</option>
+                            @foreach (var cliente in Model.Clientes)
+                            {
+                                <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" asp-for="Status">
+                            <option value="">Todos</option>
+                            <option value="Aberta">Aberta</option>
+                            <option value="Concluida">Concluída</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5 text-end">
+                        <button class="btn btn-secondary" type="submit">Filtrar</button>
+                        <a class="btn btn-link" asp-page="/CRM/Tarefas">Limpar</a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-body">
+                @if (Model.Tarefas.Items.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Tarefa</th>
+                                    <th>Cliente</th>
+                                    <th>Vencimento</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tarefa in Model.Tarefas.Items)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@tarefa.Titulo</div>
+                                            <div class="small text-muted">@tarefa.Descricao</div>
+                                        </td>
+                                        <td>@(string.IsNullOrWhiteSpace(tarefa.NomePessoa) ? "Não vinculado" : tarefa.NomePessoa)</td>
+                                        <td>@tarefa.DataVencimento.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td><span class="badge @(tarefa.Status == "Concluida" ? "bg-success" : tarefa.Status == "Cancelada" ? "bg-secondary" : "bg-warning text-dark")">@tarefa.Status</span></td>
+                                        <td class="text-end">
+                                            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                                @if (tarefa.Status != "Concluida")
+                                                {
+                                                    <form method="post" asp-page-handler="AtualizarStatus">
+                                                        <input type="hidden" name="idTarefa" value="@tarefa.IdTarefa" />
+                                                        <input type="hidden" name="status" value="Concluida" />
+                                                        <button class="btn btn-sm btn-success" type="submit">Concluir</button>
+                                                    </form>
+                                                }
+                                                @if (tarefa.Status != "Aberta")
+                                                {
+                                                    <form method="post" asp-page-handler="AtualizarStatus">
+                                                        <input type="hidden" name="idTarefa" value="@tarefa.IdTarefa" />
+                                                        <input type="hidden" name="status" value="Aberta" />
+                                                        <button class="btn btn-sm btn-outline-primary" type="submit">Reabrir</button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Nenhuma tarefa de CRM encontrada.</div>
+                }
+
+                @if (Model.Tarefas.TotalPages > 1)
+                {
+                    <nav>
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item @(Model.Tarefas.HasPreviousPage ? "" : "disabled")">
+                                <a class="page-link" asp-page="/CRM/Tarefas" asp-route-IdPessoa="@Model.IdPessoa" asp-route-Status="@Model.Status" asp-route-p="@(Model.Tarefas.PageIndex - 1)">Anterior</a>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link">Página @Model.Tarefas.PageIndex de @Model.Tarefas.TotalPages</span>
+                            </li>
+                            <li class="page-item @(Model.Tarefas.HasNextPage ? "" : "disabled")">
+                                <a class="page-link" asp-page="/CRM/Tarefas" asp-route-IdPessoa="@Model.IdPessoa" asp-route-Status="@Model.Status" asp-route-p="@(Model.Tarefas.PageIndex + 1)">Próxima</a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>
+    </div>
+</div>

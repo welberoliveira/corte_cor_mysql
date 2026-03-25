@@ -100,12 +100,12 @@ namespace CorteCor.Pages
             try
             {
                 if (string.IsNullOrWhiteSpace(cnpj))
-                    return new JsonResult(new { sucesso = false, mensagem = "CNPJ nao informado." });
+            return new JsonResult(new { sucesso = false, mensagem = "CNPJ não informado." });
 
                 var resultado = await _consultaService.ConsultarCnpjAsync(cnpj);
 
                 if (resultado == null)
-                    return new JsonResult(new { sucesso = false, mensagem = "CNPJ nao encontrado ou invalido." });
+            return new JsonResult(new { sucesso = false, mensagem = "CNPJ não encontrado ou inválido." });
 
                 return new JsonResult(new
                 {
@@ -138,12 +138,12 @@ namespace CorteCor.Pages
             try
             {
                 if (string.IsNullOrWhiteSpace(cep))
-                    return new JsonResult(new { sucesso = false, mensagem = "CEP nao informado." });
+            return new JsonResult(new { sucesso = false, mensagem = "CEP não informado." });
 
                 var resultado = await _consultaService.ConsultarCepAsync(cep);
 
                 if (resultado == null)
-                    return new JsonResult(new { sucesso = false, mensagem = "CEP nao encontrado." });
+            return new JsonResult(new { sucesso = false, mensagem = "CEP não encontrado." });
 
                 return new JsonResult(new
                 {
@@ -187,7 +187,7 @@ namespace CorteCor.Pages
 
                 if (pessoa == null)
                 {
-                    Mensagem = "Pessoa nao encontrada.";
+                Mensagem = "Pessoa não encontrada.";
                     MensagemTipo = "danger";
                     return;
                 }
@@ -306,7 +306,7 @@ namespace CorteCor.Pages
 
             if (!string.IsNullOrWhiteSpace(pessoa.Email) && !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(pessoa.Email))
             {
-                Mensagem = "Informe um e-mail valido.";
+                Mensagem = "Informe um e-mail válido.";
                 MensagemTipo = "warning";
                 return false;
             }
@@ -316,7 +316,7 @@ namespace CorteCor.Pages
                 : new string(pessoa.Telefone.Where(char.IsDigit).ToArray());
             if (!string.IsNullOrWhiteSpace(telefoneNumerico) && telefoneNumerico.Length is < 10 or > 11)
             {
-                Mensagem = "Informe um telefone com DDD valido.";
+                Mensagem = "Informe um telefone com DDD válido.";
                 MensagemTipo = "warning";
                 return false;
             }

@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +36,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -59,7 +59,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 OnGet(idCategoria, q, incluirArquivados, p);
                 return Page();
@@ -70,12 +70,12 @@ namespace CorteCor.Pages
                 try
                 {
                     _servicoHandler.ExcluirPorSalao(id, idSalao);
-                    Mensagem = "Servico excluido com sucesso.";
+                    Mensagem = "Serviço excluído com sucesso.";
                     MensagemTipo = "success";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Nao foi possivel excluir este servico porque ele esta associado a outros registros.";
+                    Mensagem = "Não foi possível excluir este serviço porque ele está associado a outros registros.";
                     MensagemTipo = "warning";
                 }
             }
@@ -90,3 +90,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

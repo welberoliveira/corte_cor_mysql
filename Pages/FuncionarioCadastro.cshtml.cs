@@ -24,7 +24,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+            Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -55,7 +55,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+            Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return;
             }

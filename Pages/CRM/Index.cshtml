@@ -1,0 +1,238 @@
+@page
+@model CorteCor.Pages.CRM.IndexModel
+@{
+    ViewData["Title"] = "CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-1">CRM</h2>
+        <p class="text-muted mb-0">Relacionamento digital com clientes, follow-up, oportunidades e campanhas.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary" asp-page="/CRM/Tarefas">Tarefas</a>
+        <a class="btn btn-outline-dark" asp-page="/CRM/Oportunidades">Oportunidades</a>
+        <a class="btn btn-primary" asp-page="/CRM/Campanhas">Campanhas</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Clientes</div>
+                <div class="display-6 fw-bold">@Model.Dashboard.TotalClientes</div>
+                <div class="small text-muted">Base ativa de clientes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Clientes inativos</div>
+                <div class="display-6 fw-bold text-warning">@Model.Dashboard.ClientesInativos</div>
+                <div class="small text-muted">Sem agenda há 60+ dias</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Tarefas em aberto</div>
+                <div class="display-6 fw-bold text-primary">@Model.Dashboard.TarefasAbertas</div>
+                <div class="small text-muted">@Model.Dashboard.TarefasAtrasadas atrasadas</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Pipeline aberto</div>
+                <div class="display-6 fw-bold text-success">@Model.Dashboard.OportunidadesAbertas</div>
+                <div class="small text-muted">R$ @Model.Dashboard.ValorOportunidadesAbertas.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white fw-semibold">Funil de oportunidades</div>
+            <div class="card-body">
+                @if (Model.Dashboard.Funil.Any())
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var etapa in Model.Dashboard.Funil)
+                        {
+                            <div class="crm-funil-item">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@etapa.NomeEtapa</strong>
+                                    <span class="text-muted">@etapa.Quantidade item(ns)</span>
+                                </div>
+                                <div class="small text-muted">Valor estimado: R$ @etapa.ValorTotal.ToString("N2")</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Ainda não há oportunidades cadastradas.</div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white fw-semibold">Próximas tarefas</div>
+            <div class="card-body">
+                @if (Model.Dashboard.ProximasTarefas.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var tarefa in Model.Dashboard.ProximasTarefas)
+                        {
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@tarefa.Titulo</strong>
+                                    <span class="badge bg-info">@tarefa.Prioridade</span>
+                                </div>
+                                <div class="small text-muted">
+                                    Cliente: @(string.IsNullOrWhiteSpace(tarefa.NomePessoa) ? "Não vinculado" : tarefa.NomePessoa)
+                                </div>
+                                <div class="small text-muted">Vence em @tarefa.DataVencimento.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Nenhuma tarefa em aberto.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white fw-semibold">Clientes em risco de inatividade</div>
+    <div class="card-body">
+        @if (Model.Dashboard.ClientesEmRisco.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Último agendamento</th>
+                            <th>Próxima ação</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cliente in Model.Dashboard.ClientesEmRisco)
+                        {
+                            <tr>
+                                <td>@cliente.Nome</td>
+                                <td>@(cliente.UltimoAgendamentoEm?.ToString("dd/MM/yyyy") ?? "Sem histórico")</td>
+                                <td>@(cliente.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Não definida")</td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-primary" asp-page="/CRM/Cliente" asp-route-idPessoa="@cliente.IdPessoa">Abrir CRM</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-muted">Nenhum cliente em risco foi identificado agora.</div>
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <strong>Base de clientes para CRM</strong>
+            <form method="get" class="d-flex gap-2 flex-wrap">
+                <input type="text" name="q" value="@Model.q" class="form-control" style="min-width:260px" placeholder="Buscar por nome, e-mail, telefone ou tag">
+                <button type="submit" class="btn btn-secondary">Filtrar</button>
+                <a asp-page="/CRM/Index" class="btn btn-link">Limpar</a>
+            </form>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Status CRM</th>
+                        <th>Último contato</th>
+                        <th>Próxima ação</th>
+                        <th>Oportunidades</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cliente in Model.Clientes.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@cliente.Nome</div>
+                                <div class="small text-muted">@cliente.Email</div>
+                                <div class="small text-muted">@cliente.Telefone</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@cliente.StatusRelacionamento</div>
+                                <div class="small text-muted">Temperatura: @cliente.Temperatura</div>
+                            </td>
+                            <td>@(cliente.UltimoContatoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem contato")</td>
+                            <td>@(cliente.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Não definida")</td>
+                            <td>
+                                <div>@cliente.OportunidadesAbertas aberta(s)</div>
+                                <div class="small text-muted">R$ @cliente.ValorOportunidadesAbertas.ToString("N2")</div>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-primary" asp-page="/CRM/Cliente" asp-route-idPessoa="@cliente.IdPessoa">Abrir CRM</a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Clientes.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Nenhum cliente encontrado para o CRM.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Clientes.TotalPages > 1)
+        {
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(Model.Clientes.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-page="/CRM/Index" asp-route-q="@Model.q" asp-route-p="@(Model.Clientes.PageIndex - 1)">Anterior</a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">Página @Model.Clientes.PageIndex de @Model.Clientes.TotalPages</span>
+                    </li>
+                    <li class="page-item @(Model.Clientes.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-page="/CRM/Index" asp-route-q="@Model.q" asp-route-p="@(Model.Clientes.PageIndex + 1)">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+</div>
+
+<style>
+    .crm-funil-item {
+        padding: .85rem 1rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: .75rem;
+    }
+</style>

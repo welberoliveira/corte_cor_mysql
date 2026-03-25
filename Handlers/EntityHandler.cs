@@ -1509,6 +1509,9 @@ namespace CorteCor.Handlers
                         {
                             IdServico = reader["IdServico"] is DBNull ? 0 : Convert.ToInt32(reader["IdServico"]),
                             Nome = reader["Nome"] is DBNull ? "" : reader["Nome"].ToString(),
+                            Preco = reader["Preco"] is DBNull ? 0m : Convert.ToDecimal(reader["Preco"]),
+                            PrecoCusto = reader["PrecoCusto"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["PrecoCusto"]),
+                            MargemContribuicao = reader["MargemContribuicao"] is DBNull ? (decimal?)null : Convert.ToDecimal(reader["MargemContribuicao"]),
                             Duracao = reader["Duracao"] is DBNull ? TimeSpan.Zero : (TimeSpan)reader["Duracao"],
                             IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
                             IdCategoria = reader["IdCategoria"] is DBNull ? (int?)null : Convert.ToInt32(reader["IdCategoria"]),

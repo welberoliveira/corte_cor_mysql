@@ -1,0 +1,278 @@
+﻿@page
+@model CorteCor.Pages.Financeiro.LancamentosModel
+@{
+    ViewData["Title"] = "Lançamentos Financeiros";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Contas a pagar e a receber</h2>
+        <div class="text-muted">Controle de títulos manuais e recebíveis sincronizados dos pagamentos.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-primary" asp-page="/Financeiro/Index">Dashboard</a>
+        <a class="btn btn-outline-dark" asp-page="/Financeiro/Relatorios">Relatórios</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">@(Model.TituloInput.IdTitulo == Guid.Empty ? "Novo lançamento" : "Editar lançamento")</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Salvar" class="row g-3">
+                    <input type="hidden" asp-for="TituloInput.IdTitulo" />
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo</label>
+                        <select class="form-select" asp-for="TituloInput.Tipo">
+                            <option value="Receber">Receber</option>
+                            <option value="Pagar">Pagar</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" asp-for="TituloInput.Status">
+                            <option value="Aberto">Aberto</option>
+                            <option value="Liquidado">Liquidado</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição</label>
+                        <input class="form-control" asp-for="TituloInput.Descricao" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Documento</label>
+                        <input class="form-control" asp-for="TituloInput.Documento" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Valor</label>
+                        <input type="number" class="form-control" asp-for="TituloInput.ValorOriginal" step="0.01" min="0" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Competência</label>
+                        <input type="date" class="form-control" asp-for="TituloInput.DataCompetencia" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Vencimento</label>
+                        <input type="date" class="form-control" asp-for="TituloInput.DataVencimento" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Plano de contas</label>
+                        <select class="form-select" asp-for="TituloInput.IdPlano">
+                            <option value="">Sem plano</option>
+                            @foreach (var plano in Model.Planos)
+                            {
+                                <option value="@plano.IdPlano">@plano.Codigo - @plano.Descricao</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Conta caixa</label>
+                        <select class="form-select" asp-for="TituloInput.IdConta">
+                            <option value="">Sem conta</option>
+                            @foreach (var conta in Model.Contas)
+                            {
+                                <option value="@conta.IdConta">@conta.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Valor liquidado</label>
+                        <input type="number" class="form-control" asp-for="TituloInput.ValorLiquidado" step="0.01" min="0" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Data de liquidação</label>
+                        <input type="datetime-local" class="form-control" asp-for="TituloInput.DataLiquidacao" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" asp-for="TituloInput.Observacoes" rows="3"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" asp-for="TituloInput.Conciliado" />
+                            <label class="form-check-label" asp-for="TituloInput.Conciliado">Já conciliado no caixa/banco</label>
+                        </div>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-primary" type="submit">Salvar lançamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Filtros</div>
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo</label>
+                        <select class="form-select" name="Tipo">
+                            <option value="">Todos</option>
+                            <option value="Receber" selected="@(Model.Tipo == "Receber")">Receber</option>
+                            <option value="Pagar" selected="@(Model.Tipo == "Pagar")">Pagar</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="Status">
+                            <option value="">Todos</option>
+                            <option value="Aberto" selected="@(Model.Status == "Aberto")">Aberto</option>
+                            <option value="Vencido" selected="@(Model.Status == "Vencido")">Vencido</option>
+                            <option value="Liquidado" selected="@(Model.Status == "Liquidado")">Liquidado</option>
+                            <option value="Cancelado" selected="@(Model.Status == "Cancelado")">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data início</label>
+                        <input type="date" class="form-control" name="DataInicio" value="@Model.DataInicio?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data fim</label>
+                        <input type="date" class="form-control" name="DataFim" value="@Model.DataFim?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Plano</label>
+                        <select class="form-select" name="IdPlano">
+                            <option value="">Todos</option>
+                            @foreach (var plano in Model.Planos)
+                            {
+                                <option value="@plano.IdPlano" selected="@(Model.IdPlano == plano.IdPlano)">@plano.Descricao</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Conta</label>
+                        <select class="form-select" name="IdConta">
+                            <option value="">Todas</option>
+                            @foreach (var conta in Model.Contas)
+                            {
+                                <option value="@conta.IdConta" selected="@(Model.IdConta == conta.IdConta)">@conta.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Pesquisa</label>
+                        <input class="form-control" name="Pesquisa" value="@Model.Pesquisa" placeholder="Descrição, pessoa ou documento" />
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="SomenteVencidos" name="SomenteVencidos" value="true" checked="@Model.SomenteVencidos" />
+                            <label class="form-check-label" for="SomenteVencidos">Somente vencidos</label>
+                        </div>
+                    </div>
+                    <div class="col-md-8 text-md-end">
+                        <button class="btn btn-outline-primary" type="submit">Filtrar</button>
+                        <a class="btn btn-outline-secondary" asp-page="/Financeiro/Lancamentos">Limpar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Lançamentos</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Descrição</th>
+                                <th>Pessoa</th>
+                                <th>Vencimento</th>
+                                <th>Status</th>
+                                <th class="text-end">Valor</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Titulos.Items)
+                            {
+                                <tr>
+                                    <td><span class="badge @(item.Tipo == "Receber" ? "bg-success" : "bg-danger")">@item.Tipo</span></td>
+                                    <td>
+                                        <div class="fw-semibold">@item.Descricao</div>
+                                        <div class="small text-muted">@item.NomePlano</div>
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.NomePessoa) ? "-" : item.NomePessoa)</td>
+                                    <td>@item.DataVencimento.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <span class="badge @(item.Status == "Liquidado" ? "bg-primary" : item.Status == "Cancelado" ? "bg-secondary" : item.Status == "Vencido" ? "bg-danger" : "bg-warning text-dark")">@item.Status</span>
+                                        @if (item.Conciliado)
+                                        {
+                                            <span class="badge bg-dark">Conciliado</span>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-semibold">R$ @(item.Status == "Liquidado" ? item.ValorLiquidado.ToString("N2") : item.ValorAberto.ToString("N2"))</td>
+                                    <td class="text-end">
+                                        <div class="d-flex flex-wrap justify-content-end gap-1">
+                                            <a class="btn btn-sm btn-outline-primary" asp-page="/Financeiro/Lancamentos" asp-route-idTitulo="@item.IdTitulo">Editar</a>
+                                            @if (item.Status != "Liquidado" && item.Status != "Cancelado")
+                                            {
+                                                <form method="post" asp-page-handler="Liquidar" class="d-inline">
+                                                    <input type="hidden" name="id" value="@item.IdTitulo" />
+                                                    <input type="hidden" name="valorLiquidado" value="@item.ValorOriginal" />
+                                                    <input type="hidden" name="dataLiquidacao" value="@DateTime.Now.ToString("s")" />
+                                                    <input type="hidden" name="conciliado" value="true" />
+                                                    <button class="btn btn-sm btn-success" type="submit">Liquidar</button>
+                                                </form>
+                                            }
+                                            @if (item.Status == "Liquidado")
+                                            {
+                                                <form method="post" asp-page-handler="Reabrir" class="d-inline">
+                                                    <input type="hidden" name="id" value="@item.IdTitulo" />
+                                                    <button class="btn btn-sm btn-outline-warning" type="submit">Reabrir</button>
+                                                </form>
+                                            }
+                                            @if (item.Status != "Cancelado")
+                                            {
+                                                <form method="post" asp-page-handler="Cancelar" class="d-inline">
+                                                    <input type="hidden" name="id" value="@item.IdTitulo" />
+                                                    <button class="btn btn-sm btn-outline-danger" type="submit">Cancelar</button>
+                                                </form>
+                                            }
+                                            <form method="post" asp-page-handler="Conciliar" class="d-inline">
+                                                <input type="hidden" name="id" value="@item.IdTitulo" />
+                                                <input type="hidden" name="conciliado" value="@(!item.Conciliado)" />
+                                                <button class="btn btn-sm btn-outline-dark" type="submit">@(item.Conciliado ? "Desconciliar" : "Conciliar")</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!Model.Titulos.Items.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">Nenhum lançamento encontrado.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (Model.Titulos.TotalPages > 1)
+                {
+                    <nav class="mt-3">
+                        <ul class="pagination justify-content-center">
+                            @for (int i = 1; i <= Model.Titulos.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.Titulos.PageIndex ? "active" : "")">
+                                    <a class="page-link" asp-page="/Financeiro/Lancamentos" asp-route-p="@i" asp-route-Tipo="@Model.Tipo" asp-route-Status="@Model.Status" asp-route-Pesquisa="@Model.Pesquisa" asp-route-IdPlano="@Model.IdPlano" asp-route-IdConta="@Model.IdConta" asp-route-DataInicio="@Model.DataInicio?.ToString("yyyy-MM-dd")" asp-route-DataFim="@Model.DataFim?.ToString("yyyy-MM-dd")" asp-route-SomenteVencidos="@Model.SomenteVencidos">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

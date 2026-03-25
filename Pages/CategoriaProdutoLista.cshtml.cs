@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +34,7 @@ namespace CorteCor.Pages
             if (!TryObterIdSalao(out var idSalao))
             {
                 Categorias = new PagedResult<CategoriaProduto> { PageIndex = 1, PageSize = 10 };
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -46,7 +46,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 OnGet();
                 return Page();
@@ -67,7 +67,7 @@ namespace CorteCor.Pages
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Nao foi possivel inativar esta categoria.";
+                    Mensagem = "Não foi possível inativar esta categoria.";
                     MensagemTipo = "danger";
                 }
             }
@@ -85,3 +85,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

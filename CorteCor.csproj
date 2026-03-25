@@ -17,6 +17,9 @@
     <None Include="Config.NFSe.Config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Update="wwwroot\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -40,7 +43,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DefaultItemExcludes>$(DefaultItemExcludes);CorteCor.Tests\**;tempbuild*\**;temp_*\**;output\playwright\**;test_reflect.cs</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);CorteCor.Tests\**;tempbuild*\**;temp_*\**;output\playwright\**;obj_*\**;test_reflect.cs</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

@@ -28,6 +28,9 @@ namespace CorteCor.Pages
         [BindProperty(SupportsGet = true)]
         public int? IdAgendamento { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int? IdVendaProduto { get; set; }
+
         public string FiltroDescricao { get; set; } = string.Empty;
 
         [TempData]
@@ -50,6 +53,14 @@ namespace CorteCor.Pages
                 FiltroDescricao = $"Exibindo notas vinculadas ao agendamento #{IdAgendamento.Value}.";
             }
 
+            if (IdVendaProduto.HasValue)
+            {
+                notas = notas.Where(n => n.IdVendaProduto == IdVendaProduto.Value).ToList();
+                FiltroDescricao = string.IsNullOrWhiteSpace(FiltroDescricao)
+                    ? $"Exibindo notas vinculadas à venda #{IdVendaProduto.Value}."
+                    : $"{FiltroDescricao} Exibindo também apenas a venda #{IdVendaProduto.Value}.";
+            }
+
             if (IdNotaFiscal.HasValue)
             {
                 notas = notas.Where(n => n.IdNotaFiscal == IdNotaFiscal.Value).ToList();
@@ -70,8 +81,8 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null || string.IsNullOrEmpty(nota.XmlRetorno))
                 {
-                    Erro = "XML nao encontrado ou nota nao pertence a este salao.";
-                    return RedirectToPage();
+                Erro = "XML não encontrado ou a nota não pertence a este salão.";
+                    return RedirecionarComFiltros();
                 }
 
                 var fileName = $"NF_{nota.TipoNota}_{nota.Numero}.xml";
@@ -80,7 +91,7 @@ namespace CorteCor.Pages
             catch (Exception ex)
             {
                 Erro = "Erro ao baixar XML: " + ex.Message;
-                return RedirectToPage();
+                return RedirecionarComFiltros();
             }
         }
 
@@ -92,16 +103,16 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                    Erro = "Nota nao encontrada.";
-                    return RedirectToPage();
+                Erro = "Nota não encontrada.";
+                    return RedirecionarComFiltros();
                 }
 
                 var modelo = nota.TipoNota == "NFS-e" ? "NFSE" : nota.TipoNota == "NFC-e" ? "65" : "55";
                 var chave = nota.TipoNota == "NFS-e" ? nota.ChaveAcessoNacional : nota.ChaveAcesso;
                 if (string.IsNullOrWhiteSpace(chave))
                 {
-                    Erro = "A nota nao possui chave para consulta.";
-                    return RedirectToPage();
+                Erro = "A nota não possui chave para consulta.";
+                    return RedirecionarComFiltros();
                 }
 
                 var resultado = await _notaFiscalAvulsaService.ConsultarAsync(idSalao, modelo, nota.Ambiente, chave);
@@ -112,7 +123,7 @@ namespace CorteCor.Pages
                 Erro = "Erro ao consultar nota: " + ex.Message;
             }
 
-            return RedirectToPage();
+            return RedirecionarComFiltros();
         }
 
         public async Task<IActionResult> OnPostGerarPdfAsync(Guid idNota)
@@ -123,15 +134,15 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                    Erro = "Nota nao encontrada.";
-                    return RedirectToPage();
+                Erro = "Nota não encontrada.";
+                    return RedirecionarComFiltros();
                 }
 
                 var chave = nota.TipoNota == "NFS-e" ? nota.ChaveAcessoNacional : nota.ChaveAcesso;
                 if (string.IsNullOrWhiteSpace(chave))
                 {
                     Erro = "Nota sem chave fiscal para gerar o PDF.";
-                    return RedirectToPage();
+                    return RedirecionarComFiltros();
                 }
 
                 var pdf = await _notaFiscalAvulsaService.GerarPdfAsync(idSalao, chave);
@@ -140,7 +151,7 @@ namespace CorteCor.Pages
             catch (Exception ex)
             {
                 Erro = "Erro ao gerar PDF: " + ex.Message;
-                return RedirectToPage();
+                return RedirecionarComFiltros();
             }
         }
 
@@ -152,25 +163,25 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                    Erro = "Nota nao encontrada.";
-                    return RedirectToPage();
+                Erro = "Nota não encontrada.";
+                    return RedirecionarComFiltros();
                 }
 
                 var chave = nota.TipoNota == "NFS-e" ? nota.ChaveAcessoNacional : nota.ChaveAcesso;
                 if (string.IsNullOrWhiteSpace(chave))
                 {
                     Erro = "Nota sem chave fiscal para envio por e-mail.";
-                    return RedirectToPage();
+                    return RedirecionarComFiltros();
                 }
 
                 var resultado = await _notaFiscalAvulsaService.EnviarEmailAsync(idSalao, chave, emailDestino, nomeDestino);
                 Mensagem = resultado.Mensagem;
-                return RedirectToPage();
+                return RedirecionarComFiltros();
             }
             catch (Exception ex)
             {
                 Erro = "Erro ao preparar envio do e-mail: " + ex.Message;
-                return RedirectToPage();
+                return RedirecionarComFiltros();
             }
         }
 
@@ -182,32 +193,40 @@ namespace CorteCor.Pages
                 if (string.IsNullOrWhiteSpace(justificativa) || justificativa.Length < 15)
                 {
                     Erro = "A justificativa de cancelamento deve ter pelo menos 15 caracteres.";
-                    return RedirectToPage();
+                    return RedirecionarComFiltros();
                 }
 
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                    Erro = "Nota nao encontrada.";
-                    return RedirectToPage();
+                Erro = "Nota não encontrada.";
+                    return RedirecionarComFiltros();
                 }
 
                 var chave = nota.TipoNota == "NFS-e" ? nota.ChaveAcessoNacional : nota.ChaveAcesso;
                 if (string.IsNullOrWhiteSpace(chave))
                 {
                     Erro = "Nota sem chave fiscal para cancelamento.";
-                    return RedirectToPage();
+                    return RedirecionarComFiltros();
                 }
 
                 var resultado = await _notaFiscalAvulsaService.CancelarAsync(idSalao, chave, justificativa);
                 Mensagem = resultado.Mensagem;
-                return RedirectToPage();
+                return RedirecionarComFiltros();
             }
             catch (Exception ex)
             {
                 Erro = "Erro ao cancelar nota: " + ex.Message;
-                return RedirectToPage();
+                return RedirecionarComFiltros();
             }
         }
+
+        private IActionResult RedirecionarComFiltros() =>
+            RedirectToPage(new
+            {
+                IdNotaFiscal,
+                IdAgendamento,
+                IdVendaProduto
+            });
     }
 }

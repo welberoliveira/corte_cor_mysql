@@ -57,7 +57,7 @@ namespace CorteCor.Services
         {
             if (string.IsNullOrWhiteSpace(item.Descricao))
             {
-                throw new InvalidOperationException("Todo item fiscal de origem deve possuir descricao.");
+                throw new InvalidOperationException("Todo item fiscal de origem deve possuir descrição.");
             }
 
             if (item.Quantidade <= 0)
@@ -67,7 +67,7 @@ namespace CorteCor.Services
 
             if (item.ValorUnitario < 0)
             {
-                throw new InvalidOperationException("Todo item fiscal de origem deve possuir valor unitario nao negativo.");
+                throw new InvalidOperationException("Todo item fiscal de origem deve possuir valor unitário não negativo.");
             }
 
             return new FiscalOrigemItem
@@ -88,7 +88,7 @@ namespace CorteCor.Services
         {
             if (idSalao <= 0)
             {
-                throw new InvalidOperationException($"A origem fiscal de {origem} precisa informar um IdSalao valido.");
+                throw new InvalidOperationException($"A origem fiscal de {origem} precisa informar um IdSalao válido.");
             }
 
             if (quantidadeItens <= 0)

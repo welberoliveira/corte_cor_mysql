@@ -1,0 +1,90 @@
+﻿@page
+@model CorteCor.Pages.Financeiro.PlanoContasModel
+@{
+    ViewData["Title"] = "Plano de Contas";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Plano de Contas</h2>
+        <div class="text-muted">Classifique receitas e despesas para DRE e relatórios.</div>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="/Financeiro/Index">Voltar ao financeiro</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">@(Model.PlanoInput.IdPlano > 0 ? "Editar plano" : "Novo plano")</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Salvar" class="row g-3">
+                    <input type="hidden" asp-for="PlanoInput.IdPlano" />
+                    <div class="col-md-4">
+                        <label class="form-label">Código</label>
+                        <input class="form-control" asp-for="PlanoInput.Codigo" />
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Tipo</label>
+                        <select class="form-select" asp-for="PlanoInput.Tipo">
+                            <option value="R">Receita</option>
+                            <option value="D">Despesa</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição</label>
+                        <input class="form-control" asp-for="PlanoInput.Descricao" />
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" asp-for="PlanoInput.Ativo" />
+                            <label class="form-check-label" asp-for="PlanoInput.Ativo">Ativo</label>
+                        </div>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-primary" type="submit">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Contas cadastradas</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                                <th>Tipo</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var plano in Model.Planos)
+                            {
+                                <tr>
+                                    <td>@plano.Codigo</td>
+                                    <td>@plano.Descricao</td>
+                                    <td>@(plano.Tipo == "R" ? "Receita" : "Despesa")</td>
+                                    <td><span class="badge @(plano.Ativo ? "bg-success" : "bg-secondary")">@(plano.Ativo ? "Ativo" : "Inativo")</span></td>
+                                    <td class="text-end">
+                                        <a class="btn btn-sm btn-outline-primary" asp-page="/Financeiro/PlanoContas" asp-route-id="@plano.IdPlano">Editar</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

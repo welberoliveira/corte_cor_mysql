@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +38,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -88,7 +88,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+                Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return Page();
             }
@@ -133,12 +133,12 @@ namespace CorteCor.Pages
             if (Servico.IdServico > 0)
             {
                 _servicoHandler.Atualizar(Servico);
-                Mensagem = "Servico atualizado com sucesso.";
+                Mensagem = "Serviço atualizado com sucesso.";
             }
             else
             {
                 Servico.IdServico = _servicoHandler.CadastrarServico(Servico);
-                Mensagem = "Servico cadastrado com sucesso.";
+                Mensagem = "Serviço cadastrado com sucesso.";
                 ButtonText = "Atualizar";
             }
 
@@ -151,18 +151,18 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                return new JsonResult(new { success = false, message = "Salao nao identificado." });
+                return new JsonResult(new { success = false, message = "Salão não identificado." });
             }
 
             nome = (nome ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(nome))
             {
-                return new JsonResult(new { success = false, message = "Nome e obrigatorio." });
+                return new JsonResult(new { success = false, message = "Nome é obrigatório." });
             }
 
             if (_categoriaHandler.ExisteNomePorSalao(nome, idSalao))
             {
-                return new JsonResult(new { success = false, message = "Ja existe uma categoria com esse nome." });
+                return new JsonResult(new { success = false, message = "Já existe uma categoria com esse nome." });
             }
 
             var categoria = new CategoriaProduto
@@ -183,42 +183,42 @@ namespace CorteCor.Pages
         {
             if (string.IsNullOrWhiteSpace(Servico.Nome))
             {
-                Mensagem = "Informe o nome do servico.";
+                Mensagem = "Informe o nome do serviço.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (_servicoHandler.ExisteNomePorSalao(Servico.Nome, Servico.IdSalao, Servico.IdServico > 0 ? Servico.IdServico : null))
             {
-                Mensagem = "Ja existe um servico com esse nome.";
+                Mensagem = "Já existe um serviço com esse nome.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (Servico.Preco < 0)
             {
-                Mensagem = "O preco de venda nao pode ser negativo.";
+                Mensagem = "O preço de venda não pode ser negativo.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (Servico.PrecoCusto.HasValue && Servico.PrecoCusto < 0)
             {
-                Mensagem = "O preco de custo nao pode ser negativo.";
+                Mensagem = "O preço de custo não pode ser negativo.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (Servico.Duracao <= TimeSpan.Zero)
             {
-                Mensagem = "Informe uma duracao maior que zero.";
+                Mensagem = "Informe uma duração maior que zero.";
                 MensagemTipo = "warning";
                 return false;
             }
 
             if (Servico.AliquotaISS.HasValue && (Servico.AliquotaISS < 0 || Servico.AliquotaISS > 100))
             {
-                Mensagem = "A aliquota ISS deve estar entre 0 e 100.";
+                Mensagem = "A alíquota ISS deve estar entre 0 e 100.";
                 MensagemTipo = "warning";
                 return false;
             }
@@ -234,7 +234,7 @@ namespace CorteCor.Pages
             {
                 if (string.IsNullOrWhiteSpace(Servico.CodTributacaoNacional) || string.IsNullOrWhiteSpace(Servico.ItemListaServicoLC116))
                 {
-                    Mensagem = "Para usar o servico na emissao fiscal, preencha o codigo de tributacao nacional e o item da LC 116/03.";
+                    Mensagem = "Para usar o serviço na emissão fiscal, preencha o código de tributação nacional e o item da LC 116/03.";
                     MensagemTipo = "warning";
                     return false;
                 }
@@ -256,3 +256,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

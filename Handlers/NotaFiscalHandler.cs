@@ -123,6 +123,33 @@ namespace CorteCor.Handlers
             return notas;
         }
 
+        public virtual async Task<List<NotaFiscal>> ListarPorVendaAsync(int idSalao, int idVendaProduto)
+        {
+            var notas = new List<NotaFiscal>();
+
+            string query = @"
+                SELECT IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
+                       ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
+                       DataEmissao, DataAtualizacao
+                FROM CorteCor_NotaFiscal
+                WHERE IdSalao = @IdSalao AND IdVendaProduto = @IdVendaProduto
+                ORDER BY DataEmissao DESC, DataAtualizacao DESC;";
+
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@IdVendaProduto", idVendaProduto);
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            while (reader.Read())
+            {
+                notas.Add(MapFromReader(reader));
+            }
+
+            return notas;
+        }
+
         public virtual async Task<NotaFiscal?> ObterNotaAtivaPorAgendamentoAsync(int idSalao, int idAgendamento)
         {
             string query = @"
@@ -141,6 +168,36 @@ namespace CorteCor.Handlers
             using var command = connection.CreateCommand(query);
             command.AddWithValue("@IdSalao", idSalao);
             command.AddWithValue("@IdAgendamento", idAgendamento);
+            command.AddWithValue("@Cancelada", NotaFiscalStatus.Cancelada);
+            command.AddWithValue("@Rejeitada", NotaFiscalStatus.Rejeitada);
+
+            using var reader = await Task.Run(() => command.ExecuteReader());
+            if (reader.Read())
+            {
+                return MapFromReader(reader);
+            }
+
+            return null;
+        }
+
+        public virtual async Task<NotaFiscal?> ObterNotaAtivaPorVendaAsync(int idSalao, int idVendaProduto)
+        {
+            string query = @"
+                SELECT TOP 1
+                       IdNotaFiscal, IdSalao, IdAgendamento, IdVendaProduto, TipoNota, Ambiente, 
+                       Numero, Serie, ValorTotal, Status, ChaveAcesso, ChaveAcessoNacional, NumeroNFSeNacional, NumeroRecibo, 
+                       ProtocoloAutorizacao, JustificativaRejeicao, XmlEnvio, XmlRetorno, 
+                       DataEmissao, DataAtualizacao
+                FROM CorteCor_NotaFiscal
+                WHERE IdSalao = @IdSalao
+                  AND IdVendaProduto = @IdVendaProduto
+                  AND Status NOT IN (@Cancelada, @Rejeitada)
+                ORDER BY DataEmissao DESC, DataAtualizacao DESC;";
+
+            using var connection = _dbHandler.GetConnection();
+            using var command = connection.CreateCommand(query);
+            command.AddWithValue("@IdSalao", idSalao);
+            command.AddWithValue("@IdVendaProduto", idVendaProduto);
             command.AddWithValue("@Cancelada", NotaFiscalStatus.Cancelada);
             command.AddWithValue("@Rejeitada", NotaFiscalStatus.Rejeitada);
 

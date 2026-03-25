@@ -12,12 +12,12 @@ namespace CorteCor.Services
         {
             if (nota == null)
             {
-                throw new InvalidOperationException("Nota fiscal nao informada.");
+            throw new InvalidOperationException("Nota fiscal não informada.");
             }
 
             if (string.IsNullOrWhiteSpace(nota.XmlRetorno) && string.IsNullOrWhiteSpace(nota.XmlEnvio))
             {
-                throw new InvalidOperationException("Nao ha conteudo fiscal suficiente para gerar o PDF.");
+            throw new InvalidOperationException("Não há conteúdo fiscal suficiente para gerar o PDF.");
             }
 
             var linhas = new List<string>

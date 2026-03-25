@@ -1,0 +1,626 @@
+@page
+@model CorteCor.Pages.Vendas.IndexModel
+@using CorteCor.Models
+@{
+    ViewData["Title"] = "Vendas";
+}
+
+@section Styles {
+    <style>
+        .venda-shell-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .venda-hero {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 48%, #ecfeff 100%);
+            border-radius: 24px;
+            padding: 1.6rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .venda-kpi {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 1rem 1.1rem;
+            height: 100%;
+        }
+
+        .venda-kpi-label {
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+            margin-bottom: 0.35rem;
+        }
+
+        .venda-kpi-value {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .venda-note {
+            border-radius: 14px;
+            padding: 0.9rem 1rem;
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            color: #9a3412;
+            font-size: 0.95rem;
+        }
+
+        .venda-summary {
+            background: #0f172a;
+            color: #fff;
+            border-radius: 18px;
+            padding: 1rem 1.1rem;
+        }
+
+        .venda-summary small {
+            color: rgba(255,255,255,0.72);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .venda-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.45rem;
+        }
+
+        .venda-actions .btn {
+            min-width: 130px;
+        }
+
+        .venda-table td {
+            vertical-align: top;
+        }
+
+        .venda-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .venda-pill-finalizada {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .venda-pill-cancelada {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .venda-pill-ajustada {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        @@media (max-width: 991.98px) {
+            .venda-actions .btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+}
+
+<div class="venda-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1">Vendas de Produtos e Servi&ccedil;os</h2>
+            <div class="text-muted">Checkout unificado com integra&ccedil;&atilde;o em estoque, financeiro, CRM e nota fiscal de servi&ccedil;o quando a opera&ccedil;&atilde;o exigir emiss&atilde;o em homologa&ccedil;&atilde;o.</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-outline-primary" asp-page="/Pedidos/Index">Pedidos e Or&ccedil;amentos</a>
+            <a class="btn btn-outline-dark" asp-page="/Estoque/Index">Controle de Estoque</a>
+            <a class="btn btn-outline-secondary" asp-page="/NotaFiscalLista">Notas Fiscais</a>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="venda-kpi">
+            <div class="venda-kpi-label">Vendas listadas</div>
+            <div class="venda-kpi-value">@Model.PainelResumo.VendasListadas</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="venda-kpi">
+            <div class="venda-kpi-label">Total na listagem</div>
+            <div class="venda-kpi-value">R$ @Model.PainelResumo.TotalListagem.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="venda-kpi">
+            <div class="venda-kpi-label">Com NFS-e autorizada</div>
+            <div class="venda-kpi-value">@Model.PainelResumo.ComNotaAutorizada</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="venda-kpi">
+            <div class="venda-kpi-label">Pend&ecirc;ncias fiscais</div>
+            <div class="venda-kpi-value">@Model.PainelResumo.PendentesFiscais</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="card venda-shell-card">
+            <div class="card-header bg-white fw-semibold">Nova venda</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Finalizar" id="vendaForm" class="row g-3">
+                    <input type="hidden" id="payloadJson" name="payloadJson" />
+                    <input type="hidden" name="q" value="@Model.q" />
+                    <input type="hidden" name="idPessoaFiltro" value="@Model.idPessoaFiltro" />
+                    <input type="hidden" name="statusFiltro" value="@Model.statusFiltro" />
+                    <input type="hidden" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="p" value="@Model.p" />
+
+                    <div class="col-md-8">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" id="clienteSelect">
+                            <option value="">Consumidor n&atilde;o identificado</option>
+                            @foreach (var cliente in Model.Contexto.Clientes)
+                            {
+                                <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Meio de pagamento</label>
+                        <select class="form-select" id="meioPagamentoSelect">
+                            <option value="">Livre</option>
+                            @foreach (var meio in Model.Contexto.MeiosPagamento)
+                            {
+                                <option value="@meio.IdMeioPagamento" data-nome="@meio.Nome">@meio.Nome</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo do item</label>
+                        <select class="form-select" id="tipoItemSelect">
+                            <option value="Produto">Produto</option>
+                            <option value="Servico">Servi&ccedil;o</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label">Item</label>
+                        <select class="form-select" id="catalogoSelect"></select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Quantidade</label>
+                        <input type="number" id="quantidadeInput" class="form-control" value="1" min="0.001" step="0.001" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Valor unit&aacute;rio</label>
+                        <input type="number" id="valorUnitarioInput" class="form-control" value="0" min="0" step="0.01" />
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="form-label">Observa&ccedil;&otilde;es</label>
+                        <input type="text" id="observacoesInput" class="form-control" maxlength="500" placeholder="Anota&ccedil;&otilde;es da venda" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Desconto</label>
+                        <input type="number" id="descontoInput" class="form-control" value="0" min="0" step="0.01" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Acr&eacute;scimo</label>
+                        <input type="number" id="acrescimoInput" class="form-control" value="0" min="0" step="0.01" />
+                    </div>
+
+                    <div class="col-12 d-flex gap-3 flex-wrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="recebidoNaHoraCheck" checked />
+                            <label class="form-check-label" for="recebidoNaHoraCheck">Venda recebida na hora</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="emitirNotaServicoCheck" />
+                            <label class="form-check-label" for="emitirNotaServicoCheck">Emitir NFS-e de servi&ccedil;o ao concluir</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="venda-note">
+                            Nesta rotina, a emiss&atilde;o fiscal deve ser usada apenas para servi&ccedil;os e somente em homologa&ccedil;&atilde;o. Vendas de produtos continuam sem emiss&atilde;o fiscal.
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-end">
+                        <button type="button" class="btn btn-outline-primary" id="addItemBtn">Adicionar item</button>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle" id="carrinhoTable">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Descri&ccedil;&atilde;o</th>
+                                        <th class="text-end">Qtd.</th>
+                                        <th class="text-end">Unit&aacute;rio</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-end">A&ccedil;&otilde;es</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">Nenhum item adicionado.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="venda-summary d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <small>Total da venda</small>
+                                <div class="fs-4 fw-semibold" id="totalVendaLabel">R$ 0,00</div>
+                            </div>
+                            <div class="text-end">
+                                <div id="resumoCarrinhoLabel">0 item(ns) no carrinho</div>
+                                <div class="small text-white-50">Produtos reduzem estoque somente ap&oacute;s a conclus&atilde;o.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-primary" id="finalizarVendaBtn">Concluir venda</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="card venda-shell-card mb-4">
+            <div class="card-header bg-white fw-semibold">Filtros de vendas</div>
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Pesquisa</label>
+                        <input class="form-control" name="q" value="@Model.q" placeholder="Cliente, pagamento ou venda" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" name="idPessoaFiltro">
+                            <option value="">Todos</option>
+                            @foreach (var cliente in Model.Contexto.Clientes)
+                            {
+                                if (Model.idPessoaFiltro == cliente.IdPessoa)
+                                {
+                                    <option value="@cliente.IdPessoa" selected>@cliente.Nome</option>
+                                }
+                                else
+                                {
+                                    <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="statusFiltro">
+                            <option value="">Todos</option>
+                            @if (Model.statusFiltro == VendaProdutoStatus.Finalizada)
+                            {
+                                <option value="@VendaProdutoStatus.Finalizada" selected>Finalizada</option>
+                            }
+                            else
+                            {
+                                <option value="@VendaProdutoStatus.Finalizada">Finalizada</option>
+                            }
+                            @if (Model.statusFiltro == VendaProdutoStatus.Cancelada)
+                            {
+                                <option value="@VendaProdutoStatus.Cancelada" selected>Cancelada</option>
+                            }
+                            else
+                            {
+                                <option value="@VendaProdutoStatus.Cancelada">Cancelada</option>
+                            }
+                            @if (Model.statusFiltro == VendaProdutoStatus.Ajustada)
+                            {
+                                <option value="@VendaProdutoStatus.Ajustada" selected>Ajustada</option>
+                            }
+                            else
+                            {
+                                <option value="@VendaProdutoStatus.Ajustada">Ajustada</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Per&iacute;odo</label>
+                        <div class="d-flex gap-2">
+                            <input type="date" class="form-control" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+                            <input type="date" class="form-control" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-outline-primary" type="submit">Filtrar</button>
+                        <a class="btn btn-outline-secondary" asp-page="/Vendas/Index">Limpar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card venda-shell-card">
+            <div class="card-header bg-white fw-semibold">Vendas recentes</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle venda-table">
+                        <thead>
+                            <tr>
+                                <th>Venda</th>
+                                <th>Cliente</th>
+                                <th>Pagamento</th>
+                                <th>Status</th>
+                                <th>Fiscal</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">A&ccedil;&otilde;es</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var venda in Model.Contexto.VendasRecentes.Items)
+                            {
+                                var statusClass = venda.Status == VendaProdutoStatus.Cancelada
+                                    ? "venda-pill venda-pill-cancelada"
+                                    : venda.Status == VendaProdutoStatus.Ajustada
+                                        ? "venda-pill venda-pill-ajustada"
+                                        : "venda-pill venda-pill-finalizada";
+
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">#@venda.IdVendaProduto</div>
+                                        <div class="small text-muted">@venda.DataVenda.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="small text-muted">Origem: @venda.Origem</div>
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(venda.NomeCliente) ? "Consumidor final" : venda.NomeCliente)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(venda.TipoPagamento) ? "-" : venda.TipoPagamento)</td>
+                                    <td><span class="@statusClass">@venda.Status</span></td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(venda.StatusFiscal))
+                                        {
+                                            <span class="badge @(venda.ClasseStatusFiscal ?? "bg-secondary")">@venda.StatusFiscal</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-dark">Sem nota</span>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-semibold">R$ @venda.ValorTotal.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <div class="venda-actions">
+                                            <a class="btn btn-sm btn-outline-dark" href="@Model.ObterUrlNotas(venda.IdVendaProduto)">Notas</a>
+                                            <a class="btn btn-sm btn-outline-secondary" href="@Model.ObterUrlDetalhes(venda.IdVendaProduto)">Pós-venda</a>
+                                            @if (venda.Status != VendaProdutoStatus.Cancelada && venda.SubtotalServicos > 0 && !venda.PossuiNotaAtiva)
+                                            {
+                                                <form method="post" asp-page-handler="EmitirNota" class="d-inline">
+                                                    <input type="hidden" name="idVendaProduto" value="@venda.IdVendaProduto" />
+                                                    <input type="hidden" name="q" value="@Model.q" />
+                                                    <input type="hidden" name="idPessoaFiltro" value="@Model.idPessoaFiltro" />
+                                                    <input type="hidden" name="statusFiltro" value="@Model.statusFiltro" />
+                                                    <input type="hidden" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+                                                    <input type="hidden" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+                                                    <input type="hidden" name="p" value="@Model.p" />
+                                                    <button class="btn btn-sm btn-outline-primary" type="submit">Emitir NFS-e</button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!Model.Contexto.VendasRecentes.Items.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">Nenhuma venda encontrada.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (Model.Contexto.VendasRecentes.TotalPages > 1)
+                {
+                    <nav class="mt-3">
+                        <ul class="pagination justify-content-center">
+                            @for (var i = 1; i <= Model.Contexto.VendasRecentes.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.Contexto.VendasRecentes.PageIndex ? "active" : "")">
+                                    <a class="page-link" asp-page="/Vendas/Index" asp-route-p="@i" asp-route-q="@Model.q" asp-route-idPessoaFiltro="@Model.idPessoaFiltro" asp-route-statusFiltro="@Model.statusFiltro" asp-route-dataInicio="@Model.dataInicio?.ToString("yyyy-MM-dd")" asp-route-dataFim="@Model.dataFim?.ToString("yyyy-MM-dd")">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const produtos = @Html.Raw(Model.ProdutosJson);
+        const servicos = @Html.Raw(Model.ServicosJson);
+        let carrinho = [];
+
+        const tipoItemSelect = document.getElementById('tipoItemSelect');
+        const catalogoSelect = document.getElementById('catalogoSelect');
+        const quantidadeInput = document.getElementById('quantidadeInput');
+        const valorUnitarioInput = document.getElementById('valorUnitarioInput');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const payloadJsonInput = document.getElementById('payloadJson');
+        const vendaForm = document.getElementById('vendaForm');
+        const resumoCarrinhoLabel = document.getElementById('resumoCarrinhoLabel');
+
+        function formatCurrency(value) {
+            return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function getCatalogoAtual() {
+            return tipoItemSelect.value === 'Servico' ? servicos : produtos;
+        }
+
+        function preencherCatalogo() {
+            const catalogo = getCatalogoAtual();
+            catalogoSelect.innerHTML = '';
+
+            if (!catalogo.length) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Nenhum item disponivel';
+                catalogoSelect.appendChild(option);
+                valorUnitarioInput.value = '0';
+                return;
+            }
+
+            for (const item of catalogo) {
+                const option = document.createElement('option');
+                option.value = item.id;
+                const detalhe = item.tipo === 'Produto' && item.controlaEstoque
+                    ? ` | estoque: ${Number(item.estoqueAtual || 0).toFixed(3)}`
+                    : '';
+                option.textContent = `${item.nome} | ${formatCurrency(item.valor)}${detalhe}`;
+                option.dataset.valor = item.valor;
+                option.dataset.nome = item.nome;
+                option.dataset.tipo = item.tipo;
+                catalogoSelect.appendChild(option);
+            }
+
+            valorUnitarioInput.value = Number(catalogo[0].valor || 0).toFixed(2);
+        }
+
+        function atualizarValorCatalogo() {
+            const selected = catalogoSelect.options[catalogoSelect.selectedIndex];
+            valorUnitarioInput.value = selected?.dataset?.valor ? Number(selected.dataset.valor).toFixed(2) : '0';
+        }
+
+        function renderCarrinho() {
+            const tbody = document.querySelector('#carrinhoTable tbody');
+
+            if (!carrinho.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Nenhum item adicionado.</td></tr>';
+                document.getElementById('totalVendaLabel').textContent = formatCurrency(0);
+                resumoCarrinhoLabel.textContent = '0 item(ns) no carrinho';
+                return;
+            }
+
+            let html = '';
+            let total = 0;
+            carrinho.forEach((item, index) => {
+                const totalItem = Number(item.quantidade) * Number(item.valorUnitario);
+                total += totalItem;
+                html += `
+                    <tr>
+                        <td><span class="badge ${item.tipoItem === 'Servico' ? 'bg-primary' : 'bg-success'}">${item.tipoItem}</span></td>
+                        <td>${item.descricao}</td>
+                        <td class="text-end">${Number(item.quantidade).toFixed(3)}</td>
+                        <td class="text-end">${formatCurrency(item.valorUnitario)}</td>
+                        <td class="text-end fw-semibold">${formatCurrency(totalItem)}</td>
+                        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger" onclick="removerItem(${index})">Remover</button></td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+
+            const desconto = Number(document.getElementById('descontoInput').value || 0);
+            const acrescimo = Number(document.getElementById('acrescimoInput').value || 0);
+            const totalFinal = total - desconto + acrescimo;
+            document.getElementById('totalVendaLabel').textContent = formatCurrency(totalFinal);
+            resumoCarrinhoLabel.textContent = `${carrinho.length} item(ns) no carrinho`;
+        }
+
+        window.removerItem = function(index) {
+            carrinho.splice(index, 1);
+            renderCarrinho();
+        };
+
+        addItemBtn.addEventListener('click', () => {
+            const catalogo = getCatalogoAtual();
+            const idSelecionado = Number(catalogoSelect.value);
+            const selecionado = catalogo.find(item => Number(item.id) === idSelecionado);
+            const quantidade = Number(quantidadeInput.value || 0);
+            const valorUnitario = Number(valorUnitarioInput.value || 0);
+
+            if (!selecionado || quantidade <= 0 || valorUnitario < 0) {
+                alert('Selecione um item valido e informe quantidade maior que zero.');
+                return;
+            }
+
+            carrinho.push({
+                tipoItem: selecionado.tipo,
+                idProduto: selecionado.tipo === 'Produto' ? selecionado.id : null,
+                idServico: selecionado.tipo === 'Servico' ? selecionado.id : null,
+                descricao: selecionado.nome,
+                quantidade,
+                valorUnitario
+            });
+
+            quantidadeInput.value = '1';
+            renderCarrinho();
+        });
+
+        vendaForm.addEventListener('submit', (event) => {
+            if (!carrinho.length) {
+                event.preventDefault();
+                alert('Adicione ao menos um item para concluir a venda.');
+                return;
+            }
+
+            const meioPagamentoSelect = document.getElementById('meioPagamentoSelect');
+            const meioSelecionado = meioPagamentoSelect.options[meioPagamentoSelect.selectedIndex];
+
+            const payload = {
+                idPessoa: document.getElementById('clienteSelect').value ? Number(document.getElementById('clienteSelect').value) : null,
+                idMeioPagamento: meioPagamentoSelect.value ? Number(meioPagamentoSelect.value) : null,
+                tipoPagamento: meioSelecionado?.dataset?.nome || null,
+                recebidoNaHora: document.getElementById('recebidoNaHoraCheck').checked,
+                emitirNotaFiscalServico: document.getElementById('emitirNotaServicoCheck').checked,
+                desconto: Number(document.getElementById('descontoInput').value || 0),
+                acrescimo: Number(document.getElementById('acrescimoInput').value || 0),
+                observacoes: document.getElementById('observacoesInput').value || null,
+                itens: carrinho.map(item => ({
+                    tipoItem: item.tipoItem,
+                    idProduto: item.idProduto,
+                    idServico: item.idServico,
+                    quantidade: item.quantidade,
+                    valorUnitario: item.valorUnitario
+                }))
+            };
+
+            payloadJsonInput.value = JSON.stringify(payload);
+        });
+
+        tipoItemSelect.addEventListener('change', preencherCatalogo);
+        catalogoSelect.addEventListener('change', atualizarValorCatalogo);
+        document.getElementById('descontoInput').addEventListener('input', renderCarrinho);
+        document.getElementById('acrescimoInput').addEventListener('input', renderCarrinho);
+
+        preencherCatalogo();
+        renderCarrinho();
+    </script>
+}

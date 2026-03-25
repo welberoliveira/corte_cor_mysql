@@ -64,6 +64,7 @@ namespace CorteCor.Tests
             // Assert
             Assert.Single(result);
             Assert.Equal("Corte", result[0].Nome);
+            Assert.Equal(50.0m, result[0].Preco);
         }
 
         [Fact]

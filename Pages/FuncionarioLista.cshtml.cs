@@ -31,7 +31,7 @@ namespace CorteCor.Pages
             if (!TryObterIdSalao(out var idSalao))
             {
                 Funcionarios = new PagedResult<Funcionario> { PageIndex = 1, PageSize = 10 };
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+            Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -48,7 +48,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Nao foi possivel identificar o salao atual.";
+            Mensagem = "Não foi possível identificar o salão atual.";
                 MensagemTipo = "danger";
                 OnGet();
                 return Page();
@@ -64,7 +64,7 @@ namespace CorteCor.Pages
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Nao foi possivel excluir este funcionario porque ele esta associado a outros registros.";
+            Mensagem = "Não foi possível excluir este funcionário porque ele está associado a outros registros.";
                     MensagemTipo = "warning";
                 }
             }

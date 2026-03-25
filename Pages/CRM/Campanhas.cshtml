@@ -1,0 +1,188 @@
+@page
+@model CorteCor.Pages.CRM.CampanhasModel
+@{
+    ViewData["Title"] = "Campanhas CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="mb-1">Campanhas CRM</h2>
+        <div class="text-muted">Envios segmentados por e-mail ou SMS usando a base de clientes do sistema.</div>
+    </div>
+    <a class="btn btn-link" asp-page="/CRM/Index">Voltar ao CRM</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Nova campanha</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Salvar" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Nome</label>
+                        <input class="form-control" asp-for="NovaCampanha.Nome" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Canal</label>
+                        <select class="form-select" asp-for="NovaCampanha.Canal">
+                            <option>Email</option>
+                            <option>SMS</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Segmento</label>
+                        <select class="form-select" asp-for="NovaCampanha.Segmento">
+                            <option value="TodosClientes">Todos os clientes</option>
+                            <option value="Inativos">Clientes inativos</option>
+                            <option value="AniversariantesDoMes">Aniversariantes do mês</option>
+                            <option value="PorTag">Por tag</option>
+                            <option value="ClienteEspecifico">Cliente específico</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tag do segmento</label>
+                        <input class="form-control" asp-for="NovaCampanha.FiltroTag" placeholder="Obrigatório se o segmento for por tag" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dias de inatividade</label>
+                        <input type="number" class="form-control" asp-for="NovaCampanha.DiasInatividade" min="1" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Assunto</label>
+                        <input class="form-control" asp-for="NovaCampanha.Assunto" placeholder="Obrigatório para e-mail" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Conteúdo</label>
+                        <textarea class="form-control" asp-for="NovaCampanha.Conteudo" rows="7" placeholder="Use placeholders como {NomeCliente}, {Telefone}, {UltimoAgendamento}, {DataNascimento}"></textarea>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-primary" type="submit">Salvar Campanha</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Campanhas cadastradas</div>
+            <div class="card-body">
+                @if (Model.Campanhas.Items.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Campanha</th>
+                                    <th>Canal</th>
+                                    <th>Segmento</th>
+                                    <th>Resultado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var campanha in Model.Campanhas.Items)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@campanha.Nome</div>
+                                            <div class="small text-muted">Criada em @campanha.DataCriacao.ToString("dd/MM/yyyy HH:mm")</div>
+                                        </td>
+                                        <td>@campanha.Canal</td>
+                                        <td>@campanha.Segmento</td>
+                                        <td>
+                                            <div class="fw-semibold">@campanha.Status</div>
+                                            <div class="small text-muted">Sucesso: @campanha.TotalSucesso • Falha: @campanha.TotalFalha</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                                <a class="btn btn-sm btn-outline-primary" asp-page="/CRM/Campanhas" asp-route-IdCampanhaView="@campanha.IdCampanha">Ver detalhes</a>
+                                                <form method="post" asp-page-handler="Enviar">
+                                                    <input type="hidden" name="idCampanha" value="@campanha.IdCampanha" />
+                                                    <button class="btn btn-sm btn-success" type="submit">Enviar</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (Model.Campanhas.TotalPages > 1)
+                    {
+                        <nav>
+                            <ul class="pagination justify-content-center mb-0">
+                                <li class="page-item @(Model.Campanhas.HasPreviousPage ? "" : "disabled")">
+                                    <a class="page-link" asp-page="/CRM/Campanhas" asp-route-p="@(Model.Campanhas.PageIndex - 1)" asp-route-IdCampanhaView="@Model.IdCampanhaView">Anterior</a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Página @Model.Campanhas.PageIndex de @Model.Campanhas.TotalPages</span>
+                                </li>
+                                <li class="page-item @(Model.Campanhas.HasNextPage ? "" : "disabled")">
+                                    <a class="page-link" asp-page="/CRM/Campanhas" asp-route-p="@(Model.Campanhas.PageIndex + 1)" asp-route-IdCampanhaView="@Model.IdCampanhaView">Próxima</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted">Nenhuma campanha cadastrada ainda.</div>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Últimos disparos da campanha</div>
+            <div class="card-body">
+                @if (Model.IdCampanhaView.HasValue)
+                {
+                    if (Model.DestinosCampanha.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Destino</th>
+                                        <th>Canal</th>
+                                        <th>Status</th>
+                                        <th>Data</th>
+                                        <th>Mensagem</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var destino in Model.DestinosCampanha)
+                                    {
+                                        <tr>
+                                            <td>@destino.NomePessoa</td>
+                                            <td>@destino.Destino</td>
+                                            <td>@destino.Canal</td>
+                                            <td><span class="badge @(destino.Status == "Sucesso" ? "bg-success" : destino.Status == "Ignorado" ? "bg-secondary" : "bg-danger")">@destino.Status</span></td>
+                                            <td>@destino.DataEnvio.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="small text-muted">@destino.MensagemErro</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Ainda não há disparos registrados para a campanha selecionada.</div>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted">Selecione uma campanha na lista para ver o histórico de disparos.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
