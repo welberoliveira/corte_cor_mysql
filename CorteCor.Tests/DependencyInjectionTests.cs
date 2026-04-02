@@ -161,15 +161,18 @@ namespace CorteCor.Tests
         public CrmPessoaPerfil ObterOuCriarPerfil(int idSalao, int idPessoa) => new CrmPessoaPerfil { IdPerfil = 1, IdSalao = idSalao, IdPessoa = idPessoa };
         public List<CrmCampanhaDestino> ListarDestinosCampanha(int idSalao, int idCampanha, int limit = 100) => new();
         public List<CrmEtapaFunil> ListarEtapas(int idSalao) => new() { new CrmEtapaFunil { IdEtapa = 1, IdSalao = idSalao, Nome = "Novo Lead", Ordem = 1, Ativa = true } };
+        public List<CrmInteracao> ListarInteracoes(int idSalao, int idPessoa, int limit = 50) => new();
         public List<CrmOportunidade> ListarOportunidades(int idSalao, int? idPessoa, string? status) => new();
         public List<CrmContatoCampanha> ListarPublicoCampanha(int idSalao, string segmento, string? filtroTag, int? diasInatividade, int? idPessoa) => new();
         public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize) => new() { PageIndex = pageIndex, PageSize = pageSize };
         public PagedResult<CrmClienteResumo> ListarClientesResumo(int idSalao, string? pesquisa, int pageIndex, int pageSize) => new() { PageIndex = pageIndex, PageSize = pageSize };
-        public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize) => new() { PageIndex = pageIndex, PageSize = pageSize };
+        public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize, string? pesquisa = null, DateTime? dataVencimentoInicio = null, DateTime? dataVencimentoFim = null) => new() { PageIndex = pageIndex, PageSize = pageSize };
         public List<CrmTimelineItem> ListarTimeline(int idSalao, int idPessoa, int limit = 100) => new();
         public void RegistrarDestinoCampanha(CrmCampanhaDestino destino) { }
         public void SalvarPerfil(CrmPessoaPerfil perfil) { }
         public int SalvarCampanha(CrmCampanha campanha) => 1;
+        public int SalvarInteracao(CrmInteracao interacao) => 1;
+        public PagedResult<CrmOportunidade> ListarOportunidadesPaginadas(int idSalao, int? idPessoa, string? status, DateTime? dataInicio, DateTime? dataFim, int pageIndex, int pageSize) => new() { PageIndex = pageIndex, PageSize = pageSize };
         public int SalvarOportunidade(CrmOportunidade oportunidade) => 1;
         public int SalvarTarefa(CrmTarefa tarefa) => 1;
     }

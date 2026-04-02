@@ -88,6 +88,63 @@ VALUES
         }
     }
 
+    public async Task AtualizarVendaAsync(VendaProduto venda, IReadOnlyCollection<VendaProdutoItem> itens)
+    {
+        const string updateVendaSql = @"
+UPDATE CorteCor_VendaProduto
+SET IdPessoa = @IdPessoa,
+    IdMeioPagamento = @IdMeioPagamento,
+    TipoPagamento = @TipoPagamento,
+    RecebidoNaHora = @RecebidoNaHora,
+    SolicitarEmissaoFiscalServico = @SolicitarEmissaoFiscalServico,
+    SubtotalProdutos = @SubtotalProdutos,
+    SubtotalServicos = @SubtotalServicos,
+    Desconto = @Desconto,
+    Acrescimo = @Acrescimo,
+    ValorTotal = @ValorTotal,
+    Observacoes = @Observacoes,
+    Origem = @Origem,
+    UsuarioOperador = @UsuarioOperador,
+    DataAtualizacao = GETDATE()
+WHERE IdSalao = @IdSalao
+  AND IdVendaProduto = @IdVendaProduto;";
+
+        const string deleteItensSql = @"
+DELETE FROM CorteCor_VendaProdutoItem
+WHERE IdSalao = @IdSalao
+  AND IdVendaProduto = @IdVendaProduto;";
+
+        const string insertItemSql = @"
+INSERT INTO CorteCor_VendaProdutoItem
+    (IdVendaProduto, IdSalao, TipoItem, IdProduto, IdServico, Descricao, Quantidade, ValorUnitario,
+     ValorTotal, Unidade, ControlaEstoque, CodigoTributacaoMunicipio, AliquotaIss, Ncm, Cfop)
+VALUES
+    (@IdVendaProduto, @IdSalao, @TipoItem, @IdProduto, @IdServico, @Descricao, @Quantidade, @ValorUnitario,
+     @ValorTotal, @Unidade, @ControlaEstoque, @CodigoTributacaoMunicipio, @AliquotaIss, @Ncm, @Cfop);";
+
+        using var conn = GetConnection();
+        using var tx = conn.BeginTransaction();
+        try
+        {
+            await conn.ExecuteAsync(updateVendaSql, venda, tx);
+            await conn.ExecuteAsync(deleteItensSql, new { venda.IdSalao, venda.IdVendaProduto }, tx);
+
+            foreach (var item in itens)
+            {
+                item.IdVendaProduto = venda.IdVendaProduto;
+                item.IdSalao = venda.IdSalao;
+                await conn.ExecuteAsync(insertItemSql, item, tx);
+            }
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
     public async Task<VendaProduto?> ObterVendaAsync(int idSalao, int idVendaProduto)
     {
         const string sql = @"

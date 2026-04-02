@@ -101,7 +101,7 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="d-flex gap-2 justify-content-end flex-wrap">
-                                                <a class="btn btn-sm btn-outline-primary" asp-page="/CRM/Campanhas" asp-route-IdCampanhaView="@campanha.IdCampanha">Ver detalhes</a>
+                                                <a class="btn btn-sm btn-primary" asp-page="/CRM/Campanhas" asp-route-IdCampanhaView="@campanha.IdCampanha">Ver detalhes</a>
                                                 <form method="post" asp-page-handler="Enviar">
                                                     <input type="hidden" name="idCampanha" value="@campanha.IdCampanha" />
                                                     <button class="btn btn-sm btn-success" type="submit">Enviar</button>

@@ -1,0 +1,110 @@
+@page
+@model CorteCor.Pages.CRM.ClienteInteracoesModel
+@{
+    ViewData["Title"] = "Interações do Cliente";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa" class="btn btn-link ps-0">Voltar para o CRM do cliente</a>
+        <h2 class="mb-1">Intera&ccedil;&otilde;es de @Model.Detalhe.Pessoa.Nome</h2>
+        <div class="text-muted">Cadastre ou atualize intera&ccedil;&otilde;es relacionadas a este cliente.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <span class="badge bg-primary fs-6">Último contato: @(Model.Detalhe.Resumo.UltimoContatoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem contato")</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">@(Model.InteracaoInput.IdInteracao > 0 ? "Atualizar intera&ccedil;&atilde;o" : "Registrar intera&ccedil;&atilde;o")</div>
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    <input type="hidden" asp-for="IdPessoa" />
+                    <input type="hidden" asp-for="InteracaoInput.IdInteracao" />
+                    <div class="col-12">
+                        <label class="form-label">Cliente</label>
+                        <input class="form-control" value="@Model.Detalhe.Pessoa.Nome" disabled />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Canal</label>
+                        <select class="form-select" asp-for="InteracaoInput.Canal">
+                            <option>Email</option>
+                            <option>SMS</option>
+                            <option>WhatsApp</option>
+                            <option>Telefone</option>
+                            <option>Presencial</option>
+                            <option>Sistema</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo</label>
+                        <input class="form-control" asp-for="InteracaoInput.Tipo" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Assunto</label>
+                        <input class="form-control" asp-for="InteracaoInput.Assunto" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descri&ccedil;&atilde;o</label>
+                        <textarea class="form-control" asp-for="InteracaoInput.Descricao" rows="4"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Data da intera&ccedil;&atilde;o</label>
+                        <input type="datetime-local" class="form-control" asp-for="InteracaoInput.DataInteracao" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Refer&ecirc;ncia</label>
+                        <input class="form-control" asp-for="InteracaoInput.Referencia" />
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa">Cancelar</a>
+                        <button class="btn btn-primary" type="submit">Salvar intera&ccedil;&atilde;o</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>Intera&ccedil;&otilde;es cadastradas</span>
+                <a class="btn btn-sm btn-secondary" asp-page="/CRM/ClienteInteracoes" asp-route-idPessoa="@Model.IdPessoa">Nova intera&ccedil;&atilde;o</a>
+            </div>
+            <div class="card-body">
+                @if (Model.Interacoes.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var interacao in Model.Interacoes)
+                        {
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                    <div>
+                                        <div class="fw-semibold">@interacao.Assunto</div>
+                                        <div class="small text-muted">@interacao.Canal • @interacao.Tipo • @interacao.DataInteracao.ToString("dd/MM/yyyy HH:mm")</div>
+                                        @if (!string.IsNullOrWhiteSpace(interacao.Descricao))
+                                        {
+                                            <div class="small text-muted mt-1">@interacao.Descricao</div>
+                                        }
+                                    </div>
+                                    <a class="btn btn-sm btn-dark"
+                                       asp-page="/CRM/ClienteInteracoes"
+                                       asp-route-idPessoa="@Model.IdPessoa"
+                                       asp-route-idInteracaoEdicao="@interacao.IdInteracao">
+                                        Editar
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Este cliente ainda n&atilde;o possui intera&ccedil;&otilde;es cadastradas.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

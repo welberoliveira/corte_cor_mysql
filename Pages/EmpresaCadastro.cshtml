@@ -1,11 +1,11 @@
-@page
+﻿@page
 @model CorteCor.Pages.SalaoCadastroModel
 @{
-    ViewData["Title"] = "Cadastro de Salões";
+    ViewData["Title"] = "Cadastro de Empresas";
 }
 
 <div class="container">
-    <h4>@Model.ButtonText Salão</h4>
+    <h4>@Model.ButtonText Empresa</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -18,7 +18,7 @@
         <input type="hidden" name="id" value="@Model.Salao?.IdSalao">
 
         <div class="form-group">
-            <label for="nome">Nome do Salão</label>
+            <label for="nome">Nome da Empresa</label>
             <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Salao?.Nome">
         </div>
 
@@ -57,7 +57,7 @@
             </div>
             <div class="col-md-4">
                 <div class="form-group">
-                    <label for="limiteEnvioWhatsapp">Limite Envio Whatsapp</label>
+                    <label for="limiteEnvioWhatsapp">Limite Envio WhatsApp</label>
                     <input type="number" id="limiteEnvioWhatsapp" name="limiteEnvioWhatsapp" class="form-control" value="@(Model.Salao?.LimiteEnvioWhatsapp ?? 0)" min="0">
                 </div>
             </div>
@@ -75,7 +75,7 @@
 
 <script>
     $(document).ready(function () {
-        $("#telefone").inputmask("(99) 99999-9999"); // Máscara para telefone
-        $("#cnpj").inputmask("99.999.999/9999-99");   // Máscara para CNPJ
+        $("#telefone").inputmask("(99) 99999-9999");
+        $("#cnpj").inputmask("99.999.999/9999-99");
     });
 </script>

@@ -22,19 +22,20 @@ namespace CorteCor.Pages.CRM
         public PagedResult<CrmTarefa> Tarefas { get; private set; } = new();
         public List<Pessoa> Clientes { get; private set; } = new();
 
-        [BindProperty]
-        public CrmTarefa NovaTarefa { get; set; } = new()
-        {
-            Prioridade = "Media",
-            Status = CrmStatusTarefa.Aberta,
-            DataVencimento = DateTime.Now.AddDays(1)
-        };
-
         [BindProperty(SupportsGet = true)]
         public int? IdPessoa { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public string? Status { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? PesquisaDescricao { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataVencimentoInicio { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataVencimentoFim { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int p { get; set; } = 1;
@@ -48,29 +49,6 @@ namespace CorteCor.Pages.CRM
         public IActionResult OnGet()
         {
             return Carregar();
-        }
-
-        public IActionResult OnPostSalvar()
-        {
-            try
-            {
-                if (!TryObterIdSalao(out var idSalao))
-                {
-                    return RedirectToPage("/Index");
-                }
-
-                NovaTarefa.IdUsuarioResponsavel = ObterIdUsuario();
-                _crmService.SalvarTarefa(idSalao, NovaTarefa);
-                FlashMessage = "Tarefa CRM salva com sucesso.";
-                FlashType = "success";
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-            }
-
-            return RedirectToPage(new { IdPessoa, Status, p = 1 });
         }
 
         public IActionResult OnPostAtualizarStatus(int idTarefa, string status)
@@ -92,7 +70,7 @@ namespace CorteCor.Pages.CRM
                 FlashType = "danger";
             }
 
-            return RedirectToPage(new { IdPessoa, Status, p });
+            return RedirectToPage(new { IdPessoa, Status, PesquisaDescricao, DataVencimentoInicio, DataVencimentoFim, p });
         }
 
         private IActionResult Carregar()
@@ -102,15 +80,8 @@ namespace CorteCor.Pages.CRM
                 return RedirectToPage("/Index");
             }
 
-            Tarefas = _crmService.ListarTarefas(idSalao, IdPessoa, Status, ObterIdUsuario(), p, 12);
+            Tarefas = _crmService.ListarTarefas(idSalao, IdPessoa, Status, ObterIdUsuario(), p, 12, PesquisaDescricao, DataVencimentoInicio, DataVencimentoFim);
             Clientes = _pessoaHandler.ListarPaginadoPorSalao(idSalao, null, 1, 500).Items;
-            NovaTarefa = new CrmTarefa
-            {
-                IdPessoa = IdPessoa,
-                Prioridade = "Media",
-                Status = CrmStatusTarefa.Aberta,
-                DataVencimento = DateTime.Now.AddDays(1)
-            };
             return Page();
         }
 

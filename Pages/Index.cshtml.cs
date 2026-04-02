@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using CorteCor.Handlers;
 using CorteCor.Logs;
@@ -47,7 +47,7 @@ namespace CorteCor.Pages
                     var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
                     new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", true);
                 }
-                catch { /* Não impedir login */ }
+                catch { /* NÃ£o impedir login */ }
                 //buscar IdUsuario
                 using var connection = _dbHandler.GetConnection();
                 string query = @"
@@ -72,7 +72,7 @@ namespace CorteCor.Pages
                 var Usuario = handler.ObterPorId(int.Parse(IdUsuario));
 
 
-                // Criar os claims do usuário autenticado
+                // Criar os claims do usuÃ¡rio autenticado
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, email),
@@ -86,31 +86,31 @@ namespace CorteCor.Pages
 
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
-                // ---- Verificação de Limites (Email e SMS) ----
+                // ---- VerificaÃ§Ã£o de Limites (Email e SMS) ----
                 try {
                     var lembreteHandler = new LembreteHandler(_dbHandler);
                     
                     // Email
                     if (lembreteHandler.VerificarLimiteEmail(Usuario.IdSalao, out int envEmail, out int limEmail))
                     {
-                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de emails para seu salão foi alcançado ({envEmail}/{limEmail}). Adquira mais créditos para continuar enviando lembretes por email.";
+                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de e-mails para sua empresa foi alcançado ({envEmail}/{limEmail}). Adquira mais crÃ©ditos para continuar enviando lembretes por email.";
                     }
 
                     // SMS
                     if (lembreteHandler.VerificarLimiteSMS(Usuario.IdSalao, out int envSms, out int limSms))
                     {
-                        TempData["AvisoLimiteSMS"] = $"Atenção: O limite de disparos de SMS para seu salão foi alcançado ({envSms}/{limSms}). Adquira mais créditos para continuar enviando lembretes por SMS.";
+                        TempData["AvisoLimiteSMS"] = $"Atenção: O limite de disparos de SMS para sua empresa foi alcançado ({envSms}/{limSms}). Adquira mais crÃ©ditos para continuar enviando lembretes por SMS.";
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Não impedir login por erro aqui, apenas logar ou ignorar
+                    // NÃ£o impedir login por erro aqui, apenas logar ou ignorar
                     Console.WriteLine("Erro ao verificar limites: " + ex.Message);
                 }
                 // ----------------------------------------------
 
-                // Redirecionar para a página inicial ou outra página protegida
-                return Redirect(HttpContext.Request.PathBase + "/Agendamentos2");
+                // Redirecionar para o dashboard inicial
+                return Redirect(HttpContext.Request.PathBase + "/Dashboard");
             }
             else
             {
@@ -122,12 +122,14 @@ namespace CorteCor.Pages
                     var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
                     new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", false);
                 }
-                catch { /* Não impedir fluxo */ }
+                catch { /* NÃ£o impedir fluxo */ }
 
                 return Page();
             }
         }
     }
 }
+
+
 
 

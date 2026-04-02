@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using CorteCor.Handlers;
@@ -51,16 +51,17 @@ namespace CorteCor.Pages
             if (id > 0)
             {
                 handler.Atualizar(Salao);
-                Mensagem = "Salao atualizada com sucesso!";
+                Mensagem = "Empresa atualizada com sucesso!";
             }
             else
             {
                 id = handler.CadastrarSalao(Salao);
-                Mensagem = "Salao cadastrada com sucesso!";
+                Mensagem = "Empresa cadastrada com sucesso!";
             }
 
             OnGet(id > 0 ? id : (int?)null); // Recarrega os dados atualizados
         }
     }
 }
+
 

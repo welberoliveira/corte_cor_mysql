@@ -1,4 +1,4 @@
-﻿using CorteCor.Handlers;
+using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +34,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Não foi possível identificar o salão atual.";
+                Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 Produto = new Produto { DataCadastro = DateTime.Now, ControlarEstoque = true };
                 return;
@@ -57,7 +57,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Não foi possível identificar o salão atual.";
+                Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 return Page();
             }
@@ -68,19 +68,49 @@ namespace CorteCor.Pages
                 return Page();
             }
 
+            // Mantém compatibilidade com o payload antigo e garante
+            // que a atualização use o ID do produto em edição.
+            if (Produto.IdProduto <= 0)
+            {
+                if (int.TryParse(Request.Form["Produto.IdProduto"], out var produtoId) && produtoId > 0)
+                {
+                    Produto.IdProduto = produtoId;
+                }
+                else if (int.TryParse(Request.Form["id"], out var fallbackId) && fallbackId > 0)
+                {
+                    Produto.IdProduto = fallbackId;
+                }
+            }
+
+            Produto.Nome = Request.Form["nome"].ToString().Trim();
+            Produto.CodigoProprio = NormalizarTexto(Request.Form["codigoProprio"]);
+            Produto.IdCategoria = ParseNullableInt(Request.Form["idCategoria"]);
+            Produto.TipoUso = NormalizarTexto(Request.Form["tipoUso"]);
+            Produto.Tags = NormalizarTexto(Request.Form["tags"]);
+            Produto.Anotacoes = NormalizarTexto(Request.Form["anotacoes"]);
+            Produto.Origem = ParseNullableInt(Request.Form["origem"]);
+            Produto.NCM = NormalizarTexto(Request.Form["ncm"]);
+            Produto.CEST = NormalizarTexto(Request.Form["cest"]);
+            Produto.UnidadeComercial = NormalizarTexto(Request.Form["unidadeComercial"]);
+            Produto.ReferenciaEAN = NormalizarTexto(Request.Form["referenciaEAN"]);
+            Produto.ExcecaoIPI = ParseNullableInt(Request.Form["excecaoIPI"]);
+            Produto.CodBeneficioFiscalUF = NormalizarTexto(Request.Form["codBeneficioFiscalUF"]);
+            Produto.EANTributada = NormalizarTexto(Request.Form["eanTributada"]);
+            Produto.UnidadeTributada = NormalizarTexto(Request.Form["unidadeTributada"]);
+            Produto.AnotacoesFiscaisNFe = NormalizarTexto(Request.Form["anotacoesFiscaisNFe"]);
             Produto.IdSalao = idSalao;
             Produto.Arquivado = Request.Form["arquivado"] == "on";
             Produto.ControlarEstoque = Request.Form["controlarEstoque"] == "on";
             Produto.UnidadeTributadaDiferente = Request.Form["unidadeTributadaDiferente"] == "on";
             Produto.IgnorarTribPrecoVenda = Request.Form["ignorarTribPrecoVenda"] == "on";
-            Produto.PrecoCusto = ParseNullableDecimal(Request.Form["precoCusto"]);
-            Produto.PrecoVenda = ParseDecimal(Request.Form["precoVenda"]);
-            Produto.MargemContribuicao = ParseNullableDecimal(Request.Form["margemContribuicao"]);
-            Produto.EstoqueAtual = ParseNullableDecimal(Request.Form["estoqueAtual"]);
-            Produto.EstoqueMinimo = ParseNullableDecimal(Request.Form["estoqueMinimo"]);
-            Produto.PesoLiquido = ParseNullableDecimal(Request.Form["pesoLiquido"]);
-            Produto.PesoBruto = ParseNullableDecimal(Request.Form["pesoBruto"]);
-            Produto.QuantidadeTributada = ParseNullableDecimal(Request.Form["quantidadeTributada"]);
+            Produto.PrecoCusto = ParseNullableMoney(Request.Form["precoCusto"]);
+            Produto.PrecoVenda = ParseMoney(Request.Form["precoVenda"]);
+            Produto.MargemContribuicao = ParseNullableMoney(Request.Form["margemContribuicao"]);
+            Produto.EstoqueAtual = ParseNullableNumberInput(Request.Form["estoqueAtual"]);
+            Produto.EstoqueMinimo = ParseNullableNumberInput(Request.Form["estoqueMinimo"]);
+            Produto.PesoLiquido = ParseNullableNumberInput(Request.Form["pesoLiquido"]);
+            Produto.PesoBruto = ParseNullableNumberInput(Request.Form["pesoBruto"]);
+            Produto.QuantidadeTributada = ParseNullableNumberInput(Request.Form["quantidadeTributada"]);
 
             ButtonText = Produto.IdProduto > 0 ? "Atualizar" : "Cadastrar";
 
@@ -94,7 +124,7 @@ namespace CorteCor.Pages
                 var existente = _produtoHandler.ObterPorIdESalao(Produto.IdProduto, idSalao);
                 if (existente == null)
                 {
-                    Mensagem = "Produto não encontrado para o salão atual.";
+                    Mensagem = "Produto não encontrado para a empresa atual.";
                     MensagemTipo = "danger";
                     return Page();
                 }
@@ -118,7 +148,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                return new JsonResult(new { success = false, message = "Salão não identificado." });
+                return new JsonResult(new { success = false, message = "Empresa não identificada." });
             }
 
             nome = (nome ?? string.Empty).Trim();
@@ -214,12 +244,12 @@ namespace CorteCor.Pages
             return true;
         }
 
-        private static decimal ParseDecimal(string valor)
+        private static decimal ParseMoney(string valor)
         {
-            return ParseNullableDecimal(valor) ?? 0m;
+            return ParseNullableMoney(valor) ?? 0m;
         }
 
-        private static decimal? ParseNullableDecimal(string valor)
+        private static decimal? ParseNullableMoney(string valor)
         {
             if (string.IsNullOrWhiteSpace(valor))
             {
@@ -230,6 +260,36 @@ namespace CorteCor.Pages
             return decimal.TryParse(normalizado, NumberStyles.Any, CultureInfo.InvariantCulture, out var result)
                 ? result
                 : null;
+        }
+
+        private static decimal? ParseNullableNumberInput(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            var normalizado = valor.Trim().Replace(" ", string.Empty);
+
+            if (decimal.TryParse(normalizado, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+            {
+                return result;
+            }
+
+            return decimal.TryParse(normalizado, NumberStyles.Any, new CultureInfo("pt-BR"), out result)
+                ? result
+                : null;
+        }
+
+        private static int? ParseNullableInt(string valor)
+        {
+            return int.TryParse(valor, out var result) ? result : null;
+        }
+
+        private static string? NormalizarTexto(string valor)
+        {
+            var texto = valor?.Trim();
+            return string.IsNullOrWhiteSpace(texto) ? null : texto;
         }
 
         private bool TryObterIdSalao(out int idSalao)

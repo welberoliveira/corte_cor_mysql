@@ -6,7 +6,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-        <a asp-page="/CRM/Index" class="btn btn-link ps-0">← Voltar para CRM</a>
+        <a asp-page="/CRM/Index" class="btn btn-link ps-0">Voltar para CRM</a>
         <h2 class="mb-1">@Model.Detalhe.Pessoa.Nome</h2>
         <div class="text-muted">
             @Model.Detalhe.Pessoa.Email
@@ -19,7 +19,11 @@
     <div class="d-flex gap-2 flex-wrap">
         <span class="badge bg-primary fs-6">@Model.Detalhe.Perfil.StatusRelacionamento</span>
         <span class="badge bg-dark fs-6">Temperatura: @Model.Detalhe.Perfil.Temperatura</span>
-        <a class="btn btn-outline-secondary" asp-page="/PessoaCadastro" asp-route-id="@Model.IdPessoa">Editar cadastro</a>
+        <a class="btn btn-primary" asp-page="/CRM/ClientePerfil" asp-route-idPessoa="@Model.IdPessoa">Perfil CRM</a>
+        <a class="btn btn-dark" asp-page="/CRM/ClienteOportunidades" asp-route-idPessoa="@Model.IdPessoa">Oportunidades</a>
+        <a class="btn btn-success" asp-page="/CRM/ClienteInteracoes" asp-route-idPessoa="@Model.IdPessoa">Intera&ccedil;&otilde;es</a>
+        <a class="btn btn-warning text-dark" asp-page="/CRM/ClienteFollowUp" asp-route-idPessoa="@Model.IdPessoa">Acompanhamentos</a>
+        <a class="btn btn-secondary" asp-page="/PessoaCadastro" asp-route-id="@Model.IdPessoa">Editar cadastro</a>
     </div>
 </div>
 
@@ -32,7 +36,7 @@
     <div class="col-md-3">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
-                <div class="text-muted small">Último contato</div>
+                <div class="text-muted small">&Uacute;ltimo contato</div>
                 <div class="fw-semibold">@(Model.Detalhe.Resumo.UltimoContatoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem contato")</div>
             </div>
         </div>
@@ -40,298 +44,160 @@
     <div class="col-md-3">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
-                <div class="text-muted small">Próxima ação</div>
-                <div class="fw-semibold">@(Model.Detalhe.Resumo.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Não definida")</div>
+                <div class="text-muted small">Pr&oacute;xima a&ccedil;&atilde;o</div>
+                <div class="fw-semibold">@(Model.Detalhe.Resumo.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "N&atilde;o definida")</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
-                <div class="text-muted small">Oportunidades abertas</div>
+                <div class="text-muted small">Oportunidades em aberto</div>
                 <div class="fw-semibold">@Model.Detalhe.Resumo.OportunidadesAbertas</div>
                 <div class="small text-muted">R$ @Model.Detalhe.Resumo.ValorOportunidadesAbertas.ToString("N2")</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
-                <div class="text-muted small">Último agendamento</div>
-                <div class="fw-semibold">@(Model.Detalhe.Resumo.UltimoAgendamentoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem histórico")</div>
+                <div class="text-muted small">Acompanhamentos em aberto</div>
+                <div class="fw-semibold">@Model.Detalhe.Resumo.TarefasAbertas</div>
+                <div class="small text-muted">Acompanhamentos pendentes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">&Uacute;ltimo agendamento</div>
+                <div class="fw-semibold">@(Model.Detalhe.Resumo.UltimoAgendamentoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem hist&oacute;rico")</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-lg-5">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white fw-semibold">Perfil CRM</div>
-            <div class="card-body">
-                <form method="post" asp-page-handler="SalvarPerfil" class="row g-3">
-                    <input type="hidden" asp-for="IdPessoa" />
-                    <input type="hidden" asp-for="PerfilInput.IdPerfil" />
-                    <input type="hidden" asp-for="PerfilInput.IdPessoa" />
-                    <div class="col-md-6">
-                        <label class="form-label">Status do relacionamento</label>
-                        <input class="form-control" asp-for="PerfilInput.StatusRelacionamento" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Origem do lead</label>
-                        <input class="form-control" asp-for="PerfilInput.OrigemLead" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Temperatura</label>
-                        <select class="form-select" asp-for="PerfilInput.Temperatura">
-                            <option>Frio</option>
-                            <option>Morno</option>
-                            <option>Quente</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Score</label>
-                        <input type="number" class="form-control" asp-for="PerfilInput.ScoreRelacionamento" min="0" max="100" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Próxima ação</label>
-                        <input type="datetime-local" class="form-control" asp-for="PerfilInput.ProximaAcaoEm" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label d-block">Preferências</label>
-                        <div class="form-check">
-                            <input class="form-check-input" asp-for="PerfilInput.PermiteEmail" />
-                            <label class="form-check-label" asp-for="PerfilInput.PermiteEmail">Permite e-mail</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" asp-for="PerfilInput.PermiteSms" />
-                            <label class="form-check-label" asp-for="PerfilInput.PermiteSms">Permite SMS</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" asp-for="PerfilInput.PermiteWhatsapp" />
-                            <label class="form-check-label" asp-for="PerfilInput.PermiteWhatsapp">Permite WhatsApp</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" asp-for="PerfilInput.NaoPerturbe" />
-                            <label class="form-check-label" asp-for="PerfilInput.NaoPerturbe">Não perturbe</label>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Observações internas</label>
-                        <textarea class="form-control" asp-for="PerfilInput.ObservacoesInternas" rows="4"></textarea>
-                    </div>
-                    <div class="col-12 text-end">
-                        <button class="btn btn-primary" type="submit">Salvar Perfil CRM</button>
-                    </div>
-                </form>
-            </div>
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="timeline-360-badge">Timeline 360</span>
+            <span class="small text-muted">@Model.TimelineFiltrada.Count item(ns) nesta p&aacute;gina</span>
         </div>
-
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white fw-semibold">Registrar interação</div>
-            <div class="card-body">
-                <form method="post" asp-page-handler="RegistrarInteracao" class="row g-3">
-                    <input type="hidden" asp-for="IdPessoa" />
-                    <div class="col-md-6">
-                        <label class="form-label">Canal</label>
-                        <select class="form-select" asp-for="InteracaoInput.Canal">
-                            <option>Email</option>
-                            <option>SMS</option>
-                            <option>WhatsApp</option>
-                            <option>Telefone</option>
-                            <option>Presencial</option>
-                            <option>Sistema</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Tipo</label>
-                        <input class="form-control" asp-for="InteracaoInput.Tipo" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Assunto</label>
-                        <input class="form-control" asp-for="InteracaoInput.Assunto" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Descrição</label>
-                        <textarea class="form-control" asp-for="InteracaoInput.Descricao" rows="4"></textarea>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Data da interação</label>
-                        <input type="datetime-local" class="form-control" asp-for="InteracaoInput.DataInteracao" />
-                    </div>
-                    <div class="col-12 text-end">
-                        <button class="btn btn-outline-primary" type="submit">Registrar interação</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white fw-semibold">Criar follow-up</div>
-            <div class="card-body">
-                <form method="post" asp-page-handler="SalvarTarefa" class="row g-3">
-                    <input type="hidden" asp-for="IdPessoa" />
-                    <div class="col-12">
-                        <label class="form-label">Título</label>
-                        <input class="form-control" asp-for="TarefaInput.Titulo" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Prioridade</label>
-                        <select class="form-select" asp-for="TarefaInput.Prioridade">
-                            <option>Baixa</option>
-                            <option>Media</option>
-                            <option>Alta</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Canal sugerido</label>
-                        <select class="form-select" asp-for="TarefaInput.CanalSugerido">
-                            <option value="">Indefinido</option>
-                            <option>Email</option>
-                            <option>SMS</option>
-                            <option>WhatsApp</option>
-                            <option>Telefone</option>
-                            <option>Presencial</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Vencimento</label>
-                        <input type="datetime-local" class="form-control" asp-for="TarefaInput.DataVencimento" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Descrição</label>
-                        <textarea class="form-control" asp-for="TarefaInput.Descricao" rows="3"></textarea>
-                    </div>
-                    <div class="col-12 text-end">
-                        <button class="btn btn-outline-dark" type="submit">Criar Tarefa</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <span class="small text-muted">@Model.TimelineTotalCount item(ns) filtrado(s)</span>
     </div>
+    <div class="card-body">
+        <form method="get" class="row g-3 mb-4">
+            <input type="hidden" asp-for="IdPessoa" />
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" asp-for="TipoFiltro">
+                    <option value="">Todos</option>
+                    @foreach (var tipo in Model.TiposTimelineDisponiveis)
+                    {
+                        <option value="@tipo">@tipo</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data inicial</label>
+                <input type="date" class="form-control" asp-for="DataInicio" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data final</label>
+                <input type="date" class="form-control" asp-for="DataFim" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Pesquisar no conte&uacute;do</label>
+                <input class="form-control" asp-for="PesquisaTimeline" placeholder="T&iacute;tulo ou descri&ccedil;&atilde;o" />
+            </div>
+            <div class="col-12 d-flex gap-2 justify-content-end flex-wrap">
+                <button type="submit" class="btn btn-primary">Filtrar timeline</button>
+                <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa">Limpar</a>
+            </div>
+        </form>
 
-    <div class="col-lg-7">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white fw-semibold">Oportunidades</div>
-            <div class="card-body">
-                <form method="post" asp-page-handler="SalvarOportunidade" class="row g-3 mb-4">
-                    <input type="hidden" asp-for="IdPessoa" />
-                    <div class="col-md-6">
-                        <label class="form-label">Título</label>
-                        <input class="form-control" asp-for="OportunidadeInput.Titulo" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Etapa</label>
-                        <select class="form-select" asp-for="OportunidadeInput.IdEtapa">
-                            @foreach (var etapa in Model.Etapas)
-                            {
-                                <option value="@etapa.IdEtapa">@etapa.Nome</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Valor estimado</label>
-                        <input type="number" class="form-control" asp-for="OportunidadeInput.ValorEstimado" step="0.01" min="0" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Probabilidade (%)</label>
-                        <input type="number" class="form-control" asp-for="OportunidadeInput.Probabilidade" min="0" max="100" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Previsão de fechamento</label>
-                        <input type="date" class="form-control" asp-for="OportunidadeInput.PrevisaoFechamento" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Descrição</label>
-                        <textarea class="form-control" asp-for="OportunidadeInput.Descricao" rows="3"></textarea>
-                    </div>
-                    <div class="col-12 text-end">
-                        <button class="btn btn-success" type="submit">Salvar Oportunidade</button>
-                    </div>
-                </form>
-
-                @if (Model.Detalhe.OportunidadesAbertas.Any())
+        @if (Model.TimelineFiltrada.Any())
+        {
+            <div class="crm-timeline">
+                @foreach (var item in Model.TimelineFiltrada)
                 {
-                    <div class="list-group list-group-flush">
-                        @foreach (var oportunidade in Model.Detalhe.OportunidadesAbertas)
-                        {
-                            <div class="list-group-item px-0">
-                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                                    <div>
-                                        <div class="fw-semibold">@oportunidade.Titulo</div>
-                                        <div class="small text-muted">@oportunidade.NomeEtapa • @oportunidade.Probabilidade% • R$ @oportunidade.ValorEstimado.ToString("N2")</div>
-                                    </div>
-                                    <a class="btn btn-sm btn-outline-dark" asp-page="/CRM/Oportunidades" asp-route-idPessoa="@Model.IdPessoa">Gerenciar</a>
-                                </div>
+                    <div class="crm-timeline-item">
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <div>
+                                <span class="badge @item.BadgeClass">@item.Categoria</span>
+                                <div class="fw-semibold mt-2">@item.Titulo</div>
+                                <div class="text-muted small">@item.Descricao</div>
                             </div>
-                        }
+                            <div class="small text-muted">@item.Data.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
                     </div>
-                }
-                else
-                {
-                    <div class="text-muted">Ainda não há oportunidades abertas para este cliente.</div>
                 }
             </div>
-        </div>
 
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white fw-semibold">Tarefas em aberto</div>
-            <div class="card-body">
-                @if (Model.Detalhe.TarefasAbertas.Any())
-                {
-                    <div class="list-group list-group-flush">
-                        @foreach (var tarefa in Model.Detalhe.TarefasAbertas)
-                        {
-                            <div class="list-group-item px-0">
-                                <div class="d-flex justify-content-between flex-wrap gap-2">
-                                    <div>
-                                        <div class="fw-semibold">@tarefa.Titulo</div>
-                                        <div class="small text-muted">Prioridade: @tarefa.Prioridade • Vence em @tarefa.DataVencimento.ToString("dd/MM/yyyy HH:mm")</div>
-                                    </div>
-                                    <a class="btn btn-sm btn-outline-primary" asp-page="/CRM/Tarefas" asp-route-idPessoa="@Model.IdPessoa">Abrir tarefas</a>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="text-muted">Nenhum follow-up pendente para este cliente.</div>
-                }
-            </div>
-        </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4">
+                <div class="small text-muted">
+                    P&aacute;gina @Model.PageIndex de @Model.TimelineTotalPages • @Model.TimelineTotalCount item(ns) filtrado(s)
+                </div>
+                <div class="d-flex gap-2">
+                    @if (Model.PodeVoltarPagina)
+                    {
+                        <a class="btn btn-secondary"
+                           asp-page="/CRM/Cliente"
+                           asp-route-idPessoa="@Model.IdPessoa"
+                           asp-route-tipoFiltro="@Model.TipoFiltro"
+                           asp-route-dataInicio="@(Model.DataInicio?.ToString("yyyy-MM-dd"))"
+                           asp-route-dataFim="@(Model.DataFim?.ToString("yyyy-MM-dd"))"
+                           asp-route-pesquisaTimeline="@Model.PesquisaTimeline"
+                           asp-route-pageIndex="@(Model.PageIndex - 1)">
+                            P&aacute;gina anterior
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-secondary" disabled>P&aacute;gina anterior</button>
+                    }
 
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white fw-semibold">Timeline 360</div>
-            <div class="card-body">
-                @if (Model.Detalhe.Timeline.Any())
-                {
-                    <div class="crm-timeline">
-                        @foreach (var item in Model.Detalhe.Timeline)
-                        {
-                            <div class="crm-timeline-item">
-                                <div class="d-flex justify-content-between flex-wrap gap-2">
-                                    <div>
-                                        <span class="badge @item.BadgeClass">@item.Categoria</span>
-                                        <div class="fw-semibold mt-2">@item.Titulo</div>
-                                        <div class="text-muted small">@item.Descricao</div>
-                                    </div>
-                                    <div class="small text-muted">@item.Data.ToString("dd/MM/yyyy HH:mm")</div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="text-muted">Nenhum histórico de CRM disponível para este cliente.</div>
-                }
+                    @if (Model.PodeAvancarPagina)
+                    {
+                        <a class="btn btn-primary"
+                           asp-page="/CRM/Cliente"
+                           asp-route-idPessoa="@Model.IdPessoa"
+                           asp-route-tipoFiltro="@Model.TipoFiltro"
+                           asp-route-dataInicio="@(Model.DataInicio?.ToString("yyyy-MM-dd"))"
+                           asp-route-dataFim="@(Model.DataFim?.ToString("yyyy-MM-dd"))"
+                           asp-route-pesquisaTimeline="@Model.PesquisaTimeline"
+                           asp-route-pageIndex="@(Model.PageIndex + 1)">
+                            Pr&oacute;xima p&aacute;gina
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" disabled>Pr&oacute;xima p&aacute;gina</button>
+                    }
+                </div>
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="text-muted">Nenhum item encontrado para os filtros informados.</div>
+        }
     </div>
 </div>
 
 <style>
+    .timeline-360-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: .55rem 1rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #084298);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+        box-shadow: 0 10px 24px rgba(13, 110, 253, .18);
+    }
+
     .crm-timeline {
         display: flex;
         flex-direction: column;

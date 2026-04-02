@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using Xunit;
 using Moq;
@@ -33,7 +33,7 @@ namespace CorteCor.Tests
                        .Returns(meios);
 
             // Act
-            // Replicating the logic from Agendamentos2.cshtml.cs
+            // Replicating the logic from Agendamentos.cshtml.cs
             var result = meios.FirstOrDefault(m => 
                 (m.Gateway != null && m.Gateway.Replace(" ", "").Equals("MercadoPago", StringComparison.OrdinalIgnoreCase)));
 
@@ -50,4 +50,5 @@ namespace CorteCor.Tests
         }
     }
 }
+
 

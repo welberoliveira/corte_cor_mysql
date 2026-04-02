@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -23,7 +23,7 @@ namespace CorteCor.Pages
             _configHandler = configHandler;
         }
 
-        // Resultado do diagnóstico
+        // Resultado do diagnÃ³stico
         public bool DiagnosticoRealizado { get; set; } = false;
         public bool CertificadoEncontrado { get; set; } = false;
         public bool CertificadoValido { get; set; } = false;
@@ -59,7 +59,7 @@ namespace CorteCor.Pages
                 var idSalaoStr = User.FindFirst("IdSalao")?.Value;
                 if (string.IsNullOrEmpty(idSalaoStr))
                 {
-                    ErroMensagem = "IdSalao não encontrado nos Claims do usuário logado.";
+                    ErroMensagem = "Id da empresa não encontrado nos dados do usuário logado.";
                     return Page();
                 }
 
@@ -68,7 +68,7 @@ namespace CorteCor.Pages
 
                 if (config == null)
                 {
-                    ErroMensagem = "Nenhuma configuração fiscal cadastrada para este salão. Acesse 'Configurações Fiscais' primeiro.";
+                    ErroMensagem = "Nenhuma configuração fiscal cadastrada para esta empresa. Acesse 'Configurações Fiscais' primeiro.";
                     return Page();
                 }
 
@@ -79,17 +79,17 @@ namespace CorteCor.Pages
 
                 if (config.CertificadoPfx == null || config.CertificadoPfx.Length == 0)
                 {
-                    ErroMensagem = "Nenhum arquivo de certificado digital (.pfx) foi enviado nas Configurações Fiscais.";
+                    ErroMensagem = "Nenhum arquivo de certificado digital (.pfx) foi enviado nas ConfiguraÃ§Ãµes Fiscais.";
                     return Page();
                 }
 
                 if (config.CertificadoSenha == null || config.CertificadoSenha.Length == 0)
                 {
-                    ErroMensagem = "A senha do certificado digital não foi configurada.";
+                    ErroMensagem = "A senha do certificado digital nÃ£o foi configurada.";
                     return Page();
                 }
 
-                // Tenta instanciar o certificado pelo mesmo pipeline da aplicação
+                // Tenta instanciar o certificado pelo mesmo pipeline da aplicaÃ§Ã£o
                 X509Certificate2 cert;
                 try
                 {
@@ -97,7 +97,7 @@ namespace CorteCor.Pages
                 }
                 catch (Exception exCert)
                 {
-                    ErroMensagem = $"Falha ao carregar o certificado: {exCert.Message}. Verifique se a senha está correta e o arquivo .pfx não está corrompido.";
+                    ErroMensagem = $"Falha ao carregar o certificado: {exCert.Message}. Verifique se a senha estÃ¡ correta e o arquivo .pfx nÃ£o estÃ¡ corrompido.";
                     return Page();
                 }
 
@@ -113,32 +113,32 @@ namespace CorteCor.Pages
 
                 if (DateTime.Now < cert.NotBefore)
                 {
-                    StatusCertificado = "⏳ AINDA NÃO VÁLIDO (data de início no futuro)";
+                    StatusCertificado = "â³ AINDA NÃƒO VÃLIDO (data de inÃ­cio no futuro)";
                     StatusCss = "warning";
                     CertificadoValido = false;
                 }
                 else if (DateTime.Now > cert.NotAfter)
                 {
-                    StatusCertificado = "❌ VENCIDO";
+                    StatusCertificado = "âŒ VENCIDO";
                     StatusCss = "danger";
                     CertificadoValido = false;
                 }
                 else if (DiasRestantes <= 30)
                 {
-                    StatusCertificado = $"⚠️ VÁLIDO, mas VENCE EM {DiasRestantes} DIAS";
+                    StatusCertificado = $"âš ï¸ VÃLIDO, mas VENCE EM {DiasRestantes} DIAS";
                     StatusCss = "warning";
                     CertificadoValido = true;
                 }
                 else
                 {
-                    StatusCertificado = $"✅ VÁLIDO ({DiasRestantes} dias restantes)";
+                    StatusCertificado = $"âœ… VÃLIDO ({DiasRestantes} dias restantes)";
                     StatusCss = "success";
                     CertificadoValido = true;
                 }
 
                 if (!cert.HasPrivateKey)
                 {
-                    StatusCertificado += " | ❌ SEM CHAVE PRIVADA (assinatura XML falhará)";
+                    StatusCertificado += " | âŒ SEM CHAVE PRIVADA (assinatura XML falharÃ¡)";
                     StatusCss = "danger";
                     CertificadoValido = false;
                 }
@@ -147,10 +147,12 @@ namespace CorteCor.Pages
             }
             catch (Exception ex)
             {
-                ErroMensagem = $"Erro inesperado durante o diagnóstico: {ex.Message}";
+                ErroMensagem = $"Erro inesperado durante o diagnÃ³stico: {ex.Message}";
             }
 
             return Page();
         }
     }
 }
+
+

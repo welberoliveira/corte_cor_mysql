@@ -1,0 +1,364 @@
+@page
+@model CorteCor.Pages.Pedidos.NovoModel
+@{
+    ViewData["Title"] = "Novo pedido";
+}
+
+@section Styles {
+    <style>
+        .pedido-card {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+        }
+
+        .pedido-hero {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%, #eef6ff 100%);
+            border-radius: 22px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pedido-note {
+            border-radius: 14px;
+            padding: 0.9rem 1rem;
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            color: #9a3412;
+            font-size: 0.95rem;
+        }
+
+        .pedido-summary {
+            background: #0f172a;
+            color: #fff;
+            border-radius: 16px;
+            padding: 1rem;
+        }
+
+        .pedido-summary small {
+            color: rgba(255,255,255,0.72);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+    </style>
+}
+
+<div class="pedido-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <a class="btn btn-link ps-0 mb-2" asp-page="/Pedidos/Index">Voltar para pedidos</a>
+            <h2 class="mb-1">Novo pedido</h2>
+            <div class="text-muted">Crie um pedido com produtos e serviços, defina validade e deixe tudo pronto para conversão em venda.</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-dark" asp-page="/Vendas/Index">Ir para Vendas</a>
+            <a class="btn btn-secondary" asp-page="/Estoque/Index">Controle de Estoque</a>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card pedido-card">
+    <div class="card-header bg-white fw-semibold">Cadastro do pedido</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Salvar" id="pedidoForm" class="row g-3">
+            <input type="hidden" id="payloadJson" name="payloadJson" />
+
+            <div class="col-md-8">
+                <label class="form-label">Cliente</label>
+                <select class="form-select" id="clienteSelect" required>
+                    <option value="">Selecione...</option>
+                    @foreach (var cliente in Model.Contexto.Clientes)
+                    {
+                        <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Validade</label>
+                <input class="form-control" type="date" id="validadeInput" name="validoAte" value="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")" required />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Meio de pagamento sugerido</label>
+                <select class="form-select" id="meioPagamentoSelect">
+                    <option value="">Livre</option>
+                    @foreach (var meio in Model.Contexto.MeiosPagamento)
+                    {
+                        <option value="@meio.IdMeioPagamento" data-nome="@meio.Nome">@meio.Nome</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Tipo do item</label>
+                <select class="form-select" id="tipoItemSelect">
+                    <option value="Produto">Produto</option>
+                    <option value="Servico">Serviço</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Item</label>
+                <select class="form-select" id="catalogoSelect"></select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Quantidade</label>
+                <input type="number" id="quantidadeInput" class="form-control" value="1" min="0.001" step="0.001" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Valor unitário</label>
+                <input type="number" id="valorUnitarioInput" class="form-control" value="0" min="0" step="0.01" />
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label">Observação</label>
+                <input type="text" id="observacoesInput" class="form-control" maxlength="500" placeholder="Observações para a proposta ou pedido" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Desconto</label>
+                <input type="number" id="descontoInput" class="form-control" value="0" min="0" step="0.01" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Acréscimo</label>
+                <input type="number" id="acrescimoInput" class="form-control" value="0" min="0" step="0.01" />
+            </div>
+
+            <div class="col-12">
+                <div class="pedido-note">
+                    Cada pedido fica vinculado ao cliente no CRM e pode ser convertido em venda. A conversão reaproveita as integrações com financeiro, estoque e, para serviços, emissão fiscal em homologação.
+                </div>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end">
+                <button type="button" class="btn btn-primary" id="addItemBtn">Adicionar item</button>
+            </div>
+
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle" id="carrinhoTable">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Descrição</th>
+                                <th class="text-end">Qtd.</th>
+                                <th class="text-end">Unitário</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Nenhum item adicionado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="pedido-summary d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <small>Resumo do pedido</small>
+                        <div class="fs-4 fw-semibold" id="totalPedidoLabel">R$ 0,00</div>
+                    </div>
+                    <div class="text-end">
+                        <div id="resumoPedidoItems">0 item(ns) no pedido</div>
+                        <div class="small text-white-50">Produtos e serviços podem coexistir no mesmo pedido.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-primary" id="salvarPedidoBtn">Salvar pedido</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const produtos = @Html.Raw(Model.ProdutosJson);
+        const servicos = @Html.Raw(Model.ServicosJson);
+        let carrinho = [];
+
+        const clienteSelect = document.getElementById('clienteSelect');
+        const tipoItemSelect = document.getElementById('tipoItemSelect');
+        const catalogoSelect = document.getElementById('catalogoSelect');
+        const quantidadeInput = document.getElementById('quantidadeInput');
+        const valorUnitarioInput = document.getElementById('valorUnitarioInput');
+        const observacoesInput = document.getElementById('observacoesInput');
+        const descontoInput = document.getElementById('descontoInput');
+        const acrescimoInput = document.getElementById('acrescimoInput');
+        const meioPagamentoSelect = document.getElementById('meioPagamentoSelect');
+        const payloadJsonInput = document.getElementById('payloadJson');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const carrinhoTableBody = document.querySelector('#carrinhoTable tbody');
+        const totalPedidoLabel = document.getElementById('totalPedidoLabel');
+        const resumoPedidoItems = document.getElementById('resumoPedidoItems');
+        const pedidoForm = document.getElementById('pedidoForm');
+
+        function moeda(valor) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+        }
+
+        function getCatalogoAtual() {
+            return tipoItemSelect.value === 'Servico' ? servicos : produtos;
+        }
+
+        function preencherCatalogo() {
+            const catalogo = getCatalogoAtual();
+            catalogoSelect.innerHTML = '';
+
+            if (!catalogo.length) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Nenhum item disponivel';
+                catalogoSelect.appendChild(option);
+                valorUnitarioInput.value = '0';
+                return;
+            }
+
+            for (const item of catalogo) {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.tipo === 'Produto'
+                    ? `${item.nome} | ${moeda(item.valor)} | estoque: ${Number(item.estoqueAtual || 0).toFixed(3)}`
+                    : `${item.nome} | ${moeda(item.valor)}`;
+                catalogoSelect.appendChild(option);
+            }
+
+            atualizarValorDoCatalogo();
+        }
+
+        function atualizarValorDoCatalogo() {
+            const catalogo = getCatalogoAtual();
+            const selected = catalogo.find(item => String(item.id) === String(catalogoSelect.value)) || catalogo[0];
+            valorUnitarioInput.value = selected ? Number(selected.valor || 0).toFixed(2) : '0';
+        }
+
+        function calcularResumo() {
+            const subtotal = carrinho.reduce((acc, item) => acc + item.valorTotal, 0);
+            const desconto = Number(descontoInput.value || 0);
+            const acrescimo = Number(acrescimoInput.value || 0);
+            const total = subtotal - desconto + acrescimo;
+            totalPedidoLabel.textContent = moeda(total);
+            resumoPedidoItems.textContent = `${carrinho.length} item(ns) no pedido`;
+        }
+
+        function renderCarrinho() {
+            if (!carrinho.length) {
+                carrinhoTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Nenhum item adicionado.</td></tr>';
+                calcularResumo();
+                return;
+            }
+
+            carrinhoTableBody.innerHTML = '';
+            carrinho.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.tipoItem === 'Servico' ? 'Serviço' : 'Produto'}</td>
+                    <td>
+                        <div class="fw-semibold">${item.descricao}</div>
+                        <div class="small text-muted">${item.tipoItem === 'Produto' ? 'Item de estoque' : 'Item de serviço'}</div>
+                    </td>
+                    <td class="text-end">${Number(item.quantidade).toFixed(3)}</td>
+                    <td class="text-end">${moeda(item.valorUnitario)}</td>
+                    <td class="text-end">${moeda(item.valorTotal)}</td>
+                    <td class="text-end"><button type="button" class="btn btn-sm btn-danger" data-index="${index}">Remover</button></td>
+                `;
+                carrinhoTableBody.appendChild(tr);
+            });
+
+            carrinhoTableBody.querySelectorAll('button[data-index]').forEach(button => {
+                button.addEventListener('click', () => {
+                    carrinho.splice(Number(button.dataset.index), 1);
+                    renderCarrinho();
+                });
+            });
+
+            calcularResumo();
+        }
+
+        addItemBtn.addEventListener('click', () => {
+            const catalogo = getCatalogoAtual();
+            const selected = catalogo.find(item => String(item.id) === String(catalogoSelect.value));
+            if (!selected) {
+                alert('Selecione um item válido.');
+                return;
+            }
+
+            const quantidade = Number(quantidadeInput.value || 0);
+            const valorUnitario = Number(valorUnitarioInput.value || 0);
+
+            if (quantidade <= 0) {
+                alert('Informe uma quantidade maior que zero.');
+                return;
+            }
+
+            if (valorUnitario < 0) {
+                alert('Informe um valor unitário válido.');
+                return;
+            }
+
+            carrinho.push({
+                tipoItem: tipoItemSelect.value,
+                idProduto: tipoItemSelect.value === 'Produto' ? selected.id : null,
+                idServico: tipoItemSelect.value === 'Servico' ? selected.id : null,
+                descricao: selected.nome,
+                quantidade,
+                valorUnitario,
+                valorTotal: Number((quantidade * valorUnitario).toFixed(2))
+            });
+
+            renderCarrinho();
+        });
+
+        pedidoForm.addEventListener('submit', (event) => {
+            if (!clienteSelect.value) {
+                event.preventDefault();
+                alert('Selecione um cliente para registrar o pedido.');
+                return;
+            }
+
+            if (!carrinho.length) {
+                event.preventDefault();
+                alert('Adicione ao menos um item ao pedido.');
+                return;
+            }
+
+            payloadJsonInput.value = JSON.stringify({
+                idPessoa: clienteSelect.value ? Number(clienteSelect.value) : null,
+                idMeioPagamento: meioPagamentoSelect.value ? Number(meioPagamentoSelect.value) : null,
+                tipoPagamento: meioPagamentoSelect.selectedOptions[0]?.dataset?.nome || null,
+                desconto: Number(descontoInput.value || 0),
+                acrescimo: Number(acrescimoInput.value || 0),
+                observacoes: observacoesInput.value || null,
+                itens: carrinho.map(item => ({
+                    tipoItem: item.tipoItem,
+                    idProduto: item.idProduto,
+                    idServico: item.idServico,
+                    quantidade: item.quantidade,
+                    valorUnitario: item.valorUnitario
+                }))
+            });
+        });
+
+        tipoItemSelect.addEventListener('change', preencherCatalogo);
+        catalogoSelect.addEventListener('change', atualizarValorDoCatalogo);
+        descontoInput.addEventListener('input', calcularResumo);
+        acrescimoInput.addEventListener('input', calcularResumo);
+
+        preencherCatalogo();
+        renderCarrinho();
+    </script>
+}

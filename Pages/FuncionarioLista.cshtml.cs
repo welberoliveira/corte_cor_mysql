@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +31,7 @@ namespace CorteCor.Pages
             if (!TryObterIdSalao(out var idSalao))
             {
                 Funcionarios = new PagedResult<Funcionario> { PageIndex = 1, PageSize = 10 };
-            Mensagem = "Não foi possível identificar o salão atual.";
+            Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -48,7 +48,7 @@ namespace CorteCor.Pages
 
             if (!TryObterIdSalao(out var idSalao))
             {
-            Mensagem = "Não foi possível identificar o salão atual.";
+            Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 OnGet();
                 return Page();
@@ -64,7 +64,7 @@ namespace CorteCor.Pages
                 }
                 catch (Exception)
                 {
-            Mensagem = "Não foi possível excluir este funcionário porque ele está associado a outros registros.";
+            Mensagem = "NÃ£o foi possÃ­vel excluir este funcionÃ¡rio porque ele estÃ¡ associado a outros registros.";
                     MensagemTipo = "warning";
                 }
             }
@@ -81,3 +81,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

@@ -1,0 +1,109 @@
+@page
+@model CorteCor.Pages.CRM.ClienteOportunidadesModel
+@{
+    ViewData["Title"] = "Oportunidades do Cliente";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa" class="btn btn-link ps-0">Voltar para o CRM do cliente</a>
+        <h2 class="mb-1">Oportunidades de @Model.Detalhe.Pessoa.Nome</h2>
+        <div class="text-muted">Cadastre ou atualize oportunidades deste cliente.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <span class="badge bg-primary fs-6">@Model.Detalhe.Perfil.StatusRelacionamento</span>
+        <span class="badge bg-dark fs-6">Em aberto: @Model.Detalhe.Resumo.OportunidadesAbertas</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">@(Model.OportunidadeInput.IdOportunidade > 0 ? "Atualizar oportunidade" : "Nova oportunidade")</div>
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    <input type="hidden" asp-for="IdPessoa" />
+                    <input type="hidden" asp-for="OportunidadeInput.IdOportunidade" />
+                    <div class="col-12">
+                        <label class="form-label">Cliente</label>
+                        <input class="form-control" value="@Model.Detalhe.Pessoa.Nome" disabled />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">T&iacute;tulo</label>
+                        <input class="form-control" asp-for="OportunidadeInput.Titulo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Etapa</label>
+                        <select class="form-select" asp-for="OportunidadeInput.IdEtapa">
+                            @foreach (var etapa in Model.Etapas)
+                            {
+                                <option value="@etapa.IdEtapa">@etapa.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" asp-for="OportunidadeInput.Status">
+                            <option value="@CorteCor.Models.CrmStatusOportunidade.Aberta">Aberta</option>
+                            <option value="@CorteCor.Models.CrmStatusOportunidade.Ganha">Ganha</option>
+                            <option value="@CorteCor.Models.CrmStatusOportunidade.Perdida">Perdida</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Valor estimado</label>
+                        <input type="number" class="form-control" asp-for="OportunidadeInput.ValorEstimado" step="0.01" min="0" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Previs&atilde;o</label>
+                        <input type="date" class="form-control" asp-for="OportunidadeInput.PrevisaoFechamento" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descri&ccedil;&atilde;o</label>
+                        <textarea class="form-control" asp-for="OportunidadeInput.Descricao" rows="4"></textarea>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa">Cancelar</a>
+                        <button class="btn btn-primary" type="submit">Salvar oportunidade</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>Oportunidades do cliente</span>
+            </div>
+            <div class="card-body">
+                @if (Model.Oportunidades.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var oportunidade in Model.Oportunidades)
+                        {
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                    <div>
+                                        <div class="fw-semibold">@oportunidade.Titulo</div>
+                                        <div class="small text-muted">@oportunidade.NomeEtapa • @oportunidade.Status</div>
+                                        <div class="small text-muted">R$ @oportunidade.ValorEstimado.ToString("N2")</div>
+                                    </div>
+                                    <a class="btn btn-sm btn-dark"
+                                       asp-page="/CRM/ClienteOportunidades"
+                                       asp-route-idPessoa="@Model.IdPessoa"
+                                       asp-route-idOportunidadeEdicao="@oportunidade.IdOportunidade">
+                                        Editar
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Este cliente ainda n&atilde;o possui oportunidades cadastradas.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

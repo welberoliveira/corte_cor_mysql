@@ -62,6 +62,11 @@ public class VendaService
         };
     }
 
+    public static bool PermiteAlteracao(string? status) =>
+        !string.Equals(status, VendaProdutoStatus.Finalizada, StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(status, VendaProdutoStatus.Ajustada, StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(status, VendaProdutoStatus.Cancelada, StringComparison.OrdinalIgnoreCase);
+
     public async Task<VendaOperacaoResult> FinalizarVendaAsync(
         int idSalao,
         VendaCheckoutInput input,
@@ -321,6 +326,168 @@ public class VendaService
             Mensagem = fiscal.Mensagem,
             MensagemTipo = fiscal.NotaFiscal?.Status == NotaFiscalStatus.Autorizada ? "success" : "warning",
             NotasFiscaisGeradas = fiscal.IdNotaFiscal.HasValue ? new List<Guid> { fiscal.IdNotaFiscal.Value } : new List<Guid>()
+        };
+    }
+
+    public async Task<VendaOperacaoResult> AtualizarVendaEmAbertoAsync(
+        int idSalao,
+        int idVendaProduto,
+        VendaCheckoutInput input,
+        string? usuario)
+    {
+        var vendaAtual = await _vendaEstoqueHandler.ObterVendaAsync(idSalao, idVendaProduto)
+            ?? throw new InvalidOperationException("Venda não encontrada.");
+
+        if (!PermiteAlteracao(vendaAtual.Status))
+        {
+            throw new InvalidOperationException("Somente vendas não finalizadas podem ser alteradas.");
+        }
+
+        var titulos = await _financeiroService.ListarTitulosPorVendaAsync(idSalao, idVendaProduto);
+        if (titulos.Any())
+        {
+            throw new InvalidOperationException("A venda já possui títulos financeiros e não pode mais ser alterada.");
+        }
+
+        var notas = await _notaFiscalHandler.ListarPorVendaAsync(idSalao, idVendaProduto);
+        if (notas.Any())
+        {
+            throw new InvalidOperationException("A venda já possui nota fiscal vinculada e não pode mais ser alterada.");
+        }
+
+        if (input.Itens == null || input.Itens.Count == 0)
+        {
+            throw new InvalidOperationException("Adicione ao menos um produto ou serviço à venda.");
+        }
+
+        var itensNormalizados = new List<VendaProdutoItem>();
+        decimal subtotalProdutos = 0m;
+        decimal subtotalServicos = 0m;
+
+        foreach (var item in input.Itens)
+        {
+            if (item.Quantidade <= 0)
+            {
+                throw new InvalidOperationException("Todos os itens da venda precisam ter quantidade maior que zero.");
+            }
+
+            if (string.Equals(item.TipoItem, VendaProdutoTipoItem.Produto, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!item.IdProduto.HasValue || item.IdProduto <= 0)
+                {
+                    throw new InvalidOperationException("Selecione um produto válido para cada item de produto.");
+                }
+
+                var produto = _produtoHandler.ObterPorIdESalao(item.IdProduto.Value, idSalao)
+                    ?? throw new InvalidOperationException("Produto da venda não encontrado para este salão.");
+                var valorUnitario = item.ValorUnitario.GetValueOrDefault(produto.PrecoVenda);
+                if (valorUnitario < 0)
+                {
+                    throw new InvalidOperationException($"O produto '{produto.Nome}' possui valor inválido.");
+                }
+
+                if (produto.ControlarEstoque && (produto.EstoqueAtual ?? 0m) < item.Quantidade)
+                {
+                    throw new InvalidOperationException($"Estoque insuficiente para o produto '{produto.Nome}'. Disponível: {(produto.EstoqueAtual ?? 0m):N2}.");
+                }
+
+                var valorTotal = decimal.Round(item.Quantidade * valorUnitario, 2);
+                subtotalProdutos += valorTotal;
+
+                itensNormalizados.Add(new VendaProdutoItem
+                {
+                    TipoItem = VendaProdutoTipoItem.Produto,
+                    IdProduto = produto.IdProduto,
+                    Descricao = produto.Nome,
+                    Quantidade = item.Quantidade,
+                    ValorUnitario = valorUnitario,
+                    ValorTotal = valorTotal,
+                    Unidade = string.IsNullOrWhiteSpace(produto.UnidadeComercial) ? "UN" : produto.UnidadeComercial!,
+                    ControlaEstoque = produto.ControlarEstoque,
+                    Ncm = produto.NCM,
+                    Cfop = "5102"
+                });
+            }
+            else
+            {
+                if (!item.IdServico.HasValue || item.IdServico <= 0)
+                {
+                    throw new InvalidOperationException("Selecione um serviço válido para cada item de serviço.");
+                }
+
+                var servico = _servicoHandler.ObterPorId(item.IdServico.Value);
+                if (servico == null || servico.IdSalao != idSalao)
+                {
+                    throw new InvalidOperationException("Serviço da venda não encontrado para este salão.");
+                }
+
+                var valorUnitario = item.ValorUnitario.GetValueOrDefault(servico.Preco);
+                if (valorUnitario < 0)
+                {
+                    throw new InvalidOperationException($"O serviço '{servico.Nome}' possui valor inválido.");
+                }
+
+                var valorTotal = decimal.Round(item.Quantidade * valorUnitario, 2);
+                subtotalServicos += valorTotal;
+
+                itensNormalizados.Add(new VendaProdutoItem
+                {
+                    TipoItem = VendaProdutoTipoItem.Servico,
+                    IdServico = servico.IdServico,
+                    Descricao = servico.Nome,
+                    Quantidade = item.Quantidade,
+                    ValorUnitario = valorUnitario,
+                    ValorTotal = valorTotal,
+                    Unidade = "UN",
+                    ControlaEstoque = false,
+                    CodigoTributacaoMunicipio = PrimeiroCodigoServico(servico),
+                    AliquotaIss = servico.AliquotaISS > 0 ? servico.AliquotaISS : 5m,
+                    Ncm = servico.CodNBS,
+                    Cfop = "5933"
+                });
+            }
+        }
+
+        var desconto = input.Desconto < 0 ? 0m : input.Desconto;
+        var acrescimo = input.Acrescimo < 0 ? 0m : input.Acrescimo;
+        var valorTotalVenda = decimal.Round(subtotalProdutos + subtotalServicos - desconto + acrescimo, 2);
+        if (valorTotalVenda <= 0)
+        {
+            throw new InvalidOperationException("O valor total da venda precisa ser maior que zero.");
+        }
+
+        var meioPagamento = input.IdMeioPagamento.HasValue && input.IdMeioPagamento > 0
+            ? _meioPagamentoHandler.ObterPorId(input.IdMeioPagamento.Value)
+            : null;
+        if (meioPagamento != null && meioPagamento.IdSalao != idSalao)
+        {
+            throw new InvalidOperationException("Meio de pagamento inválido para este salão.");
+        }
+
+        vendaAtual.IdPessoa = input.IdPessoa;
+        vendaAtual.IdMeioPagamento = meioPagamento?.IdMeioPagamento;
+        vendaAtual.TipoPagamento = !string.IsNullOrWhiteSpace(input.TipoPagamento)
+            ? input.TipoPagamento.Trim()
+            : meioPagamento?.Nome;
+        vendaAtual.RecebidoNaHora = input.RecebidoNaHora;
+        vendaAtual.SolicitarEmissaoFiscalServico = input.EmitirNotaFiscalServico;
+        vendaAtual.SubtotalProdutos = decimal.Round(subtotalProdutos, 2);
+        vendaAtual.SubtotalServicos = decimal.Round(subtotalServicos, 2);
+        vendaAtual.Desconto = desconto;
+        vendaAtual.Acrescimo = acrescimo;
+        vendaAtual.ValorTotal = valorTotalVenda;
+        vendaAtual.Observacoes = input.Observacoes?.Trim();
+        vendaAtual.UsuarioOperador = usuario;
+        vendaAtual.DataAtualizacao = DateTime.Now;
+
+        await _vendaEstoqueHandler.AtualizarVendaAsync(vendaAtual, itensNormalizados);
+
+        return new VendaOperacaoResult
+        {
+            Success = true,
+            IdVendaProduto = idVendaProduto,
+            Mensagem = "Venda atualizada com sucesso.",
+            MensagemTipo = "success"
         };
     }
 

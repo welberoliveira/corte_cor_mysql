@@ -80,6 +80,7 @@ builder.Services.AddScoped<PagamentoHandler>();
 builder.Services.AddScoped<FinanceiroHandler>();
 builder.Services.AddScoped<IFinanceiroModuloHandler, FinanceiroModuloHandler>();
 builder.Services.AddScoped<FinanceiroService>();
+builder.Services.AddScoped<RelatorioCentralService>();
 builder.Services.AddScoped<IntegracaoHandler>();
 builder.Services.AddScoped<MercadoPagoService>();
 builder.Services.AddScoped<ModeloEmailHandler>();

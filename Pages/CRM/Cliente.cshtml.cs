@@ -9,6 +9,7 @@ namespace CorteCor.Pages.CRM
     [Authorize(Policy = "UsuarioPolicy")]
     public class ClienteModel : PageModel
     {
+        private const int TimelinePageSize = 12;
         private readonly CrmService _crmService;
 
         public ClienteModel(CrmService crmService)
@@ -19,20 +20,26 @@ namespace CorteCor.Pages.CRM
         [BindProperty(SupportsGet = true)]
         public int IdPessoa { get; set; }
 
-        [BindProperty]
-        public CrmPessoaPerfil PerfilInput { get; set; } = new();
+        [BindProperty(SupportsGet = true)]
+        public string? TipoFiltro { get; set; }
 
-        [BindProperty]
-        public CrmInteracao InteracaoInput { get; set; } = new();
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataInicio { get; set; }
 
-        [BindProperty]
-        public CrmTarefa TarefaInput { get; set; } = new() { Prioridade = "Media", Status = CrmStatusTarefa.Aberta };
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataFim { get; set; }
 
-        [BindProperty]
-        public CrmOportunidade OportunidadeInput { get; set; } = new() { Status = CrmStatusOportunidade.Aberta, Probabilidade = 50 };
+        [BindProperty(SupportsGet = true)]
+        public string? PesquisaTimeline { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int PageIndex { get; set; } = 1;
 
         public CrmClienteDetalhe Detalhe { get; private set; } = new();
-        public List<CrmEtapaFunil> Etapas { get; private set; } = new();
+        public List<CrmTimelineItem> TimelineFiltrada { get; private set; } = new();
+        public List<string> TiposTimelineDisponiveis { get; private set; } = new();
+        public int TimelineTotalCount { get; private set; }
+        public int TimelineTotalPages { get; private set; }
 
         [TempData]
         public string? FlashMessage { get; set; }
@@ -41,109 +48,6 @@ namespace CorteCor.Pages.CRM
         public string? FlashType { get; set; }
 
         public IActionResult OnGet()
-        {
-            return CarregarPagina();
-        }
-
-        public IActionResult OnPostSalvarPerfil()
-        {
-            try
-            {
-                if (!TryObterIdSalao(out var idSalao))
-                {
-                    return RedirectToPage("/Index");
-                }
-
-                PerfilInput.IdPessoa = IdPessoa;
-                _crmService.SalvarPerfil(idSalao, PerfilInput);
-                FlashMessage = "Perfil CRM atualizado com sucesso.";
-                FlashType = "success";
-                return RedirectToPage(new { IdPessoa });
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-                return RedirectToPage(new { IdPessoa });
-            }
-        }
-
-        public IActionResult OnPostRegistrarInteracao()
-        {
-            try
-            {
-                if (!TryObterIdSalao(out var idSalao))
-                {
-                    return RedirectToPage("/Index");
-                }
-
-                InteracaoInput.IdPessoa = IdPessoa;
-                InteracaoInput.IdUsuario = ObterIdUsuario();
-                _crmService.RegistrarInteracao(idSalao, InteracaoInput);
-                FlashMessage = "Interação registrada com sucesso.";
-                FlashType = "success";
-                return RedirectToPage(new { IdPessoa });
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-                return RedirectToPage(new { IdPessoa });
-            }
-        }
-
-        public IActionResult OnPostSalvarTarefa()
-        {
-            try
-            {
-                if (!TryObterIdSalao(out var idSalao))
-                {
-                    return RedirectToPage("/Index");
-                }
-
-                TarefaInput.IdPessoa = IdPessoa;
-                if (!TarefaInput.IdUsuarioResponsavel.HasValue || TarefaInput.IdUsuarioResponsavel <= 0)
-                {
-                    TarefaInput.IdUsuarioResponsavel = ObterIdUsuario();
-                }
-
-                _crmService.SalvarTarefa(idSalao, TarefaInput);
-                FlashMessage = "Tarefa CRM criada com sucesso.";
-                FlashType = "success";
-                return RedirectToPage(new { IdPessoa });
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-                return RedirectToPage(new { IdPessoa });
-            }
-        }
-
-        public IActionResult OnPostSalvarOportunidade()
-        {
-            try
-            {
-                if (!TryObterIdSalao(out var idSalao))
-                {
-                    return RedirectToPage("/Index");
-                }
-
-                OportunidadeInput.IdPessoa = IdPessoa;
-                _crmService.SalvarOportunidade(idSalao, OportunidadeInput);
-                FlashMessage = "Oportunidade salva com sucesso.";
-                FlashType = "success";
-                return RedirectToPage(new { IdPessoa });
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-                return RedirectToPage(new { IdPessoa });
-            }
-        }
-
-        private IActionResult CarregarPagina()
         {
             if (!TryObterIdSalao(out var idSalao))
             {
@@ -155,54 +59,67 @@ namespace CorteCor.Pages.CRM
                 return RedirectToPage("/CRM/Index");
             }
 
+            PageIndex = PageIndex <= 0 ? 1 : PageIndex;
+
             Detalhe = _crmService.ObterClienteDetalhe(idSalao, IdPessoa);
-            Etapas = _crmService.ListarEtapas(idSalao);
+            TiposTimelineDisponiveis = Detalhe.Timeline
+                .Select(item => item.Categoria)
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(item => item)
+                .ToList();
 
-            PerfilInput = new CrmPessoaPerfil
-            {
-                IdPerfil = Detalhe.Perfil.IdPerfil,
-                IdPessoa = Detalhe.Perfil.IdPessoa,
-                IdSalao = Detalhe.Perfil.IdSalao,
-                StatusRelacionamento = Detalhe.Perfil.StatusRelacionamento,
-                OrigemLead = Detalhe.Perfil.OrigemLead,
-                Temperatura = Detalhe.Perfil.Temperatura,
-                ScoreRelacionamento = Detalhe.Perfil.ScoreRelacionamento,
-                PermiteEmail = Detalhe.Perfil.PermiteEmail,
-                PermiteSms = Detalhe.Perfil.PermiteSms,
-                PermiteWhatsapp = Detalhe.Perfil.PermiteWhatsapp,
-                NaoPerturbe = Detalhe.Perfil.NaoPerturbe,
-                ProximaAcaoEm = Detalhe.Perfil.ProximaAcaoEm,
-                ObservacoesInternas = Detalhe.Perfil.ObservacoesInternas
-            };
+            var timelineQuery = Detalhe.Timeline.AsEnumerable();
 
-            InteracaoInput = new CrmInteracao { Canal = CrmCanal.Telefone, Tipo = "Manual" };
-            TarefaInput = new CrmTarefa
+            if (!string.IsNullOrWhiteSpace(TipoFiltro))
             {
-                Prioridade = "Media",
-                Status = CrmStatusTarefa.Aberta,
-                DataVencimento = DateTime.Now.AddDays(1)
-            };
-            OportunidadeInput = new CrmOportunidade
+                timelineQuery = timelineQuery.Where(item => string.Equals(item.Categoria, TipoFiltro, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (DataInicio.HasValue)
             {
-                Status = CrmStatusOportunidade.Aberta,
-                Probabilidade = 50,
-                IdEtapa = Etapas.FirstOrDefault()?.IdEtapa ?? 0,
-                PrevisaoFechamento = DateTime.Today.AddDays(30)
-            };
+                var inicio = DataInicio.Value.Date;
+                timelineQuery = timelineQuery.Where(item => item.Data >= inicio);
+            }
+
+            if (DataFim.HasValue)
+            {
+                var fim = DataFim.Value.Date.AddDays(1).AddTicks(-1);
+                timelineQuery = timelineQuery.Where(item => item.Data <= fim);
+            }
+
+            if (!string.IsNullOrWhiteSpace(PesquisaTimeline))
+            {
+                var pesquisa = PesquisaTimeline.Trim();
+                timelineQuery = timelineQuery.Where(item =>
+                    item.Titulo.Contains(pesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    item.Descricao.Contains(pesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    item.Categoria.Contains(pesquisa, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var timelineLista = timelineQuery.ToList();
+            TimelineTotalCount = timelineLista.Count;
+            TimelineTotalPages = Math.Max(1, (int)Math.Ceiling(TimelineTotalCount / (double)TimelinePageSize));
+
+            if (PageIndex > TimelineTotalPages)
+            {
+                PageIndex = TimelineTotalPages;
+            }
+
+            TimelineFiltrada = timelineLista
+                .Skip((PageIndex - 1) * TimelinePageSize)
+                .Take(TimelinePageSize)
+                .ToList();
 
             return Page();
         }
 
+        public bool PodeVoltarPagina => PageIndex > 1;
+        public bool PodeAvancarPagina => PageIndex < TimelineTotalPages;
+
         private bool TryObterIdSalao(out int idSalao)
         {
             return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
-        }
-
-        private int? ObterIdUsuario()
-        {
-            return int.TryParse(User.FindFirst("IdUsuario")?.Value, out var idUsuario) && idUsuario > 0
-                ? idUsuario
-                : null;
         }
     }
 }

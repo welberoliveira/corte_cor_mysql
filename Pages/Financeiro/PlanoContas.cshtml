@@ -9,7 +9,7 @@
         <h2 class="mb-1">Plano de Contas</h2>
         <div class="text-muted">Classifique receitas e despesas para DRE e relatórios.</div>
     </div>
-    <a class="btn btn-outline-primary" asp-page="/Financeiro/Index">Voltar ao financeiro</a>
+    <a class="btn btn-primary" asp-page="/Financeiro/Index">Voltar ao financeiro</a>
 </div>
 
 @if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
@@ -76,7 +76,7 @@
                                     <td>@(plano.Tipo == "R" ? "Receita" : "Despesa")</td>
                                     <td><span class="badge @(plano.Ativo ? "bg-success" : "bg-secondary")">@(plano.Ativo ? "Ativo" : "Inativo")</span></td>
                                     <td class="text-end">
-                                        <a class="btn btn-sm btn-outline-primary" asp-page="/Financeiro/PlanoContas" asp-route-id="@plano.IdPlano">Editar</a>
+                                        <a class="btn btn-sm btn-primary" asp-page="/Financeiro/PlanoContas" asp-route-id="@plano.IdPlano">Editar</a>
                                     </td>
                                 </tr>
                             }

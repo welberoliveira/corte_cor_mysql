@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using CorteCor.Models;
 using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -39,7 +39,7 @@ namespace CorteCor.Pages.Fiscal
             public string? CertificadoSenha { get; set; }
 
             [Display(Name = "Ambiente")]
-[Range(1, 2, ErrorMessage = "Selecione um ambiente fiscal válido.")]
+[Range(1, 2, ErrorMessage = "Selecione um ambiente fiscal vÃ¡lido.")]
             public int Ambiente { get; set; } = 2;
 
             [Required]
@@ -100,7 +100,7 @@ namespace CorteCor.Pages.Fiscal
             public string? DestinatarioUF { get; set; }
             public int DestinatarioCodMun { get; set; }
 
-[EmailAddress(ErrorMessage = "Informe um e-mail válido para o destinatário.")]
+[EmailAddress(ErrorMessage = "Informe um e-mail vÃ¡lido para o destinatÃ¡rio.")]
             public string? DestinatarioEmail { get; set; }
 
             public List<NotaFiscalAvulsaItem> Itens { get; set; } = new();
@@ -111,7 +111,7 @@ namespace CorteCor.Pages.Fiscal
                 if (DataEmissao > DateTime.Now.AddMinutes(5))
                 {
                     yield return new ValidationResult(
-                    "A data de emissão não pode estar muito à frente do horário atual.",
+                    "A data de emissÃ£o nÃ£o pode estar muito Ã  frente do horÃ¡rio atual.",
                         new[] { nameof(DataEmissao) });
                 }
 
@@ -198,14 +198,14 @@ namespace CorteCor.Pages.Fiscal
                 if (vUnCom < 0)
                 {
                     yield return new ValidationResult(
-                    "O valor unitário do item não pode ser negativo.",
+                    "O valor unitÃ¡rio do item nÃ£o pode ser negativo.",
                         new[] { $"{nameof(NotaFiscalAvulsaModel.InputModel.Itens)}[{index}].{nameof(vUnCom)}" });
                 }
 
                 if (AliquotaISS < 0)
                 {
                     yield return new ValidationResult(
-                    "A alíquota de ISS não pode ser negativa.",
+                    "A alÃ­quota de ISS nÃ£o pode ser negativa.",
                         new[] { $"{nameof(NotaFiscalAvulsaModel.InputModel.Itens)}[{index}].{nameof(AliquotaISS)}" });
                 }
             }
@@ -413,7 +413,7 @@ namespace CorteCor.Pages.Fiscal
             }
             catch (Exception ex)
             {
-            RegistrarErroOperacao("enviar carta de correção", ex);
+            RegistrarErroOperacao("enviar carta de correÃ§Ã£o", ex);
             }
 
             return Page();
@@ -624,7 +624,7 @@ namespace CorteCor.Pages.Fiscal
                 return idSalao;
             }
 
-        throw new InvalidOperationException("Não foi possível identificar o salão atual para operar o módulo fiscal.");
+        throw new InvalidOperationException("Não foi possível identificar a empresa atual para operar o módulo fiscal.");
         }
 
         private async Task RecarregarHistoricoAsync(int idSalao, string? chaveAcesso)
@@ -646,3 +646,4 @@ namespace CorteCor.Pages.Fiscal
         }
     }
 }
+

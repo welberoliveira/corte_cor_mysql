@@ -10,8 +10,8 @@
         <div class="text-muted">Controle de títulos manuais e recebíveis sincronizados dos pagamentos.</div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a class="btn btn-outline-primary" asp-page="/Financeiro/Index">Dashboard</a>
-        <a class="btn btn-outline-dark" asp-page="/Financeiro/Relatorios">Relatórios</a>
+        <a class="btn btn-primary" asp-page="/Financeiro/Index">Dashboard</a>
+        <a class="btn btn-dark" asp-page="/Financeiro/Relatorios">Relatórios</a>
     </div>
 </div>
 
@@ -170,8 +170,8 @@
                         </div>
                     </div>
                     <div class="col-md-8 text-md-end">
-                        <button class="btn btn-outline-primary" type="submit">Filtrar</button>
-                        <a class="btn btn-outline-secondary" asp-page="/Financeiro/Lancamentos">Limpar</a>
+                        <button class="btn btn-primary" type="submit">Filtrar</button>
+                        <a class="btn btn-secondary" asp-page="/Financeiro/Lancamentos">Limpar</a>
                     </div>
                 </form>
             </div>
@@ -214,7 +214,7 @@
                                     <td class="text-end fw-semibold">R$ @(item.Status == "Liquidado" ? item.ValorLiquidado.ToString("N2") : item.ValorAberto.ToString("N2"))</td>
                                     <td class="text-end">
                                         <div class="d-flex flex-wrap justify-content-end gap-1">
-                                            <a class="btn btn-sm btn-outline-primary" asp-page="/Financeiro/Lancamentos" asp-route-idTitulo="@item.IdTitulo">Editar</a>
+                                            <a class="btn btn-sm btn-primary" asp-page="/Financeiro/Lancamentos" asp-route-idTitulo="@item.IdTitulo">Editar</a>
                                             @if (item.Status != "Liquidado" && item.Status != "Cancelado")
                                             {
                                                 <form method="post" asp-page-handler="Liquidar" class="d-inline">
@@ -229,20 +229,20 @@
                                             {
                                                 <form method="post" asp-page-handler="Reabrir" class="d-inline">
                                                     <input type="hidden" name="id" value="@item.IdTitulo" />
-                                                    <button class="btn btn-sm btn-outline-warning" type="submit">Reabrir</button>
+                                                    <button class="btn btn-sm btn-warning" type="submit">Reabrir</button>
                                                 </form>
                                             }
                                             @if (item.Status != "Cancelado")
                                             {
                                                 <form method="post" asp-page-handler="Cancelar" class="d-inline">
                                                     <input type="hidden" name="id" value="@item.IdTitulo" />
-                                                    <button class="btn btn-sm btn-outline-danger" type="submit">Cancelar</button>
+                                                    <button class="btn btn-sm btn-danger" type="submit">Cancelar</button>
                                                 </form>
                                             }
                                             <form method="post" asp-page-handler="Conciliar" class="d-inline">
                                                 <input type="hidden" name="id" value="@item.IdTitulo" />
                                                 <input type="hidden" name="conciliado" value="@(!item.Conciliado)" />
-                                                <button class="btn btn-sm btn-outline-dark" type="submit">@(item.Conciliado ? "Desconciliar" : "Conciliar")</button>
+                                                <button class="btn btn-sm btn-dark" type="submit">@(item.Conciliado ? "Desconciliar" : "Conciliar")</button>
                                             </form>
                                         </div>
                                     </td>

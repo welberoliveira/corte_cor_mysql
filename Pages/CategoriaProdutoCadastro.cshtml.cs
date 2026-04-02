@@ -28,7 +28,7 @@ namespace CorteCor.Pages
             if (!TryObterIdSalao(out var idSalao))
             {
                 Categoria = new CategoriaProduto { Ativo = true };
-                Mensagem = "Não foi possível identificar o salão atual.";
+                Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -47,7 +47,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Não foi possível identificar o salão atual.";
+                Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 return Page();
             }
@@ -92,4 +92,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
 

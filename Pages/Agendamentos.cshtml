@@ -1,5 +1,5 @@
-@page
-@model CorteCor.Pages.Agendamentos2Model
+﻿@page
+@model CorteCor.Pages.AgendamentosModel
 @{
     ViewData["Title"] = "Agendamentos";
 }
@@ -7,7 +7,7 @@
 @section Styles {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" />
     <style>
-        /* ====== Corte&Cor - FullCalendar (LIGHT / legível) ====== */
+        /* ====== Corte&Cor - FullCalendar (LIGHT / legÃ­vel) ====== */
 
         :root {
             --cc-bg: #f5f7fb;
@@ -26,7 +26,7 @@
             background: var(--cc-bg);
         }
 
-        /* card do calendário */
+        /* card do calendÃ¡rio */
         #calendar {
             max-width: 1220px;
             margin: 18px auto;
@@ -61,7 +61,7 @@
             color: var(--cc-text) !important;
         }
 
-        /* botões */
+        /* botÃµes */
         .fc .fc-button {
             border: 1px solid var(--cc-border) !important;
             background: #fff !important;
@@ -76,7 +76,7 @@
             border-color: #d8deea !important;
         }
 
-        /* botão ativo */
+        /* botÃ£o ativo */
         .fc .fc-button-primary:not(:disabled).fc-button-active,
         .fc .fc-button-primary:not(:disabled):active {
             background: var(--cc-accent) !important;
@@ -98,7 +98,7 @@
             border-color: var(--cc-border) !important;
         }
 
-        /* cabeçalho dos dias */
+        /* cabeÃ§alho dos dias */
         .fc .fc-col-header {
             background: #f1f5ff;
         }
@@ -134,7 +134,7 @@
             background: var(--cc-accent-soft) !important;
         }
 
-        /* seleção */
+        /* seleÃ§Ã£o */
         .fc .fc-highlight {
             background: rgba(37, 99, 235, .18) !important;
         }
@@ -169,12 +169,12 @@
             border-color: rgba(22, 163, 74, .9) !important;
         }
 
-        /* seu cabeçalho roxo (mantive, mas se quiser eu harmonizo com o tema) */
+        /* seu cabeÃ§alho roxo (mantive, mas se quiser eu harmonizo com o tema) */
         .fc th {
             background: #767dff !important;
         }
 
-        /* botão "Semanas" como texto (não clicável) */
+        /* botÃ£o "Semanas" como texto (nÃ£o clicÃ¡vel) */
         .fc .fc-ccSemanas-button {
             background: transparent !important;
             border: 0 !important;
@@ -189,7 +189,7 @@
             background: transparent !important;
         }
 
-        /* botão "Novo Agendamento" em destaque */
+        /* botÃ£o "Novo Agendamento" em destaque */
         .fc .fc-novoAgendamento-button {
             background: var(--cc-accent) !important;
             border-color: var(--cc-accent) !important;
@@ -201,7 +201,7 @@
             border-color: #1d4ed8 !important;
         }
 
-        /* ====== Responsividade Móvel ====== */
+        /* ====== Responsividade MÃ³vel ====== */
         @@media (max-width: 768px) {
             .fc .fc-toolbar {
                 flex-direction: column !important;
@@ -220,7 +220,7 @@
                 font-size: 1.1rem;
             }
 
-            /* Garante que o grupo "Semanas" e botões nav fiquem bem no meio */
+            /* Garante que o grupo "Semanas" e botÃµes nav fiquem bem no meio */
             .fc .fc-button-group {
                 justify-content: center;
             }
@@ -252,12 +252,12 @@
     <div id="calendar"></div>
 </div>
 
-<!-- Anti-forgery (necessário para POST via fetch) -->
+<!-- Anti-forgery (necessÃ¡rio para POST via fetch) -->
 <form method="post" id="antiForgeryForm" class="d-none">
     @Html.AntiForgeryToken()
 </form>
 
-<!-- Modal (Bootstrap 5) acionado ao clicar no calendário -->
+<!-- Modal (Bootstrap 5) acionado ao clicar no calendÃ¡rio -->
 <div class="modal fade" id="agendamentoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -268,7 +268,7 @@
 
             <div class="modal-body">
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">Início</label>
+                    <label class="form-label mb-0">InÃ­cio</label>
                     <input id="inicio" class="form-control" type="datetime-local" />
                 </div>
 
@@ -290,7 +290,7 @@
 
 
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">Serviço</label>
+                    <label class="form-label mb-0">ServiÃ§o</label>
                     <select id="idServico" class="form-select">
                         <option value="">Selecione...</option>
                         @foreach (var s in Model.Servicos)
@@ -316,7 +316,7 @@
                 <div id="fiscalResumoBox" class="alert alert-light border d-none mb-0">
                     <div class="d-flex flex-column gap-2">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="small text-uppercase text-muted fw-semibold">Situação Fiscal</span>
+                            <span class="small text-uppercase text-muted fw-semibold">SituaÃ§Ã£o Fiscal</span>
                             <span id="fiscalStatusBadge" class="badge bg-secondary">Sem nota</span>
                             <span id="fiscalNumeroTexto" class="small text-muted"></span>
                         </div>
@@ -343,7 +343,7 @@
 
 
 
-<!-- NOVO Modal (Bootstrap 5) - Novo Agendamento manual pelo botão -->
+<!-- NOVO Modal (Bootstrap 5) - Novo Agendamento manual pelo botÃ£o -->
 <div class="modal fade" id="agendamentoNovoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -354,14 +354,14 @@
 
             <div class="modal-body">
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">Início</label>
-                    <!-- habilitado com calendário (date/time picker do navegador) -->
+                    <label class="form-label mb-0">InÃ­cio</label>
+                    <!-- habilitado com calendÃ¡rio (date/time picker do navegador) -->
                     <input id="inicioNovo" class="form-control" type="datetime-local" />
                 </div>
 
                 <div class="cc-modal-row">
                     <label class="form-label mb-0">Fim</label>
-                    <!-- habilitado com calendário (date/time picker do navegador) -->
+                    <!-- habilitado com calendÃ¡rio (date/time picker do navegador) -->
                     <input id="fimNovo" class="form-control" type="datetime-local" readonly />
                 </div>
 
@@ -377,7 +377,7 @@
                 </div>
 
                 <div class="cc-modal-row">
-                    <label class="form-label mb-0">Serviço</label>
+                    <label class="form-label mb-0">ServiÃ§o</label>
                     <select id="idServicoNovo" class="form-select">
                         <option value="">Selecione...</option>
                         @foreach (var s in Model.Servicos)
@@ -390,8 +390,8 @@
                 </div>
 
                 <div class="text-muted small">
-                    Obs: escolha Início pelo calendário. Ao trocar o serviço, o sistema inclui o fim pela duração do
-                    serviço.
+                    Obs: escolha InÃ­cio pelo calendÃ¡rio. Ao trocar o serviÃ§o, o sistema inclui o fim pela duraÃ§Ã£o do
+                    serviÃ§o.
                 </div>
             </div>
 
@@ -463,8 +463,8 @@
                 select.appendChild(opt);
             });
 
-            // Se temos um valor atual (edição) e ele não veio na lista de disponíveis (pq já está ocupado por este agendamento ou outro motivo),
-            // forçamos a inclusão dele para não ficar em branco.
+            // Se temos um valor atual (ediÃ§Ã£o) e ele nÃ£o veio na lista de disponÃ­veis (pq jÃ¡ estÃ¡ ocupado por este agendamento ou outro motivo),
+            // forÃ§amos a inclusÃ£o dele para nÃ£o ficar em branco.
             if (currentValue && !found && currentName) {
                 const opt = document.createElement('option');
                 opt.value = currentValue;
@@ -483,13 +483,13 @@
             selectionStart = start;
             selectionEnd = end;
 
-            // Título dinâmico
+            // TÃ­tulo dinÃ¢mico
             document.querySelector('#agendamentoModal .modal-title').textContent = 'Novo agendamento';
 
             document.getElementById('idAgendamento').value = '';
             document.getElementById('inicio').value = toDateTimeLocalValue(start);
 
-            // Fetch serviços disponíveis
+            // Fetch serviÃ§os disponÃ­veis
             await atualizarServicosDisponiveis(start, 'idServico');
 
             // limpa campos
@@ -497,7 +497,7 @@
             document.getElementById('idServico').value = '';
             resetFiscalState();
 
-            // Toggle botões
+            // Toggle botÃµes
             document.getElementById('btnSalvar').classList.remove('d-none');
             document.getElementById('btnAlterar').classList.add('d-none');
             document.getElementById('btnEmitirNota').classList.add('d-none');
@@ -515,7 +515,7 @@
             document.getElementById('rowStatus').classList.add('d-none');
             document.getElementById('idStatus').value = 'Agendado';
 
-            // fim passa a ser calculado pelo serviço (fallback 30min)
+            // fim passa a ser calculado pelo serviÃ§o (fallback 30min)
             recalcularFimPeloServico();
 
             modal.show();
@@ -525,7 +525,7 @@
         function getDuracaoServicoMinutos() {
             const opt = document.querySelector('#idServico option:checked');
             const min = parseInt(opt?.dataset?.duracaoMin || '0', 10);
-            // fallback: 30 min se não tiver duração válida
+            // fallback: 30 min se nÃ£o tiver duraÃ§Ã£o vÃ¡lida
             return (!min || isNaN(min) || min <= 0) ? 30 : min;
         }
 
@@ -537,7 +537,7 @@
 
             // Se for datetime-local
             // document.getElementById('fim').value = toDateTimeLocalValue(selectionEnd); 
-            // Mas o fim é texto readonly na modal principal? Não, é "text" readonly. 
+            // Mas o fim Ã© texto readonly na modal principal? NÃ£o, Ã© "text" readonly. 
             // Vamos manter padrao de exibicao texto para Fim, ou mudar para datetime-local readonly.
             // O original era: input type="text" readonly. formatLocal(end).
             document.getElementById('fim').value = formatLocal(selectionEnd);
@@ -608,7 +608,7 @@
             recalcularFimPeloServico();
 
             if (!idPessoaStr || !idServicoStr) {
-                Swal.fire('Atenção', 'Informe Cliente e Serviço.', 'warning');
+                Swal.fire('AtenÃ§Ã£o', 'Informe Cliente e ServiÃ§o.', 'warning');
                 return;
             }
 
@@ -655,7 +655,7 @@
             const idServicoStr = document.getElementById('idServico').value;
 
             if (!id || !idPessoaStr || !idServicoStr) {
-                Swal.fire('Atenção', 'Dados incompletos.', 'warning');
+                Swal.fire('AtenÃ§Ã£o', 'Dados incompletos.', 'warning');
                 return;
             }
 
@@ -717,7 +717,7 @@
             if (resp.ok) {
                 calendar.getEventById(id)?.remove();
                 modal.hide();
-                Swal.fire('Excluído', 'Agendamento removido.', 'success');
+                Swal.fire('ExcluÃ­do', 'Agendamento removido.', 'success');
             } else {
                 await showError(resp, 'Erro ao excluir.');
             }
@@ -742,7 +742,7 @@
                     window.open(data.checkoutUrl, '_blank');
                     modal.hide();
                     calendar.refetchEvents();
-                    Swal.fire('Pagamento Iniciado', 'Aguardando confirmação do Mercado Pago.', 'info');
+                    Swal.fire('Pagamento Iniciado', 'Aguardando confirmaÃ§Ã£o do Mercado Pago.', 'info');
                 }
             } else {
                 await showError(resp, 'Erro ao iniciar pagamento.');
@@ -792,10 +792,10 @@
                 return;
             }
 
-            await Swal.fire('Atenção', data.message || 'Não foi possível emitir a nota fiscal.', 'warning');
+            await Swal.fire('AtenÃ§Ã£o', data.message || 'NÃ£o foi possÃ­vel emitir a nota fiscal.', 'warning');
         }
 
-        /* funções do modal novo - acionado pelo botão*/
+        /* funÃ§Ãµes do modal novo - acionado pelo botÃ£o*/
         function toDateTimeLocalValue(dt) {
             const pad = n => String(n).padStart(2, '0');
             return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
@@ -828,11 +828,11 @@
         }
 
         async function abrirModalNovoAgendamento() {
-            // default: próximo bloco de 30 min
+            // default: prÃ³ximo bloco de 30 min
             const start = roundToNext30Min(new Date());
             document.getElementById('inicioNovo').value = toDateTimeLocalValue(start);
 
-            // Fetch serviços disponíveis
+            // Fetch serviÃ§os disponÃ­veis
             await atualizarServicosDisponiveis(start, 'idServicoNovo');
 
             // limpa selects
@@ -856,23 +856,23 @@
             const end = fromDateTimeLocalValue(document.getElementById('fimNovo').value);
 
             if (!start || !end) {
-                Swal.fire('Atenção', 'Informe Início e Fim.', 'warning');
+                Swal.fire('AtenÃ§Ã£o', 'Informe InÃ­cio e Fim.', 'warning');
                 return;
             }
 
             if (end <= start) {
-                Swal.fire('Atenção', 'O Fim deve ser maior que o Início.', 'warning');
+                Swal.fire('AtenÃ§Ã£o', 'O Fim deve ser maior que o InÃ­cio.', 'warning');
                 return;
             }
 
             if (!idPessoaStr || !idServicoStr) {
-                Swal.fire('Atenção', 'Informe Cliente e Serviço.', 'warning');
+                Swal.fire('AtenÃ§Ã£o', 'Informe Cliente e ServiÃ§o.', 'warning');
                 return;
             }
 
             const payload = {
                 start: start.toISOString(),
-                end: end.toISOString(),               // <-- novo (back-end aceitará)
+                end: end.toISOString(),               // <-- novo (back-end aceitarÃ¡)
                 idPessoa: parseInt(idPessoaStr, 10),
                 idServico: parseInt(idServicoStr, 10)
             };
@@ -973,14 +973,14 @@
 
                     selectionStart = new Date(data.start);
 
-                    // Título dinâmico
+                    // TÃ­tulo dinÃ¢mico
                     document.querySelector('#agendamentoModal .modal-title').textContent = 'Alterar Agendamento';
 
                     document.getElementById('idAgendamento').value = data.id;
                     document.getElementById('inicio').value = toDateTimeLocalValue(selectionStart);
                     document.getElementById('idPessoa').value = data.idPessoa;
 
-                    // Fetch serviços disponíveis para este horário antes de setar o valor
+                    // Fetch serviÃ§os disponÃ­veis para este horÃ¡rio antes de setar o valor
                     await atualizarServicosDisponiveis(selectionStart, 'idServico', data.idServico, data.servicoNome);
 
                     document.getElementById('idServico').value = data.idServico;
@@ -1003,7 +1003,7 @@
                     document.getElementById('idServico').disabled = !canEdit;
                     document.getElementById('idStatus').disabled = !canEdit;
 
-                    // Toggle botões
+                    // Toggle botÃµes
                     document.getElementById('btnSalvar').classList.add('d-none');
                     document.getElementById('btnAlterar').classList.toggle('d-none', !canEdit);
                     document.getElementById('btnExcluir').classList.toggle('d-none', !canDelete);
@@ -1044,7 +1044,7 @@
             document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
             document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
 
-            // Listener para mudança de horário na edição
+            // Listener para mudanÃ§a de horÃ¡rio na ediÃ§Ã£o
             document.getElementById('inicio').addEventListener('change', function () {
                 const val = this.value;
                 if (val) {
@@ -1056,3 +1056,4 @@
         });
     </script>
 }
+

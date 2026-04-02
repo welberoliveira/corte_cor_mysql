@@ -1,0 +1,464 @@
+@page
+@model CorteCor.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@section Styles {
+    <style>
+        .dashboard-shell { display: grid; gap: 1.25rem; }
+        .dashboard-hero {
+            position: relative;
+            overflow: hidden;
+            padding: 1.5rem;
+            border-radius: 24px;
+            color: #fff;
+            background:
+                radial-gradient(circle at top right, rgba(255,255,255,.24), transparent 28%),
+                linear-gradient(135deg, #0f766e 0%, #0284c7 48%, #1d4ed8 100%);
+            box-shadow: 0 28px 60px rgba(14, 116, 144, .28);
+        }
+        .dashboard-hero::after {
+            content: "";
+            position: absolute;
+            inset: auto -40px -60px auto;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.12);
+            filter: blur(4px);
+        }
+        .dashboard-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .45rem .85rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,.14);
+            font-size: .8rem;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+        .dashboard-hero h1 {
+            text-align: left;
+            color: #fff;
+            margin: 1rem 0 .35rem 0;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+        }
+        .dashboard-hero p { margin: 0; max-width: 720px; color: rgba(255,255,255,.92); font-size: 1rem; }
+        .dashboard-topline { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: .65rem; }
+        .dashboard-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .55rem .9rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: .88rem;
+            background: rgba(255,255,255,.15);
+            color: #fff;
+            backdrop-filter: blur(6px);
+        }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
+        .metric-card {
+            grid-column: span 3;
+            padding: 1.15rem;
+            border-radius: 20px;
+            background: #fff;
+            border: 1px solid #e5eef9;
+            box-shadow: 0 16px 36px rgba(15,23,42,.08);
+        }
+        .metric-card[data-tone="teal"] { border-top: 5px solid #0f766e; }
+        .metric-card[data-tone="blue"] { border-top: 5px solid #2563eb; }
+        .metric-card[data-tone="amber"] { border-top: 5px solid #d97706; }
+        .metric-card[data-tone="rose"] { border-top: 5px solid #e11d48; }
+        .metric-card[data-tone="violet"] { border-top: 5px solid #7c3aed; }
+        .metric-card[data-tone="slate"] { border-top: 5px solid #475569; }
+        .metric-label {
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            color: #4b5563;
+            font-size: .86rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+        .metric-value {
+            margin-top: .75rem;
+            font-size: clamp(1.4rem, 3vw, 2.2rem);
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+        }
+        .metric-meta { margin-top: .7rem; color: #64748b; font-size: .92rem; }
+        .dashboard-panel {
+            grid-column: span 6;
+            padding: 1.2rem;
+            border-radius: 22px;
+            background: #fff;
+            border: 1px solid #e5eef9;
+            box-shadow: 0 16px 40px rgba(15,23,42,.08);
+        }
+        .dashboard-panel.wide { grid-column: span 8; }
+        .dashboard-panel.narrow { grid-column: span 4; }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .panel-header h2 { margin: 0; text-align: left; font-size: 1.05rem; color: #0f172a; }
+        .panel-subtitle { margin-top: .25rem; color: #64748b; font-size: .9rem; }
+        .panel-tag {
+            padding: .4rem .7rem;
+            border-radius: 999px;
+            font-size: .8rem;
+            font-weight: 700;
+            background: #e0f2fe;
+            color: #075985;
+            white-space: nowrap;
+        }
+        .chart-box { position: relative; min-height: 300px; }
+        .chart-box canvas { width: 100% !important; height: 300px !important; }
+        .dashboard-list { display: grid; gap: .8rem; }
+        .dashboard-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: .9rem 1rem;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+        .dashboard-list-item strong { color: #0f172a; }
+        .dashboard-list-item span, .dashboard-list-item small { color: #64748b; }
+        .alert-list { display: grid; gap: .8rem; }
+        .alert-card { padding: 1rem; border-radius: 16px; border: 1px solid transparent; }
+        .alert-card strong { display: block; color: #0f172a; margin-bottom: .3rem; }
+        .alert-card span { color: #475569; font-size: .94rem; }
+        .alert-card[data-level="ok"] { background: #ecfdf5; border-color: #a7f3d0; }
+        .alert-card[data-level="warn"] { background: #fff7ed; border-color: #fdba74; }
+        .alert-card[data-level="danger"] { background: #fff1f2; border-color: #fda4af; }
+        .dashboard-empty {
+            padding: 1.2rem;
+            border-radius: 16px;
+            background: #f8fafc;
+            color: #64748b;
+            text-align: center;
+            border: 1px dashed #cbd5e1;
+        }
+        .dashboard-loading-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15,23,42,.42);
+            backdrop-filter: blur(7px);
+            transition: opacity .28s ease, visibility .28s ease;
+        }
+        .dashboard-loading-modal.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .dashboard-loading-card {
+            width: min(460px, 100%);
+            padding: 1.7rem;
+            border-radius: 24px;
+            background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+            box-shadow: 0 28px 70px rgba(15,23,42,.22);
+            text-align: center;
+        }
+        .dashboard-spinner {
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 1rem auto;
+            border-radius: 50%;
+            border: 6px solid #bfdbfe;
+            border-top-color: #2563eb;
+            animation: dashboard-spin .9s linear infinite;
+        }
+        @@keyframes dashboard-spin { to { transform: rotate(360deg); } }
+        .dashboard-loading-card h3 { margin-bottom: .4rem; }
+        .dashboard-loading-card p { margin: 0; color: #475569; }
+        @@media (max-width: 1100px) {
+            .metric-card { grid-column: span 6; }
+            .dashboard-panel, .dashboard-panel.wide, .dashboard-panel.narrow { grid-column: span 12; }
+        }
+        @@media (max-width: 768px) {
+            .metric-card { grid-column: span 12; }
+            .dashboard-hero { padding: 1.25rem; }
+            .dashboard-topline { flex-direction: column; }
+        }
+    </style>
+}
+
+<div id="dashboardLoadingModal" class="dashboard-loading-modal" aria-live="polite" aria-busy="true">
+    <div class="dashboard-loading-card">
+        <div class="dashboard-spinner"></div>
+        <h3>Carregando o dashboard</h3>
+        <p>Estamos preparando os indicadores, gráficos e alertas da sua empresa.</p>
+    </div>
+</div>
+
+<div class="dashboard-shell">
+    <section class="dashboard-hero">
+        <div class="dashboard-kicker">
+            <i class="bi bi-speedometer2"></i>
+            Painel Inteligente
+        </div>
+        <h1>@Model.Saudacao, @Model.NomeUsuario</h1>
+        <p>
+            Este é o resumo operacional da <strong>@Model.NomeEmpresa</strong>. Assim que os dados terminarem de carregar,
+            você verá clientes, vendas, agenda, CRM, financeiro e alertas em um só lugar.
+        </p>
+        <div class="dashboard-topline" id="dashboardTopline">
+            <span class="dashboard-chip"><i class="bi bi-building"></i> Empresa: @Model.NomeEmpresa</span>
+            <span class="dashboard-chip"><i class="bi bi-calendar3"></i> @Model.PeriodoAtual</span>
+            <span class="dashboard-chip"><i class="bi bi-hourglass-split"></i> Atualizando indicadores</span>
+        </div>
+    </section>
+
+    <section class="dashboard-grid" id="dashboardMetrics">
+        <article class="metric-card" data-tone="teal">
+            <div class="metric-label"><i class="bi bi-people-fill"></i> Clientes</div>
+            <div class="metric-value">...</div>
+            <div class="metric-meta">Carregando base de relacionamento</div>
+        </article>
+        <article class="metric-card" data-tone="blue">
+            <div class="metric-label"><i class="bi bi-calendar2-check-fill"></i> Agenda de hoje</div>
+            <div class="metric-value">...</div>
+            <div class="metric-meta">Consultando compromissos do dia</div>
+        </article>
+        <article class="metric-card" data-tone="amber">
+            <div class="metric-label"><i class="bi bi-bag-check-fill"></i> Vendas no mês</div>
+            <div class="metric-value">...</div>
+            <div class="metric-meta">Somando vendas concluídas</div>
+        </article>
+        <article class="metric-card" data-tone="rose">
+            <div class="metric-label"><i class="bi bi-currency-dollar"></i> Saldo operacional</div>
+            <div class="metric-value">...</div>
+            <div class="metric-meta">Consolidando entradas e saídas</div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid">
+        <article class="dashboard-panel wide">
+            <div class="panel-header">
+                <div>
+                    <h2>Faturamento e volume de vendas</h2>
+                    <div class="panel-subtitle">Comparativo mensal para entender evolução e ritmo comercial.</div>
+                </div>
+                <span class="panel-tag" id="salesChartTag">Últimos 6 meses</span>
+            </div>
+            <div class="chart-box">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-panel narrow">
+            <div class="panel-header">
+                <div>
+                    <h2>Agenda do mês</h2>
+                    <div class="panel-subtitle">Distribuição dos agendamentos por status.</div>
+                </div>
+            </div>
+            <div class="chart-box">
+                <canvas id="appointmentsChart"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-panel narrow">
+            <div class="panel-header">
+                <div>
+                    <h2>Funil de oportunidades</h2>
+                    <div class="panel-subtitle">Visão de CRM para as oportunidades abertas.</div>
+                </div>
+            </div>
+            <div class="chart-box">
+                <canvas id="crmChart"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-panel narrow">
+            <div class="panel-header">
+                <div>
+                    <h2>Financeiro do período</h2>
+                    <div class="panel-subtitle">Relação entre receitas liquidadas e despesas.</div>
+                </div>
+            </div>
+            <div class="chart-box">
+                <canvas id="financeChart"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-panel wide">
+            <div class="panel-header">
+                <div>
+                    <h2>Radar de atenção</h2>
+                    <div class="panel-subtitle">Prioridades rápidas para decidir o que atacar primeiro.</div>
+                </div>
+                <span class="panel-tag">Leitura operacional</span>
+            </div>
+            <div class="alert-list" id="alertsList">
+                <div class="alert-card" data-level="ok">
+                    <strong>Montando alertas</strong>
+                    <span>Assim que os dados terminarem de carregar, este bloco mostrará o que está saudável e o que pede atenção.</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="dashboard-panel wide">
+            <div class="panel-header">
+                <div>
+                    <h2>Próximas ações do CRM</h2>
+                    <div class="panel-subtitle">Acompanhamentos que ajudam a equipe a manter o relacionamento ativo.</div>
+                </div>
+                <span class="panel-tag" id="crmTasksTag">Em preparação</span>
+            </div>
+            <div class="dashboard-list" id="crmTasksList">
+                <div class="dashboard-empty">As próximas ações aparecerão aqui após o carregamento.</div>
+            </div>
+        </article>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script>
+        const dashboardCharts = {};
+        const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+        const numberFormatter = new Intl.NumberFormat('pt-BR');
+        const dashboardPalette = ['#0f766e', '#2563eb', '#7c3aed', '#d97706', '#e11d48', '#14b8a6', '#475569'];
+
+        function formatCurrency(value) { return currencyFormatter.format(Number(value || 0)); }
+        function formatNumber(value) { return numberFormatter.format(Number(value || 0)); }
+
+        function renderMetricCards(payload) {
+            const metrics = [
+                { tone: 'teal', icon: 'people-fill', label: 'Clientes', value: formatNumber(payload.totalClientes), meta: `${formatNumber(payload.clientesInativos)} inativos e ${formatNumber(payload.aniversariantesMes)} aniversariantes no mês` },
+                { tone: 'blue', icon: 'calendar2-check-fill', label: 'Agenda de hoje', value: formatNumber(payload.agendamentosHoje), meta: `${formatNumber(payload.agendamentosMes)} agendamentos no mês` },
+                { tone: 'amber', icon: 'bag-check-fill', label: 'Vendas no mês', value: formatCurrency(payload.valorVendasMes), meta: `${formatNumber(payload.quantidadeVendasMes)} vendas concluídas` },
+                { tone: payload.saldoOperacional >= 0 ? 'violet' : 'rose', icon: payload.saldoOperacional >= 0 ? 'graph-up-arrow' : 'exclamation-triangle-fill', label: 'Saldo operacional', value: formatCurrency(payload.saldoOperacional), meta: `${formatCurrency(payload.aReceberAberto)} a receber em aberto` },
+                { tone: 'rose', icon: 'receipt-cutoff', label: 'Notas autorizadas', value: formatNumber(payload.notasAutorizadasMes), meta: `${formatNumber(payload.notasPendentesMes)} pendentes e ${formatNumber(payload.notasRejeitadasMes)} rejeitadas` },
+                { tone: payload.estoqueBaixo > 0 ? 'amber' : 'slate', icon: 'boxes', label: 'Estoque em alerta', value: formatNumber(payload.estoqueBaixo), meta: `${formatNumber(payload.pedidosAbertos)} pedidos em aberto` }
+            ];
+
+            document.getElementById('dashboardMetrics').innerHTML = metrics.map(metric => `
+                <article class="metric-card" data-tone="${metric.tone}">
+                    <div class="metric-label"><i class="bi bi-${metric.icon}"></i> ${metric.label}</div>
+                    <div class="metric-value">${metric.value}</div>
+                    <div class="metric-meta">${metric.meta}</div>
+                </article>`).join('');
+        }
+
+        function renderTopline(payload) {
+            const chips = [
+                { icon: 'building', text: `Empresa: ${payload.nomeEmpresa}` },
+                { icon: 'calendar3', text: payload.periodoAtual },
+                { icon: 'cash-stack', text: `Receitas: ${formatCurrency(payload.receitasLiquidadas)}` },
+                { icon: 'wallet2', text: `Despesas: ${formatCurrency(payload.despesasLiquidadas)}` },
+                { icon: 'clipboard-check', text: `Tarefas abertas: ${formatNumber(payload.tarefasAbertas)}` }
+            ];
+            document.getElementById('dashboardTopline').innerHTML = chips.map(chip => `<span class="dashboard-chip"><i class="bi bi-${chip.icon}"></i> ${chip.text}</span>`).join('');
+        }
+
+        function destroyChart(key) {
+            if (dashboardCharts[key]) {
+                dashboardCharts[key].destroy();
+                delete dashboardCharts[key];
+            }
+        }
+
+        function createSalesChart(items) {
+            destroyChart('sales');
+            dashboardCharts.sales = new Chart(document.getElementById('salesChart'), {
+                type: 'bar',
+                data: {
+                    labels: items.map(item => item.label),
+                    datasets: [
+                        { type: 'bar', label: 'Vendas (R$)', data: items.map(item => item.value), borderRadius: 10, backgroundColor: '#2563eb' },
+                        { type: 'line', label: 'Quantidade', data: items.map(item => item.secondaryValue), borderColor: '#f97316', backgroundColor: '#f97316', yAxisID: 'y1', tension: .35 }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: { ticks: { callback: (value) => currencyFormatter.format(value) } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: (value) => formatNumber(value) } }
+                    }
+                }
+            });
+        }
+
+        function createDoughnutChart(chartId, key, items) {
+            destroyChart(key);
+            dashboardCharts[key] = new Chart(document.getElementById(chartId), {
+                type: 'doughnut',
+                data: {
+                    labels: items.map(item => item.label),
+                    datasets: [{ data: items.map(item => item.value), backgroundColor: items.map((_, index) => dashboardPalette[index % dashboardPalette.length]), borderWidth: 0 }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        function renderAlerts(payload) {
+            const alerts = [];
+            alerts.push(payload.saldoOperacional >= 0
+                ? { level: 'ok', title: 'Operação saudável', message: `O saldo operacional do período está positivo em ${formatCurrency(payload.saldoOperacional)}.` }
+                : { level: 'danger', title: 'Saldo operacional negativo', message: `O período atual mostra saldo de ${formatCurrency(payload.saldoOperacional)}. Vale revisar despesas e recebimentos.` });
+            if (payload.quantidadeTitulosVencidos > 0) {
+                alerts.push({ level: 'warn', title: 'Títulos vencidos pedem atenção', message: `${formatNumber(payload.quantidadeTitulosVencidos)} título(s) vencido(s), com ${formatCurrency(payload.receitasVencidas + payload.despesasVencidas)} em atraso.` });
+            }
+            if (payload.estoqueBaixo > 0) {
+                alerts.push({ level: 'warn', title: 'Estoque baixo em produtos controlados', message: `${formatNumber(payload.estoqueBaixo)} item(ns) estão no limite ou abaixo do mínimo configurado.` });
+            }
+            if (payload.notasPendentesMes > 0 || payload.notasRejeitadasMes > 0) {
+                alerts.push({ level: payload.notasRejeitadasMes > 0 ? 'danger' : 'warn', title: 'Painel fiscal com pendências', message: `${formatNumber(payload.notasPendentesMes)} nota(s) pendente(s) e ${formatNumber(payload.notasRejeitadasMes)} rejeitada(s) no mês.` });
+            }
+            if (!alerts.length) {
+                alerts.push({ level: 'ok', title: 'Tudo sob controle', message: 'Nenhum indicador crítico foi encontrado neste momento.' });
+            }
+            document.getElementById('alertsList').innerHTML = alerts.map(alert => `<div class="alert-card" data-level="${alert.level}"><strong>${alert.title}</strong><span>${alert.message}</span></div>`).join('');
+        }
+
+        function renderCrmTasks(payload) {
+            const items = payload.proximasAcoes || [];
+            document.getElementById('crmTasksTag').textContent = `${formatNumber(items.length)} ação(ões)`;
+            if (!items.length) {
+                document.getElementById('crmTasksList').innerHTML = '<div class="dashboard-empty">Nenhuma ação pendente para o período atual.</div>';
+                return;
+            }
+            document.getElementById('crmTasksList').innerHTML = items.map(item => `<div class="dashboard-list-item"><div><strong>${item.title}</strong><div><small>${item.subtitle}</small></div></div><span>${item.meta}</span></div>`).join('');
+        }
+
+        async function loadDashboard() {
+            const loading = document.getElementById('dashboardLoadingModal');
+            try {
+                const response = await fetch('@Url.Page("/Dashboard", null, new { handler = "Data" })', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!response.ok) throw new Error('Não foi possível carregar os dados do dashboard.');
+                const payload = await response.json();
+                renderTopline(payload);
+                renderMetricCards(payload);
+                createSalesChart(payload.vendasMensais || []);
+                createDoughnutChart('appointmentsChart', 'appointments', payload.agendamentosPorStatus || []);
+                createDoughnutChart('crmChart', 'crm', payload.funilCrm || []);
+                createDoughnutChart('financeChart', 'finance', payload.financeiroComparativo || []);
+                renderAlerts(payload);
+                renderCrmTasks(payload);
+            } catch (error) {
+                document.getElementById('alertsList').innerHTML = `<div class="alert-card" data-level="danger"><strong>Falha ao carregar o dashboard</strong><span>${error.message || 'Ocorreu um erro inesperado ao montar os indicadores.'}</span></div>`;
+            } finally {
+                loading.classList.add('hidden');
+                setTimeout(() => loading.remove(), 350);
+            }
+        }
+
+        window.addEventListener('load', loadDashboard);
+    </script>
+}

@@ -7,11 +7,11 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h2 class="mb-1">CRM</h2>
-        <p class="text-muted mb-0">Relacionamento digital com clientes, follow-up, oportunidades e campanhas.</p>
+        <p class="text-muted mb-0">Relacionamento digital com clientes, tarefas, oportunidades e campanhas.</p>
     </div>
     <div class="d-flex gap-2">
-        <a class="btn btn-outline-primary" asp-page="/CRM/Tarefas">Tarefas</a>
-        <a class="btn btn-outline-dark" asp-page="/CRM/Oportunidades">Oportunidades</a>
+        <a class="btn btn-primary" asp-page="/CRM/Tarefas">Tarefas</a>
+        <a class="btn btn-dark" asp-page="/CRM/Oportunidades">Oportunidades</a>
         <a class="btn btn-primary" asp-page="/CRM/Campanhas">Campanhas</a>
     </div>
 </div>
@@ -136,7 +136,7 @@
                                 <td>@(cliente.UltimoAgendamentoEm?.ToString("dd/MM/yyyy") ?? "Sem histórico")</td>
                                 <td>@(cliente.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Não definida")</td>
                                 <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-primary" asp-page="/CRM/Cliente" asp-route-idPessoa="@cliente.IdPessoa">Abrir CRM</a>
+                                    <a class="btn btn-sm btn-primary" asp-page="/CRM/Cliente" asp-route-idPessoa="@cliente.IdPessoa">Abrir CRM</a>
                                 </td>
                             </tr>
                         }

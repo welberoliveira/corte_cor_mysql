@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using System.Collections.Generic;
 using CorteCor.Handlers;
@@ -25,7 +25,7 @@ namespace CorteCor.Pages
         public List<SelectListItem> EventosOptions { get; set; } = new List<SelectListItem>
         {
             new SelectListItem("Boas Vindas", "BoasVindas"),
-            new SelectListItem("Confirmação de Agendamento", "ConfirmacaoAgendamento"),
+            new SelectListItem("ConfirmaÃ§Ã£o de Agendamento", "ConfirmacaoAgendamento"),
             new SelectListItem("Lembrete de Agendamento", "LembreteAgendamento"),
             new SelectListItem("Cancelamento de Agendamento", "CancelamentoAgendamento"),
             new SelectListItem("Lembrete de Pagamento", "LembretePagamento")
@@ -41,7 +41,7 @@ namespace CorteCor.Pages
                 if (id.HasValue)
                 {
                     Modelo = _handler.ObterPorId(id.Value, idSalao);
-                    if (Modelo == null) Mensagem = "Modelo não encontrado.";
+                    if (Modelo == null) Mensagem = "Modelo nÃ£o encontrado.";
                 }
                 else
                 {
@@ -50,7 +50,7 @@ namespace CorteCor.Pages
             }
             else
             {
-                Mensagem = "Erro ao identificar salão.";
+                Mensagem = "Erro ao identificar a empresa.";
             }
         }
 
@@ -81,4 +81,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
 

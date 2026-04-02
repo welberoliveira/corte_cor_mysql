@@ -1,0 +1,84 @@
+@page
+@model CorteCor.Pages.CRM.ClientePerfilModel
+@{
+    ViewData["Title"] = "Perfil CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa" class="btn btn-link ps-0">Voltar para o CRM do cliente</a>
+        <h2 class="mb-1">Perfil CRM de @Model.Detalhe.Pessoa.Nome</h2>
+        <div class="text-muted">Atualize o perfil de relacionamento deste cliente.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <span class="badge bg-primary fs-6">@Model.Detalhe.Perfil.StatusRelacionamento</span>
+        <span class="badge bg-dark fs-6">Temperatura: @Model.Detalhe.Perfil.Temperatura</span>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <form method="post" class="row g-3">
+            <input type="hidden" asp-for="IdPessoa" />
+            <input type="hidden" asp-for="PerfilInput.IdPerfil" />
+            <input type="hidden" asp-for="PerfilInput.IdPessoa" />
+            <div class="col-md-6">
+                <label class="form-label">Cliente</label>
+                <input class="form-control" value="@Model.Detalhe.Pessoa.Nome" disabled />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Status do relacionamento</label>
+                <input class="form-control" asp-for="PerfilInput.StatusRelacionamento" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Origem do lead</label>
+                <input class="form-control" asp-for="PerfilInput.OrigemLead" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Temperatura</label>
+                <select class="form-select" asp-for="PerfilInput.Temperatura">
+                    <option>Frio</option>
+                    <option>Morno</option>
+                    <option>Quente</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Score</label>
+                <input type="number" class="form-control" asp-for="PerfilInput.ScoreRelacionamento" min="0" max="100" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Pr&oacute;xima a&ccedil;&atilde;o</label>
+                <input type="datetime-local" class="form-control" asp-for="PerfilInput.ProximaAcaoEm" />
+            </div>
+            <div class="col-12">
+                <label class="form-label d-block">Prefer&ecirc;ncias de contato</label>
+                <div class="d-flex gap-4 flex-wrap">
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="PerfilInput.PermiteEmail" />
+                        <label class="form-check-label" asp-for="PerfilInput.PermiteEmail">Permite e-mail</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="PerfilInput.PermiteSms" />
+                        <label class="form-check-label" asp-for="PerfilInput.PermiteSms">Permite SMS</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="PerfilInput.PermiteWhatsapp" />
+                        <label class="form-check-label" asp-for="PerfilInput.PermiteWhatsapp">Permite WhatsApp</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="PerfilInput.NaoPerturbe" />
+                        <label class="form-check-label" asp-for="PerfilInput.NaoPerturbe">N&atilde;o perturbe</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Observa&ccedil;&otilde;es internas</label>
+                <textarea class="form-control" asp-for="PerfilInput.ObservacoesInternas" rows="5"></textarea>
+            </div>
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa">Cancelar</a>
+                <button class="btn btn-primary" type="submit">Salvar perfil CRM</button>
+            </div>
+        </form>
+    </div>
+</div>

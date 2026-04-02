@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model CorteCor.Pages.NotaFiscalListaModel
 @{
     ViewData["Title"] = "Notas Emitidas";
@@ -9,9 +9,9 @@
         <h2>Notas Emitidas (NFC-e / NFS-e)</h2>
         <div>
             <a asp-page="/NotaFiscalInutilizacao" class="btn btn-warning me-2">
-                <i class="bi bi-x-octagon"></i> Inutilizar Nº (NFC-e)
+                <i class="bi bi-x-octagon"></i> Inutilizar NÂº (NFC-e)
             </a>
-            <a asp-page="/SalaoConfigFiscal" class="btn btn-primary">
+            <a asp-page="/EmpresaConfigFiscal" class="btn btn-primary">
                 <i class="bi bi-gear"></i> CFG. Fiscal
             </a>
         </div>
@@ -40,10 +40,10 @@
                 <tr>
                     <th>Data</th>
                     <th>Tipo</th>
-                    <th>Número</th>
+                    <th>NÃºmero</th>
                     <th>Valor</th>
                     <th>Status</th>
-                    <th>Ações</th>
+                    <th>AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -125,7 +125,7 @@
                                                   <div class="modal-body">
                                                     <input type="hidden" name="idNota" value="@nota.IdNotaFiscal" />
                                                     <div class="mb-3">
-                                                        <label class="form-label text-start d-block">Justificativa de Cancelamento (Mínimo 15 caracteres):</label>
+                                                        <label class="form-label text-start d-block">Justificativa de Cancelamento (MÃ­nimo 15 caracteres):</label>
                                                         <textarea class="form-control" name="justificativa" rows="3" required minlength="15"></textarea>
                                                     </div>
                                                   </div>
@@ -174,10 +174,11 @@
                 else
                 {
                         <tr>
-                            <td colspan="6" class="text-center text-muted">Nenhuma nota fiscal emitida até o momento.</td>
+                            <td colspan="6" class="text-center text-muted">Nenhuma nota fiscal emitida atÃ© o momento.</td>
                         </tr>
                 }
             </tbody>
         </table>
     </div>
 </div>
+

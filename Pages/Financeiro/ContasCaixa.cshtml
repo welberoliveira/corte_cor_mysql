@@ -9,7 +9,7 @@
         <h2 class="mb-1">Contas Caixa e Bancos</h2>
         <div class="text-muted">Base para saldo inicial, conciliação e visão projetada de caixa.</div>
     </div>
-    <a class="btn btn-outline-primary" asp-page="/Financeiro/Index">Voltar ao financeiro</a>
+    <a class="btn btn-primary" asp-page="/Financeiro/Index">Voltar ao financeiro</a>
 </div>
 
 @if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
@@ -91,7 +91,7 @@
                                     <td class="text-end">R$ @conta.SaldoInicial.ToString("N2")</td>
                                     <td><span class="badge @(conta.Ativo ? "bg-success" : "bg-secondary")">@(conta.Ativo ? "Ativa" : "Inativa")</span></td>
                                     <td class="text-end">
-                                        <a class="btn btn-sm btn-outline-primary" asp-page="/Financeiro/ContasCaixa" asp-route-id="@conta.IdConta">Editar</a>
+                                        <a class="btn btn-sm btn-primary" asp-page="/Financeiro/ContasCaixa" asp-route-id="@conta.IdConta">Editar</a>
                                     </td>
                                 </tr>
                             }

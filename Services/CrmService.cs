@@ -70,6 +70,12 @@ namespace CorteCor.Services
             };
         }
 
+        public List<CrmInteracao> ListarInteracoes(int idSalao, int idPessoa, int limit = 50)
+        {
+            GarantirEstrutura(idSalao);
+            return _crmHandler.ListarInteracoes(idSalao, idPessoa, limit);
+        }
+
         public CrmPessoaPerfil SalvarPerfil(int idSalao, CrmPessoaPerfil perfil)
         {
             var existente = _crmHandler.ObterOuCriarPerfil(idSalao, perfil.IdPessoa);
@@ -89,6 +95,11 @@ namespace CorteCor.Services
 
         public void RegistrarInteracao(int idSalao, CrmInteracao interacao)
         {
+            SalvarInteracao(idSalao, interacao);
+        }
+
+        public int SalvarInteracao(int idSalao, CrmInteracao interacao)
+        {
             interacao.IdSalao = idSalao;
             interacao.Assunto = interacao.Assunto?.Trim() ?? string.Empty;
             interacao.Descricao = interacao.Descricao?.Trim();
@@ -106,17 +117,19 @@ namespace CorteCor.Services
                 throw new InvalidOperationException("Informe um assunto para a interação.");
             }
 
-            _crmHandler.AdicionarInteracao(interacao);
+            var idInteracao = _crmHandler.SalvarInteracao(interacao);
 
             var perfil = _crmHandler.ObterOuCriarPerfil(idSalao, interacao.IdPessoa);
             perfil.UltimoContatoEm = interacao.DataInteracao;
             _crmHandler.SalvarPerfil(perfil);
+
+            return idInteracao;
         }
 
-        public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize)
+        public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize, string? pesquisa = null, DateTime? dataVencimentoInicio = null, DateTime? dataVencimentoFim = null)
         {
             GarantirEstrutura(idSalao);
-            return _crmHandler.ListarTarefas(idSalao, idPessoa, status, idUsuarioResponsavel, pageIndex, pageSize);
+            return _crmHandler.ListarTarefas(idSalao, idPessoa, status, idUsuarioResponsavel, pageIndex, pageSize, pesquisa, dataVencimentoInicio, dataVencimentoFim);
         }
 
         public int SalvarTarefa(int idSalao, CrmTarefa tarefa)
@@ -168,6 +181,12 @@ namespace CorteCor.Services
         {
             GarantirEstrutura(idSalao);
             return _crmHandler.ListarOportunidades(idSalao, idPessoa, status);
+        }
+
+        public PagedResult<CrmOportunidade> ListarOportunidadesPaginadas(int idSalao, int? idPessoa, string? status, DateTime? dataInicio, DateTime? dataFim, int pageIndex, int pageSize)
+        {
+            GarantirEstrutura(idSalao);
+            return _crmHandler.ListarOportunidadesPaginadas(idSalao, idPessoa, status, dataInicio, dataFim, pageIndex, pageSize);
         }
 
         public int SalvarOportunidade(int idSalao, CrmOportunidade oportunidade)

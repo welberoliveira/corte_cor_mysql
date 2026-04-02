@@ -2,12 +2,16 @@ using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Data;
+using System.Data.SqlClient;
 using System.Text;
 
 namespace CorteCor.Pages
 {
     public class EstabelecimentosModel : PageModel
     {
+            private const string LocalEstabelecimentosFallbackConnection =
+                "Server=I5_2022;Database=tonni;Integrated Security=True;TrustServerCertificate=True;Encrypt=False;";
+
             private readonly IConfiguration _config;
 
             private struct ParamDef 
@@ -23,13 +27,15 @@ namespace CorteCor.Pages
             }
 
             // =========================
-            // Config de exportaÁ„o
+            // Config de exporta√ß√£o
             // =========================
             public int ExportMaxRows => 200000; // limite seguro
             public bool ExportTruncado { get; set; }
+            public string? AvisoBaseCnpj { get; set; }
+            public bool BaseCnpjDisponivel { get; set; }
 
             // =========================
-            // Controle: sÛ lista apÛs pesquisar
+            // Controle: s√≥ lista ap√≥s pesquisar
             // =========================
             [BindProperty(SupportsGet = true)]
             public bool Pesquisar { get; set; } = false;
@@ -62,7 +68,7 @@ namespace CorteCor.Pages
 
             public List<OptionItem> Portes { get; } = new()
         {
-            new OptionItem(0, "N„o informado"),
+            new OptionItem(0, "N√£o informado"),
             new OptionItem(1, "Micro empresa"),
             new OptionItem(3, "Empresa de pequeno porte"),
             new OptionItem(5, "Demais")
@@ -111,7 +117,7 @@ namespace CorteCor.Pages
             [BindProperty(SupportsGet = true)] public DateTime? DataSitEspecialDe { get; set; }
             [BindProperty(SupportsGet = true)] public DateTime? DataSitEspecialAte { get; set; }
 
-            // PaginaÁ„o
+            // Pagina√ß√£o
             [BindProperty(SupportsGet = true)] public int Page { get; set; } = 1;
             [BindProperty(SupportsGet = true)] public int PageSize { get; set; } = 50;
 
@@ -136,11 +142,22 @@ namespace CorteCor.Pages
                 AjustarPaginacao();
 
                 using var conn = GetConnection();
+                MapearDisponibilidadeBaseCnpj(conn);
                 LoadDropdowns(conn);
+
+                if (!BaseCnpjDisponivel)
+                {
+                    AvisoBaseCnpj = "A base de estabelecimentos do CNPJ n√£o est√° instalada neste banco. " +
+                                    "A tela foi mantida acess√≠vel, mas a pesquisa s√≥ funcionar√° depois que as tabelas CNPJ forem importadas.";
+                    Total = 0;
+                    Itens = new();
+                    ExportTruncado = false;
+                    return;
+                }
 
                 if (!Pesquisar)
                 {
-                    // N„o listar nada no primeiro carregamento
+                    // N√£o listar nada no primeiro carregamento
                     Total = 0;
                     Itens = new();
                     ExportTruncado = false;
@@ -159,8 +176,14 @@ namespace CorteCor.Pages
             // =========================
             public IActionResult OnGetExportCsv()
             {
-                // sempre carrega dropdowns? n„o precisa
+                // sempre carrega dropdowns? n√£o precisa
                 using var conn = GetConnection();
+                MapearDisponibilidadeBaseCnpj(conn);
+                if (!BaseCnpjDisponivel)
+                {
+                    return Content("A base de estabelecimentos do CNPJ n√£o est√° instalada neste banco.");
+                }
+
                 var (whereSql, pars) = BuildWhere();
 
                 var rows = ExecuteExport(conn, whereSql, pars, ExportMaxRows);
@@ -220,6 +243,12 @@ namespace CorteCor.Pages
             public IActionResult OnGetExportExcel()
             {
                 using var conn = GetConnection();
+                MapearDisponibilidadeBaseCnpj(conn);
+                if (!BaseCnpjDisponivel)
+                {
+                    return Content("A base de estabelecimentos do CNPJ n√£o est√° instalada neste banco.");
+                }
+
                 var (whereSql, pars) = BuildWhere();
                 var rows = ExecuteExport(conn, whereSql, pars, ExportMaxRows);
 
@@ -297,8 +326,14 @@ namespace CorteCor.Pages
 
             private IDbConnection GetConnection()
             {
-                var dbHandler = new DatabaseHandler();
-                return dbHandler.GetConnection();
+                var connectionString =
+                    Environment.GetEnvironmentVariable("ConnectionStrings__EstabelecimentosConnection")
+                    ?? _config.GetConnectionString("EstabelecimentosConnection")
+                    ?? LocalEstabelecimentosFallbackConnection;
+
+                var connection = new SqlConnection(connectionString);
+                connection.Open();
+                return connection;
             }
 
             private void LoadDropdowns(IDbConnection conn)
@@ -314,6 +349,11 @@ namespace CorteCor.Pages
             private List<OptionItem> LoadOptionTable(IDbConnection conn, string table)
             {
                 var list = new List<OptionItem>();
+
+                if (!TableExists(conn, table))
+                {
+                    return list;
+                }
 
                 var sql = $@"
 SELECT Codigo, Descricao
@@ -333,6 +373,27 @@ ORDER BY Descricao;";
                 }
 
                 return list;
+            }
+
+            private void MapearDisponibilidadeBaseCnpj(IDbConnection conn)
+            {
+                BaseCnpjDisponivel =
+                    TableExists(conn, "dbo.CNPJ_Estabelecimentos") &&
+                    TableExists(conn, "dbo.CNPJ_Empresas");
+            }
+
+            private bool TableExists(IDbConnection conn, string fullyQualifiedName)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT CASE WHEN OBJECT_ID(@TableName, 'U') IS NOT NULL THEN 1 ELSE 0 END";
+                cmd.CommandTimeout = 30;
+
+                var parameter = cmd.CreateParameter();
+                parameter.ParameterName = "@TableName";
+                parameter.Value = fullyQualifiedName;
+                cmd.Parameters.Add(parameter);
+
+                return Convert.ToInt32(cmd.ExecuteScalar()) == 1;
             }
 
             // =========================
@@ -612,7 +673,7 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
             }
 
             // =========================
-            // URL: paginaÁ„o / export
+            // URL: pagina√ß√£o / export
             // =========================
             public string BuildPageUrl(int page)
             {
@@ -623,7 +684,7 @@ LEFT JOIN dbo.CNPJ_MotivosSituacaoCadastral mot ON mot.Codigo = est.MotivoSituac
 
             public string BuildExportUrl(string handler)
             {
-                // mantÈm todos os filtros, apenas troca handler
+                // mant√©m todos os filtros, apenas troca handler
                 var baseUrl = BuildUrl(extra: null);
                 if (baseUrl.Contains("?"))
                     return baseUrl.Replace(Request.Path + "?", Request.Path + $"?handler={handler}&");

@@ -1,4 +1,4 @@
-using CorteCor.Models;
+﻿using CorteCor.Models;
 using CorteCor.Handlers;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -32,16 +32,17 @@ namespace CorteCor.Pages
             }
             else
             {
-                Mensagem = "Erro ao identificar o salão do usuário.";
+                Mensagem = "Erro ao identificar a empresa do usuário.";
             }
         }
 
         public IActionResult OnPostExcluir(int id)
         {
             _handler.ExcluirConfig(id);
-            Mensagem = "Regra excluída com sucesso!";
+            Mensagem = "Regra excluÃ­da com sucesso!";
             return RedirectToPage();
         }
     }
 }
+
 

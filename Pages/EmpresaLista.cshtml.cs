@@ -40,28 +40,28 @@ namespace CorteCor.Pages
             if (action == "ativar")
             {
                 handler.AtivarDesativar(id, true);
-                Mensagem = "Salao ativada com sucesso.";
+                Mensagem = "Empresa ativada com sucesso.";
             }
             else if (action == "desativar")
             {
                 handler.AtivarDesativar(id, false);
-                Mensagem = "Salao desativada com sucesso.";
+                Mensagem = "Empresa desativada com sucesso.";
             }
             else if (action == "excluir")
             {
                 try
                 {
                     handler.Excluir(id);
-                    Mensagem = "Salao excluída com sucesso.";
+                    Mensagem = "Empresa excluída com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível excluir esta Salao porque ela está associada a outros registros.";
+                    Mensagem = "Não foi possível excluir esta empresa porque ela está associada a outros registros.";
                 }
             }
             else if (action == "alterar")
             {
-                Response.Redirect(HttpContext.Request.PathBase + $"/SalaoCadastro?id={id}");
+                Response.Redirect(HttpContext.Request.PathBase + $"/EmpresaCadastro?id={id}");
                 OnGet(StatusFilter);
             }
 
@@ -69,4 +69,6 @@ namespace CorteCor.Pages
         }
     }
 }
+
+
 

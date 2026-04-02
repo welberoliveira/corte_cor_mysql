@@ -1,4 +1,4 @@
-using CorteCor.Handlers;
+﻿using CorteCor.Handlers;
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -24,7 +24,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-            Mensagem = "Não foi possível identificar o salão atual.";
+            Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -55,7 +55,7 @@ namespace CorteCor.Pages
         {
             if (!TryObterIdSalao(out var idSalao))
             {
-            Mensagem = "Não foi possível identificar o salão atual.";
+            Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -171,3 +171,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

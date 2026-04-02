@@ -1,4 +1,4 @@
-using CorteCor;
+﻿using CorteCor;
 using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Services;
@@ -93,7 +93,7 @@ namespace CorteCor.Pages
                 }
                 else
                 {
-                    Mensagem = "Erro ao identificar o salão do usuário.";
+                    Mensagem = "Erro ao identificar a empresa do usuário.";
                 }
             }
             catch (Exception ex)
@@ -225,3 +225,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

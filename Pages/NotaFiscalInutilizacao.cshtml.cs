@@ -66,7 +66,7 @@ namespace CorteCor.Pages
                 var config = await _configHandler.ObterPorSalaoAsync(idSalao);
                 if (config == null)
                 {
-                    Erro = "ConfiguraÃ§Ã£o Fiscal do salÃ£o nÃ£o preenchida. Configure-a primeiro.";
+                    Erro = "Configuração fiscal da empresa não preenchida. Configure-a primeiro.";
                     return RedirectToPage();
                 }
 
@@ -103,4 +103,5 @@ namespace CorteCor.Pages
         }
     }
 }
+
 

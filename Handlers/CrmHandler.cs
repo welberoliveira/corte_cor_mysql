@@ -369,7 +369,53 @@ VALUES
             conn.Execute(sql, interacao);
         }
 
-        public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize)
+        public List<CrmInteracao> ListarInteracoes(int idSalao, int idPessoa, int limit = 50)
+        {
+            const string sql = @"
+SELECT TOP (@Limit) *
+FROM CorteCor_CrmInteracao
+WHERE IdSalao = @IdSalao
+  AND IdPessoa = @IdPessoa
+ORDER BY DataInteracao DESC, IdInteracao DESC;";
+
+            using var conn = GetConnection();
+            return conn.Query<CrmInteracao>(sql, new { IdSalao = idSalao, IdPessoa = idPessoa, Limit = limit }).ToList();
+        }
+
+        public int SalvarInteracao(CrmInteracao interacao)
+        {
+            using var conn = GetConnection();
+            if (interacao.IdInteracao > 0)
+            {
+                const string updateSql = @"
+UPDATE CorteCor_CrmInteracao
+SET IdUsuario = @IdUsuario,
+    Canal = @Canal,
+    Tipo = @Tipo,
+    Assunto = @Assunto,
+    Descricao = @Descricao,
+    DataInteracao = @DataInteracao,
+    Referencia = @Referencia,
+    OrigemSistema = @OrigemSistema
+WHERE IdInteracao = @IdInteracao
+  AND IdSalao = @IdSalao
+  AND IdPessoa = @IdPessoa;";
+
+                conn.Execute(updateSql, interacao);
+                return interacao.IdInteracao;
+            }
+
+            const string insertSql = @"
+INSERT INTO CorteCor_CrmInteracao
+    (IdSalao, IdPessoa, IdUsuario, Canal, Tipo, Assunto, Descricao, DataInteracao, Referencia, OrigemSistema)
+VALUES
+    (@IdSalao, @IdPessoa, @IdUsuario, @Canal, @Tipo, @Assunto, @Descricao, @DataInteracao, @Referencia, @OrigemSistema);
+SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+            return conn.ExecuteScalar<int>(insertSql, interacao);
+        }
+
+        public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize, string? pesquisa = null, DateTime? dataVencimentoInicio = null, DateTime? dataVencimentoFim = null)
         {
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
             pageSize = pageSize <= 0 ? 10 : pageSize;
@@ -382,7 +428,10 @@ LEFT JOIN CorteCor_Usuario U ON U.IdUsuario = T.IdUsuarioResponsavel
 WHERE T.IdSalao = @IdSalao
   AND (@IdPessoa IS NULL OR T.IdPessoa = @IdPessoa)
   AND (@Status IS NULL OR T.Status = @Status)
-  AND (@IdUsuarioResponsavel IS NULL OR T.IdUsuarioResponsavel = @IdUsuarioResponsavel)";
+  AND (@IdUsuarioResponsavel IS NULL OR T.IdUsuarioResponsavel = @IdUsuarioResponsavel)
+  AND (@Pesquisa IS NULL OR T.Titulo LIKE '%' + @Pesquisa + '%' OR ISNULL(T.Descricao, '') LIKE '%' + @Pesquisa + '%')
+  AND (@DataVencimentoInicio IS NULL OR CAST(T.DataVencimento AS DATE) >= @DataVencimentoInicio)
+  AND (@DataVencimentoFim IS NULL OR CAST(T.DataVencimento AS DATE) <= @DataVencimentoFim)";
 
             var totalSql = $"SELECT COUNT(1) {whereSql};";
             var listSql = $@"
@@ -404,6 +453,9 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
                 IdPessoa = idPessoa,
                 Status = string.IsNullOrWhiteSpace(status) ? null : status,
                 IdUsuarioResponsavel = idUsuarioResponsavel,
+                Pesquisa = string.IsNullOrWhiteSpace(pesquisa) ? null : pesquisa.Trim(),
+                DataVencimentoInicio = dataVencimentoInicio?.Date,
+                DataVencimentoFim = dataVencimentoFim?.Date,
                 Offset = offset,
                 PageSize = pageSize
             };
@@ -490,6 +542,57 @@ ORDER BY E.Ordem, O.DataAtualizacao DESC;";
                 IdPessoa = idPessoa,
                 Status = string.IsNullOrWhiteSpace(status) ? null : status
             }).ToList();
+        }
+
+        public PagedResult<CrmOportunidade> ListarOportunidadesPaginadas(int idSalao, int? idPessoa, string? status, DateTime? dataInicio, DateTime? dataFim, int pageIndex, int pageSize)
+        {
+            pageIndex = pageIndex <= 0 ? 1 : pageIndex;
+            pageSize = pageSize <= 0 ? 10 : pageSize;
+            var offset = (pageIndex - 1) * pageSize;
+
+            const string whereSql = @"
+FROM CorteCor_CrmOportunidade O
+INNER JOIN CorteCor_Pessoa P ON P.IdPessoa = O.IdPessoa
+INNER JOIN CorteCor_CrmEtapaFunil E ON E.IdEtapa = O.IdEtapa
+WHERE O.IdSalao = @IdSalao
+  AND (@IdPessoa IS NULL OR O.IdPessoa = @IdPessoa)
+  AND (@Status IS NULL OR O.Status = @Status)
+  AND (@DataInicio IS NULL OR (O.PrevisaoFechamento IS NOT NULL AND CAST(O.PrevisaoFechamento AS DATE) >= @DataInicio))
+  AND (@DataFim IS NULL OR (O.PrevisaoFechamento IS NOT NULL AND CAST(O.PrevisaoFechamento AS DATE) <= @DataFim))";
+
+            var totalSql = $"SELECT COUNT(1) {whereSql};";
+            var listSql = $@"
+SELECT
+    O.*,
+    P.Nome AS NomePessoa,
+    E.Nome AS NomeEtapa
+{whereSql}
+ORDER BY
+    CASE WHEN O.Status = 'Aberta' THEN 0 WHEN O.Status = 'Ganha' THEN 1 ELSE 2 END,
+    E.Ordem,
+    COALESCE(O.PrevisaoFechamento, '9999-12-31'),
+    O.DataAtualizacao DESC
+OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+            using var conn = GetConnection();
+            var parameters = new
+            {
+                IdSalao = idSalao,
+                IdPessoa = idPessoa,
+                Status = string.IsNullOrWhiteSpace(status) ? null : status,
+                DataInicio = dataInicio?.Date,
+                DataFim = dataFim?.Date,
+                Offset = offset,
+                PageSize = pageSize
+            };
+
+            return new PagedResult<CrmOportunidade>
+            {
+                Items = conn.Query<CrmOportunidade>(listSql, parameters).ToList(),
+                TotalCount = conn.ExecuteScalar<int>(totalSql, parameters),
+                PageIndex = pageIndex,
+                PageSize = pageSize
+            };
         }
 
         public int SalvarOportunidade(CrmOportunidade oportunidade)

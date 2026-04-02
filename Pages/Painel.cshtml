@@ -1,4 +1,4 @@
-@page
+ï»¿@page
 @model PainelModel
 
 <style>
@@ -29,23 +29,23 @@
 <div class="container mt-1" style="height: 400px;">
     <h4 class="text-center mb-4">Painel Principal</h4>
     <div class="form-group col-md-4">
-        <label for="estadoCivil">Selecione a Salao:</label>
+        <label for="estadoCivil">Selecione a Empresa:</label>
         <select class="form-control" id="IdSalao" name="IdSalao">
-            <option value="11">Salão de Beleza da Paula</option>
+            <option value="11">Empresa Paula Beauty</option>
             <option value="1">Flor de Mulher Beauty</option>
-            <option value="2">Encanto Rosa Salão</option>
+            <option value="2">Encanto Rosa Beauty</option>
             <option value="3">Divina Bela Studio</option>
-            <option value="4">Bella Morena Espaço de Beleza</option>
+            <option value="4">Bella Morena EspaÃƒÂ§o de Beleza</option>
             <option value="5">Luna Rosa Beauty</option>
-            <option value="6">Doce Brilho Salão</option>
-            <option value="7">Essência Feminina</option>
+            <option value="6">Doce Brilho Beauty</option>
+            <option value="7">EssÃƒÂªncia Feminina</option>
             <option value="8">Rainha do Espelho</option>
             <option value="9">Beleza Tropical</option>
             <option value="10">Linda & Leve Studio</option>
         </select>
     </div>
 
-    <button class="btn btn-info">Acessar como este Salão</button>
+    <button class="btn btn-info">Acessar como esta Empresa</button>
 
 
     <!-- Carrega o Google Charts -->
@@ -55,8 +55,8 @@
         google.charts.setOnLoadCallback(drawAllCharts);
 
         function drawAllCharts() {
-            drawChart('chartDocumentacao', 'Documentação do Imóvel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'Documentação'));
-            drawChart('chartCondicaoOcupacaoLote', 'Condição de Ocupação do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'Condição de Ocupação do Lote'));
+            drawChart('chartDocumentacao', 'DocumentaÃƒÂ§ÃƒÂ£o do ImÃƒÂ³vel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'DocumentaÃƒÂ§ÃƒÂ£o'));
+            drawChart('chartCondicaoOcupacaoLote', 'CondiÃƒÂ§ÃƒÂ£o de OcupaÃƒÂ§ÃƒÂ£o do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'CondiÃƒÂ§ÃƒÂ£o de OcupaÃƒÂ§ÃƒÂ£o do Lote'));
             drawChart('chartPossuiIPTU', 'Possui IPTU', getDataArray(@Html.Raw(Json.Serialize(Model.PossuiIPTUChartData)), 'Possui IPTU'));
         }
 
@@ -72,7 +72,7 @@
             return arr;
         }
 
-        // Desenha um gráfico de pizza 3D
+        // Desenha um grÃƒÂ¡fico de pizza 3D
         function drawChart(elementId, title, dataArray) {
             var data = google.visualization.arrayToDataTable(dataArray);
             var options = {
@@ -87,3 +87,5 @@
     </script>
 
 </div>
+
+

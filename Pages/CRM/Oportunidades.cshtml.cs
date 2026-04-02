@@ -20,22 +20,23 @@ namespace CorteCor.Pages.CRM
         }
 
         public List<CrmEtapaFunil> Etapas { get; private set; } = new();
-        public List<CrmOportunidade> Oportunidades { get; private set; } = new();
+        public PagedResult<CrmOportunidade> Oportunidades { get; private set; } = new();
         public List<Pessoa> Clientes { get; private set; } = new();
-
-        [BindProperty]
-        public CrmOportunidade NovaOportunidade { get; set; } = new()
-        {
-            Status = CrmStatusOportunidade.Aberta,
-            Probabilidade = 50,
-            PrevisaoFechamento = DateTime.Today.AddDays(30)
-        };
 
         [BindProperty(SupportsGet = true)]
         public int? IdPessoa { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public string? Status { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataInicio { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? DataFim { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int p { get; set; } = 1;
 
         [TempData]
         public string? FlashMessage { get; set; }
@@ -46,28 +47,6 @@ namespace CorteCor.Pages.CRM
         public IActionResult OnGet()
         {
             return Carregar();
-        }
-
-        public IActionResult OnPostSalvar()
-        {
-            try
-            {
-                if (!TryObterIdSalao(out var idSalao))
-                {
-                    return RedirectToPage("/Index");
-                }
-
-                _crmService.SalvarOportunidade(idSalao, NovaOportunidade);
-                FlashMessage = "Oportunidade salva com sucesso.";
-                FlashType = "success";
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-            }
-
-            return RedirectToPage(new { IdPessoa, Status });
         }
 
         public IActionResult OnPostMover(int idOportunidade, int idEtapa)
@@ -89,7 +68,7 @@ namespace CorteCor.Pages.CRM
                 FlashType = "danger";
             }
 
-            return RedirectToPage(new { IdPessoa, Status });
+            return RedirectToPage(new { IdPessoa, Status, DataInicio, DataFim, p });
         }
 
         private IActionResult Carregar()
@@ -100,16 +79,8 @@ namespace CorteCor.Pages.CRM
             }
 
             Etapas = _crmService.ListarEtapas(idSalao);
-            Oportunidades = _crmService.ListarOportunidades(idSalao, IdPessoa, Status);
+            Oportunidades = _crmService.ListarOportunidadesPaginadas(idSalao, IdPessoa, Status, DataInicio, DataFim, p, 12);
             Clientes = _pessoaHandler.ListarPaginadoPorSalao(idSalao, null, 1, 500).Items;
-            NovaOportunidade = new CrmOportunidade
-            {
-                IdPessoa = IdPessoa ?? 0,
-                IdEtapa = Etapas.FirstOrDefault()?.IdEtapa ?? 0,
-                Status = CrmStatusOportunidade.Aberta,
-                Probabilidade = 50,
-                PrevisaoFechamento = DateTime.Today.AddDays(30)
-            };
             return Page();
         }
 

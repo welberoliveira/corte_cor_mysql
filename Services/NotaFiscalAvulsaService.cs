@@ -606,8 +606,10 @@ namespace CorteCor.Services
 
             var nota = await ObterNotaPorIdentificadorAsync(idSalao, chaveAcesso)
                 ?? throw new InvalidOperationException("Nota não encontrada.");
-            var bytes = await _pdfGenerator.GerarPdfAsync(nota);
-            return (bytes, $"DANFE_{nota.TipoNota}_{nota.Numero}.pdf");
+            var config = await _configHandler.ObterPorSalaoAsync(idSalao);
+            var bytes = await _pdfGenerator.GerarPdfAsync(nota, config);
+            var prefixo = string.Equals(nota.TipoNota, "NFS-e", StringComparison.OrdinalIgnoreCase) ? "DANFSE" : "DANFE";
+            return (bytes, $"{prefixo}_{nota.TipoNota}_{nota.Numero}.pdf");
         }
 
         public async Task<NotaFiscalOperacaoResult> EnviarEmailAsync(int idSalao, string chaveAcesso, string emailDestino, string? nomeDestino = null)

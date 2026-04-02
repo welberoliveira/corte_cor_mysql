@@ -42,17 +42,13 @@
             color: #111827;
         }
 
-        .estoque-note {
-            border-radius: 14px;
-            padding: 0.9rem 1rem;
-            background: #eff6ff;
-            border: 1px solid #93c5fd;
-            color: #1d4ed8;
-            font-size: 0.95rem;
-        }
-
         .estoque-table td {
             vertical-align: top;
+        }
+
+        .estoque-actions {
+            display: flex;
+            justify-content: flex-end;
         }
     </style>
 }
@@ -61,11 +57,13 @@
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
         <div>
             <h2 class="mb-1">Controle de Estoque</h2>
-            <div class="text-muted">Acompanhe a posi&ccedil;&atilde;o atual, filtre produtos com estoque baixo e audite toda a movimenta&ccedil;&atilde;o gerada pelas vendas e pelos ajustes manuais.</div>
+            <div class="text-muted">Acompanhe a posição atual do estoque e navegue para ajuste manual e histórico de movimentações em telas dedicadas.</div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-outline-primary" asp-page="/Vendas/Index">Ir para Vendas</a>
-            <a class="btn btn-outline-dark" asp-page="/ProdutoLista">Produtos</a>
+            <a class="btn btn-primary" asp-page="/Estoque/AjusteManual">Ajuste Manual</a>
+            <a class="btn btn-dark" asp-page="/Estoque/Movimentacoes">Movimentações</a>
+            <a class="btn btn-secondary" asp-page="/Vendas/Index">Ir para Vendas</a>
+            <a class="btn btn-dark" asp-page="/ProdutoLista">Produtos</a>
         </div>
     </div>
 </div>
@@ -102,252 +100,93 @@
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-xl-4">
-        <div class="card estoque-shell-card">
-            <div class="card-header bg-white fw-semibold">Ajuste manual</div>
-            <div class="card-body">
-                <form method="post" asp-page-handler="Ajustar" class="row g-3">
-                    <input type="hidden" name="q" value="@Model.q" />
-                    <input type="hidden" name="somenteBaixo" value="@Model.somenteBaixo" />
-                    <input type="hidden" name="movQ" value="@Model.movQ" />
-                    <input type="hidden" name="movTipo" value="@Model.movTipo" />
-                    <input type="hidden" name="movDataInicio" value="@Model.movDataInicio?.ToString("yyyy-MM-dd")" />
-                    <input type="hidden" name="movDataFim" value="@Model.movDataFim?.ToString("yyyy-MM-dd")" />
-                    <input type="hidden" name="posPage" value="@Model.posPage" />
-                    <input type="hidden" name="movPage" value="@Model.movPage" />
-
-                    <div class="col-12">
-                        <label class="form-label">Produto</label>
-                        <select class="form-select" name="idProduto" required>
-                            <option value="">Selecione...</option>
-                            @foreach (var produto in Model.ProdutosAjuste)
-                            {
-                                <option value="@produto.IdProduto">@produto.Nome</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Tipo</label>
-                        <select class="form-select" name="tipoMovimento">
-                            <option value="Entrada">Entrada</option>
-                            <option value="Saida">Sa&iacute;da</option>
-                        </select>
-                    </div>
-                    <div class="col-md-7">
-                        <label class="form-label">Quantidade</label>
-                        <input class="form-control" type="number" name="quantidade" min="0.001" step="0.001" value="1" required />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Observa&ccedil;&atilde;o</label>
-                        <textarea class="form-control" name="observacao" rows="3" maxlength="500" placeholder="Motivo do ajuste"></textarea>
-                    </div>
-                    <div class="col-12">
-                        <div class="estoque-note">
-                            Ajustes manuais registram hist&oacute;rico completo. As sa&iacute;das de venda continuam sendo baixadas automaticamente quando a venda &eacute; conclu&iacute;da.
-                        </div>
-                    </div>
-                    <div class="col-12 text-end">
-                        <button class="btn btn-primary" type="submit">Registrar ajuste</button>
-                    </div>
-                </form>
+<div class="card estoque-shell-card">
+    <div class="card-header bg-white fw-semibold">Posição do estoque</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end mb-3">
+            <div class="col-md-7">
+                <label class="form-label">Pesquisar produto</label>
+                <input class="form-control" type="text" name="q" value="@Model.q" placeholder="Nome ou código interno" />
             </div>
-        </div>
-    </div>
-
-    <div class="col-xl-8">
-        <div class="card estoque-shell-card mb-4">
-            <div class="card-header bg-white fw-semibold">Posi&ccedil;&atilde;o do estoque</div>
-            <div class="card-body">
-                <form method="get" class="row g-3 align-items-end mb-3">
-                    <div class="col-md-7">
-                        <label class="form-label">Pesquisar produto</label>
-                        <input class="form-control" type="text" name="q" value="@Model.q" placeholder="Nome ou c&oacute;digo interno" />
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check mt-4">
-                            <input class="form-check-input" type="checkbox" id="somenteBaixo" name="somenteBaixo" value="true" checked="@Model.somenteBaixo" />
-                            <label class="form-check-label" for="somenteBaixo">Somente estoque baixo</label>
-                        </div>
-                    </div>
-                    <div class="col-md-2 text-end">
-                        <button class="btn btn-outline-primary" type="submit">Filtrar</button>
-                    </div>
-                    <input type="hidden" name="movQ" value="@Model.movQ" />
-                    <input type="hidden" name="movTipo" value="@Model.movTipo" />
-                    <input type="hidden" name="movDataInicio" value="@Model.movDataInicio?.ToString("yyyy-MM-dd")" />
-                    <input type="hidden" name="movDataFim" value="@Model.movDataFim?.ToString("yyyy-MM-dd")" />
-                </form>
-
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle estoque-table">
-                        <thead>
-                            <tr>
-                                <th>Produto</th>
-                                <th>Categoria</th>
-                                <th class="text-end">Estoque</th>
-                                <th class="text-end">M&iacute;nimo</th>
-                                <th class="text-end">Pre&ccedil;o</th>
-                                <th class="text-end">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model.PosicaoEstoque.Items)
-                            {
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold">@item.Nome</div>
-                                        <div class="small text-muted">@item.CodigoProprio</div>
-                                    </td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.CategoriaNome) ? "-" : item.CategoriaNome)</td>
-                                    <td class="text-end">@item.EstoqueAtual.ToString("N3")</td>
-                                    <td class="text-end">@item.EstoqueMinimo.ToString("N3")</td>
-                                    <td class="text-end">R$ @item.PrecoVenda.ToString("N2")</td>
-                                    <td class="text-end">
-                                        @if (!item.ControlarEstoque)
-                                        {
-                                            <span class="badge bg-secondary">Sem controle</span>
-                                        }
-                                        else if (item.EstoqueBaixo)
-                                        {
-                                            <span class="badge bg-warning text-dark">Baixo</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-success">Ok</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                            @if (!Model.PosicaoEstoque.Items.Any())
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Nenhum produto encontrado.</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+            <div class="col-md-3">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="somenteBaixo" name="somenteBaixo" value="true" checked="@Model.somenteBaixo" />
+                    <label class="form-check-label" for="somenteBaixo">Somente estoque baixo</label>
                 </div>
-
-                @if (Model.PosicaoEstoque.TotalPages > 1)
-                {
-                    <nav class="mt-3">
-                        <ul class="pagination justify-content-center">
-                            @for (var i = 1; i <= Model.PosicaoEstoque.TotalPages; i++)
-                            {
-                                <li class="page-item @(i == Model.PosicaoEstoque.PageIndex ? "active" : "")">
-                                    <a class="page-link" asp-page="/Estoque/Index" asp-route-posPage="@i" asp-route-movPage="@Model.movPage" asp-route-q="@Model.q" asp-route-somenteBaixo="@Model.somenteBaixo" asp-route-movQ="@Model.movQ" asp-route-movTipo="@Model.movTipo" asp-route-movDataInicio="@Model.movDataInicio?.ToString("yyyy-MM-dd")" asp-route-movDataFim="@Model.movDataFim?.ToString("yyyy-MM-dd")">@i</a>
-                                </li>
-                            }
-                        </ul>
-                    </nav>
-                }
             </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-primary" type="submit">Filtrar</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle estoque-table">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Categoria</th>
+                        <th class="text-end">Estoque</th>
+                        <th class="text-end">Mínimo</th>
+                        <th class="text-end">Preço</th>
+                        <th class="text-end">Status</th>
+                        <th class="text-end">Movimentações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.PosicaoEstoque.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@item.Nome</div>
+                                <div class="small text-muted">@item.CodigoProprio</div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(item.CategoriaNome) ? "-" : item.CategoriaNome)</td>
+                            <td class="text-end">@item.EstoqueAtual.ToString("N3")</td>
+                            <td class="text-end">@item.EstoqueMinimo.ToString("N3")</td>
+                            <td class="text-end">R$ @item.PrecoVenda.ToString("N2")</td>
+                            <td class="text-end">
+                                @if (!item.ControlarEstoque)
+                                {
+                                    <span class="badge bg-secondary">Sem controle</span>
+                                }
+                                else if (item.EstoqueBaixo)
+                                {
+                                    <span class="badge bg-warning text-dark">Baixo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Ok</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="estoque-actions">
+                                    <a class="btn btn-sm btn-primary" href="@Model.ObterUrlMovimentacoes(item.IdProduto)">Ver</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.PosicaoEstoque.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Nenhum produto encontrado.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
 
-        <div class="card estoque-shell-card">
-            <div class="card-header bg-white fw-semibold">Movimenta&ccedil;&otilde;es</div>
-            <div class="card-body">
-                <form method="get" class="row g-3 align-items-end mb-3">
-                    <input type="hidden" name="q" value="@Model.q" />
-                    <input type="hidden" name="somenteBaixo" value="@Model.somenteBaixo" />
-                    <div class="col-md-5">
-                        <label class="form-label">Pesquisar movimento</label>
-                        <input class="form-control" type="text" name="movQ" value="@Model.movQ" placeholder="Produto, observa&ccedil;&atilde;o ou venda" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Tipo</label>
-                        <select class="form-select" name="movTipo">
-                            <option value="">Todos</option>
-                            @if (Model.movTipo == MovimentoEstoqueTipo.Entrada)
-                            {
-                                <option value="@MovimentoEstoqueTipo.Entrada" selected>Entrada</option>
-                            }
-                            else
-                            {
-                                <option value="@MovimentoEstoqueTipo.Entrada">Entrada</option>
-                            }
-                            @if (Model.movTipo == MovimentoEstoqueTipo.Saida)
-                            {
-                                <option value="@MovimentoEstoqueTipo.Saida" selected>Sa&iacute;da</option>
-                            }
-                            else
-                            {
-                                <option value="@MovimentoEstoqueTipo.Saida">Sa&iacute;da</option>
-                            }
-                            @if (Model.movTipo == MovimentoEstoqueTipo.Estorno)
-                            {
-                                <option value="@MovimentoEstoqueTipo.Estorno" selected>Estorno</option>
-                            }
-                            else
-                            {
-                                <option value="@MovimentoEstoqueTipo.Estorno">Estorno</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Per&iacute;odo</label>
-                        <div class="d-flex gap-2">
-                            <input class="form-control" type="date" name="movDataInicio" value="@Model.movDataInicio?.ToString("yyyy-MM-dd")" />
-                            <input class="form-control" type="date" name="movDataFim" value="@Model.movDataFim?.ToString("yyyy-MM-dd")" />
-                        </div>
-                    </div>
-                    <div class="col-12 text-end">
-                        <button class="btn btn-outline-primary" type="submit">Filtrar movimentos</button>
-                    </div>
-                </form>
-
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle estoque-table">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Produto</th>
-                                <th>Origem</th>
-                                <th class="text-end">Qtd.</th>
-                                <th class="text-end">Saldo</th>
-                                <th>Observa&ccedil;&atilde;o</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model.Movimentos.Items)
-                            {
-                                <tr>
-                                    <td>@item.DataMovimento.ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td>@item.NomeProduto</td>
-                                    <td>
-                                        <div class="fw-semibold">@item.TipoMovimento</div>
-                                        <div class="small text-muted">@item.Origem</div>
-                                    </td>
-                                    <td class="text-end">@item.Quantidade.ToString("N3")</td>
-                                    <td class="text-end">@item.SaldoPosterior.ToString("N3")</td>
-                                    <td>@item.Observacao</td>
-                                </tr>
-                            }
-                            @if (!Model.Movimentos.Items.Any())
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Nenhuma movimenta&ccedil;&atilde;o encontrada.</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                @if (Model.Movimentos.TotalPages > 1)
-                {
-                    <nav class="mt-3">
-                        <ul class="pagination justify-content-center">
-                            @for (var i = 1; i <= Model.Movimentos.TotalPages; i++)
-                            {
-                                <li class="page-item @(i == Model.Movimentos.PageIndex ? "active" : "")">
-                                    <a class="page-link" asp-page="/Estoque/Index" asp-route-movPage="@i" asp-route-posPage="@Model.posPage" asp-route-q="@Model.q" asp-route-somenteBaixo="@Model.somenteBaixo" asp-route-movQ="@Model.movQ" asp-route-movTipo="@Model.movTipo" asp-route-movDataInicio="@Model.movDataInicio?.ToString("yyyy-MM-dd")" asp-route-movDataFim="@Model.movDataFim?.ToString("yyyy-MM-dd")">@i</a>
-                                </li>
-                            }
-                        </ul>
-                    </nav>
-                }
-            </div>
-        </div>
+        @if (Model.PosicaoEstoque.TotalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    @for (var i = 1; i <= Model.PosicaoEstoque.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PosicaoEstoque.PageIndex ? "active" : "")">
+                            <a class="page-link" asp-page="/Estoque/Index" asp-route-posPage="@i" asp-route-q="@Model.q" asp-route-somenteBaixo="@Model.somenteBaixo">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
     </div>
 </div>

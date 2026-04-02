@@ -91,8 +91,8 @@
             <div class="text-muted">Controle trocas, devoluções e cancelamentos com reflexo em estoque, financeiro e CRM.</div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-outline-primary" asp-page="/Vendas/Index">Voltar para vendas</a>
-            <a class="btn btn-outline-dark" asp-page="/NotaFiscalLista" asp-route-idVendaProduto="@venda?.IdVendaProduto">Notas da venda</a>
+            <a class="btn btn-primary" asp-page="/Vendas/Index">Voltar para vendas</a>
+            <a class="btn btn-dark" asp-page="/NotaFiscalLista" asp-route-idVendaProduto="@venda?.IdVendaProduto">Notas da venda</a>
         </div>
     </div>
 </div>
@@ -228,7 +228,7 @@
                                     <input class="form-control" type="number" id="reposicaoValorUnitarioInput" value="0" min="0" step="0.01" />
                                 </div>
                                 <div class="col-12 text-end">
-                                    <button type="button" class="btn btn-outline-primary" id="addReposicaoBtn">Adicionar reposição</button>
+                                    <button type="button" class="btn btn-primary" id="addReposicaoBtn">Adicionar reposição</button>
                                 </div>
                                 <div class="col-12">
                                     <div class="table-responsive">
@@ -295,7 +295,7 @@
                         <textarea class="form-control" name="observacoes" rows="3" maxlength="500" placeholder="Motivo do cancelamento total"></textarea>
                     </div>
                     <div class="col-12 text-end">
-                        <button type="submit" class="btn btn-outline-danger" @(notaAtiva ? "disabled" : null)>Cancelar venda por completo</button>
+                        <button type="submit" class="btn btn-danger" @(notaAtiva ? "disabled" : null)>Cancelar venda por completo</button>
                     </div>
                 </form>
             </div>
@@ -348,7 +348,7 @@
                     <div class="d-grid gap-2">
                         @foreach (var nota in Model.Contexto.Notas)
                         {
-                            <a class="btn btn-outline-dark text-start" asp-page="/NotaFiscalLista" asp-route-idNotaFiscal="@nota.IdNotaFiscal">
+                            <a class="btn btn-dark text-start" asp-page="/NotaFiscalLista" asp-route-idNotaFiscal="@nota.IdNotaFiscal">
                                 NFS-e @nota.Numero/@nota.Serie • @nota.Status
                             </a>
                         }
@@ -513,7 +513,7 @@
                         <td class="text-end">${Number(item.quantidade).toFixed(3)}</td>
                         <td class="text-end">${formatCurrency(item.valorUnitario)}</td>
                         <td class="text-end fw-semibold">${formatCurrency(total)}</td>
-                        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger" onclick="removerReposicao(${index})">Remover</button></td>
+                        <td class="text-end"><button type="button" class="btn btn-sm btn-danger" onclick="removerReposicao(${index})">Remover</button></td>
                     </tr>
                 `;
             });

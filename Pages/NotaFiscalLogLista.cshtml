@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model CorteCor.Pages.NotaFiscalLogListaModel
 @{
     ViewData["Title"] = "Auditoria e Logs Fiscais";
@@ -11,8 +11,8 @@
             <div class="card mb-4">
                 <div class="card-header pb-0 border-bottom">
                     <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0">Histórico Transacional - Notas Fiscais</h6>
-                        <a href="/SalaoConfigFiscal" class="btn btn-sm btn-primary mb-0">Configurações Fiscais</a>
+                        <h6 class="mb-0">HistÃ³rico Transacional - Notas Fiscais</h6>
+                        <a href="/EmpresaConfigFiscal" class="btn btn-sm btn-primary mb-0">ConfiguraÃ§Ãµes Fiscais</a>
                     </div>
                 </div>
                 <div class="card-body px-0 pt-0 pb-2">
@@ -21,7 +21,7 @@
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-3">Data Hora</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Etapa (Ação)</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Etapa (AÃ§Ã£o)</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Log / Status</th>
                                     <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ref Agen/Nota</th>
                                     <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Payload (XML)</th>
@@ -68,7 +68,7 @@
                                 {
                                     <tr>
                                         <td colspan="5" class="text-center py-4">
-                                            <p class="text-xs text-secondary mb-0">Nenhum log fiscal foi registrado ainda para este salão.</p>
+                                            <p class="text-xs text-secondary mb-0">Nenhum log fiscal foi registrado ainda para esta empresa.</p>
                                         </td>
                                     </tr>
                                 }
@@ -86,7 +86,7 @@
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="xmlModalLabel">Conteúdo Técnico Payload / XML</h5>
+        <h5 class="modal-title" id="xmlModalLabel">ConteÃºdo TÃ©cnico Payload / XML</h5>
         <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body bg-dark">
@@ -120,3 +120,5 @@
         }
     </script>
 }
+
+

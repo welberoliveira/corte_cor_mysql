@@ -5,34 +5,41 @@
 
 <h4 class="mb-3">Estabelecimentos (CNPJ)</h4>
 
+@if (!string.IsNullOrWhiteSpace(Model.AvisoBaseCnpj))
+{
+    <div class="alert alert-warning">
+        @Model.AvisoBaseCnpj
+    </div>
+}
+
 <form method="get" class="card mb-3">
     <div class="card-body">
 
-        <!-- IMPORTANTE: sÛ pesquisa quando Pesquisar=1 -->
+        <!-- IMPORTANTE: s√≥ pesquisa quando Pesquisar=1 -->
         <input type="hidden" name="Pesquisar" value="true" />
 
         <div class="row g-2">
 
             <!-- Empresa -->
             <div class="col-md-4">
-                <label class="form-label">Raz„o Social (contÈm)</label>
+                <label class="form-label">Raz√£o Social (cont√©m)</label>
                 <input class="form-control" name="RazaoSocial" value="@Model.RazaoSocial" />
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Nome Fantasia (contÈm)</label>
+                <label class="form-label">Nome Fantasia (cont√©m)</label>
                 <input class="form-control" name="NomeFantasia" value="@Model.NomeFantasia" />
             </div>
 
             <!-- CNPJ -->
             <div class="col-md-2">
-                <label class="form-label">CNPJ B·sico</label>
-                <input class="form-control" name="CnpjBasico" value="@Model.CnpjBasico" placeholder="8 dÌgitos" />
+                <label class="form-label">CNPJ B√°sico</label>
+                <input class="form-control" name="CnpjBasico" value="@Model.CnpjBasico" placeholder="8 d√≠gitos" />
             </div>
 
             <div class="col-md-2">
                 <label class="form-label">CNPJ Completo</label>
-                <input class="form-control" name="CnpjCompleto" value="@Model.CnpjCompleto" placeholder="14 dÌgitos" />
+                <input class="form-control" name="CnpjCompleto" value="@Model.CnpjCompleto" placeholder="14 d√≠gitos" />
             </div>
 
             <!-- Padronizados -->
@@ -57,7 +64,7 @@
             </div>
 
             <div class="col-md-2">
-                <label class="form-label">SituaÁ„o Cadastral</label>
+                <label class="form-label">Situa√ß√£o Cadastral</label>
                 <select class="form-select" name="SituacaoCadastral">
                     <option value="">(todas)</option>
                     @foreach (var s in Model.SituacoesCadastrais)
@@ -82,7 +89,7 @@
                 </select>
             </div>
 
-            <!-- DomÌnios -->
+            <!-- Dom√≠nios -->
             <div class="col-md-4">
                 <label class="form-label">CNAE Principal</label>
                 <select class="form-select" name="CnaeFiscalPrincipal">
@@ -97,7 +104,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">MunicÌpio</label>
+                <label class="form-label">Munic√≠pio</label>
                 <select class="form-select" name="MunicipioCodigo">
                     <option value="">(todos)</option>
                     @foreach (var it in Model.Municipios)
@@ -110,7 +117,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Motivo SituaÁ„o</label>
+                <label class="form-label">Motivo Situa√ß√£o</label>
                 <select class="form-select" name="MotivoSituacaoCodigo">
                     <option value="">(todos)</option>
                     @foreach (var it in Model.Motivos)
@@ -123,7 +130,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">PaÌs</label>
+                <label class="form-label">Pa√≠s</label>
                 <select class="form-select" name="PaisCodigo">
                     <option value="">(todos)</option>
                     @foreach (var it in Model.Paises)
@@ -136,7 +143,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Natureza JurÌdica (Empresa)</label>
+                <label class="form-label">Natureza Jur√≠dica (Empresa)</label>
                 <select class="form-select" name="NaturezaJuridicaCodigo">
                     <option value="">(todas)</option>
                     @foreach (var it in Model.Naturezas)
@@ -149,7 +156,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">QualificaÁ„o Resp. (Empresa)</label>
+                <label class="form-label">Qualifica√ß√£o Resp. (Empresa)</label>
                 <select class="form-select" name="QualificacaoRespCodigo">
                     <option value="">(todas)</option>
                     @foreach (var it in Model.Qualificacoes)
@@ -163,12 +170,12 @@
 
             <!-- Email/Telefone -->
             <div class="col-md-3">
-                <label class="form-label">Email contÈm (opcional)</label>
+                <label class="form-label">Email cont√©m (opcional)</label>
                 <input class="form-control" name="Email" value="@Model.Email" />
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Telefone contÈm (opcional)</label>
+                <label class="form-label">Telefone cont√©m (opcional)</label>
                 <input class="form-control" name="Telefone" value="@Model.Telefone" />
             </div>
 
@@ -190,7 +197,7 @@
         </div>
 
         <details class="mt-3">
-            <summary>Filtros avanÁados</summary>
+            <summary>Filtros avan√ßados</summary>
 
             <div class="row g-2 mt-2">
                 <div class="col-md-3">
@@ -198,54 +205,54 @@
                     <input class="form-control" name="Cep" value="@Model.Cep" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Bairro (contÈm)</label>
+                    <label class="form-label">Bairro (cont√©m)</label>
                     <input class="form-control" name="Bairro" value="@Model.Bairro" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Logradouro (contÈm)</label>
+                    <label class="form-label">Logradouro (cont√©m)</label>
                     <input class="form-control" name="Logradouro" value="@Model.Logradouro" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">N˙mero</label>
+                    <label class="form-label">N√∫mero</label>
                     <input class="form-control" name="Numero" value="@Model.Numero" />
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Complemento (contÈm)</label>
+                    <label class="form-label">Complemento (cont√©m)</label>
                     <input class="form-control" name="Complemento" value="@Model.Complemento" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Tipo Logradouro (contÈm)</label>
+                    <label class="form-label">Tipo Logradouro (cont√©m)</label>
                     <input class="form-control" name="TipoLogradouro" value="@Model.TipoLogradouro" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Cidade Exterior (contÈm)</label>
+                    <label class="form-label">Cidade Exterior (cont√©m)</label>
                     <input class="form-control" name="NomeCidadeExterior" value="@Model.NomeCidadeExterior" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">CNAE Secund·rio (contÈm)</label>
+                    <label class="form-label">CNAE Secund√°rio (cont√©m)</label>
                     <input class="form-control" name="CnaeSecundaria" value="@Model.CnaeSecundaria" />
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">InÌcio Atividade (de)</label>
+                    <label class="form-label">In√≠cio Atividade (de)</label>
                     <input type="date" class="form-control" name="DataInicioDe" value="@Model.DataInicioDeString" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">InÌcio Atividade (atÈ)</label>
+                    <label class="form-label">In√≠cio Atividade (at√©)</label>
                     <input type="date" class="form-control" name="DataInicioAte" value="@Model.DataInicioAteString" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">SituaÁ„o Cad. (de)</label>
+                    <label class="form-label">Data Situa√ß√£o (in√≠cio)</label>
                     <input type="date" class="form-control" name="DataSituacaoDe" value="@Model.DataSituacaoDeString" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">SituaÁ„o Cad. (atÈ)</label>
+                    <label class="form-label">Data Situa√ß√£o (fim)</label>
                     <input type="date" class="form-control" name="DataSituacaoAte" value="@Model.DataSituacaoAteString" />
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">SituaÁ„o Especial (contÈm)</label>
+                    <label class="form-label">Situa√ß√£o Especial (cont√©m)</label>
                     <input class="form-control" name="SituacaoEspecial" value="@Model.SituacaoEspecial" />
                 </div>
                 <div class="col-md-3">
@@ -253,7 +260,7 @@
                     <input type="date" class="form-control" name="DataSitEspecialDe" value="@Model.DataSitEspecialDeString" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Data Sit. Especial (atÈ)</label>
+                    <label class="form-label">Data Sit. Especial (at√©)</label>
                     <input type="date" class="form-control" name="DataSitEspecialAte" value="@Model.DataSitEspecialAteString" />
                 </div>
             </div>
@@ -261,7 +268,7 @@
 
         <div class="row g-2 mt-3 align-items-end">
             <div class="col-md-2">
-                <label class="form-label">Tamanho p·gina</label>
+                <label class="form-label">Tamanho p√°gina</label>
                 <select class="form-select" name="PageSize">
                     @{
                         int[] sizes = new[] { 25, 50, 100, 200 };
@@ -285,7 +292,7 @@
                     @if (Model.ExportTruncado)
                     {
                         <span class="text-danger align-self-center">
-                            ExportaÁ„o limitada a @Model.ExportMaxRows linhas (resultado total: @Model.Total).
+                            Exporta√ß√£o limitada a @Model.ExportMaxRows linhas (resultado total: @Model.Total).
                         </span>
                     }
                 }
@@ -295,13 +302,13 @@
         @if (Model.PesquisarExecutado)
         {
             <div class="mt-3 text-muted">
-                Total: <b>@Model.Total</b> registros | P·gina <b>@Model.Page</b> de <b>@Model.TotalPages</b>
+                Total: <b>@Model.Total</b> registros | P√°gina <b>@Model.Page</b> de <b>@Model.TotalPages</b>
             </div>
         }
         else
         {
             <div class="mt-3 text-muted">
-                A lista n„o carrega automaticamente. Use os filtros e clique em <b>Filtrar</b>.
+                A lista n√£o carrega automaticamente. Use os filtros e clique em <b>Filtrar</b>.
             </div>
         }
     </div>
@@ -316,7 +323,7 @@
         }
         @if (Model.Page < Model.TotalPages)
         {
-            <a class="btn btn-sm btn-primary" href="@Model.BuildPageUrl(Model.Page + 1)">PrÛxima</a>
+            <a class="btn btn-sm btn-primary" href="@Model.BuildPageUrl(Model.Page + 1)">Pr√≥xima</a>
         }
     </div>
 
@@ -328,27 +335,27 @@
                     <th>Possui Tel</th>
 
                     <th>CNPJ</th>
-                    <th>Raz„o Social</th>
+                    <th>Raz√£o Social</th>
                     <th>Nome Fantasia</th>
                     <th>M/F</th>
 
-                    <th>SituaÁ„o</th>
+                    <th>Situa√ß√£o</th>
                     <th>Data Sit.</th>
                     <th>Motivo</th>
 
-                    <th>InÌcio</th>
+                    <th>In√≠cio</th>
 
                     <th>CNAE</th>
                     <th>CNAE Desc.</th>
                     <th>CNAE Sec.</th>
 
-                    <th>MunicÌpio</th>
+                    <th>Munic√≠pio</th>
                     <th>UF</th>
                     <th>CEP</th>
 
                     <th>Tipo Log.</th>
                     <th>Logradouro</th>
-                    <th>N˙mero</th>
+                    <th>N√∫mero</th>
                     <th>Complemento</th>
                     <th>Bairro</th>
 
@@ -364,8 +371,8 @@
             @foreach (var r in Model.Itens)
             {
                 <tr>
-                    <td>@(r.PossuiEmail ? "Sim" : "N„o")</td>
-                    <td>@(r.PossuiTelefone ? "Sim" : "N„o")</td>
+                    <td>@(r.PossuiEmail ? "Sim" : "N√£o")</td>
+                    <td>@(r.PossuiTelefone ? "Sim" : "N√£o")</td>
 
                     <td>@r.Cnpj</td>
                     <td>@r.RazaoSocial</td>

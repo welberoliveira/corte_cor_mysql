@@ -1,0 +1,37 @@
+@page
+@model CorteCor.Pages.Relatorios.IndexModel
+@{
+    ViewData["Title"] = "Relatórios";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h1 class="text-start mb-1">Relatórios</h1>
+        <p class="text-muted mb-0">Central de acesso para todos os relatórios analíticos e operacionais do sistema.</p>
+    </div>
+</div>
+
+@foreach (var grupo in Model.Grupos)
+{
+    <section class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h3 class="text-start mb-0">@grupo.Key</h3>
+            <span class="badge bg-primary">@grupo.Count() relatórios</span>
+        </div>
+
+        <div class="row g-3">
+            @foreach (var item in grupo)
+            {
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-start">@item.Titulo</h5>
+                            <p class="text-muted flex-grow-1">@item.Descricao</p>
+                            <a class="btn btn-primary w-100" asp-page="/Relatorios/Visualizar" asp-route-tipo="@item.Tipo">Abrir relatório</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}

@@ -1,4 +1,4 @@
-using CorteCor;
+﻿using CorteCor;
 using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Pages;
@@ -14,7 +14,7 @@ using Xunit;
 
 namespace CorteCor.Tests
 {
-    public class Agendamentos2ModelTests
+    public class AgendamentosModelTests
     {
         private readonly Mock<ServicoHandler> _mockServicoHandler;
         private readonly Mock<PessoaHandler> _mockPessoaHandler;
@@ -26,9 +26,9 @@ namespace CorteCor.Tests
         private readonly Mock<MercadoPagoService> _mockMpService;
         private readonly Mock<AgendamentoPreparationService> _mockAgendamentoPreparationService;
         private readonly Mock<AgendamentoFiscalPreparationService> _mockAgendamentoFiscalPreparationService;
-        private readonly Agendamentos2Model _pageModel;
+        private readonly AgendamentosModel _pageModel;
 
-        public Agendamentos2ModelTests()
+        public AgendamentosModelTests()
         {
             _mockServicoHandler = new Mock<ServicoHandler>((IDatabaseHandler)null);
             _mockPessoaHandler = new Mock<PessoaHandler>((IDatabaseHandler)null);
@@ -62,7 +62,7 @@ namespace CorteCor.Tests
                 fakeOrigemPreparationService,
                 fakeNotaFiscalAvulsaService);
 
-            _pageModel = new Agendamentos2Model(
+            _pageModel = new AgendamentosModel(
                 _mockAgendamentoHandler.Object,
                 _mockServicoHandler.Object,
                 _mockPessoaHandler.Object,
@@ -118,7 +118,7 @@ namespace CorteCor.Tests
             if (daysUntilMonday == 0) daysUntilMonday = 7;
             var start = today.AddDays(daysUntilMonday).AddHours(10);
 
-            var req = new Agendamentos2Model.CreateRequest
+            var req = new AgendamentosModel.CreateRequest
             {
                 Start = start.ToString("O"),
                 IdPessoa = 1,
@@ -215,7 +215,7 @@ namespace CorteCor.Tests
                     IdNotaFiscal = Guid.NewGuid()
                 });
 
-            var result = await _pageModel.OnPostEmitirNota(new Agendamentos2Model.EmitirNotaRequest
+            var result = await _pageModel.OnPostEmitirNota(new AgendamentosModel.EmitirNotaRequest
             {
                 IdAgendamento = 55
             });
@@ -266,7 +266,7 @@ namespace CorteCor.Tests
                     IdNotaFiscal = idNota
                 });
 
-            var result = await _pageModel.OnPostEmitirNota(new Agendamentos2Model.EmitirNotaRequest
+            var result = await _pageModel.OnPostEmitirNota(new AgendamentosModel.EmitirNotaRequest
             {
                 IdAgendamento = 77
             });
@@ -288,3 +288,4 @@ namespace CorteCor.Tests
         public Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key) => throw new NotImplementedException();
     }
 }
+
