@@ -1,0 +1,78 @@
+﻿@page
+@model CorteCor.Pages.SalaoLeituraModel
+@{
+    ViewData["Title"] = "Cadastro de Empresas";
+}
+
+<div class="container">
+    <h4>@Model.ButtonText Empresa</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-success">
+            @Model.Mensagem
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="id" value="@Model.Salao?.IdSalao">
+
+        <div class="form-group">
+            <label for="nome">Cidade</label>
+            <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Salao?.Nome" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="responsavel">Responsável</label>
+            <input type="text" id="responsavel" name="responsavel" class="form-control" required value="@Model.Salao?.Responsavel" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-control" required value="@Model.Salao?.Email" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="telefone">Telefone</label>
+            <input type="text" id="telefone" name="telefone" class="form-control" required value="@Model.Salao?.Telefone" readonly>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Limite Envio E-mail</label>
+                    <input type="number" class="form-control" value="@(Model.Salao?.LimiteEnvioEmail ?? 0)" readonly>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Limite Envio SMS</label>
+                    <input type="number" class="form-control" value="@(Model.Salao?.LimiteEnvioSMS ?? 0)" readonly>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Limite Envio WhatsApp</label>
+                    <input type="number" class="form-control" value="@(Model.Salao?.LimiteEnvioWhatsapp ?? 0)" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="dataCadastro">Data de Cadastro</label>
+            <input type="date" id="dataCadastro" name="dataCadastro" class="form-control" required
+                   value="@(Model.Salao?.DataCadastro.ToString("yyyy-MM-dd") ?? DateTime.Now.ToString("yyyy-MM-dd"))" readonly>
+        </div>
+
+        <small class="form-text text-muted">
+            Informações para simples conferência. Caso deseje alterar, contate o Administrador do Sistema.
+        </small>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $("#telefone").inputmask("(99) 99999-9999");
+        $("#cnpj").inputmask("99.999.999/9999-99");
+    });
+</script>

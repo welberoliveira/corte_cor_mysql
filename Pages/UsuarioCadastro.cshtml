@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model UsuarioCadastroModel
 @{
     ViewData["Title"] = @Model.ButtonText + " de Usuários";
@@ -20,7 +20,7 @@
             <label for="nome">Nome</label>
             <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Usuario?.Nome">
         </div>
-        
+
         <div class="form-group">
             <label for="nome">Sobrenome</label>
             <input type="text" id="sobrenome" name="sobrenome" class="form-control" required value="@Model.Usuario?.Sobrenome">
@@ -32,7 +32,7 @@
         </div>
 
         <div class="form-group">
-            <label for="email">Email</label>
+            <label for="email">E-mail</label>
             <input type="text" id="email" name="email" class="form-control" required value="@Model.Usuario?.Email">
         </div>
 
@@ -42,7 +42,7 @@
         </div>
 
         <div class="form-group">
-            <label for="IdSalao">Salao</label>
+            <label for="IdSalao">Empresa</label>
             <select id="IdSalao" name="IdSalao" class="form-control" required>
                 @foreach (var Salao in Model.Saloes)
                 {
@@ -58,11 +58,9 @@
                             @Salao.Nome
                         </option>
                     }
-
                 }
             </select>
         </div>
-
 
         <div class="form-group">
             <label for="dataEntrada">Data de Cadastro</label>
@@ -104,3 +102,4 @@
         });
     });
 </script>
+

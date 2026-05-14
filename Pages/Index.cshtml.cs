@@ -1,17 +1,32 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
+using CorteCor.Handlers;
+using CorteCor.Logs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Data.SqlClient;
+using System.Data;
 using System.Security.Claims;
-using static CorteCor.Models;
+
+using CorteCor;
 
 namespace CorteCor.Pages
 {
     public class LoginModel : PageModel
     {
+        private readonly IDatabaseHandler _dbHandler;
+
+        public LoginModel(IDatabaseHandler dbHandler)
+        {
+            _dbHandler = dbHandler;
+        }
+
         public string ErrorMessage { get; set; }
         public string NomeSalao { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string PasswordValue { get; set; } = string.Empty;
+        public bool PreservePassword { get; set; }
 
         public void OnGet()
         {
@@ -22,24 +37,34 @@ namespace CorteCor.Pages
         {
             ViewData["HideMenu"] = "true";
 
-            var dbHandler = new DatabaseHandler();
-
             var email = Request.Form["email"].ToString();
             var password = Request.Form["password"].ToString();
+            Email = email;
+            PasswordValue = password;
 
-            var loginManager = new LoginManager();
+            var loginManager = new LoginManager(_dbHandler);
 
+            try
+            {
             if (loginManager.AutenticarUsuario(email, password))
             {
+                // Registrar acesso bem-sucedido
+                try
+                {
+                    var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+                    new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", true);
+                }
+                catch { /* Não impedir login */ }
                 //buscar IdUsuario
-                using var connection = dbHandler.GetConnection();
+                using var connection = _dbHandler.GetConnection();
                 string query = @"
                     SELECT IdUsuario
                     FROM CorteCor_Usuario 
                     WHERE Email = @Email;";
 
-                using var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Email", email);
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.AddWithValue("@Email", email);
                 var result = command.ExecuteScalar();
 
                 string IdUsuario = "";
@@ -47,14 +72,15 @@ namespace CorteCor.Pages
                 else
                 {
                     ErrorMessage = "Ocorreu um erro inesperado";
+                    PreservePassword = true;
                     return Page();
                 }
 
                 var handler = new UsuarioHandler();
-                var Usuario = handler.Listar().FirstOrDefault(m => m.IdUsuario.ToString() == IdUsuario);
+                var Usuario = handler.ObterPorId(int.Parse(IdUsuario));
 
 
-                // Criar os claims do usu�rio autenticado
+                // Criar os claims do usuário autenticado
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, email),
@@ -68,15 +94,59 @@ namespace CorteCor.Pages
 
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
+                // ---- Verificação de Limites (Email e SMS) ----
+                try {
+                    var lembreteHandler = new LembreteHandler(_dbHandler);
+                    
+                    // Email
+                    if (lembreteHandler.VerificarLimiteEmail(Usuario.IdSalao, out int envEmail, out int limEmail))
+                    {
+                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de e-mails para sua empresa foi alcançado ({envEmail}/{limEmail}). Adquira mais créditos para continuar enviando lembretes por email.";
+                    }
 
-                // Redirecionar para a p�gina inicial ou outra p�gina protegida
-                return Redirect(HttpContext.Request.PathBase + "/Agendamentos2");
+                    // SMS
+                    if (lembreteHandler.VerificarLimiteSMS(Usuario.IdSalao, out int envSms, out int limSms))
+                    {
+                        TempData["AvisoLimiteSMS"] = $"Atenção: O limite de disparos de SMS para sua empresa foi alcançado ({envSms}/{limSms}). Adquira mais créditos para continuar enviando lembretes por SMS.";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Não impedir login por erro aqui, apenas logar ou ignorar
+                    Console.WriteLine("Erro ao verificar limites: " + ex.Message);
+                }
+                // ----------------------------------------------
+
+                // Redirecionar para o dashboard inicial
+                return Redirect(HttpContext.Request.PathBase + "/Dashboard");
             }
             else
             {
                 ErrorMessage = "Email ou senha incorretos.";
+                PasswordValue = string.Empty;
+                PreservePassword = false;
+
+                // Registrar tentativa falha
+                try
+                {
+                    var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+                    new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", false);
+                }
+                catch { /* Não impedir fluxo */ }
+
+                return Page();
+            }
+            }
+            catch (DatabaseConnectionException)
+            {
+                ErrorMessage = "Nao foi possivel acessar o banco de dados no momento. Tente novamente.";
+                PreservePassword = true;
                 return Page();
             }
         }
     }
 }
+
+
+
+

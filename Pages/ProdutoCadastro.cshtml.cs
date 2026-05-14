@@ -1,0 +1,301 @@
+using CorteCor.Handlers;
+using CorteCor.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Globalization;
+using System.Text.RegularExpressions;
+
+namespace CorteCor.Pages
+{
+    [Authorize(Policy = "UsuarioPolicy")]
+    public class ProdutoCadastroModel : PageModel
+    {
+        private readonly ProdutoHandler _produtoHandler;
+        private readonly CategoriaProdutoHandler _categoriaHandler;
+
+        [BindProperty]
+        public Produto Produto { get; set; } = new();
+
+        public List<CategoriaProduto> Categorias { get; set; } = new();
+        public string Mensagem { get; set; } = string.Empty;
+        public string MensagemTipo { get; set; } = "success";
+        public string ButtonText { get; set; } = "Cadastrar";
+
+        public ProdutoCadastroModel(ProdutoHandler produtoHandler, CategoriaProdutoHandler categoriaHandler)
+        {
+            _produtoHandler = produtoHandler;
+            _categoriaHandler = categoriaHandler;
+        }
+
+        public void OnGet(int? id)
+        {
+            CarregarListas();
+
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Mensagem = "Não foi possível identificar a empresa atual.";
+                MensagemTipo = "danger";
+                Produto = new Produto { DataCadastro = DateTime.Now, ControlarEstoque = true };
+                return;
+            }
+
+            if (id.HasValue && id > 0)
+            {
+                Produto = _produtoHandler.ObterPorIdESalao(id.Value, idSalao) ?? new Produto { DataCadastro = DateTime.Now, ControlarEstoque = true };
+                ButtonText = Produto.IdProduto > 0 ? "Atualizar" : "Cadastrar";
+            }
+            else
+            {
+                Produto = new Produto { DataCadastro = DateTime.Now, ControlarEstoque = true };
+            }
+        }
+
+        public IActionResult OnPost()
+        {
+            CarregarListas();
+
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Mensagem = "Não foi possível identificar a empresa atual.";
+                MensagemTipo = "danger";
+                return Page();
+            }
+
+            string action = Request.Form["action"];
+            if (action != "salvar")
+            {
+                return Page();
+            }
+
+            // Mantém compatibilidade com o payload antigo e garante
+            // que a atualização use o ID do produto em edição.
+            if (Produto.IdProduto <= 0)
+            {
+                if (int.TryParse(Request.Form["Produto.IdProduto"], out var produtoId) && produtoId > 0)
+                {
+                    Produto.IdProduto = produtoId;
+                }
+                else if (int.TryParse(Request.Form["id"], out var fallbackId) && fallbackId > 0)
+                {
+                    Produto.IdProduto = fallbackId;
+                }
+            }
+
+            Produto.Nome = Request.Form["nome"].ToString().Trim();
+            Produto.CodigoProprio = NormalizarTexto(Request.Form["codigoProprio"]);
+            Produto.IdCategoria = ParseNullableInt(Request.Form["idCategoria"]);
+            Produto.TipoUso = NormalizarTexto(Request.Form["tipoUso"]);
+            Produto.Tags = NormalizarTexto(Request.Form["tags"]);
+            Produto.Anotacoes = NormalizarTexto(Request.Form["anotacoes"]);
+            Produto.Origem = ParseNullableInt(Request.Form["origem"]);
+            Produto.NCM = NormalizarTexto(Request.Form["ncm"]);
+            Produto.CEST = NormalizarTexto(Request.Form["cest"]);
+            Produto.UnidadeComercial = NormalizarTexto(Request.Form["unidadeComercial"]);
+            Produto.ReferenciaEAN = NormalizarTexto(Request.Form["referenciaEAN"]);
+            Produto.ExcecaoIPI = ParseNullableInt(Request.Form["excecaoIPI"]);
+            Produto.CodBeneficioFiscalUF = NormalizarTexto(Request.Form["codBeneficioFiscalUF"]);
+            Produto.EANTributada = NormalizarTexto(Request.Form["eanTributada"]);
+            Produto.UnidadeTributada = NormalizarTexto(Request.Form["unidadeTributada"]);
+            Produto.AnotacoesFiscaisNFe = NormalizarTexto(Request.Form["anotacoesFiscaisNFe"]);
+            Produto.IdSalao = idSalao;
+            Produto.Arquivado = Request.Form["arquivado"] == "on";
+            Produto.ControlarEstoque = Request.Form["controlarEstoque"] == "on";
+            Produto.UnidadeTributadaDiferente = Request.Form["unidadeTributadaDiferente"] == "on";
+            Produto.IgnorarTribPrecoVenda = Request.Form["ignorarTribPrecoVenda"] == "on";
+            Produto.PrecoCusto = ParseNullableMoney(Request.Form["precoCusto"]);
+            Produto.PrecoVenda = ParseMoney(Request.Form["precoVenda"]);
+            Produto.MargemContribuicao = ParseNullableMoney(Request.Form["margemContribuicao"]);
+            Produto.EstoqueAtual = ParseNullableNumberInput(Request.Form["estoqueAtual"]);
+            Produto.EstoqueMinimo = ParseNullableNumberInput(Request.Form["estoqueMinimo"]);
+            Produto.PesoLiquido = ParseNullableNumberInput(Request.Form["pesoLiquido"]);
+            Produto.PesoBruto = ParseNullableNumberInput(Request.Form["pesoBruto"]);
+            Produto.QuantidadeTributada = ParseNullableNumberInput(Request.Form["quantidadeTributada"]);
+
+            ButtonText = Produto.IdProduto > 0 ? "Atualizar" : "Cadastrar";
+
+            if (!ValidarProduto())
+            {
+                return Page();
+            }
+
+            if (Produto.IdProduto > 0)
+            {
+                var existente = _produtoHandler.ObterPorIdESalao(Produto.IdProduto, idSalao);
+                if (existente == null)
+                {
+                    Mensagem = "Produto não encontrado para a empresa atual.";
+                    MensagemTipo = "danger";
+                    return Page();
+                }
+
+                _produtoHandler.Atualizar(Produto);
+                Mensagem = "Produto atualizado com sucesso.";
+                MensagemTipo = "success";
+                return Page();
+            }
+
+            Produto.DataCadastro = DateTime.Now;
+            Produto.Excluido = false;
+            Produto.IdProduto = _produtoHandler.CadastrarProduto(Produto);
+            ButtonText = "Atualizar";
+            Mensagem = "Produto cadastrado com sucesso.";
+            MensagemTipo = "success";
+            return Page();
+        }
+
+        public IActionResult OnPostSaveCategory(string nome, string descricao)
+        {
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                return new JsonResult(new { success = false, message = "Empresa não identificada." });
+            }
+
+            nome = (nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+            {
+                return new JsonResult(new { success = false, message = "Nome é obrigatório." });
+            }
+
+            if (_categoriaHandler.ExisteNomePorSalao(nome, idSalao))
+            {
+                return new JsonResult(new { success = false, message = "Já existe uma categoria com esse nome." });
+            }
+
+            var categoria = new CategoriaProduto
+            {
+                Nome = nome,
+                IdSalao = idSalao,
+                Ativo = true,
+                DataCadastro = DateTime.Now
+            };
+
+            int id = _categoriaHandler.CadastrarCategoria(categoria);
+            return id > 0
+                ? new JsonResult(new { success = true, id, nome })
+                : new JsonResult(new { success = false, message = "Erro ao cadastrar categoria." });
+        }
+
+        private void CarregarListas()
+        {
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                Categorias = new List<CategoriaProduto>();
+                return;
+            }
+
+            Categorias = _categoriaHandler.ListarPorSalao(idSalao)?.Where(c => c.Ativo).ToList() ?? new List<CategoriaProduto>();
+        }
+
+        private bool ValidarProduto()
+        {
+            if (string.IsNullOrWhiteSpace(Produto.Nome))
+            {
+                Mensagem = "Informe o nome do produto.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (Produto.PrecoVenda < 0)
+            {
+                Mensagem = "O preço de venda não pode ser negativo.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (Produto.PrecoCusto.HasValue && Produto.PrecoCusto < 0)
+            {
+                Mensagem = "O preço de custo não pode ser negativo.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (Produto.ControlarEstoque)
+            {
+                if (Produto.EstoqueAtual.HasValue && Produto.EstoqueAtual < 0 || Produto.EstoqueMinimo.HasValue && Produto.EstoqueMinimo < 0)
+                {
+                    Mensagem = "Os valores de estoque não podem ser negativos.";
+                    MensagemTipo = "warning";
+                    return false;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(Produto.NCM) && !Regex.IsMatch(Produto.NCM, @"^\d{8}$"))
+            {
+                Mensagem = "O NCM deve conter exatamente 8 dígitos.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Produto.CEST) && !Regex.IsMatch(Produto.CEST, @"^\d{7}$"))
+            {
+                Mensagem = "O CEST deve conter exatamente 7 dígitos.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Produto.ReferenciaEAN) && !Regex.IsMatch(Produto.ReferenciaEAN, @"^\d{8,14}$"))
+            {
+                Mensagem = "O GTIN/EAN deve conter entre 8 e 14 dígitos numéricos.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static decimal ParseMoney(string valor)
+        {
+            return ParseNullableMoney(valor) ?? 0m;
+        }
+
+        private static decimal? ParseNullableMoney(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            var normalizado = valor.Replace("R$", string.Empty).Trim().Replace(".", "").Replace(",", ".");
+            return decimal.TryParse(normalizado, NumberStyles.Any, CultureInfo.InvariantCulture, out var result)
+                ? result
+                : null;
+        }
+
+        private static decimal? ParseNullableNumberInput(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            var normalizado = valor.Trim().Replace(" ", string.Empty);
+
+            if (decimal.TryParse(normalizado, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+            {
+                return result;
+            }
+
+            return decimal.TryParse(normalizado, NumberStyles.Any, new CultureInfo("pt-BR"), out result)
+                ? result
+                : null;
+        }
+
+        private static int? ParseNullableInt(string valor)
+        {
+            return int.TryParse(valor, out var result) ? result : null;
+        }
+
+        private static string? NormalizarTexto(string valor)
+        {
+            var texto = valor?.Trim();
+            return string.IsNullOrWhiteSpace(texto) ? null : texto;
+        }
+
+        private bool TryObterIdSalao(out int idSalao)
+        {
+            return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
+        }
+    }
+}
+

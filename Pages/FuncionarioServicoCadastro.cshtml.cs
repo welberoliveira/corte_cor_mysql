@@ -1,19 +1,23 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
     [Authorize(Policy = "UsuarioPolicy")]
     public class FuncionarioServicoCadastroModel : PageModel
     {
-        public List<Funcionario> Funcionarios { get; set; }
-        public List<Servico> Servicos { get; set; }
+        public List<Funcionario> Funcionarios { get; set; } = new();
+        public List<Servico> Servicos { get; set; } = new();
 
-        // Para manter selecionado após post/edição
+        public bool IsLockedEmployee { get; set; }
+
+        // Para manter selecionado apÃ³s post/ediÃ§Ã£o
         public int? IdFuncionarioSelecionado { get; set; }
         public List<int> ServicosSelecionadosIds { get; set; } = new List<int>();
 
@@ -28,13 +32,14 @@ namespace CorteCor.Pages
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
 
             Funcionarios = funcionarioHandler.ListarPorSalao(idSalao) ?? new List<Funcionario>();
-            Servicos = servicoHandler.Listar() ?? new List<Servico>();
+            Servicos = servicoHandler.ListarPorSalao(idSalao) ?? new List<Servico>();
 
             if (idFuncionario.HasValue)
             {
                 IdFuncionarioSelecionado = idFuncionario.Value;
+                IsLockedEmployee = true;
 
-                // Carrega os serviços já relacionados (tabela N:N)
+                // Carrega os serviÃ§os jÃ¡ relacionados (tabela N:N)
                 var fsHandler = new FuncionarioServicoHandler();
                 var relacoes = fsHandler.ListarPorFuncionario(idFuncionario.Value) ?? new List<FuncionarioServico>();
 
@@ -42,8 +47,10 @@ namespace CorteCor.Pages
             }
         }
 
-        public void OnPost()
+        public void OnPost(bool? locked)
         {
+            if (locked == true) IsLockedEmployee = true;
+
             int idFuncionario = 0;
             int.TryParse(Request.Form["idFuncionario"], out idFuncionario);
 
@@ -59,7 +66,7 @@ namespace CorteCor.Pages
 
             var fsHandler = new FuncionarioServicoHandler();
 
-            // Estratégia simples: limpa e regrava (ok, porque você quer salvar "o conjunto")
+            // EstratÃ©gia simples: limpa e regrava (ok, porque vocÃª quer salvar "o conjunto")
             fsHandler.ExcluirPorFuncionario(idFuncionario);
 
             foreach (var idServico in idsSelecionados.Distinct())
@@ -71,10 +78,11 @@ namespace CorteCor.Pages
                 });
             }
 
-            Mensagem = "Serviços vinculados ao funcionário com sucesso!";
+            Mensagem = "ServiÃ§os vinculados ao funcionÃ¡rio com sucesso!";
 
-            // Recarrega mantendo seleção
+            // Recarrega mantendo seleÃ§Ã£o
             OnGet(idFuncionario);
         }
     }
 }
+

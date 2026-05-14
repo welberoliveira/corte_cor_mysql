@@ -1,0 +1,213 @@
+@page
+@model CorteCor.Pages.CRM.ClienteModel
+@{
+    ViewData["Title"] = "Cliente CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a asp-page="/CRM/Index" class="btn btn-link ps-0">Voltar para CRM</a>
+        <h2 class="mb-1">@Model.Detalhe.Pessoa.Nome</h2>
+        <div class="text-muted">
+            @Model.Detalhe.Pessoa.Email
+            @if (!string.IsNullOrWhiteSpace(Model.Detalhe.Pessoa.Telefone))
+            {
+                <span> | @Model.Detalhe.Pessoa.Telefone</span>
+            }
+        </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <span class="badge bg-primary fs-6">@Model.Detalhe.Perfil.StatusRelacionamento</span>
+        <span class="badge bg-dark fs-6">Temperatura: @Model.Detalhe.Perfil.Temperatura</span>
+        <a class="btn btn-primary" asp-page="/CRM/ClientePerfil" asp-route-idPessoa="@Model.IdPessoa">Perfil CRM</a>
+        <a class="btn btn-dark" asp-page="/CRM/ClienteOportunidades" asp-route-idPessoa="@Model.IdPessoa">Oportunidades</a>
+        <a class="btn btn-success" asp-page="/CRM/ClienteInteracoes" asp-route-idPessoa="@Model.IdPessoa">Intera&ccedil;&otilde;es</a>
+        <a class="btn btn-warning text-dark" asp-page="/CRM/ClienteFollowUp" asp-route-idPessoa="@Model.IdPessoa">Acompanhamentos</a>
+        <a class="btn btn-secondary" asp-page="/PessoaCadastro" asp-route-id="@Model.IdPessoa">Editar cadastro</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">&Uacute;ltimo contato</div>
+                <div class="fw-semibold">@(Model.Detalhe.Resumo.UltimoContatoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem contato")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Pr&oacute;xima a&ccedil;&atilde;o</div>
+                <div class="fw-semibold">@(Model.Detalhe.Resumo.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "N&atilde;o definida")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Oportunidades em aberto</div>
+                <div class="fw-semibold">@Model.Detalhe.Resumo.OportunidadesAbertas</div>
+                <div class="small text-muted">R$ @Model.Detalhe.Resumo.ValorOportunidadesAbertas.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Acompanhamentos em aberto</div>
+                <div class="fw-semibold">@Model.Detalhe.Resumo.TarefasAbertas</div>
+                <div class="small text-muted">Acompanhamentos pendentes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">&Uacute;ltimo agendamento</div>
+                <div class="fw-semibold">@(Model.Detalhe.Resumo.UltimoAgendamentoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem hist&oacute;rico")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="timeline-360-badge">Timeline 360</span>
+            <span class="small text-muted">@Model.TimelineFiltrada.Count item(ns) nesta p&aacute;gina</span>
+        </div>
+        <span class="small text-muted">@Model.TimelineTotalCount item(ns) filtrado(s)</span>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3 mb-4">
+            <input type="hidden" asp-for="IdPessoa" />
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" asp-for="TipoFiltro">
+                    <option value="">Todos</option>
+                    @foreach (var tipo in Model.TiposTimelineDisponiveis)
+                    {
+                        <option value="@tipo">@tipo</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data inicial</label>
+                <input type="date" class="form-control" asp-for="DataInicio" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data final</label>
+                <input type="date" class="form-control" asp-for="DataFim" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Pesquisar no conte&uacute;do</label>
+                <input class="form-control" asp-for="PesquisaTimeline" placeholder="T&iacute;tulo ou descri&ccedil;&atilde;o" />
+            </div>
+            <div class="col-12 d-flex gap-2 justify-content-end flex-wrap">
+                <button type="submit" class="btn btn-primary">Filtrar timeline</button>
+                <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa">Limpar</a>
+            </div>
+        </form>
+
+        @if (Model.TimelineFiltrada.Any())
+        {
+            <div class="crm-timeline">
+                @foreach (var item in Model.TimelineFiltrada)
+                {
+                    <div class="crm-timeline-item">
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <div>
+                                <span class="badge @item.BadgeClass">@item.Categoria</span>
+                                <div class="fw-semibold mt-2">@item.Titulo</div>
+                                <div class="text-muted small">@item.Descricao</div>
+                            </div>
+                            <div class="small text-muted">@item.Data.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4">
+                <div class="small text-muted">
+                    P&aacute;gina @Model.PageIndex de @Model.TimelineTotalPages • @Model.TimelineTotalCount item(ns) filtrado(s)
+                </div>
+                <div class="d-flex gap-2">
+                    @if (Model.PodeVoltarPagina)
+                    {
+                        <a class="btn btn-secondary"
+                           asp-page="/CRM/Cliente"
+                           asp-route-idPessoa="@Model.IdPessoa"
+                           asp-route-tipoFiltro="@Model.TipoFiltro"
+                           asp-route-dataInicio="@(Model.DataInicio?.ToString("yyyy-MM-dd"))"
+                           asp-route-dataFim="@(Model.DataFim?.ToString("yyyy-MM-dd"))"
+                           asp-route-pesquisaTimeline="@Model.PesquisaTimeline"
+                           asp-route-pageIndex="@(Model.PageIndex - 1)">
+                            P&aacute;gina anterior
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-secondary" disabled>P&aacute;gina anterior</button>
+                    }
+
+                    @if (Model.PodeAvancarPagina)
+                    {
+                        <a class="btn btn-primary"
+                           asp-page="/CRM/Cliente"
+                           asp-route-idPessoa="@Model.IdPessoa"
+                           asp-route-tipoFiltro="@Model.TipoFiltro"
+                           asp-route-dataInicio="@(Model.DataInicio?.ToString("yyyy-MM-dd"))"
+                           asp-route-dataFim="@(Model.DataFim?.ToString("yyyy-MM-dd"))"
+                           asp-route-pesquisaTimeline="@Model.PesquisaTimeline"
+                           asp-route-pageIndex="@(Model.PageIndex + 1)">
+                            Pr&oacute;xima p&aacute;gina
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" disabled>Pr&oacute;xima p&aacute;gina</button>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="text-muted">Nenhum item encontrado para os filtros informados.</div>
+        }
+    </div>
+</div>
+
+<style>
+    .timeline-360-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: .55rem 1rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #084298);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+        box-shadow: 0 10px 24px rgba(13, 110, 253, .18);
+    }
+
+    .crm-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .crm-timeline-item {
+        border: 1px solid #e2e8f0;
+        border-radius: .75rem;
+        padding: 1rem;
+        background: #f8fafc;
+    }
+</style>

@@ -1,0 +1,75 @@
+@page
+@model CorteCor.Pages.CRM.TarefaCadastroModel
+@{
+    ViewData["Title"] = "Nova Tarefa CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-1">Nova tarefa</h2>
+    <a class="btn btn-secondary" asp-page="/CRM/Tarefas">Voltar para tarefas</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Dados da tarefa</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Salvar" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Cliente</label>
+                <select class="form-select" asp-for="TarefaInput.IdPessoa">
+                    <option value="">Não vinculado</option>
+                    @foreach (var cliente in Model.Clientes)
+                    {
+                        <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Título</label>
+                <input class="form-control" asp-for="TarefaInput.Titulo" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Prioridade</label>
+                <select class="form-select" asp-for="TarefaInput.Prioridade">
+                    <option value="Baixa">Baixa</option>
+                    <option value="Media">Média</option>
+                    <option value="Alta">Alta</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" asp-for="TarefaInput.Status">
+                    <option value="Aberta">Aberta</option>
+                    <option value="Concluida">Concluída</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Canal</label>
+                <select class="form-select" asp-for="TarefaInput.CanalSugerido">
+                    <option value="">Indefinido</option>
+                    <option value="Email">Email</option>
+                    <option value="SMS">SMS</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Telefone">Telefone</option>
+                    <option value="Presencial">Presencial</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Vencimento</label>
+                <input type="datetime-local" class="form-control" asp-for="TarefaInput.DataVencimento" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" asp-for="TarefaInput.Descricao" rows="4"></textarea>
+            </div>
+            <div class="col-12 text-end">
+                <button class="btn btn-primary" type="submit">Salvar tarefa</button>
+            </div>
+        </form>
+    </div>
+</div>

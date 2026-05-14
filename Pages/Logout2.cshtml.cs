@@ -10,8 +10,8 @@ namespace CorteCor.Pages
         public async Task<IActionResult> OnGetAsync()
         {
             ViewData["HideMenu"] = "true";
-            
-            return RedirectToPage(HttpContext.Request.PathBase + "/Index"); 
+
+            return RedirectToPage("/Index");
         }
     }
 }

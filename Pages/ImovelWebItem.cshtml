@@ -1,0 +1,487 @@
+@page "{id:int}"
+@model CorteCor.Pages.ImovelWebItemModel
+
+@{
+    ViewData["Title"] = Model.Imovel?.Titulo ?? "Imovel Web Item";
+    Layout = "_PublicLayout";
+    var fotos = Model.FotosOrdenadas();
+}
+
+@section Styles {
+    <style>
+        .imovel-detail-page {
+            max-width: 1180px;
+            margin: 0 auto 2rem;
+            color: #172033;
+        }
+
+        .detail-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-title {
+            text-align: left;
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.6rem;
+            line-height: 1.25;
+        }
+
+        .detail-subtitle {
+            color: #64748b;
+            margin: .25rem 0 0;
+        }
+
+        .detail-btn-primary,
+        .detail-btn-outline,
+        .detail-btn-muted {
+            border-radius: 7px !important;
+            min-width: auto !important;
+            font-weight: 700;
+        }
+
+        .detail-btn-primary {
+            background: #0f62fe !important;
+            border: 1px solid #0f62fe !important;
+            color: #fff !important;
+        }
+
+        .detail-btn-outline {
+            background: #fff !important;
+            border: 1px solid #0f62fe !important;
+            color: #0f62fe !important;
+        }
+
+        .detail-btn-muted {
+            background: #f8fafc !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #334155 !important;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-rows: repeat(2, 196px);
+            gap: .55rem;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #e2e8f0;
+        }
+
+        .gallery-tile {
+            position: relative;
+            border: 0;
+            padding: 0;
+            background: #e2e8f0;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .gallery-tile.main {
+            grid-row: span 2;
+        }
+
+        .gallery-tile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform .18s ease;
+        }
+
+        .gallery-tile:hover img {
+            transform: scale(1.025);
+        }
+
+        .gallery-more {
+            position: absolute;
+            right: .75rem;
+            bottom: .75rem;
+            background: rgba(15, 23, 42, .88);
+            color: #fff;
+            border-radius: 999px;
+            padding: .4rem .75rem;
+            font-weight: 700;
+            font-size: .84rem;
+        }
+
+        .detail-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 336px;
+            gap: 1rem;
+            align-items: start;
+            margin-top: 1rem;
+        }
+
+        .detail-panel,
+        .contact-panel {
+            background: #fff;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+        }
+
+        .detail-panel {
+            padding: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-panel {
+            position: sticky;
+            top: 1rem;
+            padding: 1.1rem;
+        }
+
+        .panel-title {
+            text-align: left;
+            margin: 0 0 .8rem;
+            font-size: 1.12rem;
+            color: #0f172a;
+        }
+
+        .price-box {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: .9rem;
+            align-items: end;
+            margin-bottom: .9rem;
+        }
+
+        .price-main {
+            color: #0f62fe;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .detail-badges,
+        .feature-list,
+        .quick-facts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .detail-badge {
+            display: inline-flex;
+            background: #edf5ff;
+            color: #0b4aa2;
+            border-radius: 999px;
+            padding: .28rem .62rem;
+            font-weight: 700;
+            font-size: .84rem;
+        }
+
+        .fact-item,
+        .feature-item {
+            border: 1px solid #dbe3ef;
+            border-radius: 999px;
+            padding: .42rem .7rem;
+            background: #fff;
+            color: #334155;
+            font-size: .9rem;
+        }
+
+        .detail-text {
+            white-space: pre-line;
+            line-height: 1.65;
+            color: #334155;
+        }
+
+        .commercial-table {
+            display: grid;
+            gap: .45rem;
+            color: #334155;
+        }
+
+        .commercial-row {
+            display: flex;
+            justify-content: space-between;
+            gap: .75rem;
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: .45rem;
+        }
+
+        .contact-panel h5 {
+            text-align: left;
+            margin: 0 0 .3rem;
+        }
+
+        .phone-output {
+            display: inline-block;
+            margin-left: .4rem;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .carousel-item img {
+            max-height: 78vh;
+            object-fit: contain;
+            background: #0f172a;
+        }
+
+        @@media (max-width: 991px) {
+            .detail-layout { grid-template-columns: 1fr; }
+            .contact-panel { position: static; }
+            .gallery-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 260px 150px 150px;
+            }
+            .gallery-tile.main {
+                grid-column: span 2;
+                grid-row: span 1;
+            }
+        }
+    </style>
+}
+
+<div class="imovel-detail-page">
+    @if (Model.Imovel == null)
+    {
+        <div class="alert alert-@Model.MensagemTipo">@Model.Mensagem</div>
+        <a asp-page="/ImoveisWeb" asp-route-id="@Model.IdSalao" class="btn detail-btn-outline">Voltar para Im&oacute;veis Web</a>
+    }
+    else
+    {
+        <div class="detail-topbar">
+            <div>
+                <h4 class="detail-title">@Model.Imovel.Titulo</h4>
+                <p class="detail-subtitle">@Model.EnderecoPublico()</p>
+            </div>
+            <a asp-page="/ImoveisWeb" asp-route-id="@Model.Imovel.IdSalao" class="btn detail-btn-outline">Voltar para lista</a>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Mensagem))
+        {
+            <div class="alert alert-@Model.MensagemTipo">@Model.Mensagem</div>
+        }
+
+        @if (fotos.Any())
+        {
+            <div class="gallery-grid">
+                @for (var i = 0; i < Math.Min(fotos.Count, 5); i++)
+                {
+                    var foto = fotos[i];
+                    <button type="button" class="gallery-tile @(i == 0 ? "main" : "")" data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="@i">
+                        <img src="@foto.CaminhoArquivo" alt="@(foto.AltText ?? Model.Imovel.Titulo)">
+                        @if (i == Math.Min(fotos.Count, 5) - 1)
+                        {
+                            <span class="gallery-more">Ver @fotos.Count foto(s)</span>
+                        }
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="gallery-grid">
+                <div class="gallery-tile main"><img src="@Model.FotoPrincipal()" alt="@Model.Imovel.Titulo"></div>
+            </div>
+        }
+
+        <div class="detail-layout">
+            <main>
+                <section class="detail-panel">
+                    <div class="price-box">
+                        <div>
+                            <div class="detail-badges">
+                                <span class="detail-badge">@Model.Imovel.Finalidade</span>
+                                <span class="detail-badge">@Model.Imovel.TipoImovel</span>
+                                <span class="detail-badge">@Model.Imovel.StatusAnuncio</span>
+                            </div>
+                            <div class="price-main mt-2">@Model.FormatarValor()</div>
+                            <small class="text-muted">C&oacute;digo @Model.Imovel.CodigoImovel</small>
+                        </div>
+                        <div class="quick-facts">
+                            @foreach (var item in Model.Caracteristicas().Take(6))
+                            {
+                                <span class="fact-item">@item</span>
+                            }
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Imovel.Subtitulo))
+                    {
+                        <p class="detail-text">@Model.Imovel.Subtitulo</p>
+                    }
+                </section>
+
+                <section class="detail-panel">
+                    <h5 class="panel-title">Mais sobre este im&oacute;vel</h5>
+                    <p class="detail-text">@Model.Imovel.DescricaoPrincipal</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.Imovel.ListaComposicao))
+                    {
+                        <h5 class="panel-title mt-3">Composi&ccedil;&atilde;o</h5>
+                        <p class="detail-text">@Model.Imovel.ListaComposicao</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Imovel.DestaquesImovel))
+                    {
+                        <h5 class="panel-title mt-3">Destaques</h5>
+                        <p class="detail-text">@Model.Imovel.DestaquesImovel</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Imovel.ObservacoesFinais))
+                    {
+                        <p class="detail-text">@Model.Imovel.ObservacoesFinais</p>
+                    }
+                </section>
+
+                <section class="detail-panel">
+                    <h5 class="panel-title">Caracter&iacute;sticas</h5>
+                    <div class="feature-list">
+                        @foreach (var item in Model.Caracteristicas())
+                        {
+                            <span class="feature-item">@item</span>
+                        }
+                    </div>
+                </section>
+
+                <section class="detail-panel">
+                    <h5 class="panel-title">Localiza&ccedil;&atilde;o</h5>
+                    <p class="detail-text">@Model.EnderecoPublico()</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.Imovel.TextoReferenciaRegiao))
+                    {
+                        <p class="detail-text">@Model.Imovel.TextoReferenciaRegiao</p>
+                    }
+                    @if (Model.Imovel.Latitude.HasValue && Model.Imovel.Longitude.HasValue)
+                    {
+                        <p class="text-muted mb-0">Latitude @Model.Imovel.Latitude, Longitude @Model.Imovel.Longitude</p>
+                    }
+                </section>
+
+                <section class="detail-panel">
+                    <h5 class="panel-title">Condi&ccedil;&otilde;es comerciais</h5>
+                    <div class="commercial-table">
+                        @if (Model.Imovel.ValorCondominio.HasValue)
+                        {
+                            <div class="commercial-row"><span>Condom&iacute;nio</span><strong>R$ @Model.Imovel.ValorCondominio.Value.ToString("N2")</strong></div>
+                        }
+                        @if (Model.Imovel.ValorIPTU.HasValue)
+                        {
+                            <div class="commercial-row"><span>IPTU</span><strong>R$ @Model.Imovel.ValorIPTU.Value.ToString("N2")</strong></div>
+                        }
+                        <div class="commercial-row"><span>Aceita financiamento</span><strong>@(Model.Imovel.AceitaFinanciamento ? "Sim" : "Nao")</strong></div>
+                        <div class="commercial-row"><span>Aceita permuta</span><strong>@(Model.Imovel.AceitaPermuta ? "Sim" : "Nao")</strong></div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Imovel.ObservacoesComerciais))
+                    {
+                        <p class="detail-text mt-3">@Model.Imovel.ObservacoesComerciais</p>
+                    }
+                    <small class="text-muted">@Model.Imovel.AvisoAlteracaoPreco</small>
+                </section>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Imovel.VideoUrl) || !string.IsNullOrWhiteSpace(Model.Imovel.TourVirtualUrl) || !string.IsNullOrWhiteSpace(Model.Imovel.PlantaArquivoUrl))
+                {
+                    <section class="detail-panel">
+                        <h5 class="panel-title">M&iacute;dias e arquivos</h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (!string.IsNullOrWhiteSpace(Model.Imovel.VideoUrl))
+                            {
+                                <a href="@Model.Imovel.VideoUrl" target="_blank" rel="noopener" class="btn detail-btn-outline">V&iacute;deo</a>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Imovel.TourVirtualUrl))
+                            {
+                                <a href="@Model.Imovel.TourVirtualUrl" target="_blank" rel="noopener" class="btn detail-btn-outline">Tour virtual</a>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Imovel.PlantaArquivoUrl))
+                            {
+                                <a href="@Model.Imovel.PlantaArquivoUrl" target="_blank" rel="noopener" class="btn detail-btn-outline">Planta</a>
+                            }
+                        </div>
+                    </section>
+                }
+
+                <section class="detail-panel">
+                    <small class="text-muted">@Model.Imovel.TextoDisclaimer</small>
+                </section>
+            </main>
+
+            <aside class="contact-panel">
+                <h5>@Model.Imovel.NomeImobiliariaContato</h5>
+                <p class="text-muted mb-2">@Model.Imovel.CreciResponsavelLegal</p>
+                <a href="@Model.WhatsAppUrl()" target="_blank" rel="noopener" class="btn detail-btn-primary w-100 mb-2">@Model.Imovel.TextoBotaoWhatsApp</a>
+                @if (Model.Imovel.PermitirVerTelefone)
+                {
+                    <button type="button" id="showPhoneButton" class="btn detail-btn-outline w-100 mb-2" data-phone="@Model.Imovel.TelefonePrincipal">Ver telefone</button>
+                    <span id="phoneOutput" class="phone-output"></span>
+                }
+                <a href="mailto:@Model.Imovel.EmailContato" class="btn detail-btn-muted w-100 mt-2">Enviar e-mail</a>
+
+                <hr>
+                <h5>Tenho interesse</h5>
+                <form method="post" asp-page-handler="Contato" asp-route-id="@Model.Imovel.IdImovel" class="d-grid gap-2">
+                    <input class="form-control" asp-for="Lead.NomeInteressado" placeholder="Nome do interessado" required>
+                    <input class="form-control" asp-for="Lead.Email" type="email" placeholder="E-mail" required>
+                    <input class="form-control" asp-for="Lead.TelefoneWhatsapp" placeholder="Telefone/WhatsApp" required>
+                    <textarea class="form-control" asp-for="Lead.Mensagem" rows="4" placeholder="Mensagem"></textarea>
+                    <label class="form-check">
+                        <input class="form-check-input" asp-for="Lead.AceiteTermos" required>
+                        Aceito os termos e privacidade
+                    </label>
+                    <label class="form-check">
+                        <input class="form-check-input" asp-for="Lead.AceitaReceberNovidades">
+                        Aceito receber novidades
+                    </label>
+                    <small class="text-muted">@Model.Imovel.TermosPrivacidadeTexto</small>
+                    <button type="submit" class="btn detail-btn-primary">Enviar contato</button>
+                </form>
+            </aside>
+        </div>
+
+        @if (fotos.Any())
+        {
+            <div class="modal fade" id="galleryModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-fullscreen">
+                    <div class="modal-content bg-dark">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title text-white">@Model.Imovel.Titulo</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <div id="galleryCarousel" class="carousel slide" data-bs-ride="false">
+                                <div class="carousel-inner">
+                                    @for (var i = 0; i < fotos.Count; i++)
+                                    {
+                                        var foto = fotos[i];
+                                        <div class="carousel-item @(i == 0 ? "active" : "")">
+                                            <img src="@foto.CaminhoArquivo" class="d-block w-100" alt="@(foto.AltText ?? Model.Imovel.Titulo)">
+                                            @if (!string.IsNullOrWhiteSpace(foto.Legenda))
+                                            {
+                                                <div class="carousel-caption d-none d-md-block">@foto.Legenda</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#galleryCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Anterior</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#galleryCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Proxima</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const showPhoneButton = document.getElementById('showPhoneButton');
+            const phoneOutput = document.getElementById('phoneOutput');
+            if (showPhoneButton && phoneOutput) {
+                showPhoneButton.addEventListener('click', function () {
+                    phoneOutput.textContent = showPhoneButton.getAttribute('data-phone') || '';
+                    showPhoneButton.classList.add('d-none');
+                });
+            }
+        });
+    </script>
+}

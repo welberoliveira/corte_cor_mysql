@@ -1,66 +1,248 @@
 ﻿@page
 @model CorteCor.Pages.PagamentoListaModel
+@{
+    ViewData["Title"] = "Relatório de Pagamentos";
 
-<style>
-    @@media (max-width: 768px) {
-        table th:nth-child(2),
-        table td:nth-child(2),
-        table th:nth-child(3),
-        table td:nth-child(3),
-        table th:nth-child(4),
-        table td:nth-child(4) {
-            display: none;
-        }
-    }
-</style>
+    var statusClass = new Func<string, string>(s => s switch
+    {
+        "Pago" => "success",
+        "approved" => "success",
+        "Pendente" => "warning",
+        "pending" => "warning",
+        "Cancelado" => "danger",
+        "failure" => "danger",
+        _ => "secondary"
+    });
+}
 
-<div class="container">
-    <h4>Lista de Pagamentos</h4>
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mb-4 mt-3">
+        <h2 class="mb-0">@ViewData["Title"]</h2>
+        <a class="btn btn-primary shadow-sm" asp-page="/PagamentoCadastro">
+            <i class="fas fa-plus"></i> Novo Pagamento
+        </a>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert">
-            @Model.Mensagem
+        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fas fa-info-circle mr-2"></i> @Model.Mensagem
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
         </div>
     }
 
-    <table>
-        <thead>
-            <tr>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Valor</th>
-                <th>Id Agendamento</th>
-                <th>Id Meio Pgto</th>
-                <th>Contos</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var Pagamento in Model.Pagamentos)
-            {
-                <tr>
-                    <td>@Pagamento.Data.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@Pagamento.Tipo</td>
-                    <td>R$ @Pagamento.Valor.ToString("0.00")</td>
-                    <td>@Pagamento.IdAgendamento</td>
-                    <td>@Pagamento.IdMeioPagamento</td>
-                    <td>@Pagamento.Contos</td>
-                    <td class="actions">
-                        <form method="post" style="display: inline;">
-                            <input type="hidden" name="id" value="@Pagamento.IdPagamento">
-                            <input type="hidden" name="action" value="alterar">
-                            <button class="btn btn-info">Alterar</button>
-                        </form>
+    <!-- Filtros Reorganizados -->
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-white font-weight-bold text-primary">
+            <i class="fas fa-filter"></i> Filtros de Busca
+        </div>
+        <div class="card-body pb-0">
+            <form method="get">
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label class="form-label font-weight-bold small text-muted">Data Início</label>
+                        <input type="date" name="DataInicio" class="form-control"
+                            value="@Model.DataInicio?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label class="form-label font-weight-bold small text-muted">Data Fim</label>
+                        <input type="date" name="DataFim" class="form-control"
+                            value="@Model.DataFim?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label class="form-label font-weight-bold small text-muted">Status</label>
+                        <select name="Status" class="form-control">
+                            <option value="">Todos os Status</option>
+                            <option value="Pago" selected="@(Model.Status == "Pago")">Pago</option>
+                            <option value="Pendente" selected="@(Model.Status == "Pendente")">Pendente</option>
+                            <option value="Cancelado" selected="@(Model.Status == "Cancelado")">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label class="form-label font-weight-bold small text-muted">Cliente</label>
+                        <input type="text" name="NomeCliente" class="form-control" value="@Model.NomeCliente"
+                            placeholder="Pesquisar nome..." />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label class="form-label font-weight-bold small text-muted">Data do Agendamento</label>
+                        <input type="date" name="DataAgendamento" class="form-control"
+                            value="@Model.DataAgendamento?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-9 mb-3 d-flex align-items-end justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm mr-2">
+                            <i class="fas fa-search"></i> Filtrar
+                        </button>
+                        <a asp-page="/PagamentoLista" class="btn btn-secondary px-4">
+                            <i class="fas fa-eraser"></i> Limpar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Pagamento?');">
-                            <input type="hidden" name="id" value="@Pagamento.IdPagamento">
-                            <input type="hidden" name="action" value="excluir">
-                            <button class="btn btn-danger">Excluir</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <!-- Cards de Resumo (Discretos e Abaixo do Filtro) -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border bg-white h-100">
+                <div class="card-body py-2 px-3 d-flex align-items-center">
+                    <div class="mr-3 text-primary">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-uppercase mb-0 small text-muted">Valor Total</h6>
+                        <h4 class="mb-0 font-weight-bold text-dark">R$ @Model.TotalValor.ToString("N2")</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border bg-white h-100">
+                <div class="card-body py-2 px-3 d-flex align-items-center">
+                    <div class="mr-3 text-success">
+                        <i class="fas fa-clipboard-check fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-uppercase mb-0 small text-muted">Atendimentos</h6>
+                        <h4 class="mb-0 font-weight-bold text-dark">@Model.TotalContagem</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Data Registro</th>
+                        <th>Cliente</th>
+                        <th>Serviço</th>
+                        <th>Data Agend.</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Tipo</th>
+                        <th class="text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Pagamentos.Items)
+                    {
+                        <tr>
+                            <td class="align-middle">@p.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="align-middle font-weight-bold">@p.NomeCliente</td>
+                            <td class="align-middle">@p.NomeServico</td>
+                            <td class="align-middle">@(p.DataAgendamento?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                            <td class="align-middle font-weight-bold text-dark">@p.Moeda @p.Valor.ToString("N2")</td>
+                            <td class="align-middle">
+                                <span class="badge badge-pill badge-@statusClass(p.Status) px-3 py-2 text-white">
+                                    @(string.IsNullOrEmpty(p.Status) ? "N/A" : p.Status)
+                                </span>
+                                @if (!string.IsNullOrEmpty(p.MpStatusDetail))
+                                {
+                                    <small class="d-block text-muted mt-1">@p.MpStatusDetail</small>
+                                }
+                            </td>
+                            <td class="align-middle">
+                                <span class="badge badge-light border text-dark px-2 py-1">@(string.IsNullOrEmpty(p.Tipo) ?
+                                "N/A" : p.Tipo)</span>
+                            </td>
+                            <td class="text-right align-middle">
+                                <div class="btn-group">
+                                    @if (!string.IsNullOrEmpty(p.CheckoutUrl) && p.Status == "Pendente")
+                                    {
+                                        <a href="@p.CheckoutUrl" target="_blank" class="btn btn-sm btn-success" title="Pagar">
+                                            <i class="fas fa-money-bill-wave"></i> Pagar
+                                        </a>
+                                    }
+
+                                    <form method="post" class="d-inline ml-1">
+                                        <input type="hidden" name="id" value="@p.IdPagamento">
+                                        <input type="hidden" name="action" value="sincronizar">
+                                        <button type="submit" class="btn btn-sm btn-dark" title="Sincronizar Status">
+                                            <i class="fas fa-sync"></i> Sincronizar
+                                        </button>
+                                    </form>
+
+                                    <a asp-page="/PagamentoCadastro" asp-route-id="@p.IdPagamento"
+                                        class="btn btn-sm btn-primary ml-1" title="Editar">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+
+                                    <form method="post" class="d-inline ml-1"
+                                        onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                                        <input type="hidden" name="id" value="@p.IdPagamento">
+                                        <input type="hidden" name="action" value="excluir">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
+                                            <i class="fas fa-trash"></i> Excluir
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Pagamentos.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fas fa-search-minus fa-3x mb-3 d-block opacity-25"></i>
+                                Nenhum pagamento encontrado com os filtros selecionados.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    @if (Model.Pagamentos.TotalPages > 1)
+    {
+        <nav aria-label="Navegação de página" class="mt-4">
+            <ul class="pagination justify-content-center shadow-sm">
+                @{
+                    var queryParams = new Dictionary<string, string>();
+
+                    if (Model.DataInicio.HasValue) queryParams.Add("DataInicio", Model.DataInicio.Value.ToString("yyyy-MM-dd"));
+                    if (Model.DataFim.HasValue) queryParams.Add("DataFim", Model.DataFim.Value.ToString("yyyy-MM-dd"));
+                    if (!string.IsNullOrEmpty(Model.Status)) queryParams.Add("Status", Model.Status);
+                    if (!string.IsNullOrEmpty(Model.NomeCliente)) queryParams.Add("NomeCliente", Model.NomeCliente);
+                    if (Model.DataAgendamento.HasValue) queryParams.Add("DataAgendamento", Model.DataAgendamento.Value.ToString("yyyy-MM-dd"));
+
+                    string GetLink(int page)
+                    {
+                        var dict = new Dictionary<string, string>(queryParams);
+                        dict["p"] = page.ToString();
+                        return "?" + string.Join("&", dict.Select(kv => $"{kv.Key}={System.Net.WebUtility.UrlEncode(kv.Value)}"));
+                    }
+                }
+
+                <li class="page-item @(Model.Pagamentos.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="@GetLink(Model.Pagamentos.PageIndex - 1)">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= Model.Pagamentos.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.Pagamentos.PageIndex ? "active" : "")">
+                        <a class="page-link" href="@GetLink(i)">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.Pagamentos.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="@GetLink(Model.Pagamentos.PageIndex + 1)">
+                        Próxima <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>
+

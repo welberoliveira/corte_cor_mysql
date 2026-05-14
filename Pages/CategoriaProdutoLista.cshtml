@@ -1,0 +1,118 @@
+@page
+@model CorteCor.Pages.CategoriaProdutoListaModel
+
+<style>
+    @@media (max-width: 768px) {
+        /* Adicione estilos mobile se necessário */
+    }
+</style>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>Lista de Categorias de Produtos</h4>
+        <a asp-page="/CategoriaProdutoCadastro" class="btn btn-primary">Cadastrar Nova</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-@Model.MensagemTipo mt-2">
+            @Model.Mensagem
+        </div>
+    }
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="q" class="form-label">Buscar por nome</label>
+                    <input type="text" id="q" name="q" value="@Model.q" class="form-control" placeholder="Digite o nome da categoria">
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" id="incluirInativas" name="incluirInativas" value="true" @(Model.incluirInativas ? "checked" : "")>
+                        <label class="form-check-label" for="incluirInativas">Mostrar inativas</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+                <div class="col-md-2 text-end">
+                    <a asp-page="/CategoriaProdutoLista" class="btn btn-link">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Nome da Categoria</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Categorias.Items != null && Model.Categorias.Items.Any())
+            {
+                foreach (var categoria in Model.Categorias.Items)
+                {
+                    <tr>
+                        <td>@categoria.Nome</td>
+                        <td>
+                            @if (categoria.Ativo)
+                            {
+                                <span class="badge bg-success">Ativo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Inativo</span>
+                            }
+                        </td>
+                        <td class="actions">
+                            <form method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@categoria.IdCategoria">
+                                <input type="hidden" name="action" value="alterar">
+                                <input type="hidden" name="q" value="@Model.q">
+                                <input type="hidden" name="incluirInativas" value="@Model.incluirInativas">
+                                <input type="hidden" name="p" value="@Model.Categorias.PageIndex">
+                                <button type="submit" class="btn btn-info btn-sm">Alterar</button>
+                            </form>
+
+                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta categoria?');">
+                                <input type="hidden" name="id" value="@categoria.IdCategoria">
+                                <input type="hidden" name="action" value="excluir">
+                                <input type="hidden" name="q" value="@Model.q">
+                                <input type="hidden" name="incluirInativas" value="@Model.incluirInativas">
+                                <input type="hidden" name="p" value="@Model.Categorias.PageIndex">
+                                <button type="submit" class="btn btn-danger btn-sm">Inativar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3" class="text-center">Nenhuma categoria cadastrada.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.Categorias.TotalPages > 1)
+    {
+        <nav aria-label="Paginação de categorias">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.Categorias.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Categorias.PageIndex - 1)&q=@Model.q&incluirInativas=@Model.incluirInativas">Anterior</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Página @Model.Categorias.PageIndex de @Model.Categorias.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.Categorias.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Categorias.PageIndex + 1)&q=@Model.q&incluirInativas=@Model.incluirInativas">Próxima</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

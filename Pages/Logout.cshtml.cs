@@ -12,7 +12,7 @@ namespace CorteCor.Pages
             ViewData["HideMenu"] = "true";
             await HttpContext.SignOutAsync();
 
-            return RedirectToPage(HttpContext.Request.PathBase + "/adm");
+            return RedirectToPage("/Adm");
         }
     }
 }

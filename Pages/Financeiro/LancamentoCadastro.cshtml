@@ -1,0 +1,100 @@
+@page
+@model CorteCor.Pages.Financeiro.LancamentoCadastroModel
+@{
+    ViewData["Title"] = Model.TituloInput.IdTitulo == Guid.Empty ? "Novo Lançamento" : "Editar Lançamento";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <h2 class="mb-1">@(Model.TituloInput.IdTitulo == Guid.Empty ? "Novo Lançamento" : "Editar Lançamento")</h2>
+    <a class="btn btn-secondary" asp-page="/Financeiro/Lancamentos">Voltar para lançamentos</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Dados do lançamento</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Salvar" class="row g-3">
+            <input type="hidden" asp-for="TituloInput.IdTitulo" />
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" asp-for="TituloInput.Tipo">
+                    <option value="Receber">Receber</option>
+                    <option value="Pagar">Pagar</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" asp-for="TituloInput.Status">
+                    <option value="Aberto">Aberto</option>
+                    <option value="Liquidado">Liquidado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Descrição</label>
+                <input class="form-control" asp-for="TituloInput.Descricao" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Documento</label>
+                <input class="form-control" asp-for="TituloInput.Documento" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Valor</label>
+                <input type="number" class="form-control" asp-for="TituloInput.ValorOriginal" step="0.01" min="0" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Competência</label>
+                <input type="date" class="form-control" asp-for="TituloInput.DataCompetencia" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Vencimento</label>
+                <input type="date" class="form-control" asp-for="TituloInput.DataVencimento" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Plano de contas</label>
+                <select class="form-select" asp-for="TituloInput.IdPlano">
+                    <option value="">Sem plano</option>
+                    @foreach (var plano in Model.Planos)
+                    {
+                        <option value="@plano.IdPlano">@plano.Codigo - @plano.Descricao</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Conta caixa</label>
+                <select class="form-select" asp-for="TituloInput.IdConta">
+                    <option value="">Sem conta</option>
+                    @foreach (var conta in Model.Contas)
+                    {
+                        <option value="@conta.IdConta">@conta.Nome</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Valor liquidado</label>
+                <input type="number" class="form-control" asp-for="TituloInput.ValorLiquidado" step="0.01" min="0" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data de liquidação</label>
+                <input type="datetime-local" class="form-control" asp-for="TituloInput.DataLiquidacao" />
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="TituloInput.Conciliado" />
+                    <label class="form-check-label" asp-for="TituloInput.Conciliado">Já conciliado no caixa/banco</label>
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Observações</label>
+                <textarea class="form-control" asp-for="TituloInput.Observacoes" rows="3"></textarea>
+            </div>
+            <div class="col-12 text-end">
+                <button class="btn btn-primary" type="submit">Salvar lançamento</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,814 +1,579 @@
-using System.Data;
-using System.Globalization;
-using System.Text.Json.Serialization;
+using CorteCor.Handlers;
+using CorteCor.Models;
+using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Data.SqlClient;
-
-using static CorteCor.Models;
+using System.Security.Claims;
+using System.Transactions;
 
 namespace CorteCor.Pages
 {
-    [Authorize]
+    [Authorize(Policy = "UsuarioPolicy")]
     public class AgendamentosModel : PageModel
     {
+        private readonly AgendamentoHandler _agendamentoHandler;
+        private readonly ServicoHandler _servicoHandler;
+        private readonly PessoaHandler _pessoaHandler;
+        private readonly MeioPagamentoHandler _meioPagamentoHandler;
+        private readonly PagamentoHandler _pagamentoHandler;
+        private readonly MercadoPagoService _mpService;
+        private readonly AgendamentoPreparationService _agendamentoPreparationService;
+        private readonly AgendamentoFiscalPreparationService _agendamentoFiscalPreparationService;
 
-        private readonly IConfiguration _config;
-
-        public AgendamentosModel(IConfiguration config)
+        public AgendamentosModel(
+            AgendamentoHandler agendamentoHandler,
+            ServicoHandler servicoHandler,
+            PessoaHandler pessoaHandler,
+            MeioPagamentoHandler meioPagamentoHandler,
+            PagamentoHandler pagamentoHandler,
+            MercadoPagoService mpService,
+            AgendamentoPreparationService agendamentoPreparationService,
+            AgendamentoFiscalPreparationService agendamentoFiscalPreparationService)
         {
-            _config = config;
+            _agendamentoHandler = agendamentoHandler;
+            _servicoHandler = servicoHandler;
+            _pessoaHandler = pessoaHandler;
+            _meioPagamentoHandler = meioPagamentoHandler;
+            _pagamentoHandler = pagamentoHandler;
+            _mpService = mpService;
+            _agendamentoPreparationService = agendamentoPreparationService;
+            _agendamentoFiscalPreparationService = agendamentoFiscalPreparationService;
         }
 
-        private string ConnStr = "Server=websql3.internetbrasil.net;Database=tonni;User Id=tonni;Password=bW3M*60ZccuD;";
+        public List<Servico> Servicos { get; set; } = new();
+        public List<Pessoa> Clientes { get; set; } = new();
 
-        private int GetIdSalao()
+        public void OnGet()
         {
-            int idSalao = 0;
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
-            return idSalao;
+            var contexto = _agendamentoPreparationService.ObterContextoTela(ObterIdSalao());
+            Servicos = contexto.Servicos;
+            Clientes = contexto.Clientes;
         }
 
-        private static DateTime ParseDpDate(string s)
+        public IActionResult OnGetEvents(DateTime start, DateTime end)
         {
-            // DayPilot geralmente envia "yyyy-MM-ddTHH:mm:ss"
-            // Vamos tratar como hor·rio local (Brasil).
-            return DateTime.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
-        }
-
-        private static string ToIso(DateTime dt) =>
-            dt.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
-
-        private static decimal? ParseMoney(string? s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-
-            // tenta pt-BR (1.234,56)
-            if (decimal.TryParse(s, NumberStyles.Number, new CultureInfo("pt-BR"), out var br))
-                return br;
-
-            // tenta invariant (1234.56)
-            if (decimal.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out var inv))
-                return inv;
-
-            return null;
-        }
-
-        // =========================
-        // RESOURCES (Funcion·rios)
-        // =========================
-        public async Task<IActionResult> OnGetResourcesAsync()
-        {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
-
-            var list = new List<object>();
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            // Ajuste os nomes das colunas conforme seu banco
-            var sql = @"
-    select 
-        f.IdFuncionario as Id,
-        f.Nome as Nome
-    from CorteCor_Funcionario f
-    where f.IdSalao = @IdSalao
-    order by f.Nome;
-    ";
-
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
+            if (start.Kind == DateTimeKind.Utc)
             {
-                list.Add(new
-                {
-                    id = rd["Id"].ToString(),
-                    name = rd["Nome"]?.ToString() ?? ""
-                });
+                start = start.ToLocalTime();
             }
 
-            return new JsonResult(list);
-        }
-
-        // =========================
-        // CLIENTES
-        // =========================
-        public async Task<IActionResult> OnGetClientesAsync()
-        {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
-
-            var list = new List<object>();
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            var sql = @"
-    select 
-        c.IdCliente as Id,
-        c.Nome as Nome
-    from CorteCor_Cliente c
-    where c.IdSalao = @IdSalao
-    order by c.Nome;
-    ";
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
+            if (end.Kind == DateTimeKind.Utc)
             {
-                list.Add(new
-                {
-                    id = rd["Id"].ToString(),
-                    nome = rd["Nome"]?.ToString() ?? ""
-                });
+                end = end.ToLocalTime();
             }
 
-            return new JsonResult(list);
+            return new JsonResult(_agendamentoPreparationService.ListarEventos(ObterIdSalao(), start, end));
         }
 
-        // =========================
-        // SERVI«OS
-        // =========================
-        public async Task<IActionResult> OnGetServicosAsync()
+        public class CreateRequest
         {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
-
-            var list = new List<object>();
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            // Ajuste: duraÁ„o em minutos e valor padr„o
-            var sql = @"
-    select 
-        s.IdServico as Id,
-        s.Nome as Nome,
-        60 as DuracaoMin,
-        s.Preco as ValorPadrao
-    from CorteCor_Servico s
-    where s.IdSalao = @IdSalao
-    order by s.Nome;
-    ";
-
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
-            {
-                list.Add(new
-                {
-                    id = rd["Id"].ToString(),
-                    nome = rd["Nome"]?.ToString() ?? "",
-                    duracaoMin = rd["DuracaoMin"] is DBNull ? 0 : Convert.ToInt32(rd["DuracaoMin"]),
-                    valorPadrao = rd["ValorPadrao"] is DBNull ? "" : Convert.ToDecimal(rd["ValorPadrao"]).ToString("0.00", new CultureInfo("pt-BR"))
-                });
-            }
-
-            return new JsonResult(list);
+            public string? Start { get; set; }
+            public string? End { get; set; }
+            public int IdPessoa { get; set; }
+            public int IdServico { get; set; }
         }
 
-        // =========================
-        // EVENTS (Agendamentos)
-        // =========================
-        public async Task<IActionResult> OnGetEventsAsync(string start, string end, string? employeeId, string? status, string? q)
-        {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
-
-            var dtStart = ParseDpDate(start);
-            var dtEnd = ParseDpDate(end);
-
-            employeeId = string.IsNullOrWhiteSpace(employeeId) ? null : employeeId.Trim();
-            status = string.IsNullOrWhiteSpace(status) ? null : status.Trim();
-            q = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
-
-            var list = new List<object>();
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            // Retorna eventos que intersectam o range visÌvel
-            var sql = @"
-    select
-        a.IdAgendamento as Id,
-        a.DataInicio as DataInicio,
-        a.DataFim as DataFim,
-        a.IdFuncionario as IdFuncionario,
-        a.Status as Status,
-        a.Observacao as Observacao,
-        a.Valor as Valor,
-
-        c.Nome as ClienteNome,
-        s.Nome as ServicoNome
-    from CorteCor_Agendamento a
-    inner join CorteCor_Cliente c on c.IdCliente = a.IdCliente and c.IdSalao = @IdSalao
-    inner join CorteCor_Servico s on s.IdServico = a.IdServico and s.IdSalao = @IdSalao
-    where a.IdSalao = @IdSalao
-      and a.DataInicio < @End
-      and a.DataFim > @Start
-    ";
-
-            if (employeeId != null) sql += " and a.IdFuncionario = @IdFuncionario ";
-            if (status != null) sql += " and a.Status = @Status ";
-            if (q != null) sql += " and c.Nome like @Q ";
-
-            sql += " order by a.DataInicio;";
-
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@Start", dtStart);
-            cmd.Parameters.AddWithValue("@End", dtEnd);
-
-            if (employeeId != null) cmd.Parameters.AddWithValue("@IdFuncionario", employeeId);
-            if (status != null) cmd.Parameters.AddWithValue("@Status", status);
-            if (q != null) cmd.Parameters.AddWithValue("@Q", $"%{q}%");
-
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
-            {
-                var id = rd["Id"].ToString()!;
-                var ini = Convert.ToDateTime(rd["DataInicio"]);
-                var fim = Convert.ToDateTime(rd["DataFim"]);
-                var funcId = rd["IdFuncionario"].ToString()!;
-                var st = rd["Status"]?.ToString() ?? "";
-                var cliente = rd["ClienteNome"]?.ToString() ?? "";
-                var servico = rd["ServicoNome"]?.ToString() ?? "";
-                var valor = rd["Valor"] is DBNull ? "" : Convert.ToDecimal(rd["Valor"]).ToString("0.00", new CultureInfo("pt-BR"));
-
-                // DayPilot: id, text, start, end, resource
-                list.Add(new
-                {
-                    id,
-                    text = $"{servico} - {cliente}",
-                    start = ToIso(ini),
-                    end = ToIso(fim),
-                    resource = funcId,
-
-                    status = st,
-                    clientName = cliente,
-                    serviceName = servico,
-                    value = valor
-                });
-            }
-
-            return new JsonResult(list);
-        }
-
-        // =========================
-        // GET (Editar)
-        // =========================
-        public async Task<IActionResult> OnGetGetAsync(string id)
-        {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return new NotFoundResult();
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            var sql = @"
-    select
-        a.IdAgendamento as Id,
-        a.DataInicio as DataInicio,
-        a.DataFim as DataFim,
-        a.IdFuncionario as IdFuncionario,
-        a.IdCliente as IdCliente,
-        a.IdServico as IdServico,
-        a.Observacao as Observacao,
-        a.Valor as Valor,
-        a.Status as Status
-    from CorteCor_Agendamento a
-    where a.IdSalao = @IdSalao
-      and a.IdAgendamento = @Id;
-    ";
-
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@Id", id);
-
-            await using var rd = await cmd.ExecuteReaderAsync();
-            if (!await rd.ReadAsync()) return new NotFoundResult();
-
-            var ini = Convert.ToDateTime(rd["DataInicio"]);
-            var fim = Convert.ToDateTime(rd["DataFim"]);
-
-            return new JsonResult(new
-            {
-                id = rd["Id"].ToString(),
-                start = ToIso(ini),
-                end = ToIso(fim),
-                employeeId = rd["IdFuncionario"].ToString(),
-                clientId = rd["IdCliente"].ToString(),
-                serviceId = rd["IdServico"].ToString(),
-                obs = rd["Observacao"]?.ToString() ?? "",
-                value = rd["Valor"] is DBNull ? "" : Convert.ToDecimal(rd["Valor"]).ToString("0.00", new CultureInfo("pt-BR")),
-                status = rd["Status"]?.ToString() ?? "Pendente"
-            });
-        }
-
-        // =========================
-        // SAVE (Criar/Editar)
-        // =========================
-        public class SaveRequest
-        {
-            [JsonPropertyName("id")] public string? Id { get; set; }
-            [JsonPropertyName("start")] public string Start { get; set; } = "";
-            [JsonPropertyName("end")] public string End { get; set; } = ""; // ignorado (duraÁ„o È pelo serviÁo)
-            [JsonPropertyName("employeeId")] public string EmployeeId { get; set; } = "";
-            [JsonPropertyName("clientId")] public string ClientId { get; set; } = "";
-            [JsonPropertyName("serviceId")] public string ServiceId { get; set; } = "";
-            [JsonPropertyName("obs")] public string? Obs { get; set; }
-            [JsonPropertyName("value")] public string? Value { get; set; }
-            [JsonPropertyName("status")] public string Status { get; set; } = "Pendente";
-        }
-
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OnPostSaveAsync([FromBody] SaveRequest req)
-        {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Sal„o inv·lido." });
-
-            if (string.IsNullOrWhiteSpace(req.EmployeeId) ||
-                string.IsNullOrWhiteSpace(req.ClientId) ||
-                string.IsNullOrWhiteSpace(req.ServiceId) ||
-                string.IsNullOrWhiteSpace(req.Status) ||
-                string.IsNullOrWhiteSpace(req.Start))
-            {
-                return BadRequest(new ErrorResponse { Message = "Preencha Funcion·rio, Cliente, ServiÁo, Status e InÌcio." });
-            }
-
-            var start = ParseDpDate(req.Start);
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            // 1) duraÁ„o fixa pelo serviÁo
-            var (duracaoMin, valorPadrao) = await GetServicoInfoAsync(con, idSalao, req.ServiceId);
-            if (duracaoMin <= 0) return BadRequest(new ErrorResponse { Message = "ServiÁo sem duraÁ„o configurada." });
-
-            var end = start.AddMinutes(duracaoMin);
-
-            // 2) (opcional) funcion·rio faz serviÁo
-            var validateFuncionarioServico = true;
-            if (validateFuncionarioServico)
-            {
-                try
-                {
-                    var ok = await FuncionarioPodeExecutarServicoAsync(con, idSalao, req.EmployeeId, req.ServiceId);
-                    if (!ok) return BadRequest(new ErrorResponse { Message = "Este funcion·rio n„o est· vinculado a este serviÁo." });
-                }
-                catch (SqlException ex) when (ex.Message.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Se a tabela de vÌnculo n„o existir ainda, vocÍ pode:
-                    // - criar a tabela, ou
-                    // - desativar validateFuncionarioServico acima.
-                    return BadRequest(new ErrorResponse { Message = "Tabela de vÌnculo Funcion·rio-ServiÁo n„o encontrada. Crie a tabela ou desative a validaÁ„o no cÛdigo." });
-                }
-            }
-
-            // 3) valida hor·rio de trabalho (se conseguir ler as janelas)
-            var isWithin = await IsWithinWorkHoursAsync(con, idSalao, req.EmployeeId, start, end);
-            if (!isWithin)
-                return BadRequest(new ErrorResponse { Message = "Hor·rio fora da disponibilidade do funcion·rio." });
-
-            // 4) valida sobreposiÁ„o (bloquear 100%)
-            var hasConflict = await HasOverlapAsync(con, idSalao, req.EmployeeId, start, end, req.Id);
-            if (hasConflict)
-                return BadRequest(new ErrorResponse { Message = "Conflito: j· existe um agendamento nesse hor·rio para este funcion·rio." });
-
-            // 5) salvar (insert/update)
-            var valor = ParseMoney(req.Value) ?? valorPadrao;
-
-            if (string.IsNullOrWhiteSpace(req.Id))
-            {
-                // INSERT
-                var sql = @"
-    insert into CorteCor_Agendamento
-    (
-        IdSalao, IdFuncionario, IdCliente, IdServico,
-        DataInicio, DataFim, Observacao, Valor, Status
-    )
-    values
-    (
-        @IdSalao, @IdFuncionario, @IdCliente, @IdServico,
-        @DataInicio, @DataFim, @Observacao, @Valor, @Status
-    );
-
-    select cast(scope_identity() as int);
-    ";
-                await using var cmd = new SqlCommand(sql, con);
-                cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-                cmd.Parameters.AddWithValue("@IdFuncionario", req.EmployeeId);
-                cmd.Parameters.AddWithValue("@IdCliente", req.ClientId);
-                cmd.Parameters.AddWithValue("@IdServico", req.ServiceId);
-                cmd.Parameters.AddWithValue("@DataInicio", start);
-                cmd.Parameters.AddWithValue("@DataFim", end);
-                cmd.Parameters.AddWithValue("@Observacao", (object?)req.Obs ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Valor", (object?)valor ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Status", req.Status);
-
-                var newId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                return new JsonResult(new { ok = true, id = newId });
-            }
-            else
-            {
-                // UPDATE
-                var sql = @"
-    update CorteCor_Agendamento
-    set
-        IdFuncionario = @IdFuncionario,
-        IdCliente = @IdCliente,
-        IdServico = @IdServico,
-        DataInicio = @DataInicio,
-        DataFim = @DataFim,
-        Observacao = @Observacao,
-        Valor = @Valor,
-        Status = @Status
-    where IdSalao = @IdSalao
-      and IdAgendamento = @Id;
-    ";
-                await using var cmd = new SqlCommand(sql, con);
-                cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-                cmd.Parameters.AddWithValue("@Id", req.Id);
-                cmd.Parameters.AddWithValue("@IdFuncionario", req.EmployeeId);
-                cmd.Parameters.AddWithValue("@IdCliente", req.ClientId);
-                cmd.Parameters.AddWithValue("@IdServico", req.ServiceId);
-                cmd.Parameters.AddWithValue("@DataInicio", start);
-                cmd.Parameters.AddWithValue("@DataFim", end);
-                cmd.Parameters.AddWithValue("@Observacao", (object?)req.Obs ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Valor", (object?)valor ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Status", req.Status);
-
-                var rows = await cmd.ExecuteNonQueryAsync();
-                if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento n„o encontrado." });
-
-                return new JsonResult(new { ok = true, id = req.Id });
-            }
-        }
-
-        // =========================
-        // DELETE (Excluir)
-        // =========================
-        public class DeleteRequest
-        {
-            [JsonPropertyName("id")] public string Id { get; set; } = "";
-        }
-
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OnPostDeleteAsync([FromBody] DeleteRequest req)
-        {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return BadRequest(new ErrorResponse { Message = "Sal„o inv·lido." });
-            if (string.IsNullOrWhiteSpace(req.Id)) return BadRequest(new ErrorResponse { Message = "Id inv·lido." });
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            // Hard delete. Se preferir soft delete, troque para update Status='Cancelado'.
-            var sql = @"
-    delete from CorteCor_Agendamento
-    where IdSalao = @IdSalao
-      and IdAgendamento = @Id;
-    ";
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@Id", req.Id);
-
-            var rows = await cmd.ExecuteNonQueryAsync();
-            if (rows == 0) return BadRequest(new ErrorResponse { Message = "Agendamento n„o encontrado." });
-
-            return new JsonResult(new { ok = true });
-        }
-
-        // =========================
-        // TIMERANGES (bloqueios)
-        // =========================
-        public async Task<IActionResult> OnGetTimeRangesAsync(string start, string end, string? employeeId)
-        {
-            var idSalao = GetIdSalao();
-            if (idSalao <= 0) return new JsonResult(Array.Empty<object>());
-
-            var dtStart = ParseDpDate(start).Date;
-            var dtEnd = ParseDpDate(end).Date;
-
-            employeeId = string.IsNullOrWhiteSpace(employeeId) ? null : employeeId.Trim();
-
-            await using var con = new SqlConnection(ConnStr);
-            await con.OpenAsync();
-
-            // buscar funcion·rios (ou 1 especÌfico)
-            var funcs = await GetFuncionariosComHorarioAsync(con, idSalao, employeeId);
-
-            var ranges = new List<object>();
-
-            // Para cada dia visÌvel e funcion·rio, gera bloqueios fora da janela de trabalho
-            for (var day = dtStart; day < dtEnd; day = day.AddDays(1))
-            {
-                foreach (var f in funcs)
-                {
-                    var ww = f.GetWorkWindow(day.DayOfWeek);
-                    if (ww == null)
-                    {
-                        // dia OFF => bloqueia o dia inteiro
-                        ranges.Add(new
-                        {
-                            start = ToIso(day.AddHours(0)),
-                            end = ToIso(day.AddDays(1).AddHours(0)),
-                            resource = f.IdFuncionario,
-                            text = "IndisponÌvel",
-                            cssClass = "dp-off"
-                        });
-                        continue;
-                    }
-
-                    var (ini, fim) = ww.Value;
-
-                    // bloqueio antes do inÌcio
-                    if (ini > TimeSpan.Zero)
-                    {
-                        ranges.Add(new
-                        {
-                            start = ToIso(day.Add(TimeSpan.Zero)),
-                            end = ToIso(day.Add(ini)),
-                            resource = f.IdFuncionario,
-                            text = "IndisponÌvel",
-                            cssClass = "dp-off"
-                        });
-                    }
-
-                    // bloqueio apÛs o fim
-                    if (fim < TimeSpan.FromHours(24))
-                    {
-                        ranges.Add(new
-                        {
-                            start = ToIso(day.Add(fim)),
-                            end = ToIso(day.AddDays(1).Add(TimeSpan.Zero)),
-                            resource = f.IdFuncionario,
-                            text = "IndisponÌvel",
-                            cssClass = "dp-off"
-                        });
-                    }
-                }
-            }
-
-            return new JsonResult(ranges);
-        }
-
-        // =========================
-        // Helpers: Conflito / ServiÁo / Hor·rio / VÌnculo
-        // =========================
-
-        private async Task<(int duracaoMin, decimal? valorPadrao)> GetServicoInfoAsync(SqlConnection con, int idSalao, string idServico)
-        {
-            var sql = @"
-    select DuracaoMinutos, Valor
-    from CorteCor_Servico
-    where IdSalao = @IdSalao and IdServico = @IdServico;
-    ";
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@IdServico", idServico);
-
-            await using var rd = await cmd.ExecuteReaderAsync();
-            if (!await rd.ReadAsync()) return (0, null);
-
-            var dur = rd["DuracaoMinutos"] is DBNull ? 0 : Convert.ToInt32(rd["DuracaoMinutos"]);
-            var val = rd["Valor"] is DBNull ? (decimal?)null : Convert.ToDecimal(rd["Valor"]);
-            return (dur, val);
-        }
-
-        private async Task<bool> FuncionarioPodeExecutarServicoAsync(SqlConnection con, int idSalao, string idFuncionario, string idServico)
-        {
-            // Ajuste o nome da tabela/colunas conforme seu padr„o.
-            var sql = @"
-    select 1
-    from CorteCor_FuncionarioServico fs
-    where fs.IdSalao = @IdSalao
-      and fs.IdFuncionario = @IdFuncionario
-      and fs.IdServico = @IdServico;
-    ";
-
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            cmd.Parameters.AddWithValue("@IdServico", idServico);
-
-            var o = await cmd.ExecuteScalarAsync();
-            return o != null;
-        }
-
-        private async Task<bool> HasOverlapAsync(SqlConnection con, int idSalao, string idFuncionario, DateTime start, DateTime end, string? ignoreId)
-        {
-            var sql = @"
-    select count(1)
-    from CorteCor_Agendamento a
-    where a.IdSalao = @IdSalao
-      and a.IdFuncionario = @IdFuncionario
-      and a.Status <> 'Cancelado'
-      and a.DataInicio < @End
-      and a.DataFim > @Start
-    ";
-            if (!string.IsNullOrWhiteSpace(ignoreId))
-                sql += " and a.IdAgendamento <> @IgnoreId ";
-
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            cmd.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-            cmd.Parameters.AddWithValue("@Start", start);
-            cmd.Parameters.AddWithValue("@End", end);
-            if (!string.IsNullOrWhiteSpace(ignoreId))
-                cmd.Parameters.AddWithValue("@IgnoreId", ignoreId);
-
-            var c = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-            return c > 0;
-        }
-
-        private async Task<bool> IsWithinWorkHoursAsync(SqlConnection con, int idSalao, string idFuncionario, DateTime start, DateTime end)
-        {
-            // Se n„o conseguir ler janela (por falta de colunas), vamos permitir.
-            var f = (await GetFuncionariosComHorarioAsync(con, idSalao, idFuncionario)).FirstOrDefault();
-            if (f == null) return true;
-
-            var ww = f.GetWorkWindow(start.DayOfWeek);
-            if (ww == null) return false;
-
-            var (ini, fim) = ww.Value;
-
-            var day = start.Date;
-            var winStart = day.Add(ini);
-            var winEnd = day.Add(fim);
-
-            return start >= winStart && end <= winEnd;
-        }
-
-        // =========================
-        // Leitura do hor·rio semanal do funcion·rio
-        // (ajuste os nomes conforme seu DDL)
-        // =========================
-        private sealed class FuncHorario
-        {
-            public string IdFuncionario { get; set; } = "";
-            public string Nome { get; set; } = "";
-
-            // janelas por dia (null = folga)
-            public (TimeSpan ini, TimeSpan fim)? Seg { get; set; }
-            public (TimeSpan ini, TimeSpan fim)? Ter { get; set; }
-            public (TimeSpan ini, TimeSpan fim)? Qua { get; set; }
-            public (TimeSpan ini, TimeSpan fim)? Qui { get; set; }
-            public (TimeSpan ini, TimeSpan fim)? Sex { get; set; }
-            public (TimeSpan ini, TimeSpan fim)? Sab { get; set; }
-            public (TimeSpan ini, TimeSpan fim)? Dom { get; set; }
-
-            public (TimeSpan ini, TimeSpan fim)? GetWorkWindow(DayOfWeek d) => d switch
-            {
-                DayOfWeek.Monday => Seg,
-                DayOfWeek.Tuesday => Ter,
-                DayOfWeek.Wednesday => Qua,
-                DayOfWeek.Thursday => Qui,
-                DayOfWeek.Friday => Sex,
-                DayOfWeek.Saturday => Sab,
-                DayOfWeek.Sunday => Dom,
-                _ => null
-            };
-        }
-
-        private async Task<List<FuncHorario>> GetFuncionariosComHorarioAsync(SqlConnection con, int idSalao, string? idFuncionario)
-        {
-            var list = new List<FuncHorario>();
-
-            // Ajuste aqui conforme seu DDL real do CorteCor_Funcionario.
-            // Eu puxo "Nome" + campos de hor·rio que podem ter nomes diferentes.
-            var sql = @"
-    select *
-    from CorteCor_Funcionario f
-    where f.IdSalao = @IdSalao
-    ";
-            if (!string.IsNullOrWhiteSpace(idFuncionario))
-                sql += " and f.IdFuncionario = @IdFuncionario ";
-
-            await using var cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@IdSalao", idSalao);
-            if (!string.IsNullOrWhiteSpace(idFuncionario))
-                cmd.Parameters.AddWithValue("@IdFuncionario", idFuncionario);
-
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
-            {
-                var fh = new FuncHorario
-                {
-                    IdFuncionario = SafeGet(rd, "IdFuncionario") ?? SafeGet(rd, "IDFuncionario") ?? "",
-                    Nome = SafeGet(rd, "Nome") ?? ""
-                };
-
-                // tenta mapear janelas por m˙ltiplos nomes possÌveis
-                fh.Seg = GetWorkWindowFromReader(rd, "Seg", "Segunda");
-                fh.Ter = GetWorkWindowFromReader(rd, "Ter", "Terca", "TerÁa");
-                fh.Qua = GetWorkWindowFromReader(rd, "Qua", "Quarta");
-                fh.Qui = GetWorkWindowFromReader(rd, "Qui", "Quinta");
-                fh.Sex = GetWorkWindowFromReader(rd, "Sex", "Sexta");
-                fh.Sab = GetWorkWindowFromReader(rd, "Sab", "S·bado", "Sabado");
-                fh.Dom = GetWorkWindowFromReader(rd, "Dom", "Domingo");
-
-                list.Add(fh);
-            }
-
-            return list;
-        }
-
-        private static string? SafeGet(SqlDataReader rd, string name)
+        public IActionResult OnPostCreate([FromBody] CreateRequest req)
         {
             try
             {
-                var v = rd[name];
-                return v is DBNull ? null : v?.ToString();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static TimeSpan? SafeGetTime(SqlDataReader rd, params string[] names)
-        {
-            foreach (var n in names)
-            {
-                try
+                if (req == null)
                 {
-                    var v = rd[n];
-                    if (v is DBNull) continue;
-
-                    if (v is TimeSpan ts) return ts;
-                    if (TimeSpan.TryParse(v.ToString(), out var parsed)) return parsed;
+                    return BadRequest(new ErrorResponse { Message = "Requisi√ß√£o inv√°lida." });
                 }
-                catch { /* ignore */ }
-            }
-            return null;
-        }
 
-        private static bool? SafeGetBool(SqlDataReader rd, params string[] names)
-        {
-            foreach (var n in names)
-            {
-                try
+                if (string.IsNullOrWhiteSpace(req.Start))
                 {
-                    var v = rd[n];
-                    if (v is DBNull) continue;
-                    if (v is bool b) return b;
-
-                    if (int.TryParse(v.ToString(), out var i)) return i != 0;
-                    if (bool.TryParse(v.ToString(), out var bb)) return bb;
+                    return BadRequest(new ErrorResponse { Message = "In√≠cio √© obrigat√≥rio." });
                 }
-                catch { /* ignore */ }
+
+                if (!DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var start))
+                {
+                    return BadRequest(new ErrorResponse { Message = "Formato de data de in√≠cio inv√°lido." });
+                }
+
+                if (start.Kind == DateTimeKind.Utc)
+                {
+                    start = start.ToLocalTime();
+                }
+
+                if (req.IdServico <= 0)
+                {
+                    return BadRequest(new ErrorResponse { Message = "Servi√ßo √© obrigat√≥rio." });
+                }
+
+                if (req.IdPessoa <= 0)
+                {
+                    return BadRequest(new ErrorResponse { Message = "Cliente √© obrigat√≥rio." });
+                }
+
+                var idSalao = ObterIdSalao();
+                var servico = _servicoHandler.ObterPorId(req.IdServico);
+                if (servico == null || servico.IdSalao != idSalao)
+                {
+                    return BadRequest(new ErrorResponse { Message = "Servi√ßo inv√°lido para esta empresa." });
+                }
+
+                var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
+                if (pessoa == null || pessoa.IdSalao != idSalao)
+                {
+                    return BadRequest(new ErrorResponse { Message = "Cliente inv√°lido para esta empresa." });
+                }
+
+                DateTime? end = null;
+                if (!string.IsNullOrWhiteSpace(req.End))
+                {
+                    if (!DateTime.TryParse(req.End, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsedEnd))
+                    {
+                        return BadRequest(new ErrorResponse { Message = "Formato de data final inv√°lido." });
+                    }
+
+                    end = parsedEnd.Kind == DateTimeKind.Utc ? parsedEnd.ToLocalTime() : parsedEnd;
+                }
+
+                var horario = _agendamentoPreparationService.ValidarHorarioServico(req.IdServico, start, end, idSalao);
+                var idFuncionarioSelecionado = _agendamentoPreparationService.ObterFuncionarioDisponivelId(req.IdServico, horario.Inicio, idSalao);
+                if (idFuncionarioSelecionado == 0)
+                {
+                    return BadRequest(new ErrorResponse { Message = "N√£o h√° profissionais dispon√≠veis para este servi√ßo no hor√°rio selecionado." });
+                }
+
+                var novoId = _agendamentoHandler.CadastrarAgendamento(new Agendamento
+                {
+                    DataHora = horario.Inicio,
+                    IdServico = req.IdServico,
+                    IdPessoa = req.IdPessoa,
+                    IdFuncionario = idFuncionarioSelecionado,
+                    Status = AgendamentoStatus.Agendado
+                });
+
+                return new JsonResult(new
+                {
+                    id = novoId,
+                    servicoNome = servico.Nome,
+                    servicoCor = AgendamentoStatus.ObterCor(AgendamentoStatus.Agendado)
+                });
             }
-            return null;
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse
+                {
+                    Message = "Erro ao salvar agendamento: " + ex.Message,
+                    Detail = ex.StackTrace
+                });
+            }
         }
 
-        private static (TimeSpan ini, TimeSpan fim)? GetWorkWindowFromReader(SqlDataReader rd, params string[] prefixes)
+        public async Task<IActionResult> OnGetDetails(int id)
         {
-            // procura padr„o:
-            // {Prefix}_Ativo / {Prefix}Ativo / Ativo{Prefix}
-            // {Prefix}_Inicio / {Prefix}Inicio / Inicio{Prefix}
-            // {Prefix}_Fim / {Prefix}Fim / Fim{Prefix}
-
-            foreach (var p in prefixes)
+            if (id <= 0)
             {
-                var ativo = SafeGetBool(rd,
-                    $"{p}_Ativo", $"{p}Ativo", $"Ativo{p}",
-                    $"{p}_Trabalha", $"{p}Trabalha");
-
-                var ini = SafeGetTime(rd,
-                    $"{p}_Inicio", $"{p}Inicio", $"Inicio{p}",
-                    $"{p}_HoraInicio", $"{p}HoraInicio");
-
-                var fim = SafeGetTime(rd,
-                    $"{p}_Fim", $"{p}Fim", $"Fim{p}",
-                    $"{p}_HoraFim", $"{p}HoraFim");
-
-                // Se existir flag e for false => folga
-                if (ativo.HasValue && ativo.Value == false)
-                    return null;
-
-                // Se n„o tem ini/fim => n„o conseguimos mapear (n„o bloqueia)
-                if (!ini.HasValue || !fim.HasValue)
-                    continue;
-
-                if (fim.Value <= ini.Value) return null;
-
-                return (ini.Value, fim.Value);
+                return BadRequest(new ErrorResponse { Message = "ID inv√°lido." });
             }
 
-            // N„o achou colunas compatÌveis => n„o bloqueia (permite)
-            return (TimeSpan.Zero, TimeSpan.FromHours(24));
+            var agendamento = _agendamentoHandler.ObterPorId(id);
+            if (agendamento == null)
+            {
+                return NotFound();
+            }
+
+            var servico = _servicoHandler.ObterPorId(agendamento.IdServico);
+            var statusNormalizado = AgendamentoStatus.Normalizar(agendamento.Status);
+            var situacaoFiscal = await _agendamentoFiscalPreparationService.ObterSituacaoFiscalAsync(
+                ObterIdSalao(),
+                agendamento.IdAgendamento,
+                statusNormalizado);
+
+            return new JsonResult(new
+            {
+                id = agendamento.IdAgendamento,
+                idPessoa = agendamento.IdPessoa,
+                idServico = agendamento.IdServico,
+                servicoNome = servico?.Nome ?? "Servi√ßo n√£o encontrado",
+                start = agendamento.DataHora,
+                status = statusNormalizado,
+                canEdit = AgendamentoStatus.PodeAlterar(statusNormalizado),
+                canDelete = AgendamentoStatus.PodeExcluir(statusNormalizado),
+                canPay = AgendamentoStatus.PodePagar(statusNormalizado),
+                fiscal = MontarFiscalState(situacaoFiscal)
+            });
+        }
+
+        public class UpdateRequest
+        {
+            public int Id { get; set; }
+            public int IdPessoa { get; set; }
+            public int IdServico { get; set; }
+            public string? Status { get; set; }
+            public string? Start { get; set; }
+        }
+
+        public class AgendamentoFiscalUiState
+        {
+            public bool PossuiNota { get; set; }
+            public bool PossuiNotaAtiva { get; set; }
+            public bool PodeEmitir { get; set; }
+            public bool PodeAbrirNota { get; set; }
+            public string StatusFiscal { get; set; } = "Sem nota";
+            public string ClasseStatusFiscal { get; set; } = "bg-secondary";
+            public string Mensagem { get; set; } = string.Empty;
+            public Guid? IdNotaFiscal { get; set; }
+            public int? NumeroNota { get; set; }
+            public int? SerieNota { get; set; }
+            public string? TipoNota { get; set; }
+            public string? UrlLista { get; set; }
+        }
+
+        public IActionResult OnPostUpdate([FromBody] UpdateRequest req)
+        {
+            try
+            {
+                if (req == null || req.Id <= 0)
+                {
+                    return BadRequest(new ErrorResponse { Message = "Requisi√ß√£o inv√°lida." });
+                }
+
+                var idSalao = ObterIdSalao();
+                var agendamento = _agendamentoHandler.ObterPorId(req.Id);
+                if (agendamento == null)
+                {
+                    return NotFound("Agendamento n√£o encontrado.");
+                }
+
+                if (!AgendamentoStatus.PodeAlterar(agendamento.Status))
+                {
+                    return BadRequest(new ErrorResponse { Message = "Agendamentos pagos ou cancelados n√£o podem ser alterados." });
+                }
+
+                var servico = _servicoHandler.ObterPorId(req.IdServico);
+                if (servico == null || servico.IdSalao != idSalao)
+                {
+                    return BadRequest(new ErrorResponse { Message = "Servi√ßo inv√°lido." });
+                }
+
+                var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
+                if (pessoa == null || pessoa.IdSalao != idSalao)
+                {
+                    return BadRequest(new ErrorResponse { Message = "Cliente inv√°lido." });
+                }
+
+                var dataHora = agendamento.DataHora;
+                if (!string.IsNullOrWhiteSpace(req.Start))
+                {
+                    if (!DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+                    {
+                        return BadRequest(new ErrorResponse { Message = "Formato de data inv√°lido." });
+                    }
+
+                    dataHora = parsed.Kind == DateTimeKind.Utc ? parsed.ToLocalTime() : parsed;
+                }
+
+                var horario = _agendamentoPreparationService.ValidarHorarioServico(req.IdServico, dataHora, null, idSalao);
+                var idFuncionarioSelecionado = _agendamentoPreparationService.ObterFuncionarioDisponivelId(req.IdServico, horario.Inicio, idSalao, agendamento.IdAgendamento);
+                if (idFuncionarioSelecionado == 0)
+                {
+                    return BadRequest(new ErrorResponse { Message = "N√£o h√° profissionais dispon√≠veis para este servi√ßo no hor√°rio selecionado (ou h√° conflito de agenda)." });
+                }
+
+                agendamento.IdPessoa = req.IdPessoa;
+                agendamento.IdServico = req.IdServico;
+                agendamento.IdFuncionario = idFuncionarioSelecionado;
+                agendamento.DataHora = horario.Inicio;
+                agendamento.Status = string.IsNullOrWhiteSpace(req.Status)
+                    ? AgendamentoStatus.Normalizar(agendamento.Status)
+                    : AgendamentoStatus.Normalizar(req.Status);
+
+                _agendamentoHandler.Atualizar(agendamento, idSalao);
+
+                if (AgendamentoStatus.Normalizar(agendamento.Status) == AgendamentoStatus.Pago)
+                {
+                    var existingPayment = _pagamentoHandler.ObterPorIdAgendamento(agendamento.IdAgendamento);
+                    if (existingPayment == null || existingPayment.Status != AgendamentoStatus.Pago)
+                    {
+                        _pagamentoHandler.CadastrarPagamento(new Pagamento
+                        {
+                            IdPagamento = Guid.NewGuid(),
+                            IdSalao = idSalao,
+                            IdAgendamento = agendamento.IdAgendamento,
+                            OrigemPagamento = OrigemPagamento.Agendamento,
+                            Ativo = true,
+                            Status = AgendamentoStatus.Pago,
+                            Valor = servico.Preco,
+                            Moeda = "BRL",
+                            Descricao = $"Pagamento do agendamento {agendamento.IdAgendamento} (Marcado Manualmente)",
+                            Data = DateTime.Now,
+                            PagoEm = DateTime.Now,
+                            CriadoEm = DateTime.UtcNow,
+                            Tipo = "Manual"
+                        });
+                    }
+                }
+
+                var primeiroNome = pessoa.Nome.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? pessoa.Nome;
+                return new JsonResult(new
+                {
+                    id = agendamento.IdAgendamento,
+                    title = $"{primeiroNome} - {servico.Nome}",
+                    color = AgendamentoStatus.ObterCor(agendamento.Status),
+                    start = agendamento.DataHora,
+                    end = agendamento.DataHora.Add(servico.Duracao)
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse
+                {
+                    Message = "Erro ao atualizar agendamento: " + ex.Message,
+                    Detail = ex.StackTrace
+                });
+            }
+        }
+
+        public class PagarRequest
+        {
+            public int IdAgendamento { get; set; }
+        }
+
+        public async Task<IActionResult> OnPostPagar([FromBody] PagarRequest req)
+        {
+            if (req == null || req.IdAgendamento <= 0)
+            {
+                return BadRequest(new ErrorResponse { Message = "Requisi√ß√£o inv√°lida." });
+            }
+
+            var idSalao = ObterIdSalao();
+            var agendamento = _agendamentoHandler.ObterPorId(req.IdAgendamento);
+            if (agendamento == null)
+            {
+                return NotFound("Agendamento n√£o encontrado");
+            }
+
+            var servico = _servicoHandler.ObterPorId(agendamento.IdServico);
+            if (servico == null || servico.IdSalao != idSalao)
+            {
+                return BadRequest(new ErrorResponse { Message = "Acesso negado" });
+            }
+
+            if (!AgendamentoStatus.PodePagar(agendamento.Status))
+            {
+                return BadRequest(new ErrorResponse { Message = "Este agendamento j√° foi pago ou n√£o permite pagamento." });
+            }
+
+            var pessoa = _pessoaHandler.ObterPorId(agendamento.IdPessoa);
+            if (pessoa == null)
+            {
+                return BadRequest(new ErrorResponse { Message = "Cliente n√£o encontrado" });
+            }
+
+            var meios = _meioPagamentoHandler.ListarPorSalao(idSalao, somenteAtivos: true);
+            var mpConfig = meios.FirstOrDefault(m =>
+                !string.IsNullOrWhiteSpace(m.Gateway) &&
+                m.Gateway.Replace(" ", string.Empty).Equals("MercadoPago", StringComparison.OrdinalIgnoreCase));
+
+            if (mpConfig == null)
+            {
+                return BadRequest(new ErrorResponse { Message = "Meio de pagamento Mercado Pago n√£o configurado para esta empresa." });
+            }
+
+            var isProduction = mpConfig.MpProduction;
+            var accessToken = isProduction ? mpConfig.MpAccessTokenProd : mpConfig.MpAccessTokenSandbox;
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Message = isProduction
+                        ? "Token de Produ√ß√£o do Mercado Pago n√£o configurado."
+                        : "Token de Sandbox do Mercado Pago n√£o configurado."
+                });
+            }
+
+            var idPagamento = Guid.NewGuid();
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var (pref, error) = await _mpService.CreatePreferenceAsync(
+                accessToken,
+                idPagamento,
+                $"Servi√ßo {servico.Nome} - Corte & Cor",
+                servico.Preco,
+                pessoa.Email ?? "cliente@cortecor.com",
+                baseUrl);
+
+            if (pref == null)
+            {
+                return StatusCode(500, new ErrorResponse
+                {
+                    Message = "Erro ao gerar prefer√™ncia de pagamento no Mercado Pago",
+                    Detail = error
+                });
+            }
+
+            using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
+            if (AgendamentoStatus.Normalizar(agendamento.Status) != AgendamentoStatus.Pago)
+            {
+                _agendamentoHandler.AtualizarStatus(agendamento.IdAgendamento, AgendamentoStatus.Pendente, idSalao);
+            }
+
+            _pagamentoHandler.CadastrarPagamento(new Pagamento
+            {
+                IdPagamento = idPagamento,
+                IdSalao = idSalao,
+                IdAgendamento = agendamento.IdAgendamento,
+                OrigemPagamento = OrigemPagamento.Agendamento,
+                Ativo = true,
+                Status = AgendamentoStatus.Pendente,
+                Valor = servico.Preco,
+                Moeda = "BRL",
+                Descricao = $"Pagamento do agendamento {agendamento.IdAgendamento}",
+                MercadoPagoPreferenceId = pref.Id,
+                CheckoutUrl = pref.InitPoint,
+                CriadoEm = DateTime.UtcNow,
+                Tipo = "MercadoPago"
+            });
+
+            scope.Complete();
+
+            return new JsonResult(new { checkoutUrl = pref.InitPoint });
+        }
+
+        public class EmitirNotaRequest
+        {
+            public int IdAgendamento { get; set; }
+        }
+
+        public async Task<IActionResult> OnPostEmitirNota([FromBody] EmitirNotaRequest req)
+        {
+            if (req == null || req.IdAgendamento <= 0)
+            {
+                return BadRequest(new ErrorResponse { Message = "Requisi√ß√£o inv√°lida." });
+            }
+
+            try
+            {
+                var resultado = await _agendamentoFiscalPreparationService.EmitirNotaServicoAsync(
+                    ObterIdSalao(),
+                    req.IdAgendamento,
+                    ObterUsuarioOperador(),
+                    "Manual");
+
+                return new JsonResult(new
+                {
+                    success = resultado.NotaFiscal?.Status == NotaFiscalStatus.Autorizada,
+                    message = resultado.Mensagem,
+                    nf_id = resultado.NotaFiscal?.IdNotaFiscal,
+                    fiscal = MontarFiscalState(await _agendamentoFiscalPreparationService.ObterSituacaoFiscalAsync(ObterIdSalao(), req.IdAgendamento)),
+                    redirectUrl = ObterUrlListaPorAgendamento(req.IdAgendamento)
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    fiscal = MontarFiscalState(await _agendamentoFiscalPreparationService.ObterSituacaoFiscalAsync(ObterIdSalao(), req.IdAgendamento)),
+                    redirectUrl = ObterUrlListaPorAgendamento(req.IdAgendamento)
+                });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = "Erro ao processar emiss√£o NF: " + ex.Message });
+            }
+        }
+
+        public IActionResult OnPostDelete(int id)
+        {
+            var agendamento = _agendamentoHandler.ObterPorId(id);
+            if (agendamento == null)
+            {
+                return NotFound();
+            }
+
+            var idSalao = ObterIdSalao();
+            var servico = _servicoHandler.ObterPorId(agendamento.IdServico);
+            if (servico == null || servico.IdSalao != idSalao)
+            {
+                return BadRequest(new ErrorResponse { Message = "Acesso negado" });
+            }
+
+            if (!AgendamentoStatus.PodeExcluir(agendamento.Status))
+            {
+                return BadRequest(new ErrorResponse { Message = "Agendamentos pagos ou cancelados n√£o podem ser exclu√≠dos." });
+            }
+
+            _agendamentoHandler.Excluir(id);
+            return new JsonResult(new { ok = true });
+        }
+
+        public IActionResult OnGetAvailableServices(DateTime start)
+        {
+            if (start.Kind == DateTimeKind.Utc)
+            {
+                start = start.ToLocalTime();
+            }
+
+            return new JsonResult(_agendamentoPreparationService.ListarServicosDisponiveis(ObterIdSalao(), start));
+        }
+
+        private int ObterIdSalao() =>
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out var idSalao) ? idSalao : 0;
+
+        private string? ObterUsuarioOperador() =>
+            User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirst("Email")?.Value;
+
+        private AgendamentoFiscalUiState MontarFiscalState(AgendamentoSituacaoFiscalResult situacao)
+        {
+            var urlLista = ObterUrlNotaFiscal(situacao);
+
+            return new AgendamentoFiscalUiState
+            {
+                PossuiNota = situacao.PossuiNota,
+                PossuiNotaAtiva = situacao.PossuiNotaAtiva,
+                PodeEmitir = situacao.PodeEmitir,
+                PodeAbrirNota = situacao.PodeAbrirNota,
+                StatusFiscal = situacao.StatusFiscal,
+                ClasseStatusFiscal = situacao.ClasseStatusFiscal,
+                Mensagem = situacao.Mensagem,
+                IdNotaFiscal = situacao.IdNotaFiscal,
+                NumeroNota = situacao.NumeroNota,
+                SerieNota = situacao.SerieNota,
+                TipoNota = situacao.TipoNota,
+                UrlLista = urlLista
+            };
+        }
+
+        private string ObterUrlNotaFiscal(AgendamentoSituacaoFiscalResult situacao)
+        {
+            var rota = $"/NotaFiscalLista?idAgendamento={situacao.IdAgendamento}";
+            if (situacao.IdNotaFiscal.HasValue)
+            {
+                rota += $"&idNotaFiscal={situacao.IdNotaFiscal}";
+            }
+
+            if (Url != null)
+            {
+                return Url.Page("/NotaFiscalLista", new
+                {
+                    idAgendamento = situacao.IdAgendamento,
+                    idNotaFiscal = situacao.IdNotaFiscal
+                }) ?? rota;
+            }
+
+            var pathBase = HttpContext?.Request?.PathBase.Value ?? string.Empty;
+            return $"{pathBase}{rota}";
+        }
+
+        private string ObterUrlListaPorAgendamento(int idAgendamento)
+        {
+            if (Url != null)
+            {
+                return Url.Page("/NotaFiscalLista", new { idAgendamento }) ?? $"/NotaFiscalLista?idAgendamento={idAgendamento}";
+            }
+
+            var pathBase = HttpContext?.Request?.PathBase.Value ?? string.Empty;
+            return $"{pathBase}/NotaFiscalLista?idAgendamento={idAgendamento}";
         }
     }
 }
-
-
 
 

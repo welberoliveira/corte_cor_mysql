@@ -1,0 +1,37 @@
+@page
+@model CorteCor.Pages.CategoriaProdutoCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Categoria de Produtos";
+}
+
+<div class="container mt-4">
+    <h4>@Model.ButtonText Categoria de Produto</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-@Model.MensagemTipo mt-3">@Model.Mensagem</div>
+    }
+
+    <form method="post" class="mt-4">
+        <input type="hidden" name="action" value="salvar">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="row">
+            <div class="col-md-9 form-group">
+                <label for="nome" class="form-label">Nome da Categoria</label>
+                <input asp-for="Categoria.Nome" id="nome" class="form-control" required>
+            </div>
+            <div class="col-md-3 form-group d-flex align-items-end mb-3">
+                <div class="form-check">
+                    <input asp-for="Categoria.Ativo" class="form-check-input" id="ativo">
+                    <label class="form-check-label" for="ativo">Ativo</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+            <a asp-page="/CategoriaProdutoLista" class="btn btn-secondary ms-2">Voltar</a>
+        </div>
+    </form>
+</div>

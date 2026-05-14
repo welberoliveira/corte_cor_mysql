@@ -1,0 +1,170 @@
+@page
+@model CorteCor.Pages.AgendamentosListaModel
+@{
+    ViewData["Title"] = "Consulta de Agendamentos";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h2>@ViewData["Title"]</h2>
+        </div>
+    </div>
+
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-white font-weight-bold text-primary">
+            <i class="fas fa-filter"></i> Filtros
+        </div>
+        <div class="card-body">
+            <form method="get">
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold">Data Início</label>
+                        <input type="date" class="form-control" asp-for="DataInicio">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold">Data Fim</label>
+                        <input type="date" class="form-control" asp-for="DataFim">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold">Status</label>
+                        <select class="form-control" asp-for="Status" asp-items="@(new SelectList(Model.StatusOptions))">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold">Serviço</label>
+                        <select class="form-control" asp-for="IdServico" asp-items="@(new SelectList(Model.ServicosOptions, "IdServico", "Nome"))">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold">Cliente</label>
+                        <select class="form-control" asp-for="IdPessoa" asp-items="@(new SelectList(Model.PessoasOptions, "IdPessoa", "Nome"))">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold">Funcionário</label>
+                        <select class="form-control" asp-for="IdFuncionario" asp-items="@(new SelectList(Model.FuncionariosOptions, "IdFuncionario", "Nome"))">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group d-flex align-items-end justify-content-end">
+                        <div class="form-check mr-4 mb-2">
+                            <input type="checkbox" class="form-check-input" asp-for="MostrarExcluidos">
+                            <label class="form-check-label font-weight-bold" asp-for="MostrarExcluidos">Mostrar Excluídos</label>
+                        </div>
+                        <div>
+                            <a href="/AgendamentosLista" class="btn btn-secondary mr-2">
+                                <i class="fas fa-eraser"></i> Limpar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-info">@Model.Mensagem</div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-hover cc-table">
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Status</th>
+                    <th>Fiscal</th>
+                    <th>Serviço</th>
+                    <th>Cliente</th>
+                    <th>Funcionário</th>
+                    <th>Ações</th>
+                    <th>Excluído?</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Agendamentos.Items)
+                {
+                    <tr class="@(item.Excluido ? "table-danger text-decoration-line-through" : "")">
+                        <td>@item.DataHora.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <span class="badge badge-pill @Model.GetStatusBadgeClass(item.Status)">
+                                @item.Status
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1">
+                                <span class="badge @Model.GetFiscalBadgeClass(item.IdAgendamento)">@Model.GetFiscalStatus(item.IdAgendamento)</span>
+                                <small class="text-muted">@Model.GetFiscalDescricao(item.IdAgendamento)</small>
+                            </div>
+                        </td>
+                        <td>@Model.GetServicoNome(item.IdServico)</td>
+                        <td>@Model.GetPessoaNome(item.IdPessoa)</td>
+                        <td>@Model.GetFuncionarioNome(item.IdFuncionario)</td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(Model.GetNotaFiscalUrl(item.IdAgendamento)))
+                            {
+                                <a class="btn btn-sm btn-dark" href="@Model.GetNotaFiscalUrl(item.IdAgendamento)">
+                                    <i class="bi bi-box-arrow-up-right"></i> Nota Fiscal
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Sem ação fiscal</span>
+                            }
+                        </td>
+                        <td>@(item.Excluido ? "Sim" : "Não")</td>
+                    </tr>
+                }
+                @if (!Model.Agendamentos.Items.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">Ainda não há agendamentos com estes filtros.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Agendamentos.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-3">
+            <ul class="pagination justify-content-center">
+                @{
+                    var queryParams = new Dictionary<string, string>();
+                    if (Model.DataInicio.HasValue) queryParams.Add("DataInicio", Model.DataInicio.Value.ToString("yyyy-MM-dd"));
+                    if (Model.DataFim.HasValue) queryParams.Add("DataFim", Model.DataFim.Value.ToString("yyyy-MM-dd"));
+                    if (!string.IsNullOrEmpty(Model.Status)) queryParams.Add("Status", Model.Status);
+                    if (Model.IdServico.HasValue) queryParams.Add("IdServico", Model.IdServico.Value.ToString());
+                    if (Model.IdPessoa.HasValue) queryParams.Add("IdPessoa", Model.IdPessoa.Value.ToString());
+                    if (Model.IdFuncionario.HasValue) queryParams.Add("IdFuncionario", Model.IdFuncionario.Value.ToString());
+                    if (Model.MostrarExcluidos) queryParams.Add("MostrarExcluidos", "true");
+
+                    string GetLink(int page)
+                    {
+                        var dict = new Dictionary<string, string>(queryParams);
+                        dict["p"] = page.ToString();
+                        return "?" + string.Join("&", dict.Select(kv => $"{kv.Key}={System.Net.WebUtility.UrlEncode(kv.Value)}"));
+                    }
+                }
+
+                <li class="page-item @(Model.Agendamentos.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex - 1)" tabindex="-1">Anterior</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Página @Model.Agendamentos.PageIndex de @Model.Agendamentos.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.Agendamentos.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="@GetLink(Model.Agendamentos.PageIndex + 1)">Próxima</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

@@ -1,0 +1,521 @@
+@page
+@model CorteCor.Pages.ImovelCadastroModel
+@using System.Globalization
+
+@{
+    ViewData["Title"] = Model.Imovel.IdImovel > 0 ? "Alterar imovel" : "Cadastrar imovel";
+}
+
+<style>
+    .imovel-form { display: grid; gap: 1rem; }
+    .imovel-section { border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: #fff; }
+    .imovel-section h5 { margin-bottom: .85rem; color: #0f172a; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .45rem .9rem; }
+    .photo-thumb { width: 92px; height: 68px; object-fit: cover; border-radius: 6px; border: 1px solid #d1d5db; }
+    .imovel-outline-button {
+        background: #fff !important;
+        border-color: #64748b !important;
+        color: #334155 !important;
+    }
+    .imovel-outline-button:hover,
+    .imovel-outline-button:focus {
+        background: #f1f5f9 !important;
+        border-color: #334155 !important;
+        color: #0f172a !important;
+    }
+    .imovel-outline-button:focus-visible {
+        box-shadow: 0 0 0 .2rem rgba(100, 116, 139, .25) !important;
+    }
+</style>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+            <h4 class="mb-1">@ViewData["Title"]</h4>
+            <small class="text-muted">Preencha os dados do anuncio, publicacao, fotos e contatos.</small>
+        </div>
+        <a asp-page="/Imoveis" class="btn btn-outline-secondary imovel-outline-button">Voltar para imoveis</a>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensagem))
+    {
+        <div class="alert alert-@Model.MensagemTipo">
+            <div>@Model.Mensagem</div>
+            @if (!string.IsNullOrWhiteSpace(Model.MensagemDetalheTecnico))
+            {
+                <div class="mt-2 small text-start">
+                    <strong>Detalhe tecnico retornado:</strong> @Model.MensagemDetalheTecnico
+                </div>
+            }
+        </div>
+    }
+
+    <form method="post" enctype="multipart/form-data" class="imovel-form">
+        <input type="hidden" name="idImovel" value="@Model.Imovel.IdImovel">
+
+        <section class="imovel-section">
+            <h5>1. Dados do anuncio</h5>
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label" for="codigoImovel">Codigo do imovel *</label>
+                    <input class="form-control" id="codigoImovel" name="codigoImovel" value="@Model.Imovel.CodigoImovel" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="statusAnuncio">Status *</label>
+                    <select class="form-select" id="statusAnuncio" name="statusAnuncio" required>
+                        @foreach (var item in Model.StatusOptions)
+                        {
+                            var selected = Model.Imovel.StatusAnuncio == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="finalidade">Finalidade *</label>
+                    <select class="form-select" id="finalidade" name="finalidade" required>
+                        @foreach (var item in Model.FinalidadeOptions)
+                        {
+                            var selected = Model.Imovel.Finalidade == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="tipoImovel">Tipo *</label>
+                    <select class="form-select" id="tipoImovel" name="tipoImovel" required>
+                        @foreach (var item in Model.TipoOptions)
+                        {
+                            var selected = Model.Imovel.TipoImovel == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="titulo">Titulo *</label>
+                    <input class="form-control" id="titulo" name="titulo" value="@Model.Imovel.Titulo" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="subtitulo">Subtitulo/chamada</label>
+                    <input class="form-control" id="subtitulo" name="subtitulo" value="@Model.Imovel.Subtitulo">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="imobiliariaResponsavel">Imobiliaria responsavel *</label>
+                    <input class="form-control" id="imobiliariaResponsavel" name="imobiliariaResponsavel" value="@Model.Imovel.ImobiliariaResponsavel" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="creciResponsavelLegal">CRECI/responsavel legal *</label>
+                    <input class="form-control" id="creciResponsavelLegal" name="creciResponsavelLegal" value="@Model.Imovel.CreciResponsavelLegal" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="dataCadastro">Data de cadastro *</label>
+                    <input type="date" class="form-control" id="dataCadastro" name="dataCadastro" value="@Model.Imovel.DataCadastro.ToString("yyyy-MM-dd")" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="dataAtualizacao">Data de atualizacao *</label>
+                    <input type="date" class="form-control" id="dataAtualizacao" name="dataAtualizacao" value="@Model.Imovel.DataAtualizacao.ToString("yyyy-MM-dd")" required>
+                </div>
+            </div>
+        </section>
+
+        <section class="imovel-section">
+            <h5>2. Preco e condicoes</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="valorVenda">Valor de venda</label>
+                    <input class="form-control" id="valorVenda" name="valorVenda" inputmode="decimal" value="@(Model.Imovel.ValorVenda?.ToString("N2"))">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="valorAluguel">Valor de aluguel</label>
+                    <input class="form-control" id="valorAluguel" name="valorAluguel" inputmode="decimal" value="@(Model.Imovel.ValorAluguel?.ToString("N2"))">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="valorCondominio">Valor do condominio</label>
+                    <input class="form-control" id="valorCondominio" name="valorCondominio" inputmode="decimal" value="@(Model.Imovel.ValorCondominio?.ToString("N2"))">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="valorIPTU">Valor do IPTU</label>
+                    <input class="form-control" id="valorIPTU" name="valorIPTU" inputmode="decimal" value="@(Model.Imovel.ValorIPTU?.ToString("N2"))">
+                </div>
+                <div class="col-md-2 form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="precoSobConsulta" name="precoSobConsulta" @(Model.Imovel.PrecoSobConsulta ? "checked" : "")>
+                    <label class="form-check-label" for="precoSobConsulta">Preco sob consulta</label>
+                </div>
+                <div class="col-md-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="aceitaFinanciamento" name="aceitaFinanciamento" @(Model.Imovel.AceitaFinanciamento ? "checked" : "")>
+                    <label class="form-check-label" for="aceitaFinanciamento">Aceita financiamento</label>
+                </div>
+                <div class="col-md-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="aceitaPermuta" name="aceitaPermuta" @(Model.Imovel.AceitaPermuta ? "checked" : "")>
+                    <label class="form-check-label" for="aceitaPermuta">Aceita permuta</label>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label" for="observacoesComerciais">Observacoes comerciais</label>
+                    <textarea class="form-control" id="observacoesComerciais" name="observacoesComerciais" rows="3">@Model.Imovel.ObservacoesComerciais</textarea>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label" for="avisoAlteracaoPreco">Aviso de alteracao de preco *</label>
+                    <input class="form-control" id="avisoAlteracaoPreco" name="avisoAlteracaoPreco" value="@Model.Imovel.AvisoAlteracaoPreco" required>
+                </div>
+            </div>
+        </section>
+
+        <section class="imovel-section">
+            <h5>3. Localizacao</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="estado">Estado *</label>
+                    <select class="form-select" id="estado" name="estado" required>
+                        <option value="">Selecione</option>
+                        @foreach (var item in Model.EstadoOptions)
+                        {
+                            var selected = Model.Imovel.Estado == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="cidade">Cidade *</label>
+                    <input class="form-control" id="cidade" name="cidade" value="@Model.Imovel.Cidade" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="bairro">Bairro *</label>
+                    <input class="form-control" id="bairro" name="bairro" value="@Model.Imovel.Bairro" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="cep">CEP</label>
+                    <input class="form-control" id="cep" name="cep" value="@Model.Imovel.CEP">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label" for="logradouro">Logradouro *</label>
+                    <input class="form-control" id="logradouro" name="logradouro" value="@Model.Imovel.Logradouro" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="numero">Numero</label>
+                    <input class="form-control" id="numero" name="numero" value="@Model.Imovel.Numero">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="complemento">Complemento</label>
+                    <input class="form-control" id="complemento" name="complemento" value="@Model.Imovel.Complemento">
+                </div>
+                <div class="col-md-2 form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="exibirEnderecoCompleto" name="exibirEnderecoCompleto" @(Model.Imovel.ExibirEnderecoCompleto ? "checked" : "")>
+                    <label class="form-check-label" for="exibirEnderecoCompleto">Exibir endereco completo</label>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="latitude">Latitude</label>
+                    <input class="form-control" id="latitude" name="latitude" inputmode="decimal" value="@(Model.Imovel.Latitude?.ToString(CultureInfo.InvariantCulture))">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="longitude">Longitude</label>
+                    <input class="form-control" id="longitude" name="longitude" inputmode="decimal" value="@(Model.Imovel.Longitude?.ToString(CultureInfo.InvariantCulture))">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="textoReferenciaRegiao">Texto de referencia/regiao</label>
+                    <input class="form-control" id="textoReferenciaRegiao" name="textoReferenciaRegiao" value="@Model.Imovel.TextoReferenciaRegiao">
+                </div>
+            </div>
+        </section>
+
+        <section class="imovel-section">
+            <h5>4. Medidas e comodos</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="areaConstruidaPrivativa">Area construida/privativa *</label>
+                    <input class="form-control" id="areaConstruidaPrivativa" name="areaConstruidaPrivativa" inputmode="decimal" value="@(Model.Imovel.AreaConstruidaPrivativa?.ToString("N2"))" required>
+                </div>
+                <div class="col-md-2 form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="areaAproximada" name="areaAproximada" @(Model.Imovel.AreaAproximada ? "checked" : "")>
+                    <label class="form-check-label" for="areaAproximada">Area aproximada</label>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="areaLoteTerreno">Area do lote/terreno</label>
+                    <input class="form-control" id="areaLoteTerreno" name="areaLoteTerreno" inputmode="decimal" value="@(Model.Imovel.AreaLoteTerreno?.ToString("N2"))">
+                </div>
+                <div class="col-md-2 form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="areaLoteAproximada" name="areaLoteAproximada" @(Model.Imovel.AreaLoteAproximada ? "checked" : "")>
+                    <label class="form-check-label" for="areaLoteAproximada">Lote aproximado</label>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="quartos">Quartos *</label>
+                    <input type="number" class="form-control" id="quartos" name="quartos" value="@Model.Imovel.Quartos" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="suites">Suites</label>
+                    <input type="number" class="form-control" id="suites" name="suites" value="@Model.Imovel.Suites">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="banheiros">Banheiros *</label>
+                    <input type="number" class="form-control" id="banheiros" name="banheiros" value="@Model.Imovel.Banheiros" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="lavabos">Lavabos</label>
+                    <input type="number" class="form-control" id="lavabos" name="lavabos" value="@Model.Imovel.Lavabos">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="vagasGaragem">Vagas *</label>
+                    <input type="number" class="form-control" id="vagasGaragem" name="vagasGaragem" value="@Model.Imovel.VagasGaragem" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="salas">Salas</label>
+                    <input type="number" class="form-control" id="salas" name="salas" value="@Model.Imovel.Salas">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="varandas">Varandas</label>
+                    <input type="number" class="form-control" id="varandas" name="varandas" value="@Model.Imovel.Varandas">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="closets">Closets</label>
+                    <input type="number" class="form-control" id="closets" name="closets" value="@Model.Imovel.Closets">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="depositos">Depositos</label>
+                    <input type="number" class="form-control" id="depositos" name="depositos" value="@Model.Imovel.Depositos">
+                </div>
+            </div>
+        </section>
+
+        <section class="imovel-section">
+            <h5>5. Caracteristicas</h5>
+            <div class="feature-grid">
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="piscina" @(Model.Imovel.Piscina ? "checked" : "")> Piscina</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="arCondicionado" @(Model.Imovel.ArCondicionado ? "checked" : "")> Ar-condicionado</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="churrasqueira" @(Model.Imovel.Churrasqueira ? "checked" : "")> Churrasqueira</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="sauna" @(Model.Imovel.Sauna ? "checked" : "")> Sauna</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="jardim" @(Model.Imovel.Jardim ? "checked" : "")> Jardim</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="dependenciaEmpregadaDCE" @(Model.Imovel.DependenciaEmpregadaDCE ? "checked" : "")> Dependencia/DCE</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="areaGourmet" @(Model.Imovel.AreaGourmet ? "checked" : "")> Area gourmet</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="jacuzzi" @(Model.Imovel.Jacuzzi ? "checked" : "")> Jacuzzi</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="hidromassagem" @(Model.Imovel.Hidromassagem ? "checked" : "")> Hidromassagem</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="escritorio" @(Model.Imovel.Escritorio ? "checked" : "")> Escritorio</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="salaTV" @(Model.Imovel.SalaTV ? "checked" : "")> Sala de TV</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="cozinhaPlanejada" @(Model.Imovel.CozinhaPlanejada ? "checked" : "")> Cozinha planejada</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="closetCaracteristica" @(Model.Imovel.ClosetCaracteristica ? "checked" : "")> Closet</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="varandaCaracteristica" @(Model.Imovel.VarandaCaracteristica ? "checked" : "")> Varanda</label>
+                <label class="form-check"><input class="form-check-input" type="checkbox" name="lavaboCaracteristica" @(Model.Imovel.LavaboCaracteristica ? "checked" : "")> Lavabo</label>
+            </div>
+        </section>
+
+        <section class="imovel-section">
+            <h5>6. Descricao</h5>
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label" for="descricaoPrincipal">Descricao principal *</label>
+                    <textarea class="form-control" id="descricaoPrincipal" name="descricaoPrincipal" rows="6" required>@Model.Imovel.DescricaoPrincipal</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="listaComposicao">Lista de composicao</label>
+                    <textarea class="form-control" id="listaComposicao" name="listaComposicao" rows="4">@Model.Imovel.ListaComposicao</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="destaquesImovel">Destaques do imovel</label>
+                    <textarea class="form-control" id="destaquesImovel" name="destaquesImovel" rows="4">@Model.Imovel.DestaquesImovel</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="observacoesFinais">Observacoes finais</label>
+                    <textarea class="form-control" id="observacoesFinais" name="observacoesFinais" rows="3">@Model.Imovel.ObservacoesFinais</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="textoDisclaimer">Texto de disclaimer *</label>
+                    <textarea class="form-control" id="textoDisclaimer" name="textoDisclaimer" rows="3" required>@Model.Imovel.TextoDisclaimer</textarea>
+                </div>
+            </div>
+        </section>
+
+        <section class="imovel-section">
+            <h5>7. Fotos e midias</h5>
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label" for="fotos">Galeria de fotos *</label>
+                    <input type="file" class="form-control" id="fotos" name="fotos" accept="image/*" multiple>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="videoUrl">Video</label>
+                    <input class="form-control" id="videoUrl" name="videoUrl" value="@Model.Imovel.VideoUrl">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="tourVirtualUrl">Tour virtual 360</label>
+                    <input class="form-control" id="tourVirtualUrl" name="tourVirtualUrl" value="@Model.Imovel.TourVirtualUrl">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="plantaArquivoUrl">Planta do imovel</label>
+                    <input class="form-control" id="plantaArquivoUrl" name="plantaArquivoUrl" value="@Model.Imovel.PlantaArquivoUrl">
+                </div>
+            </div>
+
+            @if (Model.Imovel.Fotos.Any())
+            {
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>Capa</th>
+                                <th>Ordem</th>
+                                <th>Legenda</th>
+                                <th>Alt text</th>
+                                <th>Remover</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var foto in Model.Imovel.Fotos)
+                            {
+                                <tr>
+                                    <td><img class="photo-thumb" src="@foto.CaminhoArquivo" alt="@foto.AltText"></td>
+                                    <td><input class="form-check-input" type="radio" name="fotoCapaId" value="@foto.IdFoto" @(foto.FotoCapa ? "checked" : "")></td>
+                                    <td><input class="form-control form-control-sm" type="number" name="fotoOrdem_@foto.IdFoto" value="@foto.Ordem"></td>
+                                    <td><input class="form-control form-control-sm" name="fotoLegenda_@foto.IdFoto" value="@foto.Legenda"></td>
+                                    <td><input class="form-control form-control-sm" name="fotoAlt_@foto.IdFoto" value="@foto.AltText"></td>
+                                    <td><input class="form-check-input" type="checkbox" name="removerFotoIds" value="@foto.IdFoto"></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="imovel-section">
+            <h5>8. Contato</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="nomeImobiliariaContato">Nome da imobiliaria *</label>
+                    <input class="form-control" id="nomeImobiliariaContato" name="nomeImobiliariaContato" value="@Model.Imovel.NomeImobiliariaContato" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="telefonePrincipal">Telefone principal *</label>
+                    <input class="form-control" id="telefonePrincipal" name="telefonePrincipal" value="@Model.Imovel.TelefonePrincipal" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="whatsApp">WhatsApp *</label>
+                    <input class="form-control" id="whatsApp" name="whatsApp" value="@Model.Imovel.WhatsApp" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="textoBotaoWhatsApp">Botao WhatsApp *</label>
+                    <input class="form-control" id="textoBotaoWhatsApp" name="textoBotaoWhatsApp" value="@Model.Imovel.TextoBotaoWhatsApp" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="emailContato">E-mail de contato *</label>
+                    <input type="email" class="form-control" id="emailContato" name="emailContato" value="@Model.Imovel.EmailContato" required>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="mensagemPadraoWhatsApp">Mensagem padrao do WhatsApp *</label>
+                    <input class="form-control" id="mensagemPadraoWhatsApp" name="mensagemPadraoWhatsApp" value="@Model.Imovel.MensagemPadraoWhatsApp" required>
+                </div>
+                <div class="col-md-2 form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="permitirVerTelefone" name="permitirVerTelefone" @(Model.Imovel.PermitirVerTelefone ? "checked" : "")>
+                    <label class="form-check-label" for="permitirVerTelefone">Permitir ver telefone</label>
+                </div>
+                <div class="col-md-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="receberNovidades" name="receberNovidades" @(Model.Imovel.ReceberNovidades ? "checked" : "")>
+                    <label class="form-check-label" for="receberNovidades">Receber novidades</label>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label" for="termosPrivacidadeTexto">Termos e privacidade *</label>
+                    <textarea class="form-control" id="termosPrivacidadeTexto" name="termosPrivacidadeTexto" rows="3" required>@Model.Imovel.TermosPrivacidadeTexto</textarea>
+                </div>
+            </div>
+
+            @if (Model.Imovel.Leads.Any())
+            {
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Interessado</th>
+                                <th>E-mail</th>
+                                <th>Telefone/WhatsApp</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var lead in Model.Imovel.Leads)
+                            {
+                                <tr>
+                                    <td>@lead.NomeInteressado</td>
+                                    <td>@lead.Email</td>
+                                    <td>@lead.TelefoneWhatsapp</td>
+                                    <td>@lead.Status</td>
+                                    <td>@lead.DataCadastro.ToString("dd/MM/yyyy HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="imovel-section">
+            <h5>9. SEO e publicacao</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="slugUrl">Slug da URL *</label>
+                    <input class="form-control" id="slugUrl" name="slugUrl" value="@Model.Imovel.SlugUrl">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="tituloSEO">Titulo SEO *</label>
+                    <input class="form-control" id="tituloSEO" name="tituloSEO" value="@Model.Imovel.TituloSEO">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="imagemCompartilhamento">Imagem de compartilhamento</label>
+                    <input class="form-control" id="imagemCompartilhamento" name="imagemCompartilhamento" value="@Model.Imovel.ImagemCompartilhamento">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="metaDescription">Meta description *</label>
+                    <input class="form-control" id="metaDescription" name="metaDescription" value="@Model.Imovel.MetaDescription">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="textoCompartilhamento">Texto de compartilhamento</label>
+                    <input class="form-control" id="textoCompartilhamento" name="textoCompartilhamento" value="@Model.Imovel.TextoCompartilhamento">
+                </div>
+                <div class="col-md-2 form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="permitirCompartilhamento" name="permitirCompartilhamento" @(Model.Imovel.PermitirCompartilhamento ? "checked" : "")>
+                    <label class="form-check-label" for="permitirCompartilhamento">Permitir compartilhamento</label>
+                </div>
+                <div class="col-md-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="publicarNoSite" name="publicarNoSite" @(Model.Imovel.PublicarNoSite ? "checked" : "")>
+                    <label class="form-check-label" for="publicarNoSite">Publicar no site</label>
+                </div>
+                <div class="col-md-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="destaqueNaBusca" name="destaqueNaBusca" @(Model.Imovel.DestaqueNaBusca ? "checked" : "")>
+                    <label class="form-check-label" for="destaqueNaBusca">Destaque na busca</label>
+                </div>
+                <div class="col-md-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="indexarGoogle" name="indexarGoogle" @(Model.Imovel.IndexarGoogle ? "checked" : "")>
+                    <label class="form-check-label" for="indexarGoogle">Indexar no Google</label>
+                </div>
+                <div class="col-md-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="imovelDisponivel" name="imovelDisponivel" @(Model.Imovel.ImovelDisponivel ? "checked" : "")>
+                    <label class="form-check-label" for="imovelDisponivel">Imovel disponivel</label>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="tagsInternas">Tags internas</label>
+                    <input class="form-control" id="tagsInternas" name="tagsInternas" value="@Model.Imovel.TagsInternas">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="ordemPrioridade">Ordem/prioridade</label>
+                    <input type="number" class="form-control" id="ordemPrioridade" name="ordemPrioridade" value="@Model.Imovel.OrdemPrioridade">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="origemCadastro">Origem do cadastro</label>
+                    <select class="form-select" id="origemCadastro" name="origemCadastro">
+                        @foreach (var item in Model.OrigemOptions)
+                        {
+                            var selected = Model.Imovel.OrigemCadastro == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="idExterno">ID externo</label>
+                    <input class="form-control" id="idExterno" name="idExterno" value="@Model.Imovel.IdExterno">
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex justify-content-end gap-2">
+            <a asp-page="/Imoveis" class="btn btn-outline-secondary imovel-outline-button">Cancelar</a>
+            <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+        </div>
+    </form>
+</div>

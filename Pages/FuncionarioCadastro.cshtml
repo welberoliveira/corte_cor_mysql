@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model CorteCor.Pages.FuncionarioCadastroModel
 @{
     ViewData["Title"] = "Cadastro de Funcionários";
@@ -9,13 +9,14 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success">
+        <div class="alert alert-@Model.MensagemTipo">
             @Model.Mensagem
         </div>
     }
 
     <form method="post">
         <input type="hidden" name="id" value="@Model.Funcionario?.IdFuncionario">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <div class="form-group">
             <label for="nome">Nome</label>
@@ -24,7 +25,10 @@
 
         <hr />
 
-        <h5>Disponibilidade</h5>
+        <div class="d-flex justify-content-between align-items-center">
+            <h5>Disponibilidade</h5>
+            <button type="button" class="btn btn-secondary btn-sm" id="copiarSemanaUtil">Copiar segunda para dias úteis</button>
+        </div>
 
         <!-- SEG -->
         <div class="border rounded p-3 mb-3">
@@ -178,5 +182,20 @@
 </div>
 
 <script>
-    // Checkbox não enviado quando desmarcado; garantimos campos vazios no back-end.
+    document.getElementById('copiarSemanaUtil')?.addEventListener('click', function () {
+        const inicio = document.getElementById('seg_ini')?.value;
+        const fim = document.getElementById('seg_fim')?.value;
+        if (!inicio || !fim) {
+            return;
+        }
+
+        ['ter', 'qua', 'qui', 'sex'].forEach(function (dia) {
+            const check = document.getElementById(dia);
+            const ini = document.getElementById(dia + '_ini');
+            const end = document.getElementById(dia + '_fim');
+            if (check) check.checked = true;
+            if (ini) ini.value = inicio;
+            if (end) end.value = fim;
+        });
+    });
 </script>

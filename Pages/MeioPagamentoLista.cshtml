@@ -1,23 +1,13 @@
-﻿@page
+@page
 @model CorteCor.Pages.MeioPagamentoListaModel
 
-<style>
-    @@media (max-width: 768px) {
-        table th:nth-child(2),
-        table td:nth-child(2),
-        table th:nth-child(3),
-        table td:nth-child(3),
-        table th:nth-child(4),
-        table td:nth-child(4),
-        table th:nth-child(5),
-        table td:nth-child(5) {
-            display: none;
-        }
-    }
-</style>
+
 
 <div class="container">
-    <h4>Lista de Meios de Pagamento</h4>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>Lista de Meios de Pagamento</h4>
+        <a asp-page="/MeioPagamentoCadastro" class="btn btn-primary">Cadastrar Novo</a>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -34,7 +24,7 @@
                 <th>Gateway</th>
                 <th>Taxa %</th>
                 <th>Taxa Fixa</th>
-                <th>Parcelamento</th>
+                <th class="d-none d-md-table-cell">Parcelamento</th>
                 <th>Prazo (dias)</th>
                 <th>Ativo</th>
                 <th>Ações</th>
@@ -49,7 +39,7 @@
                     <td>@Meio.Gateway</td>
                     <td>@Meio.TaxaPercentual.ToString("0.###")</td>
                     <td>R$ @Meio.TaxaFixa.ToString("0.00")</td>
-                    <td>
+                    <td class="d-none d-md-table-cell">
                         @(Meio.PermiteParcelamento
                             ? $"Sim ({(Meio.ParcelasMax.HasValue ? Meio.ParcelasMax.Value.ToString() : "-")}x)"
                             : "Não")
@@ -75,7 +65,8 @@
                             <button class="btn btn-warning">Desativar</button>
                         </form>
 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este Meio de Pagamento?');">
+                        <form method="post" style="display: inline;"
+                            onsubmit="return confirm('Tem certeza que deseja excluir este Meio de Pagamento?');">
                             <input type="hidden" name="id" value="@Meio.IdMeioPagamento">
                             <input type="hidden" name="action" value="excluir">
                             <button class="btn btn-danger">Excluir</button>

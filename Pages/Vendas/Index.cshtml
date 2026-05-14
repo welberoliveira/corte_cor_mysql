@@ -1,0 +1,289 @@
+@page
+@model CorteCor.Pages.Vendas.IndexModel
+@using CorteCor.Models
+@{
+    ViewData["Title"] = "Vendas";
+}
+
+@section Styles {
+    <style>
+        .venda-shell-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .venda-hero {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 48%, #ecfeff 100%);
+            border-radius: 24px;
+            padding: 1.6rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .venda-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.45rem;
+        }
+
+        .venda-actions .btn {
+            min-width: 130px;
+        }
+
+        .venda-table td {
+            vertical-align: top;
+        }
+
+        .venda-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .venda-pill-finalizada {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .venda-pill-cancelada {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .venda-pill-ajustada {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .venda-filter-row {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .venda-filter-row-top {
+            grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr);
+        }
+
+        .venda-filter-row-bottom {
+            grid-template-columns: minmax(180px, 0.65fr) minmax(0, 1.2fr) auto;
+            align-items: end;
+        }
+
+        .venda-period-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .venda-filter-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        @@media (max-width: 991.98px) {
+            .venda-actions .btn,
+            .venda-filter-actions .btn {
+                min-width: 100%;
+            }
+
+            .venda-filter-row-top,
+            .venda-filter-row-bottom {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="venda-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1">Vendas de Produtos e Servi&ccedil;os</h2>
+            <div class="text-muted">Consulte o hist&oacute;rico das vendas e acesse a nova tela de checkout quando precisar registrar uma opera&ccedil;&atilde;o.</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-primary" asp-page="/Vendas/Novo">Nova venda</a>
+                    <a class="btn btn-dark" asp-page="/Pedidos/Index">Pedidos e Or&ccedil;amentos</a>
+                    <a class="btn btn-secondary" asp-page="/Estoque/Index">Controle de Estoque</a>
+                </div>
+            </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card venda-shell-card mb-4">
+    <div class="card-header bg-white fw-semibold">Filtro de vendas</div>
+    <div class="card-body">
+        <form method="get" class="venda-filter-row">
+            <div class="venda-filter-row-top">
+                <div>
+                    <label class="form-label">Pesquisa</label>
+                    <input class="form-control" name="q" value="@Model.q" placeholder="Cliente, pagamento ou venda" />
+                </div>
+                <div>
+                    <label class="form-label">Cliente</label>
+                    <select class="form-select" name="idPessoaFiltro">
+                        <option value="">Todos</option>
+                        @foreach (var cliente in Model.Contexto.Clientes)
+                        {
+                            if (Model.idPessoaFiltro == cliente.IdPessoa)
+                            {
+                                <option value="@cliente.IdPessoa" selected>@cliente.Nome</option>
+                            }
+                            else
+                            {
+                                <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="statusFiltro">
+                        <option value="">Todos</option>
+                        @if (Model.statusFiltro == VendaProdutoStatus.Finalizada)
+                        {
+                            <option value="@VendaProdutoStatus.Finalizada" selected>Finalizada</option>
+                        }
+                        else
+                        {
+                            <option value="@VendaProdutoStatus.Finalizada">Finalizada</option>
+                        }
+                        @if (Model.statusFiltro == VendaProdutoStatus.Cancelada)
+                        {
+                            <option value="@VendaProdutoStatus.Cancelada" selected>Cancelada</option>
+                        }
+                        else
+                        {
+                            <option value="@VendaProdutoStatus.Cancelada">Cancelada</option>
+                        }
+                        @if (Model.statusFiltro == VendaProdutoStatus.Ajustada)
+                        {
+                            <option value="@VendaProdutoStatus.Ajustada" selected>Ajustada</option>
+                        }
+                        else
+                        {
+                            <option value="@VendaProdutoStatus.Ajustada">Ajustada</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="venda-filter-row-bottom">
+                <div>
+                    <label class="form-label">Per&iacute;odo</label>
+                    <div class="venda-period-grid">
+                        <input type="date" class="form-control" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+                        <input type="date" class="form-control" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+                <div class="venda-filter-actions">
+                    <button class="btn btn-primary" type="submit">Filtrar</button>
+                    <a class="btn btn-secondary" asp-page="/Vendas/Index">Limpar</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card venda-shell-card">
+    <div class="card-header bg-white fw-semibold">Vendas recentes</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle venda-table">
+                <thead>
+                    <tr>
+                        <th>Venda</th>
+                        <th>Cliente</th>
+                        <th>Pagamento</th>
+                        <th>Status</th>
+                        <th>Fiscal</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">A&ccedil;&otilde;es</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var venda in Model.Contexto.VendasRecentes.Items)
+                    {
+                        var statusClass = venda.Status == VendaProdutoStatus.Cancelada
+                            ? "venda-pill venda-pill-cancelada"
+                            : venda.Status == VendaProdutoStatus.Ajustada
+                                ? "venda-pill venda-pill-ajustada"
+                                : "venda-pill venda-pill-finalizada";
+
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">#@venda.IdVendaProduto</div>
+                                <div class="small text-muted">@venda.DataVenda.ToString("dd/MM/yyyy HH:mm")</div>
+                                <div class="small text-muted">Origem: @venda.Origem</div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(venda.NomeCliente) ? "Consumidor final" : venda.NomeCliente)</td>
+                            <td>@(string.IsNullOrWhiteSpace(venda.TipoPagamento) ? "-" : venda.TipoPagamento)</td>
+                            <td><span class="@statusClass">@venda.Status</span></td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(venda.StatusFiscal))
+                                {
+                                    <span class="badge @(venda.ClasseStatusFiscal ?? "bg-secondary")">@venda.StatusFiscal</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark">Sem nota</span>
+                                }
+                            </td>
+                            <td class="text-end fw-semibold">R$ @venda.ValorTotal.ToString("N2")</td>
+                            <td class="text-end">
+                                <div class="venda-actions">
+                                    <a class="btn btn-sm btn-primary" href="@Model.ObterUrlCadastroOuVisualizacao(venda.IdVendaProduto)">@Model.ObterRotuloAcaoPrincipal(venda.Status)</a>
+                                    <a class="btn btn-sm btn-dark" href="@Model.ObterUrlNotas(venda.IdVendaProduto)">Notas</a>
+                                    <a class="btn btn-sm btn-secondary" href="@Model.ObterUrlDetalhes(venda.IdVendaProduto)">P&oacute;s-venda</a>
+                                    @if (venda.Status != VendaProdutoStatus.Cancelada && venda.SubtotalServicos > 0 && !venda.PossuiNotaAtiva)
+                                    {
+                                        <form method="post" asp-page-handler="EmitirNota" class="d-inline">
+                                            <input type="hidden" name="idVendaProduto" value="@venda.IdVendaProduto" />
+                                            <input type="hidden" name="q" value="@Model.q" />
+                                            <input type="hidden" name="idPessoaFiltro" value="@Model.idPessoaFiltro" />
+                                            <input type="hidden" name="statusFiltro" value="@Model.statusFiltro" />
+                                            <input type="hidden" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+                                            <input type="hidden" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+                                            <input type="hidden" name="p" value="@Model.p" />
+                                            <button class="btn btn-sm btn-primary" type="submit">Emitir NFS-e</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Contexto.VendasRecentes.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Nenhuma venda encontrada.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Contexto.VendasRecentes.TotalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    @for (var i = 1; i <= Model.Contexto.VendasRecentes.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Contexto.VendasRecentes.PageIndex ? "active" : "")">
+                            <a class="page-link" asp-page="/Vendas/Index" asp-route-p="@i" asp-route-q="@Model.q" asp-route-idPessoaFiltro="@Model.idPessoaFiltro" asp-route-statusFiltro="@Model.statusFiltro" asp-route-dataInicio="@Model.dataInicio?.ToString("yyyy-MM-dd")" asp-route-dataFim="@Model.dataFim?.ToString("yyyy-MM-dd")">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+</div>

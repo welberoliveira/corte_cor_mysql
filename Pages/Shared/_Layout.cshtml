@@ -1,19 +1,17 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/CorteCor.styles.css" asp-append-version="true" />
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <link href="~/css/site2.css" rel="stylesheet" />
-    <!-- Adicionando jQuery (se ainda não estiver incluído) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link href="~/css/site2.css" rel="stylesheet" asp-append-version="true" />
 
     <!-- Adicionando jQuery InputMask -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
@@ -91,13 +89,14 @@
             overflow: hidden;
         }
 
-            table th {
-                background: #4e54c8;
-                color: white;
+            .table thead th, table th {
+                background-color: #0d6efd !important;
+                color: #ffffff !important;
                 text-transform: uppercase;
                 font-weight: bold;
-                padding: 1rem;
+                padding: 0.75rem 1rem;
                 text-align: left;
+                border: none;
             }
 
             table td {
@@ -105,6 +104,20 @@
                 border-bottom: 1px solid #ddd;
                 color: #555;
             }
+
+            /* Badge Pills Global Styles */
+            .badge-pill {
+                padding: 0.4em 0.8em;
+                font-weight: 500;
+                border-radius: 9999px;
+                color: #fff !important;
+                display: inline-block;
+            }
+            .badge-success { background-color: #10b981 !important; }
+            .badge-danger { background-color: #ef4444 !important; }
+            .badge-warning { background-color: #f59e0b !important; }
+            .badge-secondary { background-color: #6b7280 !important; }
+            .badge-info { background-color: #3b82f6 !important; }
 
             table tr:nth-child(even) {
                 background: #f9f9f9;
@@ -128,6 +141,33 @@
             cursor: pointer;
             transition: background 0.3s;
             min-width: 78px;
+        }
+
+        .btn.btn-link {
+            color: #0d6efd !important;
+            background: transparent !important;
+            border: 0 !important;
+            text-decoration: none;
+        }
+
+        .btn.btn-link:hover,
+        .btn.btn-link:focus {
+            color: #084298 !important;
+            background: #e7f1ff !important;
+            text-decoration: none;
+        }
+
+        .btn.btn-outline-primary {
+            color: #0d6efd !important;
+            background: #fff !important;
+            border: 1px solid #0d6efd !important;
+        }
+
+        .btn.btn-outline-primary:hover,
+        .btn.btn-outline-primary:focus {
+            color: #fff !important;
+            background: #0d6efd !important;
+            border-color: #0d6efd !important;
         }
 
         .btn-info {
@@ -214,8 +254,8 @@
         {
             <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
                 <div class="container">
-                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/Agendamentos2">
-                        Tonni Corte & Cor <span style="font-size: 15px;font-weight: 700;color:red">(ADM)</span>
+                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/Agendamentos">
+                        Tonni DAXA <span style="font-size: 15px;font-weight: 700;color:red">(Daxa)</span>
                     </a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
@@ -225,21 +265,12 @@
                         <ul class="navbar-nav flex-grow-1">
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Salao
+                                    Principal
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="SalaoDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoCadastro">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLista">Listar</a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Usuários
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioCadastro">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioLista">Listar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/EmpresaLista">Empresa</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/UsuarioLista">Usuário</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Imoveis">Imóveis</a></li>
                                 </ul>
                             </li>
 
@@ -248,22 +279,57 @@
                                     Relatórios
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Gráficos</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/Graficos">Relatórios Analíticos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/Index">Central de Relatórios</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios de E-mail</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Index">Dashboard Financeiro</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Relatorios">Relatórios Financeiros</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CRM/Relatorios">Relatórios CRM</a></li>
                                 </ul>
                             </li>
 
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Estabelecimentos
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="AdminVendasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Vendas
                                 </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/Estabelecimentos">Estabelecimentos</a></li>
+                                <ul class="dropdown-menu" aria-labelledby="AdminVendasDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Pedidos/Index">Pedidos e Orçamentos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Vendas/Index">Vendas de Produtos e Serviços</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Estoque/Index">Controle de Estoque</a></li>
                                 </ul>
                             </li>
 
                             <li class="nav-item m-2">
                                 <div style="width:200px"></div>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="FiscalDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Fiscal
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="FiscalDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index">Configurações do Sistema</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Fiscal/NotaFiscalAvulsa">Nota Fiscal Avulsa</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLista">Notas Emitidas</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLogLista">Auditoria (Log Fiscal)</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CertificadoDiagnostico">Diagnóstico Certificado</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SistemaLogLista">Integrações / Logs Globais</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="ConfiguracoesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Configurações
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="ConfiguracoesDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index"><i class="bi bi-gear-fill"></i> Geral / Financeiro</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresEmail">Fornecedores de E-mail</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresSMS">Fornecedores de SMS</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresWhatsapp">Fornecedores de WhatsApp</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/LogAcessosLista">Log de Acessos</a></li>
+                                </ul>
                             </li>
                            
                             <li class="nav-item m-2">
@@ -282,7 +348,7 @@
         {
             <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
                 <div class="container">
-                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/UsuarioDashboard">Tonni Corte & Cor</a>
+                    <a class="navbar-brand" style="margin-left: 10px;" asp-area="" asp-page="/Dashboard">Tonni DAXA</a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
@@ -291,43 +357,29 @@
                         <ul class="navbar-nav flex-grow-1">
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Clientes
+                                    Principal
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="PessoaCadastro/">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="PessoaLista/">Listar</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Dashboard">Dashboard</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Imoveis">Imóveis</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/Index">Relatórios</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/PessoaLista">Clientes/Fornecedor/Transportador</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioLista">Funcionários</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoLista">Serviços</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ProdutoLista">Produtos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CategoriaProdutoLista">Categorias de Produtos</a></li>
                                 </ul>
                             </li>
 
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Funcionários
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioVendasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Vendas
                                 </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioCadastro">Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioLista">Listar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioServicoCadastro">Vincular Serviços para Funcionários</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioServicoLista">Listar Serviços de Funcionários</a></li>
-                                </ul>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Serviços
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoCadastro">Serviços Cadastrar</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/ServicoLista">Serviços Listar </a></li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="UsuarioDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Pagamentos
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoCadastro">Realizar baixa **</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Relatórios de Pagamentos Recebidos**</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatórios de Pagamentos Pendentes**</a></li>
+                                <ul class="dropdown-menu" aria-labelledby="UsuarioVendasDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Pedidos/Index">Pedidos e Orçamentos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Vendas/Index">Vendas de Produtos e Serviços</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Estoque/Index">Controle de Estoque</a></li>
                                 </ul>
                             </li>
 
@@ -336,10 +388,58 @@
                                     Agendamentos
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/Agendamentos2">Agendamentos</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Realizados**</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Pendentes**</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Relatório de Atendimentos Cancelados**</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Agendamentos">Calendário</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/AgendamentosLista">Lista de Agendamentos</a></li>
+                                
+                                    <li><hr class="dropdown-divider"></li>
+
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ModeloEmailLista">Modelo de e-mail</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/ModeloSMSLista">Modelo de SMS</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/LembreteConfigLista">Regras de Lembretes</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios de E-mails/SMS/WhatsApp</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="CrmUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    CRM
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="CrmUserDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CRM/Index">Dashboard CRM</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CRM/Relatorios">Relatórios CRM</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CRM/Tarefas">Tarefas Visão Geral</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CRM/Oportunidades">Oportunidades Visão Geral</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CRM/Campanhas">Campanhas</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="FinanceiroUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Financeiro
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="FinanceiroUserDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Index">Dashboard Financeiro</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Lancamentos">Contas a Pagar e Receber</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Relatorios">Relatórios Financeiros</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/PlanoContas">Plano de Contas</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/ContasCaixa">Contas Caixa</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Pagamentos/Pendências</a></li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="FiscalUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Fiscal
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="FiscalUserDropdown">
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index">Configurações do Sistema</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Fiscal/NotaFiscalAvulsa">Nota Fiscal Avulsa</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLista">Notas Emitidas</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/NotaFiscalLogLista">Auditoria (Log Fiscal)</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/CertificadoDiagnostico">Diagnóstico Certificado</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/SistemaLogLista">Integrações / Logs Globais</a></li>
                                 </ul>
                             </li>
 
@@ -348,13 +448,10 @@
                                     Configurações
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/SalaoLeitura">Dados do Salão</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/">Configurar Mensagens**</a></li>
-
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/Index">Geral / Financeiro / Fiscal</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/EmpresaLeitura">Dados da Empresa</a></li>
                                     <li><hr class="dropdown-divider"></li>
-
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoCadastro">Cadastrar Meio de Pagamento</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoLista">Ver Meios de Pagamentos</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/MeioPagamentoLista">Meios de Pagamentos</a></li>
                                 </ul>
                             </li>
 
@@ -391,24 +488,33 @@
 
     <script>
         // ---- Global Error Handling Helper
+        // ---- Global Error Handling Helper
         async function showError(resp, defaultMsg) {
             let msg = defaultMsg;
             let detail = '';
+
             try {
-                const errorData = await resp.json();
-                msg = errorData.message || defaultMsg;
-                detail = errorData.detail || '';
-            } catch (e) {
+                // Clone the response so we can read it twice if needed (json then text)
+                const clone = resp.clone();
+                
                 try {
+                    const errorData = await clone.json();
+                    // Handle both camelCase and PascalCase
+                    msg = errorData.message || errorData.Message || defaultMsg;
+                    detail = errorData.detail || errorData.Detail || '';
+                } catch (eJson) {
+                    // Not JSON, try text
                     msg = await resp.text() || defaultMsg;
-                } catch (e2) { }
+                }
+            } catch (e) {
+                console.error("Erro ao processar resposta de erro:", e);
             }
 
             await Swal.fire({
                 icon: 'error',
                 title: 'Oops...',
                 text: msg,
-                footer: detail ? `<div style="color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: .75rem 1.25rem; border: 1px solid transparent; border-radius: .25rem; font-size: 0.8em;"><b>Dica/Detalhe:</b> ${detail}</div>` : null,
+                footer: detail ? `<div style="color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: .75rem 1.25rem; border: 1px solid transparent; border-radius: .25rem; font-size: 0.8em; text-align: left; max-height: 200px; overflow: auto;"><b>Detalhe Técnico:</b> ${detail}</div>` : null,
                 confirmButtonColor: '#3085d6'
             });
         }
@@ -419,3 +525,7 @@
 
 </body>
 </html>
+
+
+
+

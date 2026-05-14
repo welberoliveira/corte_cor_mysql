@@ -1,0 +1,57 @@
+@page
+@model CorteCor.Pages.Financeiro.PlanoContasModel
+@{
+    ViewData["Title"] = "Plano de Contas";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <h2 class="mb-1">Plano de Contas</h2>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary" asp-page="/Financeiro/PlanoContaCadastro">Novo plano</a>
+        <a class="btn btn-secondary" asp-page="/Financeiro/Index">Voltar ao financeiro</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Contas cadastradas</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descrição</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plano in Model.Planos)
+                    {
+                        <tr>
+                            <td>@plano.Codigo</td>
+                            <td>@plano.Descricao</td>
+                            <td>@(plano.Tipo == "R" ? "Receita" : "Despesa")</td>
+                            <td><span class="badge @(plano.Ativo ? "bg-success" : "bg-secondary")">@(plano.Ativo ? "Ativo" : "Inativo")</span></td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-primary" asp-page="/Financeiro/PlanoContaCadastro" asp-route-id="@plano.IdPlano">Editar</a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Planos.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Nenhum plano cadastrado.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model UsuarioDashboardModel
 
 <style>
@@ -83,8 +83,8 @@
             google.charts.setOnLoadCallback(drawAllCharts);
 
             function drawAllCharts() {
-                drawChart('chartDocumentacao', 'Documentação do Imóvel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'Documentação'));
-                drawChart('chartCondicaoOcupacaoLote', 'Condição de Ocupação do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'Condição de Ocupação do Lote'));
+                drawChart('chartDocumentacao', 'Documenta??o do Im?vel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'Documenta??o'));
+                drawChart('chartCondicaoOcupacaoLote', 'Condi??o de Ocupa??o do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'Condi??o de Ocupa??o do Lote'));
                 drawChart('chartPossuiIPTU', 'Possui IPTU', getDataArray(@Html.Raw(Json.Serialize(Model.PossuiIPTUChartData)), 'Possui IPTU'));
             }
 
@@ -100,7 +100,7 @@
                 return arr;
             }
 
-            // Desenha um gráfico de pizza 3D
+            // Desenha um gr?fico de pizza 3D
             function drawChart(elementId, title, dataArray) {
                 var data = google.visualization.arrayToDataTable(dataArray);
                 var options = {

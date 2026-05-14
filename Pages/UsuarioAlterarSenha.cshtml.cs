@@ -1,28 +1,25 @@
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
-using System.Data.SqlClient;
-using System.Net;
-using System.Net.Mail;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace CorteCor.Pages
 {
     [Authorize(Policy = "UsuarioPolicy")]
     public class UsuarioAlterarSenhaModel : PageModel
     {
-        private readonly IConfiguration _configuration;
-        public string Mensagem { get; set; } = "";
+        private readonly IDatabaseHandler _dbHandler;
 
-        public UsuarioAlterarSenhaModel(IConfiguration configuration)
+        public UsuarioAlterarSenhaModel(IDatabaseHandler dbHandler)
         {
-            _configuration = configuration;
+            _dbHandler = dbHandler;
         }
+
+        public string Mensagem { get; set; } = "";
 
         [BindProperty]
         public string SenhaAtual { get; set; }
+
         [BindProperty]
         public string EmailUsuario { get; set; }
 
@@ -31,73 +28,71 @@ namespace CorteCor.Pages
 
         [BindProperty]
         public string ConfirmarSenha { get; set; }
+
         public string NomeCurto { get; set; }
 
         public void OnGet()
         {
             ViewData["HideMenu"] = "true";
-            EmailUsuario = User.Identity.Name;
+            EmailUsuario = User.Identity?.Name;
         }
 
         public IActionResult OnPost()
         {
             ViewData["HideMenu"] = "true";
 
-            string emailUsuario = User.Identity.Name;
-            EmailUsuario = User.Identity.Name;
+            var emailUsuario = User.Identity?.Name;
+            EmailUsuario = emailUsuario;
 
-            if (NovaSenha != ConfirmarSenha)
+            if (string.IsNullOrWhiteSpace(emailUsuario))
             {
-                Mensagem = "As senhas não coincidem!";
+                Mensagem = "Usuario nao identificado.";
                 return Page();
             }
 
-            DatabaseHandler dbHandler = new();
-            using (var connection = dbHandler.GetConnection())
+            if (NovaSenha != ConfirmarSenha)
             {
-                string query = "SELECT Senha FROM CorteCor_Usuario WHERE Email = @Email";
-                using (var command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Email", emailUsuario);
-                    string senhaAtualDB = command.ExecuteScalar()?.ToString();
+                Mensagem = "As senhas nao coincidem!";
+                return Page();
+            }
 
-                    if (senhaAtualDB == null || senhaAtualDB != ConvertToBase64(SenhaAtual))
+            using (var connection = _dbHandler.GetConnection())
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "SELECT Senha FROM CorteCor_Usuario WHERE Email = @Email";
+                    command.AddWithValue("@Email", emailUsuario);
+                    string senhaAtualDb = command.ExecuteScalar()?.ToString();
+
+                    if (!PasswordSecurity.VerifyPassword(SenhaAtual, senhaAtualDb))
                     {
                         Mensagem = "Senha atual incorreta!";
                         return Page();
                     }
                 }
 
-                // Atualizar a senha no banco de dados
-                string updateQuery = "UPDATE CorteCor_Usuario SET Senha = @NovaSenha WHERE Email = @Email";
-                using (var updateCommand = new SqlCommand(updateQuery, connection))
+                using (var updateCommand = connection.CreateCommand())
                 {
-                    updateCommand.Parameters.AddWithValue("@NovaSenha", ConvertToBase64(NovaSenha));
-                    updateCommand.Parameters.AddWithValue("@Email", emailUsuario);
+                    updateCommand.CommandText = "UPDATE CorteCor_Usuario SET Senha = @NovaSenha WHERE Email = @Email";
+                    updateCommand.AddWithValue("@NovaSenha", PasswordSecurity.HashPassword(NovaSenha));
+                    updateCommand.AddWithValue("@Email", emailUsuario);
                     updateCommand.ExecuteNonQuery();
                 }
-
-                // Enviar e-mail com a nova senha
-                string from = "CorteCor@tonni.com.br";
-                string subject = "Alteração de Senha - Corte & Cor";
-                string body = $"<p>Olá,</p>" +
-                              $"<p>Você a alteração da sua senha no sistema <b>Corte & Cor</b>.</p>" +
-                              $"<p>Sua senha foi alterada para: <b>{NovaSenha}</b></p>" +
-                              $"<p>Para acessar a página de autenticação <a href='https://tonni.com.br/CorteCor/login/{NomeCurto}'>clique aqui</a></p>" +
-                              $"<br><br><p>Atenciosamente, <br>Equipe Tonni Tecnologia <br> <a href='https://tonni.com.br'>tonni.com.br</a></p>";
-
-                var loginManager = new LoginManager();
-                loginManager.EnviarEmail(emailUsuario, from, subject, body);
             }
 
-            Mensagem = "Senha alterada com sucesso! Verifique seu e-mail. Lembre que o email pode estar no SPAM ou no Lixo Eletrônico.";
+            string from = "CorteCor@tonni.com.br";
+            string subject = "Alteracao de Senha - Corte & Cor";
+            string body = $"<p>Ola,</p>" +
+                          $"<p>Voce solicitou a alteracao da sua senha no sistema <b>Corte & Cor</b>.</p>" +
+                          $"<p>Se voce nao reconhece essa alteracao, altere a senha novamente e revise os acessos da conta.</p>" +
+                          $"<p>Para acessar a pagina de autenticacao <a href='https://tonni.com.br/CorteCor/login/{NomeCurto}'>clique aqui</a></p>" +
+                          $"<br><br><p>Atenciosamente, <br>Equipe Tonni Tecnologia <br> <a href='https://tonni.com.br'>tonni.com.br</a></p>";
+
+            var loginManager = new LoginManager(_dbHandler);
+            loginManager.EnviarEmail(emailUsuario, from, subject, body);
+
+            Mensagem = "Senha alterada com sucesso! Verifique seu e-mail.";
             return Page();
         }
-
-        private string ConvertToBase64(string input)
-        {
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
-        }
-
     }
 }

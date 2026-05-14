@@ -1,0 +1,255 @@
+@page
+@model CorteCor.Pages.Configuracoes.IndexModel
+@{
+    ViewData["Title"] = "Configurações";
+}
+
+<style>
+    .settings-shell { max-width: 1100px; margin: 0 auto; }
+    .settings-header { margin-bottom: 1.5rem; }
+    .settings-header h1 { color: #14314d; }
+    .settings-quick-nav { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+    .settings-quick-nav a { text-decoration: none; border-radius: 999px; padding: 0.55rem 0.9rem; background: #fff; border: 1px solid #dce3ea; color: #24415e; font-weight: 600; }
+    .settings-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .settings-summary-card { background: #fff; border: 1px solid #e4e9ef; border-radius: 18px; padding: 1rem; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04); }
+    .settings-summary-card__label { color: #5f7388; font-size: 0.9rem; margin-bottom: 0.35rem; }
+    .settings-summary-card__value { color: #0f2740; font-size: 1.55rem; font-weight: 700; line-height: 1.2; }
+    .settings-summary-card__hint { color: #73879b; font-size: 0.9rem; margin-top: 0.45rem; }
+    .settings-section { background: #fff; border: 1px solid #e4e9ef; border-radius: 22px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04); }
+    .settings-section__header { margin-bottom: 1.25rem; }
+    .settings-section__title { margin: 0; color: #14314d; font-size: 1.2rem; font-weight: 700; }
+    .settings-section__subtitle { color: #64748b; margin: 0.35rem 0 0; max-width: 760px; }
+    .settings-note { background: #f8fafc; border: 1px solid #e4e9ef; border-radius: 16px; padding: 0.9rem 1rem; color: #475569; font-size: 0.95rem; }
+    .settings-resource-card { background: #fff; border: 1px solid #e4e9ef; border-radius: 18px; padding: 1rem; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04); }
+    .settings-resource-card__title { color: #15314c; font-weight: 700; margin-bottom: 0.35rem; }
+    .settings-resource-card__meta { color: #64748b; font-size: 0.92rem; margin-bottom: 0.85rem; }
+    .settings-advanced { border: 1px solid #dbe4ee; border-radius: 16px; padding: 1rem 1.1rem; background: #fbfdff; }
+    .settings-advanced summary { cursor: pointer; font-weight: 700; color: #17324c; list-style: none; }
+    .settings-advanced summary::-webkit-details-marker { display: none; }
+    .settings-advanced[open] summary { margin-bottom: 1rem; }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="settings-shell">
+        <div class="settings-header">
+            <h1 class="h3 mb-2"><i class="fas fa-cog"></i> Configurações Fiscais</h1>
+            <p class="mb-0 text-muted">Atualize aqui apenas os dados centrais da empresa e as configurações fiscais utilizadas pelo sistema.</p>
+
+            <div class="settings-quick-nav">
+                <a href="#sec-empresa">Empresa</a>
+                <a href="#sec-fiscal">Fiscal</a>
+            </div>
+        </div>
+
+        @if (TempData["Mensagem"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle"></i> @TempData["Mensagem"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+        }
+
+        @if (TempData["MensagemErro"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> @TempData["MensagemErro"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+        }
+
+        <div class="settings-summary-grid">
+            <div class="settings-summary-card">
+                <div class="settings-summary-card__label">Empresa</div>
+                <div class="settings-summary-card__value">@(string.IsNullOrWhiteSpace(Model.Salao.Nome) ? "Incompleta" : "Atualizada")</div>
+                <div class="settings-summary-card__hint">CNPJ: @(string.IsNullOrWhiteSpace(Model.Salao.CNPJ) ? "não informado" : Model.Salao.CNPJ)</div>
+            </div>
+            <div class="settings-summary-card">
+                <div class="settings-summary-card__label">Fiscal</div>
+                <div class="settings-summary-card__value">@(Model.ConfigFiscal.Ambiente == 1 ? "Produção" : "Homologação")</div>
+                <div class="settings-summary-card__hint">Certificado: @(Model.ConfigFiscal.CertificadoPfx != null ? "carregado" : "não enviado")</div>
+            </div>
+        </div>
+
+        <section class="settings-section" id="sec-empresa">
+            <div class="settings-section__header">
+                <h2 class="settings-section__title"><i class="fas fa-building"></i> Dados da empresa</h2>
+                <p class="settings-section__subtitle">Esses dados alimentam a identificação principal da unidade e ajudam a completar o cadastro fiscal.</p>
+            </div>
+
+            <form asp-page-handler="Salao" method="post">
+                <input type="hidden" asp-for="Salao.IdSalao" />
+                <input type="hidden" asp-for="Salao.Status" />
+                <input type="hidden" asp-for="Salao.DataCadastro" />
+
+                <div class="row">
+                    <div class="col-lg-8 mb-3">
+                        <label class="form-label fw-semibold">Razão social</label>
+                        <input type="text" asp-for="Salao.Nome" class="form-control" required />
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <label class="form-label fw-semibold">CNPJ</label>
+                        <input type="text" asp-for="Salao.CNPJ" class="form-control cnpj" required />
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label fw-semibold">Responsável</label>
+                        <input type="text" asp-for="Salao.Responsavel" class="form-control" />
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label fw-semibold">E-mail</label>
+                        <input type="email" asp-for="Salao.Email" class="form-control" />
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label fw-semibold">Telefone</label>
+                        <input type="text" asp-for="Salao.Telefone" class="form-control phone" />
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-semibold">Endereço principal</label>
+                        <textarea asp-for="Salao.Endereco" class="form-control" rows="3" placeholder="Logradouro, número, bairro, cidade e UF"></textarea>
+                    </div>
+                </div>
+
+                <div class="settings-note mb-3">
+                    Esses dados são a base da empresa. O bloco fiscal abaixo usa esse cadastro como referência para CNPJ, razão social e endereço principal.
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar dados da empresa</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="settings-section" id="sec-fiscal">
+            <div class="settings-section__header">
+                <h2 class="settings-section__title"><i class="fas fa-file-invoice-dollar"></i> Fiscal</h2>
+                <p class="settings-section__subtitle">Este bloco ficou focado no que o sistema realmente usa para emissão. Campos raros ou técnicos ficam em uma área avançada.</p>
+            </div>
+
+            <form asp-page-handler="Fiscal" method="post" enctype="multipart/form-data">
+                <input type="hidden" asp-for="ConfigFiscal.IdConfigFiscal" />
+                <input type="hidden" asp-for="ConfigFiscal.IdSalao" />
+
+                <div class="row">
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label fw-semibold">Regime tributário</label>
+                        <select asp-for="ConfigFiscal.RegimeTributario" class="form-select" required>
+                            <option value="1">Simples Nacional</option>
+                            <option value="2">Simples Nacional - Excesso de Sublimite</option>
+                            <option value="3">Regime Normal</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label fw-semibold">Ambiente de emissão</label>
+                        <select asp-for="ConfigFiscal.Ambiente" class="form-select" required>
+                            <option value="2">Homologação (testes)</option>
+                            <option value="1">Produção (real)</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label fw-semibold">Inscrição estadual</label>
+                        <input type="text" asp-for="ConfigFiscal.InscricaoEstadual" class="form-control" />
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label fw-semibold">Inscrição municipal</label>
+                        <input type="text" asp-for="ConfigFiscal.InscricaoMunicipal" class="form-control" />
+                    </div>
+                </div>
+
+                <label class="settings-resource-card mb-3">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="settings-resource-card__title">Emissão automática após pagamento</div>
+                            <div class="settings-resource-card__meta">Quando ativada, o sistema tenta emitir a nota automaticamente ao concluir o pagamento em fluxos compatíveis.</div>
+                        </div>
+                        <input class="form-check-input mt-1" type="checkbox" asp-for="ConfigFiscal.EmissaoAutomatica">
+                    </div>
+                </label>
+
+                <div class="settings-resource-card mb-3">
+                    <div class="settings-resource-card__title">Certificado digital A1 (.PFX)</div>
+                    <div class="settings-resource-card__meta">Use este campo só quando precisar atualizar o certificado. Se nada for enviado, o sistema mantém o atual.</div>
+
+                    <div class="row">
+                        <div class="col-lg-7 mb-3">
+                            <label class="form-label fw-semibold">Arquivo do certificado</label>
+                            <input type="file" asp-for="CertificadoFile" class="form-control" accept=".pfx" />
+                            <small class="text-muted">Aceita apenas arquivo `.pfx`.</small>
+                        </div>
+                        <div class="col-lg-5 mb-3">
+                            <label class="form-label fw-semibold">Senha do certificado</label>
+                            <input type="password" asp-for="ConfigFiscal.CertificadoSenhaTexto" class="form-control" />
+                        </div>
+                    </div>
+
+                    @if (Model.ConfigFiscal.CertificadoPfx != null)
+                    {
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle"></i>
+                            Certificado carregado com sucesso.
+                            @if (Model.ConfigFiscal.CertificadoValidade.HasValue)
+                            {
+                                <span> Validade atual: @Model.ConfigFiscal.CertificadoValidade.Value.ToShortDateString()</span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <details class="settings-advanced mb-3">
+                    <summary>Numeração e integrações avançadas de emissão</summary>
+
+                    <div class="row mt-3">
+                        <div class="col-lg-3 mb-3">
+                            <label class="form-label fw-semibold">Série NFC-e</label>
+                            <input type="number" asp-for="ConfigFiscal.SerieNFCe" class="form-control" min="1" />
+                        </div>
+                        <div class="col-lg-3 mb-3">
+                            <label class="form-label fw-semibold">Próximo número NFC-e</label>
+                            <input type="number" asp-for="ConfigFiscal.NumeroNFCe" class="form-control" min="1" />
+                        </div>
+                        <div class="col-lg-3 mb-3">
+                            <label class="form-label fw-semibold">Série NFS-e</label>
+                            <input type="number" asp-for="ConfigFiscal.SerieNFSe" class="form-control" min="1" />
+                        </div>
+                        <div class="col-lg-3 mb-3">
+                            <label class="form-label fw-semibold">Próximo número NFS-e</label>
+                            <input type="number" asp-for="ConfigFiscal.NumeroNFSe" class="form-control" min="1" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label class="form-label fw-semibold">Token NFS-e</label>
+                            <input type="text" asp-for="ConfigFiscal.TokenNfse" class="form-control" />
+                        </div>
+                        <div class="col-lg-4 mb-3">
+                            <label class="form-label fw-semibold">CSC</label>
+                            <input type="text" asp-for="ConfigFiscal.CSC" class="form-control" />
+                        </div>
+                        <div class="col-lg-2 mb-3">
+                            <label class="form-label fw-semibold">Id CSC</label>
+                            <input type="text" asp-for="ConfigFiscal.IdCSC" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="settings-note mb-0">
+                        Use CSC e Id CSC apenas se você realmente opera com NFC-e. Para muitos cenários do sistema, a configuração principal fica só em ambiente, regime, certificado e inscrições.
+                    </div>
+                </details>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar fiscal</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($.fn.inputmask) {
+                $(".phone").inputmask("(99) 99999-9999");
+                $(".cnpj").inputmask("99.999.999/9999-99");
+            } else {
+                $(".phone").attr("placeholder", "(99) 99999-9999");
+                $(".cnpj").attr("placeholder", "99.999.999/9999-99");
+            }
+        });
+    </script>
+}

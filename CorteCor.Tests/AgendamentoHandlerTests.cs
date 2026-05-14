@@ -1,0 +1,210 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
+using CorteCor.Handlers;
+using Xunit;
+using Moq;
+using CorteCor;
+
+using System.Data;
+using System.Collections.Generic;
+using System;
+
+namespace CorteCor.Tests
+{
+    public class AgendamentoHandlerTests
+    {
+        private readonly Mock<IDatabaseHandler> _mockDbHandler;
+        private readonly Mock<IDbConnection> _mockConnection;
+        private readonly Mock<IDbCommand> _mockCommand;
+        private readonly Mock<IDataParameterCollection> _mockParameters;
+        private readonly Mock<IDbDataParameter> _mockParameter;
+        private readonly Mock<IDataReader> _mockReader;
+        private readonly AgendamentoHandler _handler;
+
+        public AgendamentoHandlerTests()
+        {
+            _mockDbHandler = new Mock<IDatabaseHandler>();
+            _mockConnection = new Mock<IDbConnection>();
+            _mockCommand = new Mock<IDbCommand>();
+            _mockParameters = new Mock<IDataParameterCollection>();
+            _mockParameter = new Mock<IDbDataParameter>();
+            _mockReader = new Mock<IDataReader>();
+
+            _mockDbHandler.Setup(db => db.GetConnection()).Returns(_mockConnection.Object);
+            _mockConnection.Setup(conn => conn.CreateCommand()).Returns(_mockCommand.Object);
+            
+            _mockCommand.Setup(cmd => cmd.Parameters).Returns(_mockParameters.Object);
+            _mockCommand.Setup(cmd => cmd.CreateParameter()).Returns(_mockParameter.Object);
+            _mockParameter.SetupAllProperties();
+
+            _handler = new AgendamentoHandler(_mockDbHandler.Object);
+        }
+
+        [Fact]
+        public void CadastrarAgendamento_DeveRetornarId()
+        {
+            // Arrange
+            var agendamento = new Agendamento
+            {
+                DataHora = DateTime.Now,
+                IdServico = 1,
+                IdPessoa = 1,
+                IdFuncionario = 1,
+                Status = "Agendado"
+            };
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(55);
+
+            // Act
+            var result = _handler.CadastrarAgendamento(agendamento);
+
+            // Assert
+            Assert.Equal(55, result);
+            _mockCommand.Verify(cmd => cmd.ExecuteScalar(), Times.Once);
+        }
+
+        [Fact]
+        public void ObterPorId_DeveRetornarAgendamento()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            _mockReader.Setup(r => r.Read()).Returns(true);
+            _mockReader.Setup(r => r["IdAgendamento"]).Returns(10);
+            _mockReader.Setup(r => r["DataHora"]).Returns(DateTime.Now);
+            _mockReader.Setup(r => r["Status"]).Returns("Confirmado");
+            _mockReader.Setup(r => r["IdServico"]).Returns(1);
+            _mockReader.Setup(r => r["IdPessoa"]).Returns(1);
+            _mockReader.Setup(r => r["IdFuncionario"]).Returns(1);
+            _mockReader.Setup(r => r["Excluido"]).Returns(false);
+
+            // Act
+            var result = _handler.ObterPorId(10);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(10, result.IdAgendamento);
+        }
+
+        [Fact]
+        public void ListarPorIntervalo_DeveRetornarLista()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            
+            var seq = new MockSequence();
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(true);
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(false);
+
+            _mockReader.Setup(r => r["IdAgendamento"]).Returns(1);
+            _mockReader.Setup(r => r["DataHora"]).Returns(DateTime.Now);
+            _mockReader.Setup(r => r["Status"]).Returns("Agendado");
+            _mockReader.Setup(r => r["IdServico"]).Returns(1);
+            _mockReader.Setup(r => r["IdPessoa"]).Returns(1);
+            _mockReader.Setup(r => r["IdFuncionario"]).Returns(1);
+            _mockReader.Setup(r => r["Excluido"]).Returns(false);
+
+            // Act
+            var result = _handler.ListarPorIntervalo(1, DateTime.Today, DateTime.Today.AddDays(1));
+
+            // Assert
+            Assert.Single(result);
+            _mockCommand.Verify(cmd => cmd.ExecuteReader(), Times.Once);
+        }
+        [Fact]
+        public void VerificarDisponibilidade_SemConflito_DeveRetornarTrue()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(0); // Count = 0
+
+            // Act
+            var result = _handler.VerificarDisponibilidade(1, DateTime.Now, DateTime.Now.AddHours(1));
+
+            // Assert
+            Assert.True(result);
+            _mockCommand.Verify(cmd => cmd.ExecuteScalar(), Times.Once);
+        }
+
+        [Fact]
+        public void VerificarDisponibilidade_ComConflito_DeveRetornarFalse()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteScalar()).Returns(1); // Count = 1
+
+            // Act
+            var result = _handler.VerificarDisponibilidade(1, DateTime.Now, DateTime.Now.AddHours(1));
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void AtualizarStatus_DeveExecutarUpdate()
+        {
+            // Act
+            _handler.AtualizarStatus(1, "Cancelado", 1);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
+        }
+
+        [Fact]
+        public void Atualizar_DeveExecutarUpdateCompleto()
+        {
+            // Arrange
+            var agendamento = new Agendamento 
+            { 
+                IdAgendamento = 1,
+                DataHora = DateTime.Now,
+                IdServico = 2,
+                IdPessoa = 3,
+                IdFuncionario = 4,
+                Status = "Reagendado"
+            };
+
+            // Act
+            _handler.Atualizar(agendamento, 1);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
+        }
+
+        [Fact]
+        public void Excluir_DeveRealizarSoftDelete()
+        {
+            // Act
+            _handler.Excluir(1);
+
+            // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.AtLeastOnce());
+            // Verification of the query string is hard with this setup, 
+            // but we at least ensure ExecuteNonQuery was called.
+        }
+
+        [Fact]
+        public void ListarTodos_DeveRetornarTodos()
+        {
+            // Arrange
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            
+            var seq = new MockSequence();
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(true);
+            _mockReader.InSequence(seq).Setup(r => r.Read()).Returns(false);
+
+            _mockReader.Setup(r => r["IdAgendamento"]).Returns(1);
+            _mockReader.Setup(r => r["DataHora"]).Returns(DateTime.Now);
+            _mockReader.Setup(r => r["Status"]).Returns("Agendado");
+            _mockReader.Setup(r => r["IdServico"]).Returns(1);
+            _mockReader.Setup(r => r["IdPessoa"]).Returns(1);
+            _mockReader.Setup(r => r["IdFuncionario"]).Returns(1);
+            _mockReader.Setup(r => r["Excluido"]).Returns(true); 
+
+            // Act
+            var result = _handler.ListarTodos(1);
+
+            // Assert
+            Assert.Single(result);
+            Assert.True(result[0].Excluido);
+            _mockCommand.Verify(cmd => cmd.ExecuteReader(), Times.Once);
+        }
+    }
+}
+

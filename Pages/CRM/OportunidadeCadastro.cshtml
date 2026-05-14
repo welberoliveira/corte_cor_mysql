@@ -1,0 +1,69 @@
+@page
+@model CorteCor.Pages.CRM.OportunidadeCadastroModel
+@{
+    ViewData["Title"] = "Nova Oportunidade CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-1">Nova oportunidade</h2>
+    <a class="btn btn-secondary" asp-page="/CRM/Oportunidades">Voltar para oportunidades</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Dados da oportunidade</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Salvar" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Cliente</label>
+                <select class="form-select" asp-for="OportunidadeInput.IdPessoa">
+                    <option value="">Selecione...</option>
+                    @foreach (var cliente in Model.Clientes)
+                    {
+                        <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Título</label>
+                <input class="form-control" asp-for="OportunidadeInput.Titulo" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Etapa</label>
+                <select class="form-select" asp-for="OportunidadeInput.IdEtapa">
+                    @foreach (var etapa in Model.Etapas)
+                    {
+                        <option value="@etapa.IdEtapa">@etapa.Nome</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" asp-for="OportunidadeInput.Status">
+                    <option value="Aberta">Aberta</option>
+                    <option value="Ganha">Ganha</option>
+                    <option value="Perdida">Perdida</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Valor estimado</label>
+                <input type="number" class="form-control" asp-for="OportunidadeInput.ValorEstimado" step="0.01" min="0" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Previsão</label>
+                <input type="date" class="form-control" asp-for="OportunidadeInput.PrevisaoFechamento" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" asp-for="OportunidadeInput.Descricao" rows="4"></textarea>
+            </div>
+            <div class="col-12 text-end">
+                <button class="btn btn-primary" type="submit">Salvar oportunidade</button>
+            </div>
+        </form>
+    </div>
+</div>

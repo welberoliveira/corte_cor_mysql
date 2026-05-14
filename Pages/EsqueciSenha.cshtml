@@ -1,4 +1,4 @@
-﻿@page "{nomeSalaoLink=online}"
+@page "{nomeSalaoLink=online}"
 @model EsqueciSenhaModel
 @{
     ViewData["Title"] = "Recuperação de Senha";
@@ -8,7 +8,7 @@
     <h3 class="text-center">@Model.NomeSalao</h3>
     <h4 class="text-center">Recuperação de Senha</h4>
     <p class="text-center text-muted">Digite seu e-mail cadastrado e selecione seu perfil para receber uma nova senha no e-mail.</p>
-    <p class="text-center text-muted">Lembre de verificar no SPAM e no Lixo-Eletrônico, caso o e-mail não chegue na Caixa-de-Entrada.</p>
+    <p class="text-center text-muted">Lembre de verificar no SPAM e no Lixo-Eletrônico, caso o e-mail não chegue na Caixa de Entrada.</p>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {

@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model CorteCor.Pages.MeioPagamentoCadastroModel
 @{
     ViewData["Title"] = "Cadastro de Meios de Pagamento";
@@ -58,32 +58,64 @@
                 {
                     <option value="DEBITO">Cartão de Débito</option>
                 }
-
-                @if (tipoAtual == "BOLETO")
+                 @if (tipoAtual == "DINHEIRO")
                 {
-                    <option value="BOLETO" selected>Boleto</option>
+                     <option value="DINHEIRO" selected>Dinheiro</option>
                 }
                 else
                 {
-                    <option value="BOLETO">Boleto</option>
+                     <option value="DINHEIRO">Dinheiro</option>
                 }
 
-                @if (tipoAtual == "OUTROS")
-                {
-                    <option value="OUTROS" selected>Outros</option>
-                }
-                else
-                {
-                    <option value="OUTROS">Outros</option>
-                }
             </select>
         </div>
 
-
         <div class="form-group">
             <label for="gateway">Gateway</label>
-            <input type="text" id="gateway" name="gateway" class="form-control" required value="@Model.MeioPagamento?.Gateway">
-            <small class="form-text text-muted">Ex: MercadoPago, PagSeguro, Stripe, Pagarme</small>
+            <select id="gateway" name="gateway" class="form-control" required>
+                @{
+                    var gatewayAtual = Model.MeioPagamento?.Gateway ?? "";
+                }
+                <option value="">Selecione</option>
+                <option value="MercadoPago" selected="@(gatewayAtual == "MercadoPago")">Mercado Pago</option>
+                <option value="Outros" selected="@(gatewayAtual == "Outros")">Outros</option>
+            </select>
+            <small class="form-text text-muted">Selecione o gateway de pagamento.</small>
+        </div>
+
+        <!-- Campos do Mercado Pago -->
+        <div class="card p-3 my-3 bg-light border">
+            <h6 class="mb-3">Configuração Mercado Pago (Sandbox & Produção)</h6>
+            
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="mpProduction" name="mpProduction" value="true" 
+                       @(Model.MeioPagamento?.MpProduction == true ? "checked" : "")>
+                <label class="form-check-label font-weight-bold" for="mpProduction">
+                    Ambiente de Produção (Desmarcado = Sandbox)
+                </label>
+            </div>
+
+            <div class="form-group mb-2">
+                <label for="mpAccessTokenProd">Access Token (Produção)</label>
+                <input type="text" id="mpAccessTokenProd" name="mpAccessTokenProd" class="form-control" value="@Model.MeioPagamento?.MpAccessTokenProd">
+            </div>
+            
+            <div class="form-group mb-2">
+                <label for="mpPublicKeyProd">Public Key (Produção)</label>
+                <input type="text" id="mpPublicKeyProd" name="mpPublicKeyProd" class="form-control" value="@Model.MeioPagamento?.MpPublicKeyProd">
+            </div>
+            
+            <hr>
+
+            <div class="form-group mb-2">
+                <label for="mpAccessTokenSandbox">Access Token (Sandbox)</label>
+                <input type="text" id="mpAccessTokenSandbox" name="mpAccessTokenSandbox" class="form-control" value="@Model.MeioPagamento?.MpAccessTokenSandbox">
+            </div>
+            
+            <div class="form-group">
+                <label for="mpPublicKeySandbox">Public Key (Sandbox)</label>
+                <input type="text" id="mpPublicKeySandbox" name="mpPublicKeySandbox" class="form-control" value="@Model.MeioPagamento?.MpPublicKeySandbox">
+            </div>
         </div>
 
         <div class="form-group form-check">

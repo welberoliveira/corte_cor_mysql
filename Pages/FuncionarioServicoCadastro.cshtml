@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model CorteCor.Pages.FuncionarioServicoCadastroModel
 @{
     ViewData["Title"] = "Relacionar Funcionário x Serviços";
@@ -15,9 +15,15 @@
     }
 
     <form method="post">
+        @if (Model.IsLockedEmployee)
+        {
+            <input type="hidden" name="idFuncionario" value="@Model.IdFuncionarioSelecionado" />
+            <input type="hidden" name="locked" value="true" />
+        }
+
         <div class="form-group">
             <label for="idFuncionario">Funcionário</label>
-            <select id="idFuncionario" name="idFuncionario" class="form-control" required>
+            <select id="idFuncionario" name="idFuncionario" class="form-control" required @(Model.IsLockedEmployee ? "disabled" : "")>
                 <option value="">Selecione</option>
                 @foreach (var f in Model.Funcionarios)
                 {
@@ -62,7 +68,7 @@
                         }
 
                         <label for="servico_@s.IdServico" class="mb-0">
-                            @s.Nome – R$ @s.Preco.ToString("0.00")
+                            @s.Nome - R$ @s.Preco.ToString("0.00")
                         </label>
                     </div>
                 }

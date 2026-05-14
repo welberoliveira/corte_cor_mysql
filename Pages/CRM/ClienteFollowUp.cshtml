@@ -1,0 +1,123 @@
+@page
+@model CorteCor.Pages.CRM.ClienteFollowUpModel
+@{
+    ViewData["Title"] = "Acompanhamentos do Cliente";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa" class="btn btn-link ps-0">Voltar para o CRM do cliente</a>
+        <h2 class="mb-1">Acompanhamentos de @Model.Detalhe.Pessoa.Nome</h2>
+        <div class="text-muted">Cadastre ou atualize acompanhamentos deste cliente.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <span class="badge bg-primary fs-6">Em aberto: @Model.Detalhe.Resumo.TarefasAbertas</span>
+        <span class="badge bg-dark fs-6">Pr&oacute;xima a&ccedil;&atilde;o: @(Model.Detalhe.Resumo.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "N&atilde;o definida")</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">@(Model.TarefaInput.IdTarefa > 0 ? "Atualizar acompanhamento" : "Criar acompanhamento")</div>
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    <input type="hidden" asp-for="IdPessoa" />
+                    <input type="hidden" asp-for="TarefaInput.IdTarefa" />
+                    <div class="col-12">
+                        <label class="form-label">Cliente</label>
+                        <input class="form-control" value="@Model.Detalhe.Pessoa.Nome" disabled />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">T&iacute;tulo</label>
+                        <input class="form-control" asp-for="TarefaInput.Titulo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Prioridade</label>
+                        <select class="form-select" asp-for="TarefaInput.Prioridade">
+                            <option>Baixa</option>
+                            <option>Media</option>
+                            <option>Alta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" asp-for="TarefaInput.Status">
+                            <option value="@CorteCor.Models.CrmStatusTarefa.Aberta">Aberta</option>
+                            <option value="@CorteCor.Models.CrmStatusTarefa.Concluida">Concluida</option>
+                            <option value="@CorteCor.Models.CrmStatusTarefa.Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Canal sugerido</label>
+                        <select class="form-select" asp-for="TarefaInput.CanalSugerido">
+                            <option value="">Indefinido</option>
+                            <option>Email</option>
+                            <option>SMS</option>
+                            <option>WhatsApp</option>
+                            <option>Instagram</option>
+                            <option>Facebook</option>
+                            <option>Twitter</option>
+                            <option>Telegram</option>
+                            <option>TikTok</option>
+                            <option>Telefone</option>
+                            <option>Presencial</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Vencimento</label>
+                        <input type="datetime-local" class="form-control" asp-for="TarefaInput.DataVencimento" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descri&ccedil;&atilde;o</label>
+                        <textarea class="form-control" asp-for="TarefaInput.Descricao" rows="4"></textarea>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@Model.IdPessoa">Cancelar</a>
+                        <button class="btn btn-primary" type="submit">Salvar acompanhamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>Acompanhamentos do cliente</span>
+            </div>
+            <div class="card-body">
+                @if (Model.Tarefas.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var tarefa in Model.Tarefas)
+                        {
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                    <div>
+                                        <div class="fw-semibold">@tarefa.Titulo</div>
+                                        <div class="small text-muted">@tarefa.Status • @tarefa.Prioridade • @tarefa.DataVencimento.ToString("dd/MM/yyyy HH:mm")</div>
+                                        @if (!string.IsNullOrWhiteSpace(tarefa.Descricao))
+                                        {
+                                            <div class="small text-muted mt-1">@tarefa.Descricao</div>
+                                        }
+                                    </div>
+                                    <a class="btn btn-sm btn-dark"
+                                       asp-page="/CRM/ClienteFollowUp"
+                                       asp-route-idPessoa="@Model.IdPessoa"
+                                       asp-route-idTarefaEdicao="@tarefa.IdTarefa">
+                                        Editar
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Este cliente ainda n&atilde;o possui acompanhamentos cadastrados.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

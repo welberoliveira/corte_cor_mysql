@@ -1,0 +1,61 @@
+@page
+@model CorteCor.Pages.Financeiro.ContaCaixaCadastroModel
+@{
+    ViewData["Title"] = Model.ContaInput.IdConta > 0 ? "Editar Conta" : "Nova Conta";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <h2 class="mb-1">@(Model.ContaInput.IdConta > 0 ? "Editar conta" : "Nova conta")</h2>
+    <a class="btn btn-secondary" asp-page="/Financeiro/ContasCaixa">Voltar para contas caixa</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Dados da conta</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Salvar" class="row g-3">
+            <input type="hidden" asp-for="ContaInput.IdConta" />
+            <div class="col-md-6">
+                <label class="form-label">Nome</label>
+                <input class="form-control" asp-for="ContaInput.Nome" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" asp-for="ContaInput.Tipo">
+                    <option value="Caixa">Caixa</option>
+                    <option value="Banco">Banco</option>
+                    <option value="Carteira">Carteira</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Saldo inicial</label>
+                <input type="number" class="form-control" asp-for="ContaInput.SaldoInicial" step="0.01" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Banco</label>
+                <input class="form-control" asp-for="ContaInput.Banco" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Agência</label>
+                <input class="form-control" asp-for="ContaInput.Agencia" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Conta</label>
+                <input class="form-control" asp-for="ContaInput.Conta" />
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="ContaInput.Ativo" />
+                    <label class="form-check-label" asp-for="ContaInput.Ativo">Ativa</label>
+                </div>
+            </div>
+            <div class="col-12 text-end">
+                <button class="btn btn-primary" type="submit">Salvar conta</button>
+            </div>
+        </form>
+    </div>
+</div>

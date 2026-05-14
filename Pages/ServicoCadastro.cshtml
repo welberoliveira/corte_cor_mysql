@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model CorteCor.Pages.ServicoCadastroModel
 @{
     ViewData["Title"] = "Cadastro de Serviços";
@@ -9,51 +9,287 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success">
+        <div class="alert alert-@Model.MensagemTipo">
             @Model.Mensagem
+        </div>
+    }
+
+    @if (Model.ServicoFiscalIncompleto)
+    {
+        <div class="alert alert-warning">
+            Este serviço ainda está incompleto para emissão fiscal. Preencha ao menos o item LC 116/03 e o código de tributação nacional.
         </div>
     }
 
     <form method="post">
         <input type="hidden" name="id" value="@Model.Servico?.IdServico">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-        <div class="form-group">
-            <label for="nome">Nome</label>
-            <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Servico?.Nome">
-        </div>
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs" id="servicoTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button" role="tab">Dados Gerais</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="preco-tab" data-bs-toggle="tab" data-bs-target="#tab-preco" type="button" role="tab">Preço</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="fiscal-tab" data-bs-toggle="tab" data-bs-target="#fiscal" type="button" role="tab">Informações Fiscais</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="outros-tab" data-bs-toggle="tab" data-bs-target="#outros" type="button" role="tab">Outras Informações</button>
+            </li>
+        </ul>
 
-        <div class="form-group">
-            <label for="preco">Preço (R$)</label>
-            <input type="text" id="preco" name="preco" class="form-control" required
-                   value="@(Model.Servico != null ? Model.Servico.Preco.ToString("0.00").Replace('.', ',') : "")">
-        </div>
+        <!-- Tabs Content -->
+        <div class="tab-content border border-top-0 p-3 mb-4" id="servicoTabsContent">
 
-        <div class="form-group">
-            <label for="duracao">Duração</label>
-            <input type="time" id="duracao" name="duracao" class="form-control" required step="60"
-                   value="@(Model.Servico != null ? Model.Servico.Duracao.ToString(@"hh\:mm") : "")">
-            <small class="form-text text-muted">Ex: 00:30</small>
-        </div>
+            <!-- Dados Gerais -->
+            <div class="tab-pane fade show active" id="geral" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-5 form-group">
+                        <label for="nome" class="form-label">Nome do Serviço</label>
+                        <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Servico?.Nome">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="idCategoria" class="form-label mb-0">Categoria</label>
+                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalCategoria">
+                                <i class="fa fa-plus"></i> Cadastrar Categoria
+                            </button>
+                        </div>
+                        <select id="idCategoria" name="idCategoria" class="form-select">
+                            <option value="">-- Selecione --</option>
+                            @if (Model.Categorias != null)
+                            {
+                                foreach (var cat in Model.Categorias)
+                                {
+                                    var isSelected = Model.Servico?.IdCategoria == cat.IdCategoria ? "selected" : "";
+                                    @Html.Raw($"<option value='{cat.IdCategoria}' {isSelected}>{cat.Nome}</option>")
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="duracao" class="form-label">Duração</label>
+                        <input type="time" id="duracao" name="duracao" class="form-control" required step="60"
+                            value="@(Model.Servico != null ? Model.Servico.Duracao.ToString(@"hh\:mm") : "")">
+                        <small class="form-text text-muted">Ex: 00:30</small>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12 form-group d-flex align-items-center mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="arquivado" name="arquivado" @(Model.Servico?.Arquivado == true ? "checked" : "")>
+                            <label class="form-check-label" for="arquivado">Arquivado (Inativo)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="form-group">
-            <label for="cor">Cor</label>
-            <input type="color" id="cor" name="cor" class="form-control" required value="@Model.Servico?.Cor" style="height: 50px;">
+            <!-- Preço -->
+            <div class="tab-pane fade" id="tab-preco" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="precoCusto" class="form-label">Preço de Custo (Custos Variáveis + Despesas Variáveis)</label>
+                        <input type="text" id="precoCusto" name="precoCusto" class="form-control"
+                            value="@(Model.Servico?.PrecoCusto != null ? Model.Servico.PrecoCusto.Value.ToString("0.00").Replace('.', ',') : "")">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="preco" class="form-label">Preço de Venda (R$)</label>
+                        <input type="text" id="preco" name="preco" class="form-control" required
+                            value="@(Model.Servico != null ? Model.Servico.Preco.ToString("0.00").Replace('.', ',') : "")">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="margemContribuicao" class="form-label">Margem Contribuição (%)</label>
+                        <input type="text" id="margemContribuicao" name="margemContribuicao" class="form-control" readonly tabindex="-1"
+                            value="@(Model.Servico?.MargemContribuicao != null ? Model.Servico.MargemContribuicao.Value.ToString("0.00").Replace('.', ',') : "")">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações Fiscais -->
+            <div class="tab-pane fade" id="fiscal" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="cnae" class="form-label">CNAE</label>
+                        <input type="text" id="cnae" name="cnae" class="form-control" value="@Model.Servico?.Cnae" maxlength="7">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="idCnae" class="form-label">Código IBGE Município (idCnae)</label>
+                        <input type="text" id="idCnae" name="idCnae" class="form-control" value="@Model.Servico?.IdCnae" maxlength="7">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="aliquotaISS" class="form-label">Alíquota ISS (%)</label>
+                        <input type="text" id="aliquotaISS" name="aliquotaISS" class="form-control"
+                            value="@(Model.Servico?.AliquotaISS != null ? Model.Servico.AliquotaISS.Value.ToString("0.00").Replace('.', ',') : "")">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6 form-group">
+                        <label for="itemListaServicoLC116" class="form-label">Item LC 116/03</label>
+                        <select id="itemListaServicoLC116" name="itemListaServicoLC116" class="form-select">
+                            <option value="">-- Selecione --</option>
+                            @if (Model.ItensLC116 != null)
+                            {
+                                foreach(var item in Model.ItensLC116)
+                                {
+                                    if(Model.Servico?.ItemListaServicoLC116 == item.Codigo)
+                                        { <option value="@item.Codigo" selected>@item.Codigo - @item.Descricao</option> }
+                                    else
+                                        { <option value="@item.Codigo">@item.Codigo - @item.Descricao</option> }
+                                }
+                            }
+                        </select>
+                        <small class="form-text text-muted">Selecione o código de tributação.</small>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="codigoTributacaoMunicipio" class="form-label">Código Tributação Município</label>
+                        <input type="text" id="codigoTributacaoMunicipio" name="codigoTributacaoMunicipio" class="form-control"
+                            value="@Model.Servico?.CodigoTributacaoMunicipio" maxlength="20">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6 form-group">
+                        <label for="codTributacaoNacional" class="form-label">Código Tributação Nacional</label>
+                        <input type="text" id="codTributacaoNacional" name="codTributacaoNacional" class="form-control" value="@Model.Servico?.CodTributacaoNacional" maxlength="6">
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="codNBS" class="form-label">Código NBS</label>
+                        <input type="text" id="codNBS" name="codNBS" class="form-control" value="@Model.Servico?.CodNBS" maxlength="9">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outras Informações -->
+            <div class="tab-pane fade" id="outros" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-12 form-group">
+                        <label for="tags" class="form-label">Tags (separadas por vírgula)</label>
+                        <input type="text" id="tags" name="tags" class="form-control" value="@Model.Servico?.Tags" placeholder="Ex: Cabelo, Química, Vip">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12 form-group">
+                        <label for="anotacoes" class="form-label">Anotações Internas</label>
+                        <textarea id="anotacoes" name="anotacoes" class="form-control" rows="3">@Model.Servico?.Anotacoes</textarea>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+        <a asp-page="/ServicoLista" class="btn btn-secondary ms-2">Voltar</a>
     </form>
 </div>
 
-<script>
-    $(document).ready(function () {
-        // máscara simples BR: 1.234,56
-        $("#preco").inputmask("decimal", {
-            radixPoint: ",",
-            groupSeparator: ".",
-            autoGroup: true,
-            digits: 2,
-            digitsOptional: false,
-            rightAlign: false
+<!-- Modal Cadastrar Categoria -->
+<div class="modal fade" id="modalCategoria" tabindex="-1" aria-labelledby="modalCategoriaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCategoriaLabel">Nova Categoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="catNome" class="form-label">Nome</label>
+                    <input type="text" id="catNome" class="form-control" placeholder="Ex: Cortes, Química">
+                </div>
+                <div class="mb-3">
+                    <label for="catDescricao" class="form-label">Descrição (Opcional)</label>
+                    <textarea id="catDescricao" class="form-control" rows="2"></textarea>
+                </div>
+                <div id="catMensagem" class="alert d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnSalvarCategoria">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script>
+        $(document).ready(function () {
+            // máscara simples BR: 1.234,56
+            $("#preco, #precoCusto, #aliquotaISS").inputmask("decimal", {
+                radixPoint: ",",
+                groupSeparator: ".",
+                autoGroup: true,
+                digits: 2,
+                digitsOptional: false,
+                rightAlign: false
+            });
+
+            function calcularMargem() {
+                let precoCustoStr = $("#precoCusto").val().replace(/\./g, '').replace(',', '.');
+                let precoVendaStr = $("#preco").val().replace(/\./g, '').replace(',', '.');
+
+                let custo = parseFloat(precoCustoStr) || 0;
+                let venda = parseFloat(precoVendaStr) || 0;
+
+                if (venda > 0) {
+                    let margem = ((venda - custo) / venda) * 100;
+                    let margemFormatada = margem.toFixed(2).replace('.', ',');
+                    $("#margemContribuicao").val(margemFormatada);
+
+                    if (margem <= 0) {
+                        $("#margemContribuicao").addClass("text-danger fw-bold").removeClass("text-success");
+                    } else {
+                        $("#margemContribuicao").addClass("text-success fw-bold").removeClass("text-danger");
+                    }
+                } else {
+                    $("#margemContribuicao").val("0,00").removeClass("text-danger text-success fw-bold");
+                }
+            }
+
+            $("#precoCusto, #preco").on("keyup change", calcularMargem);
+
+            // AJAX para salvar Categoria
+            $("#btnSalvarCategoria").click(function() {
+                let nome = $("#catNome").val();
+                let desc = $("#catDescricao").val();
+
+                if (!nome) {
+                    $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("O nome é obrigatório.");
+                    return;
+                }
+
+                $("#btnSalvarCategoria").prop("disabled", true).text("Salvando...");
+
+                $.ajax({
+                    type: "POST",
+                    url: "?handler=SaveCategory",
+                    data: {
+                        nome: nome,
+                        descricao: desc,
+                        "__RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Adiciona ao select e seleciona
+                            $("#idCategoria").append(new Option(response.nome, response.id));
+                            $("#idCategoria").val(response.id);
+                            
+                            // Fecha o modal e limpa
+                            $("#modalCategoria").modal('hide');
+                            $("#catNome").val("");
+                            $("#catDescricao").val("");
+                            $("#catMensagem").addClass("d-none");
+                        } else {
+                            $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text(response.message);
+                        }
+                    },
+                    error: function() {
+                        $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("Erro de conexão.");
+                    },
+                    complete: function() {
+                        $("#btnSalvarCategoria").prop("disabled", false).text("Salvar");
+                    }
+                });
+            });
         });
-    });
-</script>
+    </script>

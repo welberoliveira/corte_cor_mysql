@@ -1,578 +1,1059 @@
-﻿@page
+@page
 @model CorteCor.Pages.AgendamentosModel
-
 @{
     ViewData["Title"] = "Agendamentos";
-    var initialDate = DateTime.Today.ToString("yyyy-MM-dd");
 }
 
-<div class="cc-agenda-page">
-    <div class="cc-toolbar">
-        <div class="cc-toolbar-left">
-            <button type="button" class="btn btn-secondary btn-sm" id="btnPrev">◀</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnToday">Hoje</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnNext">▶</button>
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" />
+    <style>
+        /* ====== Corte&Cor - FullCalendar (LIGHT / legível) ====== */
 
-            <div class="btn-group ms-2" role="group" aria-label="Visão">
-                <button type="button" class="btn btn-primary btn-sm active" id="btnViewWeek">Semana</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnViewDay">Dia</button>
-            </div>
+        :root {
+            --cc-bg: #f5f7fb;
+            --cc-card: #ffffff;
+            --cc-border: #e6eaf2;
+            --cc-text: #111827;
+            --cc-muted: #475569;
+            --cc-accent: #2563eb;
+            /* azul */
+            --cc-accent-soft: rgba(37, 99, 235, .10);
+            --cc-green: #16a34a;
+            --cc-shadow: 0 10px 30px rgba(17, 24, 39, .08);
+        }
 
-            <span class="cc-date-label ms-3" id="lblRange"></span>
-        </div>
+        body {
+            background: var(--cc-bg);
+        }
 
+        /* card do calendário */
+        #calendar {
+            max-width: 1220px;
+            margin: 18px auto;
+            padding: 14px;
+            border-radius: 18px;
+            background: var(--cc-card);
+            border: 1px solid var(--cc-border);
+            box-shadow: var(--cc-shadow);
+        }
 
+        .cc-modal-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .fc {
+            color: var(--cc-text) !important;
+        }
+
+        /* toolbar */
+        .fc .fc-toolbar {
+            gap: 10px;
+            padding: 8px 8px 16px;
+        }
+
+        .fc .fc-toolbar-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--cc-text) !important;
+        }
+
+        /* botões */
+        .fc .fc-button {
+            border: 1px solid var(--cc-border) !important;
+            background: #fff !important;
+            color: var(--cc-text) !important;
+            border-radius: 12px !important;
+            padding: 8px 12px !important;
+            box-shadow: none !important;
+        }
+
+        .fc .fc-button:hover {
+            background: #f8fafc !important;
+            border-color: #d8deea !important;
+        }
+
+        /* botão ativo */
+        .fc .fc-button-primary:not(:disabled).fc-button-active,
+        .fc .fc-button-primary:not(:disabled):active {
+            background: var(--cc-accent) !important;
+            border-color: var(--cc-accent) !important;
+            color: #fff !important;
+        }
+
+        /* today */
+        .fc .fc-today-button {
+            border-color: rgba(22, 163, 74, .25) !important;
+            background: rgba(22, 163, 74, .08) !important;
+            color: #0f172a !important;
+        }
+
+        /* grid */
+        .fc .fc-scrollgrid,
+        .fc-theme-standard td,
+        .fc-theme-standard th {
+            border-color: var(--cc-border) !important;
+        }
+
+        /* cabeçalho dos dias */
+        .fc .fc-col-header {
+            background: #f1f5ff;
+        }
+
+        .fc .fc-col-header-cell-cushion {
+            padding: 10px 8px !important;
+            font-weight: 700;
+            color: #1e3a8a !important;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            font-size: .78rem;
+        }
+
+        /* horas */
+        .fc .fc-timegrid-axis-cushion,
+        .fc .fc-timegrid-slot-label-cushion {
+            color: var(--cc-muted) !important;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* linhas */
+        .fc .fc-timegrid-slot-lane {
+            border-bottom: 1px solid #eef2f7 !important;
+        }
+
+        .fc .fc-timegrid-slot {
+            height: 1.75em;
+        }
+
+        /* hoje */
+        .fc .fc-day-today {
+            background: var(--cc-accent-soft) !important;
+        }
+
+        /* seleção */
+        .fc .fc-highlight {
+            background: rgba(37, 99, 235, .18) !important;
+        }
+
+        /* eventos */
+        .fc .fc-event {
+            border-radius: 12px !important;
+            border: 1px solid rgba(37, 99, 235, .25) !important;
+            color: var(--cc-text) !important;
+        }
+
+        .fc .fc-event .fc-event-main {
+            padding: 6px 8px !important;
+        }
+
+        .fc .fc-event-title {
+            font-weight: 700;
+        }
+
+        .fc .fc-event-time {
+            font-weight: 700;
+            opacity: .85;
+        }
+
+        /* indicador de agora */
+        .fc .fc-now-indicator-line {
+            border-color: rgba(22, 163, 74, .9) !important;
+            border-width: 2px !important;
+        }
+
+        .fc .fc-now-indicator-arrow {
+            border-color: rgba(22, 163, 74, .9) !important;
+        }
+
+        /* seu cabeçalho roxo (mantive, mas se quiser eu harmonizo com o tema) */
+        .fc th {
+            background: #767dff !important;
+        }
+
+        /* botão "Semanas" como texto (não clicável) */
+        .fc .fc-ccSemanas-button {
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            cursor: default !important;
+            padding: 0 10px !important;
+            color: var(--cc-muted) !important;
+            font-weight: 700 !important;
+        }
+
+        .fc .fc-ccSemanas-button:hover {
+            background: transparent !important;
+        }
+
+        /* botão "Novo Agendamento" em destaque */
+        .fc .fc-novoAgendamento-button {
+            background: var(--cc-accent) !important;
+            border-color: var(--cc-accent) !important;
+            color: #fff !important;
+        }
+
+        .fc .fc-novoAgendamento-button:hover {
+            background: #1d4ed8 !important;
+            border-color: #1d4ed8 !important;
+        }
+
+        /* ====== Responsividade Móvel ====== */
+        @@media (max-width: 768px) {
+            .fc .fc-toolbar {
+                flex-direction: column !important;
+                gap: 15px !important;
+                align-items: center !important;
+            }
+
+            .fc .fc-toolbar-chunk {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+            }
+
+            .fc .fc-toolbar-title {
+                text-align: center;
+                font-size: 1.1rem;
+            }
+
+            /* Garante que o grupo "Semanas" e botões nav fiquem bem no meio */
+            .fc .fc-button-group {
+                justify-content: center;
+            }
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mt-3">
+        <h3 class="mb-0">Agendamentos</h3>
     </div>
 
-    <div class="cc-content">
-        <div class="cc-left">
-            <div id="nav"></div>
-
-            <div class="cc-legend mt-3">
-                <div class="cc-legend-title">Legenda</div>
-                <div class="cc-legend-item"><span class="cc-dot st-pendente"></span> Pendente</div>
-                <div class="cc-legend-item"><span class="cc-dot st-confirmado"></span> Confirmado</div>
-                <div class="cc-legend-item"><span class="cc-dot st-concluido"></span> Concluído</div>
-                <div class="cc-legend-item"><span class="cc-dot st-cancelado"></span> Cancelado</div>
-                <div class="cc-legend-item"><span class="cc-dot st-faltou"></span> Faltou</div>
-            </div>
+    @if (TempData["AvisoLimite"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show mt-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["AvisoLimite"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+    }
 
-        <div class="cc-right">
-            <div id="dp"></div>
+    @if (TempData["AvisoLimiteSMS"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show mt-2" role="alert">
+            <i class="bi bi-chat-left-dots-fill me-2"></i> @TempData["AvisoLimiteSMS"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </div>
+    }
+
+    <div id="calendar"></div>
 </div>
 
+<!-- Anti-forgery (necessário para POST via fetch) -->
 <form method="post" id="antiForgeryForm" class="d-none">
     @Html.AntiForgeryToken()
 </form>
 
-<!-- Modal Agendamento -->
-<div class="modal fade" id="agModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+<!-- Modal (Bootstrap 5) acionado ao clicar no calendário -->
+<div class="modal fade" id="agendamentoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-
             <div class="modal-header">
-                <h5 class="modal-title" id="agModalTitle">Agendamento</h5>
+                <h5 class="modal-title">Novo agendamento</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
 
             <div class="modal-body">
-                <input type="hidden" id="agId" value="" />
-                <input type="hidden" id="agStartIso" value="" />
-                <input type="hidden" id="agEndIso" value="" />
-
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Início</label>
-                        <input class="form-control" id="agStartLabel" readonly />
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Fim (pela duração do serviço)</label>
-                        <input class="form-control" id="agEndLabel" readonly />
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Funcionário</label>
-                        <select class="form-select" id="agEmployee" required></select>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Cliente</label>
-                        <select class="form-select" id="agClient" required>
-                            <option value="">Carregando...</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Serviço</label>
-                        <select class="form-select" id="agService" required>
-                            <option value="">Carregando...</option>
-                        </select>
-                        <div class="form-text">A duração do agendamento será definida pelo serviço.</div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Valor (R$)</label>
-                        <input class="form-control" id="agValue" inputmode="decimal" placeholder="0,00" />
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" id="agStatus" required>
-                            <option value="Pendente">Pendente</option>
-                            <option value="Confirmado">Confirmado</option>
-                            <option value="Concluido">Concluído</option>
-                            <option value="Cancelado">Cancelado</option>
-                            <option value="Faltou">Faltou</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-12">
-                        <label class="form-label">Observação</label>
-                        <textarea class="form-control" id="agObs" rows="3" placeholder="Ex.: preferência, alergia, instruções..."></textarea>
-                    </div>
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Início</label>
+                    <input id="inicio" class="form-control" type="datetime-local" />
                 </div>
 
-                <div class="alert alert-danger mt-3 d-none" id="agError"></div>
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Fim</label>
+                    <input id="fim" class="form-control" type="text" readonly />
+                </div>
+
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Cliente</label>
+                    <select id="idPessoa" class="form-select">
+                        <option value="">Selecione...</option>
+                        @foreach (var p in Model.Clientes)
+                        {
+                            <option value="@p.IdPessoa">@p.Nome</option>
+                        }
+                    </select>
+                </div>
+
+
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Serviço</label>
+                    <select id="idServico" class="form-select">
+                        <option value="">Selecione...</option>
+                        @foreach (var s in Model.Servicos)
+                        {
+                            <option value="@s.IdServico" data-duracao-min="@((int)s.Duracao.TotalMinutes)">
+                                @s.Nome
+                            </option>
+                        }
+
+                    </select>
+                </div>
+
+                <div id="rowStatus" class="cc-modal-row d-none">
+                    <label class="form-label mb-0">Status</label>
+                    <select id="idStatus" class="form-select">
+                        <option value="Agendado">Agendado</option>
+                        <option value="Pago">Pago</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+
+                <div id="fiscalResumoBox" class="alert alert-light border d-none mb-0">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="small text-uppercase text-muted fw-semibold">Situação Fiscal</span>
+                            <span id="fiscalStatusBadge" class="badge bg-secondary">Sem nota</span>
+                            <span id="fiscalNumeroTexto" class="small text-muted"></span>
+                        </div>
+                        <div id="fiscalMensagem" class="small text-muted"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-danger me-auto d-none" id="btnDelete">Excluir</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnSave">Salvar</button>
+                <input type="hidden" id="idAgendamento" value="" />
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
+                <button type="button" id="btnSalvar" class="btn btn-primary">Salvar</button>
+                <button type="button" id="btnAlterar" class="btn btn-success d-none">Alterar</button>
+                <button type="button" id="btnEmitirNota" class="btn btn-warning d-none"><i class="bi bi-receipt"></i>
+                    Emitir Nota Fiscal</button>
+                <button type="button" id="btnAbrirNota" class="btn btn-dark d-none"><i class="bi bi-box-arrow-up-right"></i>
+                    Abrir Nota Fiscal</button>
+                <button type="button" id="btnExcluir" class="btn btn-danger d-none">Excluir</button>
+                <button type="button" id="btnPagar" class="btn btn-primary d-none">Pagar Agora</button>
             </div>
-
         </div>
     </div>
 </div>
 
-@section Styles {
-    <style>
-        .cc-agenda-page { display:flex; flex-direction:column; gap:12px; }
-        .cc-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-        .cc-toolbar-left, .cc-toolbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .cc-date-label { font-weight:600; color:#444; }
 
-        .cc-content { display:grid; grid-template-columns: 260px 1fr; gap: 12px; min-height: 680px; }
-        .cc-left { border:1px solid #e5e5e5; border-radius: 10px; padding: 10px; background:#fff; }
-        .cc-right { border:1px solid #e5e5e5; border-radius: 10px; padding: 10px; background:#fff; overflow:hidden; }
 
-        #nav { width: 100%; }
-        #dp { width: 100%; height: 720px; }
+<!-- NOVO Modal (Bootstrap 5) - Novo Agendamento manual pelo botão -->
+<div class="modal fade" id="agendamentoNovoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo agendamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
 
-        .cc-legend-title { font-weight: 600; margin-bottom: 6px; }
-        .cc-legend-item { display:flex; align-items:center; gap:8px; margin: 4px 0; color:#555; }
-        .cc-dot { width: 10px; height: 10px; border-radius: 999px; display:inline-block; }
-        .st-pendente { background: #f0ad4e; }
-        .st-confirmado { background: #0d6efd; }
-        .st-concluido { background: #198754; }
-        .st-cancelado { background: #dc3545; }
-        .st-faltou { background: #6c757d; }
+            <div class="modal-body">
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Início</label>
+                    <!-- habilitado com calendário (date/time picker do navegador) -->
+                    <input id="inicioNovo" class="form-control" type="datetime-local" />
+                </div>
 
-        /* Classes aplicadas nos eventos (sem depender de cores inline) */
-        .dp-evt-pendente .calendar_default_event_inner { border-left: 4px solid #f0ad4e; }
-        .dp-evt-confirmado .calendar_default_event_inner { border-left: 4px solid #0d6efd; }
-        .dp-evt-concluido .calendar_default_event_inner { border-left: 4px solid #198754; }
-        .dp-evt-cancelado .calendar_default_event_inner { border-left: 4px solid #dc3545; opacity: 0.7; }
-        .dp-evt-faltou .calendar_default_event_inner { border-left: 4px solid #6c757d; opacity: 0.8; }
-    </style>
-}
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Fim</label>
+                    <!-- habilitado com calendário (date/time picker do navegador) -->
+                    <input id="fimNovo" class="form-control" type="datetime-local" readonly />
+                </div>
+
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Cliente</label>
+                    <select id="idPessoaNovo" class="form-select">
+                        <option value="">Selecione...</option>
+                        @foreach (var p in Model.Clientes)
+                        {
+                            <option value="@p.IdPessoa">@p.Nome</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="cc-modal-row">
+                    <label class="form-label mb-0">Serviço</label>
+                    <select id="idServicoNovo" class="form-select">
+                        <option value="">Selecione...</option>
+                        @foreach (var s in Model.Servicos)
+                        {
+                            <option value="@s.IdServico" data-duracao-min="@((int)s.Duracao.TotalMinutes)">
+                                @s.Nome
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="text-muted small">
+                    Obs: escolha Início pelo calendário. Ao trocar o serviço, o sistema inclui o fim pela duração do
+                    serviço.
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
+                <button type="button" id="btnSalvarNovo" class="btn btn-primary">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @section Scripts {
-    <script>
-        (function () {
-            const initialDate = "@initialDate";
-            const pageUrl = "@Url.Page("/Agendamentos")";
+    <!-- FullCalendar (global bundle) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
 
-            const endpoints = {
-                resources: () => `${pageUrl}?handler=Resources`,
-                events: (start, end) => {
-                    const emp = document.getElementById("fEmployee").value || "";
-                    const st = document.getElementById("fStatus").value || "";
-                    const q = document.getElementById("fSearch").value || "";
-                    const p = new URLSearchParams({
-                        start: start,
-                        end: end,
-                        employeeId: emp,
-                        status: st,
-                        q: q
-                    });
-                    return `${pageUrl}?handler=Events&${p.toString()}`;
-                },
-                timeRanges: (start, end) => {
-                    const emp = document.getElementById("fEmployee").value || "";
-                    const p = new URLSearchParams({ start, end, employeeId: emp });
-                    return `${pageUrl}?handler=TimeRanges&${p.toString()}`;
-                },
-                get: (id) => `${pageUrl}?handler=Get&id=${encodeURIComponent(id)}`,
-                save: () => `${pageUrl}?handler=Save`,
-                del: () => `${pageUrl}?handler=Delete`,
-                servicos: () => `${pageUrl}?handler=Servicos`,
-                clientes: () => `${pageUrl}?handler=Clientes`
+    <script>
+        let calendar;
+        let modal;
+        let modalNovo;
+        let selectionStart = null;
+        let selectionEnd = null;
+
+        function getAntiForgeryToken() {
+            const input = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]');
+            return input ? input.value : '';
+        }
+
+        function formatLocal(dt) {
+            return new Intl.DateTimeFormat('pt-BR', {
+                dateStyle: 'short',
+                timeStyle: 'short'
+            }).format(dt);
+        }
+
+
+        async function carregarEventos(fetchInfo, successCallback, failureCallback) {
+            try {
+                const url = `?handler=Events&start=${encodeURIComponent(fetchInfo.startStr)}&end=${encodeURIComponent(fetchInfo.endStr)}`;
+                const resp = await fetch(url, { method: 'GET' });
+                if (!resp.ok) throw new Error('Falha ao carregar eventos');
+                const data = await resp.json();
+                successCallback(data);
+            } catch (e) {
+                console.error(e);
+                failureCallback(e);
+            }
+        }
+        async function atualizarServicosDisponiveis(start, selectId, currentValue, currentName) {
+            const resp = await fetch(`?handler=AvailableServices&start=${encodeURIComponent(start.toISOString())}`);
+            if (!resp.ok) return;
+
+            const services = await resp.json();
+            const select = document.getElementById(selectId);
+
+            select.innerHTML = '<option value="">Selecione...</option>';
+
+            let found = false;
+            services.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.nome;
+                opt.dataset.duracaoMin = s.duracaoMin;
+                if (currentValue && parseInt(currentValue) === s.id) {
+                    opt.selected = true;
+                    found = true;
+                }
+                select.appendChild(opt);
+            });
+
+            // Se temos um valor atual (edição) e ele não veio na lista de disponíveis (pq já está ocupado por este agendamento ou outro motivo),
+            // forçamos a inclusão dele para não ficar em branco.
+            if (currentValue && !found && currentName) {
+                const opt = document.createElement('option');
+                opt.value = currentValue;
+                opt.textContent = currentName;
+                // Precisariamos da duracao, mas se for so visualizacao, ok. 
+                // Se for alterar horario, pode dar problema no calculo de fim.
+                // Ideal seria o EndPoint retornar a duracao tambem ou a gente buscar.
+                // Por hora, assumimos 30min ou tentamos pegar de algum cache se possivel, ou deixamos 0.
+                opt.dataset.duracaoMin = 30;
+                opt.selected = true;
+                select.appendChild(opt);
+            }
+        }
+
+        async function abrirModal(start, end) {
+            selectionStart = start;
+            selectionEnd = end;
+
+            // Título dinâmico
+            document.querySelector('#agendamentoModal .modal-title').textContent = 'Novo agendamento';
+
+            document.getElementById('idAgendamento').value = '';
+            document.getElementById('inicio').value = toDateTimeLocalValue(start);
+
+            // Fetch serviços disponíveis
+            await atualizarServicosDisponiveis(start, 'idServico');
+
+            // limpa campos
+            document.getElementById('idPessoa').value = '';
+            document.getElementById('idServico').value = '';
+            resetFiscalState();
+
+            // Toggle botões
+            document.getElementById('btnSalvar').classList.remove('d-none');
+            document.getElementById('btnAlterar').classList.add('d-none');
+            document.getElementById('btnEmitirNota').classList.add('d-none');
+            document.getElementById('btnAbrirNota').classList.add('d-none');
+            document.getElementById('btnExcluir').classList.add('d-none');
+            document.getElementById('btnPagar').classList.add('d-none');
+
+            // Reset readonly state
+            document.getElementById('inicio').readOnly = false;
+            document.getElementById('idPessoa').disabled = false;
+            document.getElementById('idServico').disabled = false;
+            document.getElementById('idStatus').disabled = false;
+
+            // Status no novo agendamento
+            document.getElementById('rowStatus').classList.add('d-none');
+            document.getElementById('idStatus').value = 'Agendado';
+
+            // fim passa a ser calculado pelo serviço (fallback 30min)
+            recalcularFimPeloServico();
+
+            modal.show();
+        }
+
+
+        function getDuracaoServicoMinutos() {
+            const opt = document.querySelector('#idServico option:checked');
+            const min = parseInt(opt?.dataset?.duracaoMin || '0', 10);
+            // fallback: 30 min se não tiver duração válida
+            return (!min || isNaN(min) || min <= 0) ? 30 : min;
+        }
+
+        function recalcularFimPeloServico() {
+            if (!selectionStart) return;
+
+            const min = getDuracaoServicoMinutos();
+            selectionEnd = new Date(selectionStart.getTime() + min * 60 * 1000);
+
+            // Se for datetime-local
+            // document.getElementById('fim').value = toDateTimeLocalValue(selectionEnd); 
+            // Mas o fim é texto readonly na modal principal? Não, é "text" readonly. 
+            // Vamos manter padrao de exibicao texto para Fim, ou mudar para datetime-local readonly.
+            // O original era: input type="text" readonly. formatLocal(end).
+            document.getElementById('fim').value = formatLocal(selectionEnd);
+        }
+
+        function resetFiscalState() {
+            const box = document.getElementById('fiscalResumoBox');
+            const badge = document.getElementById('fiscalStatusBadge');
+            const numero = document.getElementById('fiscalNumeroTexto');
+            const mensagem = document.getElementById('fiscalMensagem');
+            const btnAbrirNota = document.getElementById('btnAbrirNota');
+
+            box.classList.add('d-none');
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Sem nota';
+            numero.textContent = '';
+            mensagem.textContent = '';
+            btnAbrirNota.classList.add('d-none');
+            btnAbrirNota.dataset.url = '';
+        }
+
+        function aplicarFiscalState(fiscal) {
+            const box = document.getElementById('fiscalResumoBox');
+            const badge = document.getElementById('fiscalStatusBadge');
+            const numero = document.getElementById('fiscalNumeroTexto');
+            const mensagem = document.getElementById('fiscalMensagem');
+            const btnAbrirNota = document.getElementById('btnAbrirNota');
+
+            resetFiscalState();
+
+            if (!fiscal) {
+                return;
+            }
+
+            box.classList.remove('d-none');
+            badge.className = `badge ${fiscal.classeStatusFiscal || 'bg-secondary'}`;
+            badge.textContent = fiscal.statusFiscal || 'Sem nota';
+            numero.textContent = fiscal.numeroNota
+                ? `${fiscal.tipoNota || 'Nota'} ${fiscal.numeroNota}/${fiscal.serieNota || 1}`
+                : '';
+            mensagem.textContent = fiscal.mensagem || '';
+
+            if (fiscal.podeAbrirNota && fiscal.urlLista) {
+                btnAbrirNota.classList.remove('d-none');
+                btnAbrirNota.dataset.url = fiscal.urlLista;
+            }
+        }
+
+        function abrirNotaFiscalRelacionada() {
+            const btnAbrirNota = document.getElementById('btnAbrirNota');
+            const url = btnAbrirNota.dataset.url;
+            if (url) {
+                window.location.href = url;
+            }
+        }
+
+
+        async function salvarAgendamento() {
+            const idPessoaStr = document.getElementById('idPessoa').value;
+            const clienteTexto = document.querySelector('#idPessoa option:checked')?.textContent?.trim() || '';
+
+            const idServicoStr = document.getElementById('idServico').value;
+            const servicoTexto = document.querySelector('#idServico option:checked')?.textContent?.trim() || '';
+
+            if (!selectionStart) return;
+
+            // garante que o fim esteja calculado
+            recalcularFimPeloServico();
+
+            if (!idPessoaStr || !idServicoStr) {
+                Swal.fire('Atenção', 'Informe Cliente e Serviço.', 'warning');
+                return;
+            }
+
+            const payload = {
+                start: selectionStart.toISOString(),
+                idPessoa: parseInt(idPessoaStr, 10),
+                idServico: parseInt(idServicoStr, 10)
             };
 
-            const token = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]')?.value || "";
-
-            // ---- DayPilot Navigator (calendário lateral)
-            const nav = new DayPilot.Navigator("nav", {
-                selectMode: "day",
-                showMonths: 2,
-                skipMonths: 2,
-                onTimeRangeSelected: function (args) {
-                    dp.startDate = args.day;
-                    dp.update();
-                    refresh();
-                }
-            });
-            nav.init();
-
-            // ---- Scheduler principal
-            const dp = new DayPilot.Calendar("dp", {
-                startDate: initialDate,
-                viewType: "Week",      // Semana (Seg–Dom)
-                // opcional: ajuste visual
-                cellDuration: 30,      // slots de 15min
-                hourWidth: 60,         // largura da coluna de horas (se quiser)
-                weekStarts: 1,
-                // desabilitar mover/resize
-                eventMoveHandling: "Disabled",
-                eventResizeHandling: "Disabled",
-
-                timeRangeSelectedHandling: "Enabled",
-                onTimeRangeSelected: function (args) {
-                    dp.clearSelection();
-                    openCreateModal(args);
+            const resp = await fetch('?handler=Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
                 },
-                onEventClick: async function (args) {
-                    openEditModal(args.e.id());
-                },
-
-                onBeforeEventRender: function (args) {
-                    const st = (args.data.status || "").toString().toLowerCase();
-
-                    // classe CSS por status (para borda/estilo)
-                    if (st === "pendente") args.data.cssClass = "dp-evt-pendente";
-                    else if (st === "confirmado") args.data.cssClass = "dp-evt-confirmado";
-                    else if (st === "concluido" || st === "concluído") args.data.cssClass = "dp-evt-concluido";
-                    else if (st === "cancelado") args.data.cssClass = "dp-evt-cancelado";
-                    else if (st === "faltou") args.data.cssClass = "dp-evt-faltou";
-
-                    // tooltip
-                    const t = [];
-                    if (args.data.clientName) t.push(`Cliente: ${args.data.clientName}`);
-                    if (args.data.serviceName) t.push(`Serviço: ${args.data.serviceName}`);
-                    if (args.data.value) t.push(`Valor: R$ ${args.data.value}`);
-                    if (args.data.status) t.push(`Status: ${args.data.status}`);
-                    args.data.toolTip = t.join("\n");
-                },
-
-                onTimeRangeSelected: function (args) {
-                    dp.clearSelection();
-                    openCreateModal(args);
-                },
-
-                onEventClick: async function (args) {
-                    openEditModal(args.e.id());
-                }
+                body: JSON.stringify(payload)
             });
 
-            dp.init();
-
-            // ---- Modal helpers
-            const modalEl = document.getElementById("agModal");
-            const agModal = new bootstrap.Modal(modalEl);
-
-            let serviceDurationMap = {}; // { serviceId: minutes }
-
-            function setError(msg) {
-                const el = document.getElementById("agError");
-                if (!msg) { el.classList.add("d-none"); el.textContent = ""; return; }
-                el.classList.remove("d-none");
-                el.textContent = msg;
+            if (!resp.ok) {
+                const txt = await resp.text();
+                console.error(txt);
+                await showError(resp, 'Erro ao salvar agendamento.');
+                return;
             }
 
-            function formatLabel(iso) {
-                // iso: "yyyy-MM-ddTHH:mm:ss"
-                const d = new Date(iso);
-                const pad = (n) => String(n).padStart(2, "0");
-                return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-            }
+            const result = await resp.json();
 
-            function setStartEnd(startDpDate, endDpDate) {
-                const startIso = startDpDate.toString(); // DayPilot ISO
-                const endIso = endDpDate.toString();
-
-                document.getElementById("agStartIso").value = startIso;
-                document.getElementById("agEndIso").value = endIso;
-
-                document.getElementById("agStartLabel").value = formatLabel(startIso);
-                document.getElementById("agEndLabel").value = formatLabel(endIso);
-            }
-
-            async function ensureModalLookupsLoaded() {
-                // Serviços
-                const svcSel = document.getElementById("agService");
-                const cliSel = document.getElementById("agClient");
-
-                if (svcSel.dataset.loaded !== "1") {
-                    const r = await fetch(endpoints.servicos(), { headers: { "Accept": "application/json" } });
-                    const list = await r.json(); // esperado: [{id, nome, duracaoMin, valorPadrao}]
-                    serviceDurationMap = {};
-                    svcSel.innerHTML = `<option value="">Selecione...</option>`;
-                    for (const s of list) {
-                        serviceDurationMap[String(s.id)] = Number(s.duracaoMin || 0);
-                        const opt = document.createElement("option");
-                        opt.value = s.id;
-                        opt.textContent = s.nome;
-                        opt.dataset.valorPadrao = s.valorPadrao ?? "";
-                        svcSel.appendChild(opt);
-                    }
-                    svcSel.dataset.loaded = "1";
-                }
-
-                if (cliSel.dataset.loaded !== "1") {
-                    const r = await fetch(endpoints.clientes(), { headers: { "Accept": "application/json" } });
-                    const list = await r.json(); // esperado: [{id, nome}]
-                    cliSel.innerHTML = `<option value="">Selecione...</option>`;
-                    for (const c of list) {
-                        const opt = document.createElement("option");
-                        opt.value = c.id;
-                        opt.textContent = c.nome;
-                        cliSel.appendChild(opt);
-                    }
-                    cliSel.dataset.loaded = "1";
-                }
-            }
-
-            function fillEmployeeSelect(resources) {
-                const f = document.getElementById("fEmployee");
-                const m = document.getElementById("agEmployee");
-
-                // filtro
-                f.innerHTML = `<option value="">Todos os funcionários</option>`;
-                // modal (obrigatório)
-                m.innerHTML = `<option value="">Selecione...</option>`;
-
-                for (const r of resources) {
-                    const opt1 = document.createElement("option");
-                    opt1.value = r.id;
-                    opt1.textContent = r.name;
-                    f.appendChild(opt1);
-
-                    const opt2 = document.createElement("option");
-                    opt2.value = r.id;
-                    opt2.textContent = r.name;
-                    m.appendChild(opt2);
-                }
-            }
-
-            async function openCreateModal(args) {
-                setError(null);
-                document.getElementById("agModalTitle").textContent = "Novo agendamento";
-                document.getElementById("agId").value = "";
-                document.getElementById("btnDelete").classList.add("d-none");
-
-                await ensureModalLookupsLoaded();
-
-                // funcionário do clique (resource)
-                document.getElementById("agEmployee").value = args.resource || "";
-
-                // start/end inicial: 1 slot (será ajustado pelo serviço)
-                const start = args.start;
-                const end = args.start.addMinutes(dp.cellDuration);
-                setStartEnd(start, end);
-
-                // defaults
-                document.getElementById("agClient").value = "";
-                document.getElementById("agService").value = "";
-                document.getElementById("agObs").value = "";
-                document.getElementById("agStatus").value = "Pendente";
-                document.getElementById("agValue").value = "";
-
-                agModal.show();
-            }
-
-            async function openEditModal(id) {
-                setError(null);
-                document.getElementById("agModalTitle").textContent = "Editar agendamento";
-                document.getElementById("btnDelete").classList.remove("d-none");
-
-                await ensureModalLookupsLoaded();
-
-                const r = await fetch(endpoints.get(id), { headers: { "Accept": "application/json" } });
-                if (!r.ok) {
-                    setError("Não foi possível carregar o agendamento.");
-                    agModal.show();
-                    return;
-                }
-                const data = await r.json(); // esperado: { id, start, end, employeeId, clientId, serviceId, obs, value, status }
-                document.getElementById("agId").value = data.id;
-                document.getElementById("agEmployee").value = data.employeeId;
-                document.getElementById("agClient").value = data.clientId;
-                document.getElementById("agService").value = data.serviceId;
-                document.getElementById("agObs").value = data.obs || "";
-                document.getElementById("agValue").value = data.value || "";
-                document.getElementById("agStatus").value = data.status || "Pendente";
-
-                setStartEnd(new DayPilot.Date(data.start), new DayPilot.Date(data.end));
-
-                agModal.show();
-            }
-
-            // serviço -> ajusta fim pela duração + opcional valor padrão
-            document.getElementById("agService").addEventListener("change", function () {
-                const sid = this.value;
-                if (!sid) return;
-
-                const minutes = serviceDurationMap[String(sid)] || 0;
-                if (minutes > 0) {
-                    const startIso = document.getElementById("agStartIso").value;
-                    const start = new DayPilot.Date(startIso);
-                    const end = start.addMinutes(minutes);
-                    setStartEnd(start, end);
-                }
-
-                // valor padrão (se vier do backend)
-                const selected = this.options[this.selectedIndex];
-                const v = selected?.dataset?.valorPadrao;
-                if (v && !document.getElementById("agValue").value) {
-                    document.getElementById("agValue").value = v;
-                }
+            const primeiroNome = clienteTexto.split(' ')[0];
+            calendar.addEvent({
+                id: result.id,
+                title: `${primeiroNome} - ${servicoTexto}`,
+                start: selectionStart,
+                end: selectionEnd,
+                color: result.servicoCor
             });
 
-            // ---- Save / Delete
-            async function postJson(url, payload) {
-                const r = await fetch(url, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "RequestVerificationToken": token
-                    },
-                    body: JSON.stringify(payload)
+
+            modal.hide();
+        }
+
+        async function alterarAgendamento() {
+            const id = document.getElementById('idAgendamento').value;
+            const idPessoaStr = document.getElementById('idPessoa').value;
+            const idServicoStr = document.getElementById('idServico').value;
+
+            if (!id || !idPessoaStr || !idServicoStr) {
+                Swal.fire('Atenção', 'Dados incompletos.', 'warning');
+                return;
+            }
+
+            const payload = {
+                id: parseInt(id),
+                idPessoa: parseInt(idPessoaStr),
+                idServico: parseInt(idServicoStr),
+                status: document.getElementById('idStatus').value,
+                start: selectionStart.toISOString()
+            };
+
+            const resp = await fetch('?handler=Update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (resp.ok) {
+                const result = await resp.json();
+                const evt = calendar.getEventById(id);
+                if (evt) {
+                    evt.setProp('title', result.title);
+                    evt.setProp('backgroundColor', result.color);
+                    if (result.start) evt.setStart(result.start);
+                    if (result.end) evt.setEnd(result.end);
+                }
+                modal.hide();
+                Swal.fire('Sucesso', 'Agendamento atualizado.', 'success');
+            } else {
+                await showError(resp, 'Erro ao alterar agendamento.');
+            }
+        }
+
+        async function excluirAgendamento() {
+            const id = document.getElementById('idAgendamento').value;
+            if (!id) return;
+
+            const result = await Swal.fire({
+                title: 'Excluir?',
+                text: "Deseja realmente excluir este agendamento?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e53e3e',
+                cancelButtonColor: '#ccc',
+                confirmButtonText: 'Sim, excluir!',
+                cancelButtonText: 'Voltar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            const resp = await fetch(`?handler=Delete&id=${id}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+
+            if (resp.ok) {
+                calendar.getEventById(id)?.remove();
+                modal.hide();
+                Swal.fire('Excluído', 'Agendamento removido.', 'success');
+            } else {
+                await showError(resp, 'Erro ao excluir.');
+            }
+        }
+
+        async function iniciarPagamento() {
+            const id = document.getElementById('idAgendamento').value;
+            if (!id) return;
+
+            const resp = await fetch('?handler=Pagar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ idAgendamento: parseInt(id) })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.checkoutUrl) {
+                    window.open(data.checkoutUrl, '_blank');
+                    modal.hide();
+                    calendar.refetchEvents();
+                    Swal.fire('Pagamento Iniciado', 'Aguardando confirmação do Mercado Pago.', 'info');
+                }
+            } else {
+                await showError(resp, 'Erro ao iniciar pagamento.');
+            }
+        }
+
+        async function emitirNotaFiscal() {
+            const id = document.getElementById('idAgendamento').value;
+            if (!id) return;
+
+            const resp = await fetch('?handler=EmitirNota', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ idAgendamento: parseInt(id) })
+            });
+
+            if (!resp.ok) {
+                await showError(resp, 'Erro ao emitir nota fiscal.');
+                return;
+            }
+
+            const data = await resp.json();
+            aplicarFiscalState(data.fiscal);
+            document.getElementById('btnEmitirNota').classList.toggle('d-none', !(data.fiscal && data.fiscal.podeEmitir));
+
+            if (data.success) {
+                calendar.refetchEvents();
+
+                const resultado = await Swal.fire({
+                    title: 'Sucesso',
+                    text: data.message || 'Nota fiscal emitida com sucesso.',
+                    icon: 'success',
+                    showCancelButton: !!data.redirectUrl,
+                    confirmButtonText: data.redirectUrl ? 'Abrir nota' : 'Fechar',
+                    cancelButtonText: 'Continuar no agendamento'
                 });
-                return r;
-            }
 
-            document.getElementById("btnSave").addEventListener("click", async function () {
-                setError(null);
-
-                const payload = {
-                    id: document.getElementById("agId").value || null,
-                    start: document.getElementById("agStartIso").value,
-                    end: document.getElementById("agEndIso").value,
-                    employeeId: document.getElementById("agEmployee").value,
-                    clientId: document.getElementById("agClient").value,
-                    serviceId: document.getElementById("agService").value,
-                    obs: document.getElementById("agObs").value || "",
-                    value: document.getElementById("agValue").value || "",
-                    status: document.getElementById("agStatus").value
-                };
-
-                // validação mínima no front
-                if (!payload.employeeId || !payload.clientId || !payload.serviceId || !payload.status) {
-                    setError("Preencha Funcionário, Cliente, Serviço e Status.");
+                if (resultado.isConfirmed && data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
                     return;
                 }
 
-                const r = await postJson(endpoints.save(), payload);
-                if (!r.ok) {
-                    const msg = await r.text();
-                    setError(msg || "Não foi possível salvar.");
-                    return;
+                modal.hide();
+                return;
+            }
+
+            await Swal.fire('Atenção', data.message || 'Não foi possível emitir a nota fiscal.', 'warning');
+        }
+
+        /* funções do modal novo - acionado pelo botão*/
+        function toDateTimeLocalValue(dt) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+        }
+
+        function fromDateTimeLocalValue(val) {
+            // "YYYY-MM-DDTHH:mm" -> Date (local)
+            return val ? new Date(val) : null;
+        }
+
+        function roundToNext30Min(dt) {
+            const ms = 30 * 60 * 1000;
+            return new Date(Math.ceil(dt.getTime() / ms) * ms);
+        }
+
+        function getDuracaoServicoMinutosFrom(selectId) {
+            const opt = document.querySelector(`#${selectId} option:checked`);
+            const min = parseInt(opt?.dataset?.duracaoMin || '0', 10);
+            return (!min || isNaN(min) || min <= 0) ? 30 : min;
+        }
+
+        function sugerirFimNovoPeloServico() {
+            const start = fromDateTimeLocalValue(document.getElementById('inicioNovo').value);
+            if (!start) return;
+
+            const min = getDuracaoServicoMinutosFrom('idServicoNovo');
+            const end = new Date(start.getTime() + min * 60 * 1000);
+
+            document.getElementById('fimNovo').value = toDateTimeLocalValue(end);
+        }
+
+        async function abrirModalNovoAgendamento() {
+            // default: próximo bloco de 30 min
+            const start = roundToNext30Min(new Date());
+            document.getElementById('inicioNovo').value = toDateTimeLocalValue(start);
+
+            // Fetch serviços disponíveis
+            await atualizarServicosDisponiveis(start, 'idServicoNovo');
+
+            // limpa selects
+            document.getElementById('idPessoaNovo').value = '';
+            document.getElementById('idServicoNovo').value = '';
+
+            // sugere fim (30min fallback)
+            sugerirFimNovoPeloServico();
+
+            modalNovo.show();
+        }
+
+        async function salvarAgendamentoNovo() {
+            const idPessoaStr = document.getElementById('idPessoaNovo').value;
+            const clienteTexto = document.querySelector('#idPessoaNovo option:checked')?.textContent?.trim() || '';
+
+            const idServicoStr = document.getElementById('idServicoNovo').value;
+            const servicoTexto = document.querySelector('#idServicoNovo option:checked')?.textContent?.trim() || '';
+
+            const start = fromDateTimeLocalValue(document.getElementById('inicioNovo').value);
+            const end = fromDateTimeLocalValue(document.getElementById('fimNovo').value);
+
+            if (!start || !end) {
+                Swal.fire('Atenção', 'Informe Início e Fim.', 'warning');
+                return;
+            }
+
+            if (end <= start) {
+                Swal.fire('Atenção', 'O Fim deve ser maior que o Início.', 'warning');
+                return;
+            }
+
+            if (!idPessoaStr || !idServicoStr) {
+                Swal.fire('Atenção', 'Informe Cliente e Serviço.', 'warning');
+                return;
+            }
+
+            const payload = {
+                start: start.toISOString(),
+                end: end.toISOString(),               // <-- novo (back-end aceitará)
+                idPessoa: parseInt(idPessoaStr, 10),
+                idServico: parseInt(idServicoStr, 10)
+            };
+
+            const resp = await fetch('?handler=Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!resp.ok) {
+                const txt = await resp.text();
+                console.error(txt);
+                await showError(resp, 'Erro ao salvar agendamento.');
+                return;
+            }
+
+            const result = await resp.json();
+
+            const primeiroNome = clienteTexto.split(' ')[0];
+            calendar.addEvent({
+                id: result.id,
+                title: `${primeiroNome} - ${servicoTexto}`,
+                start: start,
+                end: end,
+                color: result.servicoCor
+            });
+
+            modalNovo.hide();
+        }
+
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            modal = new bootstrap.Modal(document.getElementById('agendamentoModal'));
+
+            const calendarEl = document.getElementById('calendar');
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'pt-br',
+                timeZone: 'local',
+
+                initialView: 'timeGridDay',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,timeGridDay novoAgendamento'
+                },
+                buttonText: {
+                    today: 'Hoje',
+                    week: 'Semana',
+                    day: 'Dia'
+                },
+                customButtons: {
+                    novoAgendamento: {
+                        text: 'Novo Agendamento',
+                        click: abrirModalNovoAgendamento
+                    }
+                },
+
+                allDaySlot: false,
+                nowIndicator: true,
+                slotMinTime: '07:00:00',
+                slotMaxTime: '21:00:00',
+                slotDuration: '00:30:00',
+
+                slotLabelFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                },
+
+                selectable: true,
+                selectMirror: true,
+
+                select: function (info) {
+                    abrirModal(info.start, info.end);
+                    calendar.unselect();
+                },
+
+                dateClick: function (info) {
+                    const start = info.date;
+                    const end = new Date(start.getTime() + 30 * 60 * 1000);
+                    abrirModal(start, end);
+                },
+
+                events: carregarEventos,
+
+                eventClick: async function (info) {
+                    const id = info.event.id;
+                    const resp = await fetch(`?handler=Details&id=${id}`);
+                    if (!resp.ok) return;
+
+                    const data = await resp.json();
+
+                    selectionStart = new Date(data.start);
+
+                    // Título dinâmico
+                    document.querySelector('#agendamentoModal .modal-title').textContent = 'Alterar Agendamento';
+
+                    document.getElementById('idAgendamento').value = data.id;
+                    document.getElementById('inicio').value = toDateTimeLocalValue(selectionStart);
+                    document.getElementById('idPessoa').value = data.idPessoa;
+
+                    // Fetch serviços disponíveis para este horário antes de setar o valor
+                    await atualizarServicosDisponiveis(selectionStart, 'idServico', data.idServico, data.servicoNome);
+
+                    document.getElementById('idServico').value = data.idServico;
+
+                    // Status
+                    document.getElementById('rowStatus').classList.remove('d-none');
+                    document.getElementById('idStatus').value = data.status;
+                    aplicarFiscalState(data.fiscal);
+
+                    recalcularFimPeloServico();
+
+                    const canEdit = !!data.canEdit;
+                    const canDelete = !!data.canDelete;
+                    const canPay = !!data.canPay;
+                    const fiscalPodeEmitir = !!data.fiscal?.podeEmitir;
+                    const fiscalPodeAbrirNota = !!data.fiscal?.podeAbrirNota && !!data.fiscal?.urlLista;
+
+                    document.getElementById('inicio').readOnly = !canEdit;
+                    document.getElementById('idPessoa').disabled = !canEdit;
+                    document.getElementById('idServico').disabled = !canEdit;
+                    document.getElementById('idStatus').disabled = !canEdit;
+
+                    // Toggle botões
+                    document.getElementById('btnSalvar').classList.add('d-none');
+                    document.getElementById('btnAlterar').classList.toggle('d-none', !canEdit);
+                    document.getElementById('btnExcluir').classList.toggle('d-none', !canDelete);
+                    document.getElementById('btnPagar').classList.toggle('d-none', !canPay);
+                    document.getElementById('btnEmitirNota').classList.toggle('d-none', !fiscalPodeEmitir);
+                    document.getElementById('btnAbrirNota').classList.toggle('d-none', !fiscalPodeAbrirNota);
+
+                    modal.show();
                 }
-
-                agModal.hide();
-                refresh();
             });
 
-            document.getElementById("btnDelete").addEventListener("click", async function () {
-                setError(null);
-                const id = document.getElementById("agId").value;
-                if (!id) return;
+            /* listeners do modal novo */
+            modalNovo = new bootstrap.Modal(document.getElementById('agendamentoNovoModal'));
 
-                const r = await postJson(endpoints.del(), { id: id });
-                if (!r.ok) {
-                    const msg = await r.text();
-                    setError(msg || "Não foi possível excluir.");
-                    return;
+            document.getElementById('btnSalvarNovo').addEventListener('click', salvarAgendamentoNovo);
+            document.getElementById('inicioNovo').addEventListener('change', async function () {
+                const start = fromDateTimeLocalValue(this.value);
+                if (start) {
+                    await atualizarServicosDisponiveis(start, 'idServicoNovo');
                 }
+                sugerirFimNovoPeloServico();
+            });
+            document.getElementById('idServicoNovo').addEventListener('change', sugerirFimNovoPeloServico);
 
-                agModal.hide();
-                refresh();
+            document.getElementById('btnAlterar').addEventListener('click', alterarAgendamento);
+            document.getElementById('btnExcluir').addEventListener('click', excluirAgendamento);
+            document.getElementById('btnPagar').addEventListener('click', iniciarPagamento);
+            document.getElementById('btnEmitirNota').addEventListener('click', emitirNotaFiscal);
+            document.getElementById('btnAbrirNota').addEventListener('click', abrirNotaFiscalRelacionada);
+
+
+
+
+            calendar.render();
+            document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
+            document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
+
+            document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
+            document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
+
+            // Listener para mudança de horário na edição
+            document.getElementById('inicio').addEventListener('change', function () {
+                const val = this.value;
+                if (val) {
+                    selectionStart = fromDateTimeLocalValue(val);
+                    recalcularFimPeloServico();
+                }
             });
 
-            // ---- load / refresh
-            async function loadResources() {
-                const r = await fetch(endpoints.resources(), { headers: { "Accept": "application/json" } });
-                const resources = await r.json(); // esperado: [{id, name}]
-                dp.resources = resources;
-                fillEmployeeSelect(resources);
-                dp.update();
-            }
-
-            async function loadEventsAndRanges() {
-                const start = dp.visibleStart().toString();
-                const end = dp.visibleEnd().toString();
-
-                // eventos
-                const ev = await fetch(endpoints.events(start, end), { headers: { "Accept": "application/json" } });
-                const events = await ev.json(); // esperado: [{id, text, start, end, resource, status, clientName, serviceName, value}]
-
-                // timeranges/bloqueios
-                const tr = await fetch(endpoints.timeRanges(start, end), { headers: { "Accept": "application/json" } });
-                const ranges = await tr.json(); // esperado: [{start, end, resource, text, cssClass}]
-
-                dp.events.list = events;
-                dp.timeRanges = ranges;
-
-                updateRangeLabel();
-                dp.update();
-            }
-
-            function updateRangeLabel() {
-                const s = dp.visibleStart();
-                const e = dp.visibleEnd().addDays(-1);
-                document.getElementById("lblRange").textContent =
-                    `${s.toString("dd/MM/yyyy")} – ${e.toString("dd/MM/yyyy")}`;
-            }
-
-            async function refresh() {
-                await loadEventsAndRanges();
-            }
-
-            // ---- toolbar actions
-            document.getElementById("btnPrev").addEventListener("click", function () {
-                dp.startDate = dp.startDate.addDays(dp.days * -1);
-                nav.select(dp.startDate);
-                refresh();
-            });
-            document.getElementById("btnNext").addEventListener("click", function () {
-                dp.startDate = dp.startDate.addDays(dp.days);
-                nav.select(dp.startDate);
-                refresh();
-            });
-            document.getElementById("btnToday").addEventListener("click", function () {
-                dp.startDate = new DayPilot.Date();
-                nav.select(dp.startDate);
-                refresh();
-            });
-
-            document.getElementById("btnViewWeek").addEventListener("click", function () {
-                setView("week");
-            });
-            document.getElementById("btnViewDay").addEventListener("click", function () {
-                setView("day");
-            });
-
-            function setView(view) {
-                document.getElementById("btnViewWeek").classList.toggle("active", view === "week");
-                document.getElementById("btnViewDay").classList.toggle("active", view === "day");
-
-                dp.viewType = (view === "day") ? "Day" : "Week";
-                dp.update();
-                refresh();
-            }
-
-            document.getElementById("btnRefresh").addEventListener("click", refresh);
-            document.getElementById("fEmployee").addEventListener("change", refresh);
-            document.getElementById("fStatus").addEventListener("change", refresh);
-
-            let searchTimer = null;
-            document.getElementById("fSearch").addEventListener("input", function () {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(refresh, 350);
-            });
-
-            // init
-            (async function init() {
-                await loadResources();
-                nav.select(dp.startDate);
-                await refresh();
-            })();
-
-        })();
+        });
     </script>
 }
+

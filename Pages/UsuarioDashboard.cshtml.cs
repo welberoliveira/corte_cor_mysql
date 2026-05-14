@@ -1,8 +1,10 @@
+using CorteCor.Models;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using MercadoPago.Config;
@@ -10,7 +12,7 @@ using MercadoPago.Client.Payment;
 using MercadoPago.Client.Common;
 using MercadoPago.Resource.Payment;
 using MercadoPago.Client;
-using static CorteCor.Models;
+
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace CorteCor.Pages
@@ -25,7 +27,7 @@ namespace CorteCor.Pages
         public int IdUsuario { get; set; }
         public string NomeUsuario { get; set; }
         public string NomeSalao { get; set; }
-        public List<Salao> Saloes { get; set; }
+        public List<Salao> Saloes { get; set; } = new();
         public DatabaseHandler dbHandler = new();
 
         public Dictionary<string, int> DocumentacaoChartData { get; set; }
@@ -50,23 +52,35 @@ namespace CorteCor.Pages
         {
             string emailUsuario = User.Identity.Name;
 
-            var handler = new UsuarioHandler();
-            var Usuario = handler.Listar().Where(m => m.Email == emailUsuario).ToList();
-            int IdUsuario = Usuario.FirstOrDefault().IdUsuario;
+            int IdUsuario = 0;
+            string queryIdUsuario = "SELECT IdUsuario FROM CorteCor_Usuario WHERE Email = @Email";
+            using (var connection = dbHandler.GetConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = queryIdUsuario;
+                command.AddWithValue("@Email", emailUsuario);
+                var result = command.ExecuteScalar();
+                if (result != null) IdUsuario = Convert.ToInt32(result);
+            }
 
             // Buscar nome do cliente
             string queryNomeUsuario = "SELECT Nome FROM CorteCor_Usuario WHERE IdUsuario = @IdUsuario";
             using (var connection = dbHandler.GetConnection())
-            using (var command = new SqlCommand(queryNomeUsuario, connection))
+            using (var command = connection.CreateCommand())
             {
-                command.Parameters.AddWithValue("@IdUsuario", IdUsuario);
+                command.CommandText = queryNomeUsuario;
+                command.AddWithValue("@IdUsuario", IdUsuario);
                 NomeUsuario = command.ExecuteScalar()?.ToString() ?? "_";
             }
             
             var SalaoHandler = new SalaoHandler();
             Saloes = SalaoHandler.Listar();
 
-            NomeSalao = Saloes.FirstOrDefault(p => p.IdSalao == Usuario.FirstOrDefault().IdSalao).Nome ?? "Erro";
+            int idSalao = 0;
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+            NomeSalao = Saloes.FirstOrDefault(p => p.IdSalao == idSalao)?.Nome ?? "Erro";
         }
     }
 }
+

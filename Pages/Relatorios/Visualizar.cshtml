@@ -1,0 +1,336 @@
+@page
+@model CorteCor.Pages.Relatorios.VisualizarModel
+@using CorteCor.Models
+@{
+    ViewData["Title"] = Model.TituloPagina;
+}
+
+@functions{
+    string BoolValue(bool? value)
+    {
+        return value switch
+        {
+            true => "true",
+            false => "false",
+            _ => string.Empty
+        };
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h1 class="text-start mb-1">@Model.Definicao.Titulo</h1>
+        <p class="text-muted mb-0">@Model.Definicao.Descricao</p>
+    </div>
+    <a class="btn btn-secondary" asp-page="/Relatorios/Index">Voltar para relatórios</a>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <input type="hidden" name="tipo" value="@Model.tipo" />
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Pesquisa))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Pesquisa</label>
+                    <input class="form-control" type="text" name="q" value="@Model.q" />
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Cliente))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Cliente</label>
+                    <select class="form-select" name="idPessoa">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.Contexto.Clientes)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idPessoa?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Funcionario))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Funcionário</label>
+                    <select class="form-select" name="idFuncionario">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.Contexto.Funcionarios)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idFuncionario?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Categoria))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Categoria</label>
+                    <select class="form-select" name="idCategoria">
+                        <option value="">Todas</option>
+                        @foreach (var item in Model.Contexto.Categorias)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idCategoria?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Servico))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Serviço</label>
+                    <select class="form-select" name="idServico">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.Contexto.Servicos)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idServico?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Produto))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Produto</label>
+                    <select class="form-select" name="idProduto">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.Contexto.Produtos)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idProduto?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Plano))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Plano</label>
+                    <select class="form-select" name="idPlano">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.Contexto.Planos)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idPlano?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Conta))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Conta caixa</label>
+                    <select class="form-select" name="idConta">
+                        <option value="">Todas</option>
+                        @foreach (var item in Model.Contexto.Contas)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idConta?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Status))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.OpcoesStatus())
+                        {
+                            <option value="@item.Valor" selected="@(Model.status == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Tipo))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" name="tipoFiltro">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.OpcoesTipo())
+                        {
+                            <option value="@item.Valor" selected="@(Model.tipoFiltro == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Canal))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Canal</label>
+                    <select class="form-select" name="canal">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.OpcoesCanal())
+                        {
+                            <option value="@item.Valor" selected="@(Model.canal == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Segmento))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Segmento</label>
+                    <select class="form-select" name="segmento">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.OpcoesSegmento())
+                        {
+                            <option value="@item.Valor" selected="@(Model.segmento == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.TipoLembrete))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Tipo de lembrete</label>
+                    <select class="form-select" name="tipoLembrete">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.OpcoesTipoLembrete())
+                        {
+                            <option value="@item.Valor" selected="@(Model.tipoLembrete == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Usuario))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Usuário</label>
+                    <input class="form-control" type="text" name="usuario" value="@Model.usuario" />
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.CodigoErro))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Código de erro</label>
+                    <input class="form-control" type="text" name="codigoErro" value="@Model.codigoErro" />
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Ambiente))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Ambiente</label>
+                    <select class="form-select" name="ambiente">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.OpcoesAmbiente())
+                        {
+                            <option value="@item.Valor" selected="@(Model.ambiente?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Ativo))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Situação</label>
+                    <select class="form-select" name="ativo">
+                        <option value="">Todas</option>
+                        <option value="true" selected="@(Model.ativo == true)">Ativos</option>
+                        <option value="false" selected="@(Model.ativo == false)">Inativos</option>
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.EmissaoAutomatica))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Emissão automática</label>
+                    <select class="form-select" name="emissaoAutomatica">
+                        <option value="">Todas</option>
+                        <option value="true" selected="@(Model.emissaoAutomatica == true)">Sim</option>
+                        <option value="false" selected="@(Model.emissaoAutomatica == false)">Não</option>
+                    </select>
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.Data))
+            {
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Data início</label>
+                    <input class="form-control" type="date" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Data fim</label>
+                    <input class="form-control" type="date" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+                </div>
+            }
+
+            @if (Model.UsaFiltro(RelatorioFiltros.SomenteVigentes))
+            {
+                <div class="col-12 col-md-6 col-xl-3 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="somenteVigentes" value="true" checked="@Model.somenteVigentes" />
+                        <label class="form-check-label">Somente vigentes</label>
+                    </div>
+                </div>
+            }
+
+            <div class="col-12">
+                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    <a class="btn btn-secondary" asp-page="/Relatorios/Visualizar" asp-route-tipo="@Model.tipo">Limpar</a>
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a class="btn btn-success" href="@Model.ExportCsvUrl">Exportar CSV</a>
+                    <a class="btn btn-danger" href="@Model.ExportPdfUrl">Exportar PDF</a>
+                    <button type="button" class="btn btn-warning" onclick="window.print()">Imprimir</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h4 class="text-start mb-0">Resultado</h4>
+            <span class="badge bg-primary">@Model.Resultado.TotalLinhas registros</span>
+        </div>
+
+        @if (!Model.Resultado.Linhas.Any())
+        {
+            <div class="alert alert-info mb-0">@Model.Resultado.MensagemVazia</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            @foreach (var coluna in Model.Resultado.Colunas)
+                            {
+                                <th>@coluna.Titulo</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var linha in Model.Resultado.Linhas)
+                        {
+                            <tr>
+                                @foreach (var coluna in Model.Resultado.Colunas)
+                                {
+                                    <td>@(linha.TryGetValue(coluna.Chave, out var valor) ? valor : string.Empty)</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

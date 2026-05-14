@@ -1,0 +1,359 @@
+@page
+@model CorteCor.Pages.ProdutoCadastroModel
+@{
+    ViewData["Title"] = "Cadastro de Produtos";
+}
+
+<div class="container mt-4">
+    <h4>@Model.ButtonText Produto</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Mensagem))
+    {
+        <div class="alert alert-@Model.MensagemTipo mt-3">@Model.Mensagem</div>
+    }
+
+    <form method="post" class="mt-4">
+        <input type="hidden" name="Produto.IdProduto" value="@Model.Produto?.IdProduto">
+        <input type="hidden" name="id" value="@Model.Produto?.IdProduto">
+        <input type="hidden" name="action" value="salvar">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs" id="produtoTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button" role="tab">Dados Gerais</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="preco-tab" data-bs-toggle="tab" data-bs-target="#preco" type="button" role="tab">Preço e Estoque</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="fiscal-tab" data-bs-toggle="tab" data-bs-target="#fiscal" type="button" role="tab">Informações Fiscais</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="outros-tab" data-bs-toggle="tab" data-bs-target="#outros" type="button" role="tab">Outras Informações</button>
+            </li>
+        </ul>
+
+        <!-- Tabs Content -->
+        <div class="tab-content border border-top-0 p-3 mb-4" id="produtoTabsContent">
+            
+            <!-- Dados Gerais -->
+            <div class="tab-pane fade show active" id="geral" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8 form-group">
+                        <label for="nome" class="form-label">Nome do Produto</label>
+                        <input type="text" id="nome" name="nome" class="form-control" required value="@Model.Produto?.Nome">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="codigoProprio" class="form-label">Código Próprio</label>
+                        <input type="text" id="codigoProprio" name="codigoProprio" class="form-control" value="@Model.Produto?.CodigoProprio">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4 form-group">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="idCategoria" class="form-label mb-0">Categoria</label>
+                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalCategoria">
+                                <i class="fa fa-plus"></i> Cadastrar Categoria
+                            </button>
+                        </div>
+                        <select id="idCategoria" name="idCategoria" class="form-select">
+                            <option value="">-- Selecione --</option>
+                            @if (Model.Categorias != null)
+                            {
+                                foreach (var cat in Model.Categorias)
+                                {
+                                    var isSelected = Model.Produto?.IdCategoria == cat.IdCategoria ? "selected" : "";
+                                    @Html.Raw($"<option value='{cat.IdCategoria}' {isSelected}>{cat.Nome}</option>")
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="tipoUso" class="form-label">Tipo de Uso</label>
+                        <select id="tipoUso" name="tipoUso" class="form-select">
+                            <option value="">-- Selecione --</option>
+                            @if(Model.Produto?.TipoUso == "Revenda") { <option value="Revenda" selected>Revenda</option> } else { <option value="Revenda">Revenda</option> }
+                            @if(Model.Produto?.TipoUso == "Consumo") { <option value="Consumo" selected>Consumo (Uso Interno)</option> } else { <option value="Consumo">Consumo (Uso Interno)</option> }
+                            @if(Model.Produto?.TipoUso == "MateriaPrima") { <option value="MateriaPrima" selected>Matéria Prima</option> } else { <option value="MateriaPrima">Matéria Prima</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group d-flex align-items-end mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="arquivado" name="arquivado" @(Model.Produto?.Arquivado == true ? "checked" : "")>
+                            <label class="form-check-label" for="arquivado">Arquivado (Inativo)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preço e Estoque -->
+            <div class="tab-pane fade" id="preco" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="precoCusto" class="form-label">Preço de Custo (R$)</label>
+                        <input type="text" id="precoCusto" name="precoCusto" class="form-control money" 
+                               value="@(Model.Produto?.PrecoCusto != null ? Model.Produto.PrecoCusto.Value.ToString("0.00").Replace('.', ',') : "")">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="precoVenda" class="form-label">Preço de Venda (R$)</label>
+                        <input type="text" id="precoVenda" name="precoVenda" class="form-control money" required
+                               value="@(Model.Produto?.PrecoVenda.ToString("0.00").Replace('.', ','))">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="margemContribuicao" class="form-label">Margem Contribuição (%)</label>
+                        <input type="text" id="margemContribuicao" name="margemContribuicao" class="form-control" readonly tabindex="-1"
+                               value="@(Model.Produto?.MargemContribuicao != null ? Model.Produto.MargemContribuicao.Value.ToString("0.00").Replace('.', ',') : "")">
+                    </div>
+                </div>
+
+                <hr class="mt-4 mb-3" />
+                <h6 class="mb-3">Controle de Estoque</h6>
+
+                <div class="row">
+                    <div class="col-md-4 form-group d-flex align-items-center mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="controlarEstoque" name="controlarEstoque" @(Model.Produto?.ControlarEstoque == true ? "checked" : "")>
+                            <label class="form-check-label" for="controlarEstoque">Controlar Estoque?</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="estoqueAtual" class="form-label">Estoque Atual</label>
+                        <input type="number" step="0.001" id="estoqueAtual" name="estoqueAtual" class="form-control" value="@(Model.Produto?.EstoqueAtual?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))" />
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="estoqueMinimo" class="form-label">Estoque Mínimo</label>
+                        <input type="number" step="0.001" id="estoqueMinimo" name="estoqueMinimo" class="form-control" value="@(Model.Produto?.EstoqueMinimo?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações Fiscais -->
+            <div class="tab-pane fade" id="fiscal" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="origem" class="form-label">Origem da Mercadoria (0-8)</label>
+                        <select id="origem" name="origem" class="form-select">
+                            <option value="">-- Selecione --</option>
+                            @if(Model.Produto?.Origem == 0) { <option value="0" selected>0 - Nacional, exceto as indicadas nos códigos de 3, 4, 5 e 8</option> } else { <option value="0">0 - Nacional, exceto as indicadas nos códigos de 3, 4, 5 e 8</option> }
+                            @if(Model.Produto?.Origem == 1) { <option value="1" selected>1 - Estrangeira, importação direta, exceto a indicada no código 6</option> } else { <option value="1">1 - Estrangeira, importação direta, exceto a indicada no código 6</option> }
+                            @if(Model.Produto?.Origem == 2) { <option value="2" selected>2 - Estrangeira, adquirida no mercado interno, exceto a indicada no código 7</option> } else { <option value="2">2 - Estrangeira, adquirida no mercado interno, exceto a indicada no código 7</option> }
+                            @if(Model.Produto?.Origem == 3) { <option value="3" selected>3 - Nacional, mercadoria ou bem com Conteúdo de Importação maior que 40% e menor ou igual a 70%</option> } else { <option value="3">3 - Nacional, mercadoria ou bem com Conteúdo de Importação maior que 40% e menor ou igual a 70%</option> }
+                            @if(Model.Produto?.Origem == 4) { <option value="4" selected>4 - Nacional, produção em conformidade com processos básicos que tratam as legisl. dos Ajustes</option> } else { <option value="4">4 - Nacional, produção em conformidade com processos básicos que tratam as legisl. dos Ajustes</option> }
+                            @if(Model.Produto?.Origem == 5) { <option value="5" selected>5 - Nacional, mercadoria ou bem com Conteúdo de Importação inferior ou igual a 40%</option> } else { <option value="5">5 - Nacional, mercadoria ou bem com Conteúdo de Importação inferior ou igual a 40%</option> }
+                            @if(Model.Produto?.Origem == 6) { <option value="6" selected>6 - Estrangeira, importação direta, sem similar nacional, constante na lista da CAMEX e gás natural</option> } else { <option value="6">6 - Estrangeira, importação direta, sem similar nacional, constante na lista da CAMEX e gás natural</option> }
+                            @if(Model.Produto?.Origem == 7) { <option value="7" selected>7 - Estrangeira, adquir. merc. interno, sem similar nacional, na lista da CAMEX e gás natural</option> } else { <option value="7">7 - Estrangeira, adquir. merc. interno, sem similar nacional, na lista da CAMEX e gás natural</option> }
+                            @if(Model.Produto?.Origem == 8) { <option value="8" selected>8 - Nacional, mercadoria ou bem com Conteúdo de Importação superior a 70%</option> } else { <option value="8">8 - Nacional, mercadoria ou bem com Conteúdo de Importação superior a 70%</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="ncm" class="form-label">NCM</label>
+                        <input type="text" id="ncm" name="ncm" class="form-control" value="@Model.Produto?.NCM" maxlength="8">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="cest" class="form-label">CEST</label>
+                        <input type="text" id="cest" name="cest" class="form-control" value="@Model.Produto?.CEST" maxlength="7">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4 form-group">
+                        <label for="unidadeComercial" class="form-label">Unidade Comercial (Ex: UN, KG)</label>
+                        <input type="text" id="unidadeComercial" name="unidadeComercial" class="form-control" value="@Model.Produto?.UnidadeComercial" maxlength="6">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="referenciaEAN" class="form-label">GTIN / EAN (Cód. Barras)</label>
+                        <input type="text" id="referenciaEAN" name="referenciaEAN" class="form-control" value="@Model.Produto?.ReferenciaEAN" maxlength="14">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="excecaoIPI" class="form-label">Exceção IPI</label>
+                        <input type="number" id="excecaoIPI" name="excecaoIPI" class="form-control" value="@Model.Produto?.ExcecaoIPI">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4 form-group">
+                        <label for="pesoLiquido" class="form-label">Peso Líquido (KG)</label>
+                        <input type="number" step="0.001" id="pesoLiquido" name="pesoLiquido" class="form-control" value="@(Model.Produto?.PesoLiquido?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="pesoBruto" class="form-label">Peso Bruto (KG)</label>
+                        <input type="number" step="0.001" id="pesoBruto" name="pesoBruto" class="form-control" value="@(Model.Produto?.PesoBruto?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="codBeneficioFiscalUF" class="form-label">Cód. Benefício Fiscal UF (cBenef)</label>
+                        <input type="text" id="codBeneficioFiscalUF" name="codBeneficioFiscalUF" class="form-control" value="@Model.Produto?.CodBeneficioFiscalUF" maxlength="10">
+                    </div>
+                </div>
+
+                <hr class="mt-4 mb-3" />
+                <h6 class="mb-3">Tributação Diferente (Exportação / Especial)</h6>
+
+                <div class="row">
+                    <div class="col-md-12 form-group mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="unidadeTributadaDiferente" name="unidadeTributadaDiferente" @(Model.Produto?.UnidadeTributadaDiferente == true ? "checked" : "")>
+                            <label class="form-check-label" for="unidadeTributadaDiferente">Unid. Tributada diferente da Unid. Comercial?</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="eanTributada" class="form-label">GTIN/EAN Tributada</label>
+                        <input type="text" id="eanTributada" name="eanTributada" class="form-control" value="@Model.Produto?.EANTributada" maxlength="14">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="unidadeTributada" class="form-label">Unidade Tributada</label>
+                        <input type="text" id="unidadeTributada" name="unidadeTributada" class="form-control" value="@Model.Produto?.UnidadeTributada" maxlength="6">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="quantidadeTributada" class="form-label">Quant. Tributada</label>
+                        <input type="number" step="0.001" id="quantidadeTributada" name="quantidadeTributada" class="form-control" value="@(Model.Produto?.QuantidadeTributada?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outras Informações -->
+            <div class="tab-pane fade" id="outros" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-12 form-group">
+                        <label for="tags" class="form-label">Tags (separadas por vírgula)</label>
+                        <input type="text" id="tags" name="tags" class="form-control" value="@Model.Produto?.Tags">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6 form-group">
+                        <label for="anotacoes" class="form-label">Anotações Gerais</label>
+                        <textarea id="anotacoes" name="anotacoes" class="form-control" rows="3">@Model.Produto?.Anotacoes</textarea>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="anotacoesFiscaisNFe" class="form-label">Anotações Fiscais Padrão (NF-e)</label>
+                        <textarea id="anotacoesFiscaisNFe" name="anotacoesFiscaisNFe" class="form-control" rows="3" placeholder="Informações complementares na DANFE">@Model.Produto?.AnotacoesFiscaisNFe</textarea>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12 form-group mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="ignorarTribPrecoVenda" name="ignorarTribPrecoVenda" @(Model.Produto?.IgnorarTribPrecoVenda == true ? "checked" : "")>
+                            <label class="form-check-label" for="ignorarTribPrecoVenda">Ignorar tributação no preço de venda?</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+            <a asp-page="/ProdutoLista" class="btn btn-secondary ms-2">Voltar</a>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Cadastrar Categoria -->
+<div class="modal fade" id="modalCategoria" tabindex="-1" aria-labelledby="modalCategoriaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCategoriaLabel">Nova Categoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="catNome" class="form-label">Nome</label>
+                    <input type="text" id="catNome" class="form-control" placeholder="Ex: Shampoos, Tinturas">
+                </div>
+                <div class="mb-3">
+                    <label for="catDescricao" class="form-label">Descrição (Opcional)</label>
+                    <textarea id="catDescricao" class="form-control" rows="2"></textarea>
+                </div>
+                <div id="catMensagem" class="alert d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnSalvarCategoria">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Máscara para dinheiro BR
+        $(".money").inputmask("decimal", {
+            radixPoint: ",",
+            groupSeparator: ".",
+            autoGroup: true,
+            digits: 2,
+            digitsOptional: false,
+            rightAlign: false
+        });
+
+        function calcularMargem() {
+            let precoCustoStr = $("#precoCusto").val().replace(/\./g, '').replace(',', '.');
+            let precoVendaStr = $("#precoVenda").val().replace(/\./g, '').replace(',', '.');
+
+            let custo = parseFloat(precoCustoStr) || 0;
+            let venda = parseFloat(precoVendaStr) || 0;
+
+            if (venda > 0) {
+                let margem = ((venda - custo) / venda) * 100;
+                let margemFormatada = margem.toFixed(2).replace('.', ',');
+                $("#margemContribuicao").val(margemFormatada);
+
+                if (margem <= 0) {
+                    $("#margemContribuicao").addClass("text-danger fw-bold").removeClass("text-success");
+                } else {
+                    $("#margemContribuicao").addClass("text-success fw-bold").removeClass("text-danger");
+                }
+            } else {
+                $("#margemContribuicao").val("0,00").removeClass("text-danger text-success fw-bold");
+            }
+        }
+
+        // Calcula ao alterar os valores do preço de custo ou de venda
+        $("#precoCusto, #precoVenda").on("keyup change", calcularMargem);
+
+        // AJAX para salvar Categoria
+        $("#btnSalvarCategoria").click(function() {
+            let nome = $("#catNome").val();
+            let desc = $("#catDescricao").val();
+
+            if (!nome) {
+                $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("O nome é obrigatório.");
+                return;
+            }
+
+            $("#btnSalvarCategoria").prop("disabled", true).text("Salvando...");
+
+            $.ajax({
+                type: "POST",
+                url: "?handler=SaveCategory",
+                data: {
+                    nome: nome,
+                    descricao: desc,
+                    "__RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Adiciona ao select e seleciona
+                        $("#idCategoria").append(new Option(response.nome, response.id));
+                        $("#idCategoria").val(response.id);
+                        
+                        // Fecha o modal e limpa
+                        $("#modalCategoria").modal('hide');
+                        $("#catNome").val("");
+                        $("#catDescricao").val("");
+                        $("#catMensagem").addClass("d-none");
+                    } else {
+                        $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text(response.message);
+                    }
+                },
+                error: function() {
+                    $("#catMensagem").removeClass("d-none alert-success").addClass("alert-danger").text("Erro de conexão.");
+                },
+                complete: function() {
+                    $("#btnSalvarCategoria").prop("disabled", false).text("Salvar");
+                }
+            });
+        });
+    });
+</script>

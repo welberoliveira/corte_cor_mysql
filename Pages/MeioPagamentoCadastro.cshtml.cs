@@ -1,6 +1,8 @@
+﻿using CorteCor.Models;
+using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using static CorteCor.Models;
+
 
 namespace CorteCor.Pages
 {
@@ -16,8 +18,20 @@ namespace CorteCor.Pages
             if (id.HasValue)
             {
                 var handler = new MeioPagamentoHandler();
-                MeioPagamento = handler.Listar().FirstOrDefault(p => p.IdMeioPagamento == id.Value);
-                ButtonText = "Atualizar";
+                int idSalao = 0;
+                int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
+
+                var meio = handler.ObterPorId(id.Value);
+                if (meio != null && meio.IdSalao == idSalao)
+                {
+                    MeioPagamento = meio;
+                    ButtonText = "Atualizar";
+                }
+                else
+                {
+                    Mensagem = "Meio de pagamento não encontrado ou acesso negado.";
+                    ButtonText = "Cadastrar";
+                }
             }
         }
 
@@ -79,7 +93,13 @@ namespace CorteCor.Pages
                 Ativo = GetBool("ativo", form, true),
 
                 IdSalao = idSalao,
-                DataCadastro = dataCadastro
+                DataCadastro = dataCadastro,
+
+                MpAccessTokenProd = form["mpAccessTokenProd"],
+                MpAccessTokenSandbox = form["mpAccessTokenSandbox"],
+                MpPublicKeyProd = form["mpPublicKeyProd"],
+                MpPublicKeySandbox = form["mpPublicKeySandbox"],
+                MpProduction = GetBool("mpProduction", form, false)
             };
 
             var handler = new MeioPagamentoHandler();
@@ -99,3 +119,4 @@ namespace CorteCor.Pages
         }
     }
 }
+

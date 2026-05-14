@@ -1,0 +1,163 @@
+@page
+@model CorteCor.Pages.CRM.OportunidadesModel
+@{
+    ViewData["Title"] = "Oportunidades CRM";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="mb-1">CRM Oportunidades</h2>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary" asp-page="/CRM/OportunidadeCadastro">Nova oportunidade</a>
+        <a class="btn btn-secondary" asp-page="/CRM/Index">Voltar ao CRM</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Cliente</label>
+                <select class="form-select" asp-for="IdPessoa">
+                    <option value="">Todos</option>
+                    @foreach (var cliente in Model.Clientes)
+                    {
+                        <option value="@cliente.IdPessoa">@cliente.Nome</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" asp-for="Status">
+                    <option value="">Todos</option>
+                    <option value="Aberta">Aberta</option>
+                    <option value="Ganha">Ganha</option>
+                    <option value="Perdida">Perdida</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Previs&atilde;o inicial</label>
+                <input type="date" class="form-control" asp-for="DataInicio" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Previs&atilde;o final</label>
+                <input type="date" class="form-control" asp-for="DataFim" />
+            </div>
+            <div class="col-md-3 d-flex justify-content-end gap-2 flex-wrap">
+                <button class="btn btn-primary" type="submit">Filtrar</button>
+                <a class="btn btn-secondary" asp-page="/CRM/Oportunidades">Limpar</a>
+            </div>
+        </form>
+    </div>
+    <div class="card-body">
+        @if (Model.Oportunidades.Items.Any())
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Oportunidade</th>
+                            <th>Etapa</th>
+                            <th>Status</th>
+                            <th>Valor estimado</th>
+                            <th>Previs&atilde;o</th>
+                            <th class="text-end">A&ccedil;&otilde;es</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var oportunidade in Model.Oportunidades.Items)
+                        {
+                            <tr>
+                                <td>@oportunidade.NomePessoa</td>
+                                <td>
+                                    <div class="fw-semibold">@oportunidade.Titulo</div>
+                                    @if (!string.IsNullOrWhiteSpace(oportunidade.Descricao))
+                                    {
+                                        <div class="small text-muted">@oportunidade.Descricao</div>
+                                    }
+                                </td>
+                                <td>@oportunidade.NomeEtapa</td>
+                                <td>
+                                    <span class="badge @(oportunidade.Status == "Ganha" ? "bg-success" : oportunidade.Status == "Perdida" ? "bg-danger" : "bg-warning text-dark")">
+                                        @oportunidade.Status
+                                    </span>
+                                </td>
+                                <td>R$ @oportunidade.ValorEstimado.ToString("N2")</td>
+                                <td>@(oportunidade.PrevisaoFechamento?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                        <a class="btn btn-sm btn-dark"
+                                           asp-page="/CRM/ClienteOportunidades"
+                                           asp-route-idPessoa="@oportunidade.IdPessoa"
+                                           asp-route-idOportunidadeEdicao="@oportunidade.IdOportunidade">
+                                            Editar
+                                        </a>
+                                        <form method="post" asp-page-handler="Mover" class="d-flex gap-2 justify-content-end flex-wrap">
+                                            <input type="hidden" name="idOportunidade" value="@oportunidade.IdOportunidade" />
+                                            <input type="hidden" name="IdPessoa" value="@Model.IdPessoa" />
+                                            <input type="hidden" name="Status" value="@Model.Status" />
+                                            <input type="hidden" name="DataInicio" value="@(Model.DataInicio?.ToString("yyyy-MM-dd"))" />
+                                            <input type="hidden" name="DataFim" value="@(Model.DataFim?.ToString("yyyy-MM-dd"))" />
+                                            <input type="hidden" name="p" value="@Model.p" />
+                                            <select class="form-select form-select-sm" name="idEtapa" style="min-width: 170px;">
+                                                @foreach (var etapa in Model.Etapas)
+                                                {
+                                                    <option value="@etapa.IdEtapa" selected="@(etapa.IdEtapa == oportunidade.IdEtapa ? "selected" : null)">@etapa.Nome</option>
+                                                }
+                                            </select>
+                                            <button class="btn btn-sm btn-primary" type="submit">Mover</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-muted">Nenhuma oportunidade encontrada para os filtros informados.</div>
+        }
+
+        @if (Model.Oportunidades.TotalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(Model.Oportunidades.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link"
+                           asp-page="/CRM/Oportunidades"
+                           asp-route-IdPessoa="@Model.IdPessoa"
+                           asp-route-Status="@Model.Status"
+                           asp-route-DataInicio="@(Model.DataInicio?.ToString("yyyy-MM-dd"))"
+                           asp-route-DataFim="@(Model.DataFim?.ToString("yyyy-MM-dd"))"
+                           asp-route-p="@(Model.Oportunidades.PageIndex - 1)">
+                            Anterior
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">P&aacute;gina @Model.Oportunidades.PageIndex de @Model.Oportunidades.TotalPages</span>
+                    </li>
+                    <li class="page-item @(Model.Oportunidades.HasNextPage ? "" : "disabled")">
+                        <a class="page-link"
+                           asp-page="/CRM/Oportunidades"
+                           asp-route-IdPessoa="@Model.IdPessoa"
+                           asp-route-Status="@Model.Status"
+                           asp-route-DataInicio="@(Model.DataInicio?.ToString("yyyy-MM-dd"))"
+                           asp-route-DataFim="@(Model.DataFim?.ToString("yyyy-MM-dd"))"
+                           asp-route-p="@(Model.Oportunidades.PageIndex + 1)">
+                            Pr&oacute;xima
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+</div>

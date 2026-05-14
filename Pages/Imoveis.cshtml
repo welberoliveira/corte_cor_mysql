@@ -1,0 +1,211 @@
+@page
+@model CorteCor.Pages.ImoveisModel
+
+@{
+    ViewData["Title"] = "Imoveis";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4 class="mb-1">Imoveis</h4>
+            <small class="text-muted">Cadastro e acompanhamento de anuncios imobiliarios.</small>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-page="/ImoveisWeb" asp-route-id="@Model.IdSalaoAtual" target="_blank" rel="noopener" class="btn btn-info">Visualizar Vitrine Online</a>
+            <a asp-page="/ImovelCadastro" class="btn btn-primary">Cadastrar Im&oacute;vel</a>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="q" class="form-label">Buscar</label>
+                    <input type="text" id="q" name="q" value="@Model.q" class="form-control" placeholder="Codigo, titulo, bairro ou cidade">
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select id="status" name="status" class="form-select">
+                        <option value="">Todos</option>
+                        @foreach (var status in Model.StatusOptions)
+                        {
+                            var selected = Model.Status == status ? "selected" : "";
+                            @Html.Raw($"<option value=\"{status}\" {selected}>{status}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="finalidade" class="form-label">Finalidade</label>
+                    <select id="finalidade" name="finalidade" class="form-select">
+                        <option value="">Todas</option>
+                        @foreach (var finalidade in Model.FinalidadeOptions)
+                        {
+                            var selected = Model.Finalidade == finalidade ? "selected" : "";
+                            @Html.Raw($"<option value=\"{finalidade}\" {selected}>{finalidade}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="tipoImovel" class="form-label">Tipo</label>
+                    <select id="tipoImovel" name="tipoImovel" class="form-select">
+                        <option value="">Todos</option>
+                        @foreach (var tipo in Model.TipoOptions)
+                        {
+                            var selected = Model.TipoImovel == tipo ? "selected" : "";
+                            @Html.Raw($"<option value=\"{tipo}\" {selected}>{tipo}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" id="incluirInativos" name="incluirInativos" value="true" @(Model.incluirInativos ? "checked" : "")>
+                        <label class="form-check-label" for="incluirInativos">Mostrar inativos</label>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensagem))
+    {
+        <div class="alert alert-@Model.MensagemTipo mt-3">@Model.Mensagem</div>
+    }
+
+    <div class="table-responsive mt-3">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Codigo / Titulo</th>
+                    <th>Tipo</th>
+                    <th>Localizacao</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Publicacao</th>
+                    <th>Fotos / Leads</th>
+                    <th>Atualizacao</th>
+                    <th class="text-end">Acoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Imoveis.Items.Any())
+                {
+                    foreach (var imovel in Model.Imoveis.Items)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@imovel.CodigoImovel</strong><br>
+                                <span>@imovel.Titulo</span>
+                            </td>
+                            <td>
+                                @imovel.TipoImovel<br>
+                                <small class="text-muted">@imovel.Finalidade</small>
+                            </td>
+                            <td>
+                                @imovel.Bairro<br>
+                                <small class="text-muted">@imovel.Cidade / @imovel.Estado</small>
+                            </td>
+                            <td>
+                                @if (imovel.PrecoSobConsulta)
+                                {
+                                    <span>Sob consulta</span>
+                                }
+                                else if (string.Equals(imovel.Finalidade, "Aluguel", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span>R$ @(imovel.ValorAluguel?.ToString("N2") ?? "0,00")</span>
+                                }
+                                else
+                                {
+                                    <span>R$ @(imovel.ValorVenda?.ToString("N2") ?? "0,00")</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @(imovel.StatusAnuncio == "Ativo" ? "bg-success" : imovel.StatusAnuncio == "Inativo" ? "bg-secondary" : "bg-info text-dark")">@imovel.StatusAnuncio</span>
+                            </td>
+                            <td>
+                                @if (imovel.PublicarNoSite)
+                                {
+                                    <span class="badge bg-primary">Publicado</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark border">Interno</span>
+                                }
+                                @if (!imovel.ImovelDisponivel)
+                                {
+                                    <br><small class="text-danger">Indisponivel</small>
+                                }
+                            </td>
+                            <td>
+                                <span>@imovel.QuantidadeFotos foto(s)</span><br>
+                                <small class="text-muted">@imovel.QuantidadeLeads lead(s)</small>
+                            </td>
+                            <td>@imovel.DataAtualizacao.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end">
+                                <form method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@imovel.IdImovel">
+                                    <input type="hidden" name="action" value="alterar">
+                                    <input type="hidden" name="q" value="@Model.q">
+                                    <input type="hidden" name="status" value="@Model.Status">
+                                    <input type="hidden" name="finalidade" value="@Model.Finalidade">
+                                    <input type="hidden" name="tipoImovel" value="@Model.TipoImovel">
+                                    <input type="hidden" name="incluirInativos" value="@Model.incluirInativos">
+                                    <input type="hidden" name="p" value="@Model.Imoveis.PageIndex">
+                                    <button type="submit" class="btn btn-info btn-sm">Alterar</button>
+                                </form>
+                                <form method="post" class="d-inline" onsubmit="return confirm('Inativar este imovel?');">
+                                    <input type="hidden" name="id" value="@imovel.IdImovel">
+                                    <input type="hidden" name="action" value="inativar">
+                                    <input type="hidden" name="q" value="@Model.q">
+                                    <input type="hidden" name="status" value="@Model.Status">
+                                    <input type="hidden" name="finalidade" value="@Model.Finalidade">
+                                    <input type="hidden" name="tipoImovel" value="@Model.TipoImovel">
+                                    <input type="hidden" name="incluirInativos" value="@Model.incluirInativos">
+                                    <input type="hidden" name="p" value="@Model.Imoveis.PageIndex">
+                                    <button type="submit" class="btn btn-warning btn-sm">Inativar</button>
+                                </form>
+                                <form method="post" class="d-inline" onsubmit="return confirm('Excluir este imovel? Esta acao remove o item da lista, mas preserva o historico no banco.');">
+                                    <input type="hidden" name="id" value="@imovel.IdImovel">
+                                    <input type="hidden" name="action" value="excluir">
+                                    <input type="hidden" name="q" value="@Model.q">
+                                    <input type="hidden" name="status" value="@Model.Status">
+                                    <input type="hidden" name="finalidade" value="@Model.Finalidade">
+                                    <input type="hidden" name="tipoImovel" value="@Model.TipoImovel">
+                                    <input type="hidden" name="incluirInativos" value="@Model.incluirInativos">
+                                    <input type="hidden" name="p" value="@Model.Imoveis.PageIndex">
+                                    <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center">Nenhum imovel encontrado.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Imoveis.TotalPages > 1)
+    {
+        <nav aria-label="Paginacao de imoveis">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.Imoveis.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Imoveis.PageIndex - 1)&q=@Model.q&status=@Model.Status&finalidade=@Model.Finalidade&tipoImovel=@Model.TipoImovel&incluirInativos=@Model.incluirInativos">Anterior</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Pagina @Model.Imoveis.PageIndex de @Model.Imoveis.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.Imoveis.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="?p=@(Model.Imoveis.PageIndex + 1)&q=@Model.q&status=@Model.Status&finalidade=@Model.Finalidade&tipoImovel=@Model.TipoImovel&incluirInativos=@Model.incluirInativos">Proxima</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

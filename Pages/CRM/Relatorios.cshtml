@@ -1,0 +1,200 @@
+@page
+@model CorteCor.Pages.CRM.RelatoriosModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Relatórios CRM";
+    var statusLabels = Model.Relatorio.ClientesPorStatus.Select(i => i.Nome).ToList();
+    var statusValores = Model.Relatorio.ClientesPorStatus.Select(i => i.Quantidade).ToList();
+    var canalLabels = Model.Relatorio.InteracoesPorCanal.Select(i => i.Nome).ToList();
+    var canalValores = Model.Relatorio.InteracoesPorCanal.Select(i => i.Quantidade).ToList();
+    var etapaLabels = Model.Relatorio.OportunidadesPorEtapa.Select(i => i.Nome).ToList();
+    var etapaValores = Model.Relatorio.OportunidadesPorEtapa.Select(i => i.Valor).ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Relatórios CRM</h2>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary" asp-page="/CRM/Index">Dashboard CRM</a>
+        <a class="btn btn-dark" asp-page="/CRM/Campanhas">Campanhas</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Data início</label>
+                <input type="date" class="form-control" name="dataInicio" value="@Model.DataInicio.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data fim</label>
+                <input type="date" class="form-control" name="dataFim" value="@Model.DataFim.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-6 text-md-end">
+                <button class="btn btn-primary" type="submit">Atualizar relatórios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100"><div class="card-body"><div class="small text-muted">Clientes</div><div class="fs-4 fw-bold">@Model.Relatorio.TotalClientes</div></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100"><div class="card-body"><div class="small text-muted">Sem contato 30d</div><div class="fs-4 fw-bold text-danger">@Model.Relatorio.ClientesSemContato30Dias</div></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100"><div class="card-body"><div class="small text-muted">Tarefas atrasadas</div><div class="fs-4 fw-bold text-warning">@Model.Relatorio.ClientesComTarefasAtrasadas</div></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100"><div class="card-body"><div class="small text-muted">Oportunidades abertas</div><div class="fs-4 fw-bold">@Model.Relatorio.OportunidadesAbertas</div></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100"><div class="card-body"><div class="small text-muted">Pipeline</div><div class="fs-5 fw-bold text-success">R$ @Model.Relatorio.ValorPipelineAberto.ToString("N2")</div></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 h-100"><div class="card-body"><div class="small text-muted">Campanhas</div><div class="fs-4 fw-bold">@Model.Relatorio.CampanhasEnviadasPeriodo</div></div></div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Clientes por status</div>
+            <div class="card-body"><canvas id="statusChart" height="180"></canvas></div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Interações por canal</div>
+            <div class="card-body"><canvas id="canalChart" height="180"></canvas></div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Valor do funil por etapa</div>
+            <div class="card-body"><canvas id="etapaChart" height="180"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-6">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Clientes em risco</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Cliente</th><th>Status</th><th>Último contato</th></tr></thead>
+                        <tbody>
+                        @foreach (var cliente in Model.Relatorio.ClientesEmRisco)
+                        {
+                            <tr>
+                                <td>@cliente.Nome</td>
+                                <td>@cliente.StatusRelacionamento</td>
+                                <td>@(cliente.UltimoContatoEm?.ToString("dd/MM/yyyy HH:mm") ?? "Sem contato")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Próximas ações</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Cliente</th><th>Próxima ação</th><th>Tarefas abertas</th></tr></thead>
+                        <tbody>
+                        @foreach (var cliente in Model.Relatorio.ProximasAcoes)
+                        {
+                            <tr>
+                                <td>@cliente.Nome</td>
+                                <td>@(cliente.ProximaAcaoEm?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                <td>@cliente.TarefasAbertas</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Tarefas por status</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Status</th><th>Quantidade</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.Relatorio.TarefasPorStatus)
+                        {
+                            <tr><td>@item.Nome</td><td>@item.Quantidade</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Últimas campanhas</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Campanha</th><th>Canal</th><th>Status</th><th>Último envio</th></tr></thead>
+                        <tbody>
+                        @foreach (var campanha in Model.Relatorio.UltimasCampanhas)
+                        {
+                            <tr>
+                                <td>@campanha.Nome</td>
+                                <td>@campanha.Canal</td>
+                                <td>@campanha.Status</td>
+                                <td>@(campanha.UltimoEnvioEm?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(JsonSerializer.Serialize(statusLabels)),
+                datasets: [{ data: @Html.Raw(JsonSerializer.Serialize(statusValores)), backgroundColor: ['#2563eb','#16a34a','#f59e0b','#ef4444','#7c3aed'] }]
+            }
+        });
+
+        new Chart(document.getElementById('canalChart'), {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(JsonSerializer.Serialize(canalLabels)),
+                datasets: [{ label: 'Interações', data: @Html.Raw(JsonSerializer.Serialize(canalValores)), backgroundColor: '#0ea5e9' }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+
+        new Chart(document.getElementById('etapaChart'), {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(JsonSerializer.Serialize(etapaLabels)),
+                datasets: [{ label: 'Valor', data: @Html.Raw(JsonSerializer.Serialize(etapaValores)), backgroundColor: '#22c55e' }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+    </script>
+}
