@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +14,7 @@ public class MercadoPagoService
     public MercadoPagoService(IConfiguration configuration, HttpClient httpClient = null)
     {
         _configuration = configuration;
-        // Pura conveniÃªncia para o teste, buscando do appsettings
+        // Pura conveniência para o teste, buscando do appsettings
         _accessToken = _configuration["MercadoPago:AccessToken"] ?? "";
         _httpClient = httpClient ?? new HttpClient();
     }
@@ -28,7 +28,7 @@ public class MercadoPagoService
         string baseUrl)
     {
         var client = _httpClient; 
-        // Se jÃ¡ tiver header de auth, remove para garantir que usaremos o token passado ou limpa
+        // Se já tiver header de auth, remove para garantir que usaremos o token passado ou limpa
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var requestBody = new

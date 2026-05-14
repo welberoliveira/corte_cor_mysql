@@ -14,7 +14,8 @@
         }
 
         .pedido-hero {
-            background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%, #eef6ff 100%);
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
             border-radius: 22px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
@@ -135,7 +136,7 @@
             <div class="text-muted">Registre propostas e pedidos com validade, acompanhe o relacionamento no CRM e converta em venda quando o cliente fechar.</div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-primary" asp-page="/Pedidos/Novo">Novo pedido</a>
+            <a class="btn btn-primary" asp-page="/Pedidos/Novo">Criar pedido</a>
             <a class="btn btn-dark" asp-page="/Vendas/Index">Ir para Vendas</a>
             <a class="btn btn-secondary" asp-page="/Estoque/Index">Controle de Estoque</a>
         </div>
@@ -265,7 +266,7 @@
         <div class="card pedido-card">
             <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span class="fw-semibold">Pedidos recentes</span>
-                <a class="btn btn-primary btn-sm" asp-page="/Pedidos/Novo">Novo pedido</a>
+                <a class="btn btn-primary btn-sm" asp-page="/Pedidos/Novo">Criar pedido</a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">

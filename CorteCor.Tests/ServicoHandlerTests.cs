@@ -93,6 +93,25 @@ namespace CorteCor.Tests
             Assert.Equal(88, result);
         }
 
+        [Theory]
+        [InlineData("80,00", 80)]
+        [InlineData("R$ 80,00", 80)]
+        [InlineData("1.234,56", 1234.56)]
+        public void ServicoCadastro_DeveConverterPrecoBrasileiro(string entrada, double esperado)
+        {
+            var method = typeof(CorteCor.Pages.ServicoCadastroModel).GetMethod(
+                "TryParseMoedaBR",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            Assert.NotNull(method);
+
+            object?[] args = [entrada, 0m];
+            var ok = (bool)method!.Invoke(null, args)!;
+
+            Assert.True(ok);
+            Assert.Equal(Convert.ToDecimal(esperado), (decimal)args[1]!);
+        }
+
         [Fact]
         public void ObterPorId_DeveRetornarServico()
         {

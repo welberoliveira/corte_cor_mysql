@@ -93,14 +93,16 @@ namespace CorteCor.Pages.Webhooks
                                     p.Status = "Pago";
                                     p.PagoEm = payment.DateApproved ?? DateTime.UtcNow;
                                     
-                                    var agendamento = agendamentoHandler.ObterPorId(p.IdAgendamento);
-                                    if(agendamento != null)
+                                    var agendamento = p.IdAgendamento.HasValue
+                                        ? agendamentoHandler.ObterPorId(p.IdAgendamento.Value)
+                                        : null;
+                                    if (agendamento != null)
                                     {
                                         var servicoHandler = new ServicoHandler();
                                         var servico = servicoHandler.ObterPorId(agendamento.IdServico);
-                                        if(servico != null)
+                                        if (servico != null)
                                         {
-                                            agendamentoHandler.AtualizarStatus(p.IdAgendamento, "Pago", servico.IdSalao);
+                                            agendamentoHandler.AtualizarStatus(p.IdAgendamento.Value, "Pago", servico.IdSalao);
                                         }
                                     }
                                 }

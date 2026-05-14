@@ -1,4 +1,4 @@
-﻿using CorteCor.Handlers;
+using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -80,17 +80,17 @@ namespace CorteCor.Pages
             {
                 if (req == null)
                 {
-                    return BadRequest(new ErrorResponse { Message = "RequisiÃ§Ã£o invÃ¡lida." });
+                    return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
                 }
 
                 if (string.IsNullOrWhiteSpace(req.Start))
                 {
-                    return BadRequest(new ErrorResponse { Message = "InÃ­cio Ã© obrigatÃ³rio." });
+                    return BadRequest(new ErrorResponse { Message = "Início é obrigatório." });
                 }
 
                 if (!DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var start))
                 {
-                    return BadRequest(new ErrorResponse { Message = "Formato de data de inÃ­cio invÃ¡lido." });
+                    return BadRequest(new ErrorResponse { Message = "Formato de data de início inválido." });
                 }
 
                 if (start.Kind == DateTimeKind.Utc)
@@ -100,12 +100,12 @@ namespace CorteCor.Pages
 
                 if (req.IdServico <= 0)
                 {
-                    return BadRequest(new ErrorResponse { Message = "ServiÃ§o Ã© obrigatÃ³rio." });
+                    return BadRequest(new ErrorResponse { Message = "Serviço é obrigatório." });
                 }
 
                 if (req.IdPessoa <= 0)
                 {
-                    return BadRequest(new ErrorResponse { Message = "Cliente Ã© obrigatÃ³rio." });
+                    return BadRequest(new ErrorResponse { Message = "Cliente é obrigatório." });
                 }
 
                 var idSalao = ObterIdSalao();
@@ -126,7 +126,7 @@ namespace CorteCor.Pages
                 {
                     if (!DateTime.TryParse(req.End, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsedEnd))
                     {
-                        return BadRequest(new ErrorResponse { Message = "Formato de data final invÃ¡lido." });
+                        return BadRequest(new ErrorResponse { Message = "Formato de data final inválido." });
                     }
 
                     end = parsedEnd.Kind == DateTimeKind.Utc ? parsedEnd.ToLocalTime() : parsedEnd;
@@ -136,7 +136,7 @@ namespace CorteCor.Pages
                 var idFuncionarioSelecionado = _agendamentoPreparationService.ObterFuncionarioDisponivelId(req.IdServico, horario.Inicio, idSalao);
                 if (idFuncionarioSelecionado == 0)
                 {
-                    return BadRequest(new ErrorResponse { Message = "NÃ£o hÃ¡ profissionais disponÃ­veis para este serviÃ§o no horÃ¡rio selecionado." });
+                    return BadRequest(new ErrorResponse { Message = "Não há profissionais disponíveis para este serviço no horário selecionado." });
                 }
 
                 var novoId = _agendamentoHandler.CadastrarAgendamento(new Agendamento
@@ -169,7 +169,7 @@ namespace CorteCor.Pages
         {
             if (id <= 0)
             {
-                return BadRequest(new ErrorResponse { Message = "ID invÃ¡lido." });
+                return BadRequest(new ErrorResponse { Message = "ID inválido." });
             }
 
             var agendamento = _agendamentoHandler.ObterPorId(id);
@@ -190,7 +190,7 @@ namespace CorteCor.Pages
                 id = agendamento.IdAgendamento,
                 idPessoa = agendamento.IdPessoa,
                 idServico = agendamento.IdServico,
-                servicoNome = servico?.Nome ?? "ServiÃ§o nÃ£o encontrado",
+                servicoNome = servico?.Nome ?? "Serviço não encontrado",
                 start = agendamento.DataHora,
                 status = statusNormalizado,
                 canEdit = AgendamentoStatus.PodeAlterar(statusNormalizado),
@@ -231,31 +231,31 @@ namespace CorteCor.Pages
             {
                 if (req == null || req.Id <= 0)
                 {
-                    return BadRequest(new ErrorResponse { Message = "RequisiÃ§Ã£o invÃ¡lida." });
+                    return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
                 }
 
                 var idSalao = ObterIdSalao();
                 var agendamento = _agendamentoHandler.ObterPorId(req.Id);
                 if (agendamento == null)
                 {
-                    return NotFound("Agendamento nÃ£o encontrado.");
+                    return NotFound("Agendamento não encontrado.");
                 }
 
                 if (!AgendamentoStatus.PodeAlterar(agendamento.Status))
                 {
-                    return BadRequest(new ErrorResponse { Message = "Agendamentos pagos ou cancelados nÃ£o podem ser alterados." });
+                    return BadRequest(new ErrorResponse { Message = "Agendamentos pagos ou cancelados não podem ser alterados." });
                 }
 
                 var servico = _servicoHandler.ObterPorId(req.IdServico);
                 if (servico == null || servico.IdSalao != idSalao)
                 {
-                    return BadRequest(new ErrorResponse { Message = "ServiÃ§o invÃ¡lido." });
+                    return BadRequest(new ErrorResponse { Message = "Serviço inválido." });
                 }
 
                 var pessoa = _pessoaHandler.ObterPorId(req.IdPessoa);
                 if (pessoa == null || pessoa.IdSalao != idSalao)
                 {
-                    return BadRequest(new ErrorResponse { Message = "Cliente invÃ¡lido." });
+                    return BadRequest(new ErrorResponse { Message = "Cliente inválido." });
                 }
 
                 var dataHora = agendamento.DataHora;
@@ -263,7 +263,7 @@ namespace CorteCor.Pages
                 {
                     if (!DateTime.TryParse(req.Start, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
                     {
-                        return BadRequest(new ErrorResponse { Message = "Formato de data invÃ¡lido." });
+                        return BadRequest(new ErrorResponse { Message = "Formato de data inválido." });
                     }
 
                     dataHora = parsed.Kind == DateTimeKind.Utc ? parsed.ToLocalTime() : parsed;
@@ -273,7 +273,7 @@ namespace CorteCor.Pages
                 var idFuncionarioSelecionado = _agendamentoPreparationService.ObterFuncionarioDisponivelId(req.IdServico, horario.Inicio, idSalao, agendamento.IdAgendamento);
                 if (idFuncionarioSelecionado == 0)
                 {
-                    return BadRequest(new ErrorResponse { Message = "NÃ£o hÃ¡ profissionais disponÃ­veis para este serviÃ§o no horÃ¡rio selecionado (ou hÃ¡ conflito de agenda)." });
+                    return BadRequest(new ErrorResponse { Message = "Não há profissionais disponíveis para este serviço no horário selecionado (ou há conflito de agenda)." });
                 }
 
                 agendamento.IdPessoa = req.IdPessoa;
@@ -294,7 +294,9 @@ namespace CorteCor.Pages
                         _pagamentoHandler.CadastrarPagamento(new Pagamento
                         {
                             IdPagamento = Guid.NewGuid(),
+                            IdSalao = idSalao,
                             IdAgendamento = agendamento.IdAgendamento,
+                            OrigemPagamento = OrigemPagamento.Agendamento,
                             Ativo = true,
                             Status = AgendamentoStatus.Pago,
                             Valor = servico.Preco,
@@ -337,14 +339,14 @@ namespace CorteCor.Pages
         {
             if (req == null || req.IdAgendamento <= 0)
             {
-                return BadRequest(new ErrorResponse { Message = "RequisiÃ§Ã£o invÃ¡lida." });
+                return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
             }
 
             var idSalao = ObterIdSalao();
             var agendamento = _agendamentoHandler.ObterPorId(req.IdAgendamento);
             if (agendamento == null)
             {
-                return NotFound("Agendamento nÃ£o encontrado");
+                return NotFound("Agendamento não encontrado");
             }
 
             var servico = _servicoHandler.ObterPorId(agendamento.IdServico);
@@ -355,13 +357,13 @@ namespace CorteCor.Pages
 
             if (!AgendamentoStatus.PodePagar(agendamento.Status))
             {
-                return BadRequest(new ErrorResponse { Message = "Este agendamento jÃ¡ foi pago ou nÃ£o permite pagamento." });
+                return BadRequest(new ErrorResponse { Message = "Este agendamento já foi pago ou não permite pagamento." });
             }
 
             var pessoa = _pessoaHandler.ObterPorId(agendamento.IdPessoa);
             if (pessoa == null)
             {
-                return BadRequest(new ErrorResponse { Message = "Cliente nÃ£o encontrado" });
+                return BadRequest(new ErrorResponse { Message = "Cliente não encontrado" });
             }
 
             var meios = _meioPagamentoHandler.ListarPorSalao(idSalao, somenteAtivos: true);
@@ -381,8 +383,8 @@ namespace CorteCor.Pages
                 return BadRequest(new ErrorResponse
                 {
                     Message = isProduction
-                        ? "Token de ProduÃ§Ã£o do Mercado Pago nÃ£o configurado."
-                        : "Token de Sandbox do Mercado Pago nÃ£o configurado."
+                        ? "Token de Produção do Mercado Pago não configurado."
+                        : "Token de Sandbox do Mercado Pago não configurado."
                 });
             }
 
@@ -391,7 +393,7 @@ namespace CorteCor.Pages
             var (pref, error) = await _mpService.CreatePreferenceAsync(
                 accessToken,
                 idPagamento,
-                $"ServiÃ§o {servico.Nome} - Corte & Cor",
+                $"Serviço {servico.Nome} - Corte & Cor",
                 servico.Preco,
                 pessoa.Email ?? "cliente@cortecor.com",
                 baseUrl);
@@ -400,7 +402,7 @@ namespace CorteCor.Pages
             {
                 return StatusCode(500, new ErrorResponse
                 {
-                    Message = "Erro ao gerar preferÃªncia de pagamento no Mercado Pago",
+                    Message = "Erro ao gerar preferência de pagamento no Mercado Pago",
                     Detail = error
                 });
             }
@@ -415,7 +417,9 @@ namespace CorteCor.Pages
             _pagamentoHandler.CadastrarPagamento(new Pagamento
             {
                 IdPagamento = idPagamento,
+                IdSalao = idSalao,
                 IdAgendamento = agendamento.IdAgendamento,
+                OrigemPagamento = OrigemPagamento.Agendamento,
                 Ativo = true,
                 Status = AgendamentoStatus.Pendente,
                 Valor = servico.Preco,
@@ -441,7 +445,7 @@ namespace CorteCor.Pages
         {
             if (req == null || req.IdAgendamento <= 0)
             {
-                return BadRequest(new ErrorResponse { Message = "RequisiÃ§Ã£o invÃ¡lida." });
+                return BadRequest(new ErrorResponse { Message = "Requisição inválida." });
             }
 
             try
@@ -473,7 +477,7 @@ namespace CorteCor.Pages
             }
             catch (Exception ex)
             {
-                return new JsonResult(new { success = false, message = "Erro ao processar emissÃ£o NF: " + ex.Message });
+                return new JsonResult(new { success = false, message = "Erro ao processar emissão NF: " + ex.Message });
             }
         }
 
@@ -494,7 +498,7 @@ namespace CorteCor.Pages
 
             if (!AgendamentoStatus.PodeExcluir(agendamento.Status))
             {
-                return BadRequest(new ErrorResponse { Message = "Agendamentos pagos ou cancelados nÃ£o podem ser excluÃ­dos." });
+                return BadRequest(new ErrorResponse { Message = "Agendamentos pagos ou cancelados não podem ser excluídos." });
             }
 
             _agendamentoHandler.Excluir(id);

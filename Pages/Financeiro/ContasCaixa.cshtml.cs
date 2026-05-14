@@ -18,12 +18,6 @@ namespace CorteCor.Pages.Financeiro
 
         public List<ContaCaixa> Contas { get; private set; } = new();
 
-        [BindProperty(SupportsGet = true)]
-        public int? id { get; set; }
-
-        [BindProperty]
-        public ContaCaixa ContaInput { get; set; } = new() { Ativo = true, Tipo = "Caixa" };
-
         [TempData]
         public string? FlashMessage { get; set; }
 
@@ -35,31 +29,9 @@ namespace CorteCor.Pages.Financeiro
             await CarregarAsync();
         }
 
-        public async Task<IActionResult> OnPostSalvarAsync()
-        {
-            try
-            {
-                await _financeiroService.SaveContaCaixaAsync(ObterIdSalao(), ContaInput);
-                FlashMessage = "Conta caixa salva com sucesso.";
-                FlashType = "success";
-                return RedirectToPage();
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-                await CarregarAsync();
-                return Page();
-            }
-        }
-
         private async Task CarregarAsync()
         {
             Contas = await _financeiroService.ListarContasCaixaAsync(ObterIdSalao());
-            if (id.HasValue)
-            {
-                ContaInput = Contas.FirstOrDefault(c => c.IdConta == id.Value) ?? ContaInput;
-            }
         }
 
         private int ObterIdSalao()

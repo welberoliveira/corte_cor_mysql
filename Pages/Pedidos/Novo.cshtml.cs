@@ -73,7 +73,7 @@ public class NovoModel : PageModel
         {
             PageIndex = 1,
             PageSize = 1
-        });
+        }, incluirPedidosRecentes: false);
 
         ProdutosJson = JsonSerializer.Serialize(Contexto.Produtos.Select(p => new CatalogoDto
         {

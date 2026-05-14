@@ -1,6 +1,7 @@
 using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Services;
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
 
 namespace CorteCor.Tests
@@ -13,6 +14,7 @@ namespace CorteCor.Tests
         private readonly Mock<SMSMarketService> _smsMarketService;
         private readonly Mock<IWhatsappService> _whatsappService = new();
         private readonly Mock<FornecedoresHandler> _fornecedoresHandler;
+        private readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
 
         public CrmServiceTests()
         {
@@ -157,7 +159,8 @@ namespace CorteCor.Tests
                 _brevoEmailService.Object,
                 _smsMarketService.Object,
                 _whatsappService.Object,
-                _fornecedoresHandler.Object);
+                _fornecedoresHandler.Object,
+                _cache);
         }
     }
 }

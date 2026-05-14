@@ -1430,28 +1430,28 @@ namespace CorteCor.Services
             var anoAtual = DateTime.Now.Year;
             if (ano < 2000 || ano > anoAtual + 1)
             {
-                throw new InvalidOperationException("Informe um ano válido para inutilização.");
+                throw new InvalidOperationException("Informe um ano v\u00E1lido para inutiliza\u00E7\u00E3o.");
             }
 
             if (serie <= 0)
             {
-                throw new InvalidOperationException("A série deve ser maior que zero.");
+                throw new InvalidOperationException("A s\u00E9rie deve ser maior que zero.");
             }
 
             if (numInicial <= 0 || numFinal <= 0)
             {
-                throw new InvalidOperationException("Os números da faixa devem ser maiores que zero.");
+                throw new InvalidOperationException("Os n\u00FAmeros da faixa devem ser maiores que zero.");
             }
 
             if (numFinal < numInicial)
             {
-                throw new InvalidOperationException("O número final não pode ser menor que o número inicial.");
+                throw new InvalidOperationException("O n\u00FAmero final n\u00E3o pode ser menor que o n\u00FAmero inicial.");
             }
 
             if (!string.Equals(tipoNota, "NF-e", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(tipoNota, "NFC-e", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("A inutilização avulsa suporta apenas NF-e e NFC-e.");
+                throw new InvalidOperationException("A inutiliza\u00E7\u00E3o avulsa suporta apenas NF-e e NFC-e.");
             }
         }
 

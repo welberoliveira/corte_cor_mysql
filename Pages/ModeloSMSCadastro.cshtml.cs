@@ -1,4 +1,4 @@
-﻿using CorteCor.Models;
+using CorteCor.Models;
 using CorteCor.Handlers;
 using System.Collections.Generic;
 using CorteCor.Handlers;
@@ -27,7 +27,7 @@ namespace CorteCor.Pages
         public List<SelectListItem> EventosOptions { get; set; } = new List<SelectListItem>
         {
             new SelectListItem("Boas Vindas", "BoasVindas"),
-            new SelectListItem("ConfirmaÃ§Ã£o de Agendamento", "ConfirmacaoAgendamento"),
+            new SelectListItem("Confirmação de Agendamento", "ConfirmacaoAgendamento"),
             new SelectListItem("Lembrete de Agendamento", "LembreteAgendamento"),
             //new SelectListItem("Cancelamento de Agendamento", "CancelamentoAgendamento"), // Removed as backend logic doesn't support yet in LembreteService? Actually LembreteService only does reminders. But let's include it for future use.
             new SelectListItem("Lembrete de Pagamento", "LembretePagamento")
@@ -43,7 +43,7 @@ namespace CorteCor.Pages
                 if (id.HasValue && id.Value > 0)
                 {
                     Modelo = _handler.ObterPorId(id.Value, idSalao);
-                    if (Modelo == null) Mensagem = "Modelo nÃ£o encontrado.";
+                    if (Modelo == null) Mensagem = "Modelo não encontrado.";
                 }
                 else
                 {

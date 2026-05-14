@@ -177,7 +177,7 @@ namespace CorteCor.Tests
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.PrepararEnvelopeAsync(1, 102));
 
-            Assert.Contains("codigo de tributacao fiscal valido", ex.Message);
+            Assert.Contains("c\u00F3digo de tributa\u00E7\u00E3o fiscal v\u00E1lido", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         private AgendamentoFiscalPreparationService CriarService()

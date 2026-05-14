@@ -6,6 +6,7 @@ using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
 
 namespace CorteCor.Pages;
 
@@ -15,15 +16,18 @@ public class DashboardModel : PageModel
     private readonly IDatabaseHandler _databaseHandler;
     private readonly CrmService _crmService;
     private readonly FinanceiroService _financeiroService;
+    private readonly ILogger<DashboardModel> _logger;
 
     public DashboardModel(
         IDatabaseHandler databaseHandler,
         CrmService crmService,
-        FinanceiroService financeiroService)
+        FinanceiroService financeiroService,
+        ILogger<DashboardModel> logger)
     {
         _databaseHandler = databaseHandler;
         _crmService = crmService;
         _financeiroService = financeiroService;
+        _logger = logger;
     }
 
     public string NomeUsuario { get; private set; } = "Usuário";
@@ -44,6 +48,23 @@ public class DashboardModel : PageModel
             return BadRequest(new { message = "Não foi possível identificar a empresa do usuário." });
         }
 
+        try
+        {
+            return await CarregarDadosDashboardAsync(idSalao);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao carregar dados do dashboard para o salao {IdSalao}.", idSalao);
+            Response.StatusCode = StatusCodes.Status500InternalServerError;
+            return new JsonResult(new DashboardErrorPayload
+            {
+                Message = "Nao foi possivel carregar o dashboard no momento. Tente novamente em instantes."
+            });
+        }
+    }
+
+    private async Task<IActionResult> CarregarDadosDashboardAsync(int idSalao)
+    {
         await CarregarContextoBasicoAsync();
 
         var hoje = DateTime.Today;
@@ -51,22 +72,48 @@ public class DashboardModel : PageModel
         var inicioProximoMes = inicioMes.AddMonths(1);
         var inicioSerie = inicioMes.AddMonths(-5);
 
-        var crmDashboard = _crmService.ObterDashboard(idSalao);
-        var financeiroDashboard = await _financeiroService.ObterDashboardAsync(idSalao, inicioMes, hoje);
+        var avisos = new List<string>();
+        var crmDashboard = new CrmDashboardResumo();
+        var financeiroDashboard = new FinanceiroDashboardResumo();
+        var aggregate = new DashboardAggregateRow();
+        var serieCompleta = CriarSerieVendasVazia(inicioSerie);
+        var agendamentosPorStatus = new List<DashboardCategoryRow>();
 
-        using var conn = _databaseHandler.GetConnection();
+        try
+        {
+            crmDashboard = _crmService.ObterDashboard(idSalao);
+        }
+        catch (Exception ex) when (MySqlOperationalResilience.IsMaxUserConnections(ex))
+        {
+            avisos.Add("crm-indisponivel");
+            _logger.LogWarning(ex, "Dashboard CRM operando em modo degradado para o salão {IdSalao}.", idSalao);
+        }
 
-        var aggregate = await conn.QueryFirstAsync<DashboardAggregateRow>(
-            @"
+        try
+        {
+            financeiroDashboard = await _financeiroService.ObterDashboardAsync(idSalao, inicioMes, hoje);
+        }
+        catch (Exception ex) when (MySqlOperationalResilience.IsMaxUserConnections(ex))
+        {
+            avisos.Add("financeiro-indisponivel");
+            _logger.LogWarning(ex, "Dashboard financeiro operando em modo degradado para o salão {IdSalao}.", idSalao);
+        }
+
+        try
+        {
+            using var conn = _databaseHandler.GetConnection();
+
+            aggregate = await conn.QueryFirstAsync<DashboardAggregateRow>(
+                @"
 SELECT
-    TotalClientes = (
+    (
         SELECT COUNT(1)
         FROM CorteCor_Pessoa
         WHERE IdSalao = @IdSalao
           AND ISNULL(IsCliente, 0) = 1
           AND ISNULL(Excluido, 0) = 0
-    ),
-    AgendamentosHoje = (
+    ) AS TotalClientes,
+    (
         SELECT COUNT(1)
         FROM CorteCor_Agendamento
         WHERE ISNULL(Excluido, 0) = 0
@@ -77,8 +124,8 @@ SELECT
                 AND S.IdSalao = @IdSalao
           )
           AND CAST(DataHora AS date) = @Hoje
-    ),
-    AgendamentosMes = (
+    ) AS AgendamentosHoje,
+    (
         SELECT COUNT(1)
         FROM CorteCor_Agendamento
         WHERE ISNULL(Excluido, 0) = 0
@@ -90,30 +137,30 @@ SELECT
           )
           AND DataHora >= @InicioMes
           AND DataHora < @InicioProximoMes
-    ),
-    ValorVendasMes = (
+    ) AS AgendamentosMes,
+    (
         SELECT ISNULL(SUM(ValorTotal), 0)
         FROM CorteCor_VendaProduto
         WHERE IdSalao = @IdSalao
           AND Status <> @StatusCancelada
           AND DataVenda >= @InicioMes
           AND DataVenda < @InicioProximoMes
-    ),
-    QuantidadeVendasMes = (
+    ) AS ValorVendasMes,
+    (
         SELECT COUNT(1)
         FROM CorteCor_VendaProduto
         WHERE IdSalao = @IdSalao
           AND Status <> @StatusCancelada
           AND DataVenda >= @InicioMes
           AND DataVenda < @InicioProximoMes
-    ),
-    PedidosAbertos = (
+    ) AS QuantidadeVendasMes,
+    (
         SELECT COUNT(1)
         FROM CorteCor_Pedido
         WHERE IdSalao = @IdSalao
           AND Status IN (@PedidoAberto, @PedidoVencido)
-    ),
-    EstoqueBaixo = (
+    ) AS PedidosAbertos,
+    (
         SELECT COUNT(1)
         FROM CorteCor_Produto
         WHERE IdSalao = @IdSalao
@@ -121,69 +168,74 @@ SELECT
           AND ISNULL(Arquivado, 0) = 0
           AND ISNULL(ControlarEstoque, 0) = 1
           AND ISNULL(EstoqueAtual, 0) <= ISNULL(EstoqueMinimo, 0)
-    ),
-    NotasAutorizadasMes = (
+    ) AS EstoqueBaixo,
+    (
         SELECT COUNT(1)
         FROM CorteCor_NotaFiscal
         WHERE IdSalao = @IdSalao
           AND Status = @NotaAutorizada
           AND DataEmissao >= @InicioMes
           AND DataEmissao < @InicioProximoMes
-    ),
-    NotasPendentesMes = (
+    ) AS NotasAutorizadasMes,
+    (
         SELECT COUNT(1)
         FROM CorteCor_NotaFiscal
         WHERE IdSalao = @IdSalao
           AND Status NOT IN (@NotaAutorizada, @NotaRejeitada, @NotaCancelada)
           AND DataEmissao >= @InicioMes
           AND DataEmissao < @InicioProximoMes
-    ),
-    NotasRejeitadasMes = (
+    ) AS NotasPendentesMes,
+    (
         SELECT COUNT(1)
         FROM CorteCor_NotaFiscal
         WHERE IdSalao = @IdSalao
           AND Status = @NotaRejeitada
           AND DataEmissao >= @InicioMes
           AND DataEmissao < @InicioProximoMes
-    );",
-            new
-            {
-                IdSalao = idSalao,
-                Hoje = hoje,
-                InicioMes = inicioMes,
-                InicioProximoMes = inicioProximoMes,
-                StatusCancelada = VendaProdutoStatus.Cancelada,
-                PedidoAberto = PedidoStatus.Aberto,
-                PedidoVencido = PedidoStatus.Vencido,
-                NotaAutorizada = NotaFiscalStatus.Autorizada,
-                NotaRejeitada = NotaFiscalStatus.Rejeitada,
-                NotaCancelada = NotaFiscalStatus.Cancelada
-            });
+    ) AS NotasRejeitadasMes;",
+                new
+                {
+                    IdSalao = idSalao,
+                    Hoje = hoje,
+                    InicioMes = inicioMes,
+                    InicioProximoMes = inicioProximoMes,
+                    StatusCancelada = VendaProdutoStatus.Cancelada,
+                    PedidoAberto = PedidoStatus.Aberto,
+                    PedidoVencido = PedidoStatus.Vencido,
+                    NotaAutorizada = NotaFiscalStatus.Autorizada,
+                    NotaRejeitada = NotaFiscalStatus.Rejeitada,
+                    NotaCancelada = NotaFiscalStatus.Cancelada
+                });
 
-        var vendasMensais = (await conn.QueryAsync<DashboardSerieSqlRow>(
-            @"
+            var vendasMensais = (await conn.QueryAsync<DashboardSerieSqlRow>(
+                @"
 SELECT
-    Mes = DATEFROMPARTS(YEAR(DataVenda), MONTH(DataVenda), 1),
-    Valor = SUM(ValorTotal),
-    Quantidade = COUNT(1)
-FROM CorteCor_VendaProduto
-WHERE IdSalao = @IdSalao
-  AND Status <> @StatusCancelada
-  AND DataVenda >= @InicioSerie
-GROUP BY YEAR(DataVenda), MONTH(DataVenda)
-ORDER BY Mes;",
-            new
-            {
-                IdSalao = idSalao,
-                StatusCancelada = VendaProdutoStatus.Cancelada,
-                InicioSerie = inicioSerie
-            })).ToList();
+    Vendas.Mes,
+    COALESCE(SUM(ValorTotal), 0) AS Valor,
+    COUNT(1) AS Quantidade
+FROM (
+    SELECT
+        STR_TO_DATE(CONCAT(DATE_FORMAT(DataVenda, '%Y-%m'), '-01'), '%Y-%m-%d') AS Mes,
+        ValorTotal
+    FROM CorteCor_VendaProduto
+    WHERE IdSalao = @IdSalao
+      AND Status <> @StatusCancelada
+      AND DataVenda >= @InicioSerie
+) Vendas
+GROUP BY Vendas.Mes
+ORDER BY Vendas.Mes;",
+                new
+                {
+                    IdSalao = idSalao,
+                    StatusCancelada = VendaProdutoStatus.Cancelada,
+                    InicioSerie = inicioSerie
+                })).ToList();
 
-        var agendamentosPorStatus = (await conn.QueryAsync<DashboardCategoryRow>(
-            @"
+            agendamentosPorStatus = (await conn.QueryAsync<DashboardCategoryRow>(
+                @"
 SELECT
-    Label = ISNULL(NULLIF(Status, ''), 'Sem status'),
-    Value = COUNT(1)
+    COALESCE(NULLIF(Status, ''), 'Sem status') AS Label,
+    COUNT(1) AS Value
 FROM CorteCor_Agendamento
 WHERE ISNULL(Excluido, 0) = 0
   AND EXISTS (
@@ -194,28 +246,34 @@ WHERE ISNULL(Excluido, 0) = 0
   )
   AND DataHora >= @InicioMes
   AND DataHora < @InicioProximoMes
-GROUP BY ISNULL(NULLIF(Status, ''), 'Sem status')
+GROUP BY COALESCE(NULLIF(Status, ''), 'Sem status')
 ORDER BY Value DESC;",
-            new
-            {
-                IdSalao = idSalao,
-                InicioMes = inicioMes,
-                InicioProximoMes = inicioProximoMes
-            })).ToList();
-
-        var serieCompleta = Enumerable.Range(0, 6)
-            .Select(offset =>
-            {
-                var mes = inicioSerie.AddMonths(offset);
-                var valor = vendasMensais.FirstOrDefault(v => v.Mes.Year == mes.Year && v.Mes.Month == mes.Month);
-                return new DashboardSerieItem
+                new
                 {
-                    Label = mes.ToString("MM/yyyy"),
-                    Value = valor?.Valor ?? 0m,
-                    SecondaryValue = valor?.Quantidade ?? 0
-                };
-            })
-            .ToList();
+                    IdSalao = idSalao,
+                    InicioMes = inicioMes,
+                    InicioProximoMes = inicioProximoMes
+                })).ToList();
+
+            serieCompleta = Enumerable.Range(0, 6)
+                .Select(offset =>
+                {
+                    var mes = inicioSerie.AddMonths(offset);
+                    var valor = vendasMensais.FirstOrDefault(v => v.Mes.Year == mes.Year && v.Mes.Month == mes.Month);
+                    return new DashboardSerieItem
+                    {
+                        Label = mes.ToString("MM/yyyy"),
+                        Value = valor?.Valor ?? 0m,
+                        SecondaryValue = valor?.Quantidade ?? 0
+                    };
+                })
+                .ToList();
+        }
+        catch (Exception ex) when (MySqlOperationalResilience.IsMaxUserConnections(ex))
+        {
+            avisos.Add("operacional-indisponivel");
+            _logger.LogWarning(ex, "Dashboard operacional em modo degradado para o salão {IdSalao}.", idSalao);
+        }
 
         var funil = crmDashboard.Funil
             .Select(item => new DashboardCategoryRow
@@ -273,26 +331,37 @@ ORDER BY Value DESC;",
             AgendamentosPorStatus = agendamentosPorStatus,
             FunilCrm = funil,
             FinanceiroComparativo = financeiroComparativo,
-            ProximasAcoes = proximasAcoes
+            ProximasAcoes = proximasAcoes,
+            Avisos = avisos
         });
     }
 
     private async Task CarregarContextoBasicoAsync()
     {
-        using var conn = _databaseHandler.GetConnection();
         var idSalao = ObterIdSalao();
         var email = User.Identity?.Name ?? string.Empty;
 
-        NomeUsuario = await conn.ExecuteScalarAsync<string?>(
-            "SELECT TOP 1 Nome FROM CorteCor_Usuario WHERE Email = @Email;",
-            new { Email = email }) ?? "Usuário";
-
-        NomeEmpresa = await conn.ExecuteScalarAsync<string?>(
-            "SELECT TOP 1 Nome FROM CorteCor_Salao WHERE IdSalao = @IdSalao;",
-            new { IdSalao = idSalao }) ?? "Empresa";
-
         Saudacao = ObterSaudacao(DateTime.Now.Hour);
         PeriodoAtual = $"Período de {new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1):dd/MM/yyyy} até {DateTime.Today:dd/MM/yyyy}";
+
+        try
+        {
+            using var conn = _databaseHandler.GetConnection();
+
+            NomeUsuario = await conn.ExecuteScalarAsync<string?>(
+                "SELECT TOP 1 Nome FROM CorteCor_Usuario WHERE Email = @Email;",
+                new { Email = email }) ?? "Usuário";
+
+            NomeEmpresa = await conn.ExecuteScalarAsync<string?>(
+                "SELECT TOP 1 Nome FROM CorteCor_Salao WHERE IdSalao = @IdSalao;",
+                new { IdSalao = idSalao }) ?? "Empresa";
+        }
+        catch (Exception ex) when (MySqlOperationalResilience.IsMaxUserConnections(ex))
+        {
+            NomeUsuario = "Usuário";
+            NomeEmpresa = "Empresa";
+            _logger.LogWarning(ex, "Contexto básico do dashboard operando em modo degradado para o salão {IdSalao}.", idSalao);
+        }
     }
 
     private int ObterIdSalao() =>
@@ -305,6 +374,20 @@ ORDER BY Value DESC;",
             >= 12 and < 18 => "Boa tarde",
             _ => "Boa noite"
         };
+
+    private static List<DashboardSerieItem> CriarSerieVendasVazia(DateTime inicioSerie) =>
+        Enumerable.Range(0, 6)
+            .Select(offset =>
+            {
+                var mes = inicioSerie.AddMonths(offset);
+                return new DashboardSerieItem
+                {
+                    Label = mes.ToString("MM/yyyy"),
+                    Value = 0m,
+                    SecondaryValue = 0
+                };
+            })
+            .ToList();
 
     private sealed class DashboardAggregateRow
     {
@@ -357,6 +440,12 @@ ORDER BY Value DESC;",
         public List<DashboardCategoryRow> FunilCrm { get; set; } = new();
         public List<DashboardCategoryRow> FinanceiroComparativo { get; set; } = new();
         public List<DashboardActionItem> ProximasAcoes { get; set; } = new();
+        public List<string> Avisos { get; set; } = new();
+    }
+
+    public sealed class DashboardErrorPayload
+    {
+        public string Message { get; set; } = string.Empty;
     }
 
     public sealed class DashboardSerieItem

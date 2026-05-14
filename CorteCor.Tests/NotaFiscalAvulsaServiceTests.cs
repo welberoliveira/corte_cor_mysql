@@ -135,8 +135,8 @@ namespace CorteCor.Tests
 
         [Theory]
         [InlineData(1999, 1, 1, 2, "NF-e", "ano")]
-        [InlineData(2026, 0, 1, 2, "NF-e", "serie")]
-        [InlineData(2026, 1, 0, 2, "NF-e", "numeros")]
+        [InlineData(2026, 0, 1, 2, "NF-e", "s\u00E9rie")]
+        [InlineData(2026, 1, 0, 2, "NF-e", "n\u00FAmeros")]
         [InlineData(2026, 1, 5, 4, "NF-e", "final")]
         [InlineData(2026, 1, 1, 2, "NFS-e", "suporta")]
         public void ValidarFaixaInutilizacao_DeveRejeitarFaixasInvalidas(int ano, int serie, int numInicial, int numFinal, string tipoNota, string trechoEsperado)

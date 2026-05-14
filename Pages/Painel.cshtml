@@ -1,91 +1,119 @@
-﻿@page
+@page
 @model PainelModel
-
-<style>
-    .tdStatusPendente {
-        color: red;
-    }
-
-    .tdStatusAprovado {
-        color: green;
-    }
-</style>
 
 <style>
     .charts-container {
         display: flex;
         flex-wrap: wrap;
-        justify-content: center;
+        gap: 16px;
+        margin-top: 24px;
+    }
+
+    .chart-card {
+        flex: 1 1 320px;
+        min-width: 280px;
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     }
 
     .chart {
-        flex: 1 1 300px;
-        max-width: 400px;
-        height: 250px;
-        margin: 10px;
+        width: 100%;
+        height: 260px;
+    }
+
+    .empty-chart {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        font-size: 0.95rem;
+        height: 100%;
     }
 </style>
 
-<div class="container mt-1" style="height: 400px;">
+<div class="container mt-3">
     <h4 class="text-center mb-4">Painel Principal</h4>
-    <div class="form-group col-md-4">
-        <label for="estadoCivil">Selecione a Empresa:</label>
-        <select class="form-control" id="IdSalao" name="IdSalao">
-            <option value="11">Empresa Paula Beauty</option>
-            <option value="1">Flor de Mulher Beauty</option>
-            <option value="2">Encanto Rosa Beauty</option>
-            <option value="3">Divina Bela Studio</option>
-            <option value="4">Bella Morena EspaÃ§o de Beleza</option>
-            <option value="5">Luna Rosa Beauty</option>
-            <option value="6">Doce Brilho Beauty</option>
-            <option value="7">EssÃªncia Feminina</option>
-            <option value="8">Rainha do Espelho</option>
-            <option value="9">Beleza Tropical</option>
-            <option value="10">Linda & Leve Studio</option>
-        </select>
+
+    <form method="post" asp-page-handler="Acessar" class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label asp-for="SelectedIdSalao" class="form-label">Selecione a empresa:</label>
+            <select asp-for="SelectedIdSalao" class="form-control">
+                @foreach (var empresa in Model.Empresas)
+                {
+                    <option value="@empresa.Id">@empresa.Nome</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-info w-100">Acessar como esta empresa</button>
+        </div>
+    </form>
+
+    <div class="charts-container">
+        <section class="chart-card">
+            <h5 class="mb-3">Documentação do imóvel</h5>
+            <div id="chartDocumentacao" class="chart"></div>
+        </section>
+        <section class="chart-card">
+            <h5 class="mb-3">Condição de ocupação do lote</h5>
+            <div id="chartCondicaoOcupacaoLote" class="chart"></div>
+        </section>
+        <section class="chart-card">
+            <h5 class="mb-3">Possui IPTU</h5>
+            <div id="chartPossuiIPTU" class="chart"></div>
+        </section>
     </div>
 
-    <button class="btn btn-info">Acessar como esta Empresa</button>
-
-
-    <!-- Carrega o Google Charts -->
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script>
-        google.charts.load('current', { 'packages': ['corechart'] });
+        google.charts.load('current', { packages: ['corechart'] });
         google.charts.setOnLoadCallback(drawAllCharts);
 
         function drawAllCharts() {
-            drawChart('chartDocumentacao', 'DocumentaÃ§Ã£o do ImÃ³vel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'DocumentaÃ§Ã£o'));
-            drawChart('chartCondicaoOcupacaoLote', 'CondiÃ§Ã£o de OcupaÃ§Ã£o do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'CondiÃ§Ã£o de OcupaÃ§Ã£o do Lote'));
+            drawChart('chartDocumentacao', 'Documentação do Imóvel', getDataArray(@Html.Raw(Json.Serialize(Model.DocumentacaoChartData)), 'Documentação'));
+            drawChart('chartCondicaoOcupacaoLote', 'Condição de Ocupação do Lote', getDataArray(@Html.Raw(Json.Serialize(Model.CondicaoOcupacaoLoteChartData)), 'Condição de Ocupação do Lote'));
             drawChart('chartPossuiIPTU', 'Possui IPTU', getDataArray(@Html.Raw(Json.Serialize(Model.PossuiIPTUChartData)), 'Possui IPTU'));
         }
 
-        // Converte o objeto JSON em um array adequado para o Google Charts
         function getDataArray(chartData, labelName) {
-            var arr = [];
-            arr.push([labelName, 'Quantidade']);
-            for (var key in chartData) {
-                if (chartData.hasOwnProperty(key)) {
+            const arr = [[labelName, 'Quantidade']];
+            if (!chartData) {
+                return arr;
+            }
+
+            for (const key in chartData) {
+                if (Object.prototype.hasOwnProperty.call(chartData, key)) {
                     arr.push([key, chartData[key]]);
                 }
             }
+
             return arr;
         }
 
-        // Desenha um grÃ¡fico de pizza 3D
         function drawChart(elementId, title, dataArray) {
-            var data = google.visualization.arrayToDataTable(dataArray);
-            var options = {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                return;
+            }
+
+            if (!dataArray || dataArray.length <= 1) {
+                element.innerHTML = '<div class="empty-chart">Sem dados para exibir.</div>';
+                return;
+            }
+
+            const data = google.visualization.arrayToDataTable(dataArray);
+            const options = {
                 title: title,
                 is3D: true,
                 width: '100%',
                 height: '100%'
             };
-            var chart = new google.visualization.PieChart(document.getElementById(elementId));
+
+            const chart = new google.visualization.PieChart(element);
             chart.draw(data, options);
         }
     </script>
-
 </div>
-
-

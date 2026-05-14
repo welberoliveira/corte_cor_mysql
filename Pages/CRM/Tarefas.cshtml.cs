@@ -4,6 +4,7 @@ using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
 
 namespace CorteCor.Pages.CRM
 {
@@ -12,11 +13,13 @@ namespace CorteCor.Pages.CRM
     {
         private readonly CrmService _crmService;
         private readonly PessoaHandler _pessoaHandler;
+        private readonly ILogger<TarefasModel> _logger;
 
-        public TarefasModel(CrmService crmService, PessoaHandler pessoaHandler)
+        public TarefasModel(CrmService crmService, PessoaHandler pessoaHandler, ILogger<TarefasModel> logger)
         {
             _crmService = crmService;
             _pessoaHandler = pessoaHandler;
+            _logger = logger;
         }
 
         public PagedResult<CrmTarefa> Tarefas { get; private set; } = new();
@@ -48,7 +51,14 @@ namespace CorteCor.Pages.CRM
 
         public IActionResult OnGet()
         {
-            return Carregar();
+            try
+            {
+                return Carregar();
+            }
+            catch (Exception ex)
+            {
+                return ExibirErroCarregamento(ex);
+            }
         }
 
         public IActionResult OnPostAtualizarStatus(int idTarefa, string status)
@@ -66,7 +76,8 @@ namespace CorteCor.Pages.CRM
             }
             catch (Exception ex)
             {
-                FlashMessage = ex.Message;
+                _logger.LogError(ex, "Erro ao atualizar status da tarefa CRM.");
+                FlashMessage = $"Não foi possível atualizar a tarefa no momento. Detalhe técnico retornado pelo servidor: {SanitizarDetalheTecnico(ex)}";
                 FlashType = "danger";
             }
 
@@ -83,6 +94,23 @@ namespace CorteCor.Pages.CRM
             Tarefas = _crmService.ListarTarefas(idSalao, IdPessoa, Status, ObterIdUsuario(), p, 12, PesquisaDescricao, DataVencimentoInicio, DataVencimentoFim);
             Clientes = _pessoaHandler.ListarPaginadoPorSalao(idSalao, null, 1, 500).Items;
             return Page();
+        }
+
+        private IActionResult ExibirErroCarregamento(Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao carregar tarefas CRM.");
+            Tarefas = new PagedResult<CrmTarefa>();
+            Clientes = new List<Pessoa>();
+            FlashMessage = $"Não foi possível carregar as tarefas no momento. Detalhe técnico retornado pelo servidor: {SanitizarDetalheTecnico(ex)}";
+            FlashType = "danger";
+            return Page();
+        }
+
+        private static string SanitizarDetalheTecnico(Exception ex)
+        {
+            var detalhe = ex.GetBaseException().Message ?? ex.Message;
+            detalhe = detalhe.Replace("\r", " ").Replace("\n", " ").Trim();
+            return detalhe.Length <= 500 ? detalhe : detalhe[..500] + "...";
         }
 
         private bool TryObterIdSalao(out int idSalao)

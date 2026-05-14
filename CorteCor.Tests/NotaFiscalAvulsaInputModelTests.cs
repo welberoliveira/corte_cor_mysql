@@ -64,7 +64,7 @@ namespace CorteCor.Tests
 
             var resultados = Validar(model);
 
-            Assert.Contains(resultados, r => r.ErrorMessage!.Contains("e-mail valido", System.StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(resultados, r => r.ErrorMessage!.Contains("e-mail v\u00E1lido", System.StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact]

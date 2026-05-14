@@ -118,7 +118,7 @@ namespace CorteCor.Services
             var servico = _servicoHandler.ObterPorId(idServico);
             if (servico == null || servico.IdSalao != idSalao)
             {
-                throw new InvalidOperationException("Serviço inválido para este salão.");
+                throw new InvalidOperationException("Servi\u00E7o inv\u00E1lido para este sal\u00E3o.");
             }
 
             var fimEsperado = inicio.Add(servico.Duracao);
@@ -130,12 +130,12 @@ namespace CorteCor.Services
 
                 if (fim <= inicio)
                 {
-                throw new InvalidOperationException("O horário final precisa ser maior que o horário inicial.");
+                    throw new InvalidOperationException("O hor\u00E1rio final precisa ser maior que o hor\u00E1rio inicial.");
                 }
 
                 if (fim != fimEsperado)
                 {
-                throw new InvalidOperationException("O horário final não confere com a duração configurada para o serviço.");
+                    throw new InvalidOperationException("O hor\u00E1rio final n\u00E3o confere com a dura\u00E7\u00E3o configurada para o servi\u00E7o.");
                 }
             }
 

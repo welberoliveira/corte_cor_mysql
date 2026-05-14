@@ -1,19 +1,28 @@
 using CorteCor.Handlers;
 using CorteCor.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CorteCor.Services
 {
     public class FinanceiroService
     {
         private readonly IFinanceiroModuloHandler _financeiroHandler;
+        private readonly IMemoryCache _cache;
 
-        public FinanceiroService(IFinanceiroModuloHandler financeiroHandler)
+        public FinanceiroService(IFinanceiroModuloHandler financeiroHandler, IMemoryCache cache)
         {
             _financeiroHandler = financeiroHandler;
+            _cache = cache;
         }
 
         public async Task GarantirEstruturaBaseAsync(int idSalao)
         {
+            var cacheKey = $"financeiro:estrutura-base:{idSalao}";
+            if (_cache.TryGetValue(cacheKey, out _))
+            {
+                return;
+            }
+
             var planos = await _financeiroHandler.ListarPlanoContasAsync(idSalao);
             if (!planos.Any())
             {
@@ -44,6 +53,8 @@ namespace CorteCor.Services
                     Ativo = true
                 });
             }
+
+            _cache.Set(cacheKey, true, TimeSpan.FromMinutes(15));
         }
 
         public async Task<FinanceiroDashboardResumo> ObterDashboardAsync(int idSalao, DateTime dataInicio, DateTime dataFim)

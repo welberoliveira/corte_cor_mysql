@@ -6,6 +6,7 @@
 
 @section Styles {
     <style>
+        .dashboard-loading-scope { position: relative; min-height: 65vh; }
         .dashboard-shell { display: grid; gap: 1.25rem; }
         .dashboard-hero {
             position: relative;
@@ -151,13 +152,15 @@
             border: 1px dashed #cbd5e1;
         }
         .dashboard-loading-modal {
-            position: fixed;
+            position: absolute;
             inset: 0;
-            z-index: 2000;
+            z-index: 30;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
-            padding: 1rem;
+            padding: .85rem 1rem 1rem;
+            min-height: 100%;
+            border-radius: 12px;
             background: rgba(15,23,42,.42);
             backdrop-filter: blur(7px);
             transition: opacity .28s ease, visibility .28s ease;
@@ -195,6 +198,7 @@
     </style>
 }
 
+<div class="dashboard-loading-scope">
 <div id="dashboardLoadingModal" class="dashboard-loading-modal" aria-live="polite" aria-busy="true">
     <div class="dashboard-loading-card">
         <div class="dashboard-spinner"></div>
@@ -325,6 +329,8 @@
     </section>
 </div>
 
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script>
@@ -441,7 +447,18 @@
             const loading = document.getElementById('dashboardLoadingModal');
             try {
                 const response = await fetch('@Url.Page("/Dashboard", null, new { handler = "Data" })', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                if (!response.ok) throw new Error('Não foi possível carregar os dados do dashboard.');
+                if (!response.ok) {
+                    let message = 'Nao foi possivel carregar os dados do dashboard.';
+                    try {
+                        const errorPayload = await response.json();
+                        if (errorPayload && errorPayload.message) {
+                            message = errorPayload.message;
+                        }
+                    } catch (_) {
+                        // Mantem a mensagem amigavel padrao quando a resposta nao for JSON.
+                    }
+                    throw new Error(message);
+                }
                 const payload = await response.json();
                 renderTopline(payload);
                 renderMetricCards(payload);

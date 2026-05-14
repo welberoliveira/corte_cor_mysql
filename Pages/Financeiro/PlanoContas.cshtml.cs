@@ -18,12 +18,6 @@ namespace CorteCor.Pages.Financeiro
 
         public List<PlanoContas> Planos { get; private set; } = new();
 
-        [BindProperty(SupportsGet = true)]
-        public int? id { get; set; }
-
-        [BindProperty]
-        public PlanoContas PlanoInput { get; set; } = new() { Ativo = true, Tipo = "R" };
-
         [TempData]
         public string? FlashMessage { get; set; }
 
@@ -35,31 +29,9 @@ namespace CorteCor.Pages.Financeiro
             await CarregarAsync();
         }
 
-        public async Task<IActionResult> OnPostSalvarAsync()
-        {
-            try
-            {
-                await _financeiroService.SavePlanoContasAsync(ObterIdSalao(), PlanoInput);
-                FlashMessage = "Plano de contas salvo com sucesso.";
-                FlashType = "success";
-                return RedirectToPage();
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-                await CarregarAsync();
-                return Page();
-            }
-        }
-
         private async Task CarregarAsync()
         {
             Planos = await _financeiroService.ListarPlanoContasAsync(ObterIdSalao());
-            if (id.HasValue)
-            {
-                PlanoInput = Planos.FirstOrDefault(p => p.IdPlano == id.Value) ?? PlanoInput;
-            }
         }
 
         private int ObterIdSalao()

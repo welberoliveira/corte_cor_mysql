@@ -39,7 +39,7 @@ namespace CorteCor.Pages
         public IActionResult OnPostExcluir(int id)
         {
             _handler.ExcluirConfig(id);
-            Mensagem = "Regra excluÃ­da com sucesso!";
+            Mensagem = "Regra excluída com sucesso!";
             return RedirectToPage();
         }
     }

@@ -64,7 +64,7 @@ namespace CorteCor.Pages
                 }
                 catch (Exception)
                 {
-            Mensagem = "NÃ£o foi possÃ­vel excluir esta pessoa porque ela estÃ¡ associada a outros registros.";
+            Mensagem = "Não foi possível excluir esta pessoa porque ela está associada a outros registros.";
                     MensagemTipo = "warning";
                 }
             }

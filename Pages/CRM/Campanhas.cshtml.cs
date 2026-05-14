@@ -32,6 +32,18 @@ namespace CorteCor.Pages.CRM
         public int p { get; set; } = 1;
 
         [BindProperty(SupportsGet = true)]
+        public string? Pesquisa { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? Canal { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? Segmento { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? Status { get; set; }
+
+        [BindProperty(SupportsGet = true)]
         public int? IdCampanhaView { get; set; }
 
         [TempData]
@@ -57,7 +69,7 @@ namespace CorteCor.Pages.CRM
                 var idCampanha = _crmService.SalvarCampanha(idSalao, NovaCampanha);
                 FlashMessage = "Campanha salva com sucesso.";
                 FlashType = "success";
-                return RedirectToPage(new { IdCampanhaView = idCampanha });
+                return RedirectToPage(new { IdCampanhaView = idCampanha, Pesquisa, Canal, Segmento, Status, p });
             }
             catch (Exception ex)
             {
@@ -79,13 +91,13 @@ namespace CorteCor.Pages.CRM
                 var resultado = await _crmService.EnviarCampanhaAsync(idSalao, idCampanha, ObterIdUsuario());
                 FlashMessage = $"Campanha processada. Sucesso: {resultado.Campanha.TotalSucesso} | Falha: {resultado.Campanha.TotalFalha}.";
                 FlashType = resultado.Campanha.TotalFalha > 0 ? "warning" : "success";
-                return RedirectToPage(new { IdCampanhaView = idCampanha });
+                return RedirectToPage(new { IdCampanhaView = idCampanha, Pesquisa, Canal, Segmento, Status, p });
             }
             catch (Exception ex)
             {
                 FlashMessage = ex.Message;
                 FlashType = "danger";
-                return RedirectToPage(new { IdCampanhaView = idCampanha });
+                return RedirectToPage(new { IdCampanhaView = idCampanha, Pesquisa, Canal, Segmento, Status, p });
             }
         }
 
@@ -96,7 +108,7 @@ namespace CorteCor.Pages.CRM
                 return RedirectToPage("/Index");
             }
 
-            Campanhas = _crmService.ListarCampanhas(idSalao, p, 10);
+            Campanhas = _crmService.ListarCampanhas(idSalao, p, 10, Pesquisa, Canal, Segmento, Status);
             if (IdCampanhaView.HasValue && IdCampanhaView.Value > 0)
             {
                 DestinosCampanha = _crmService.ListarDestinosCampanha(idSalao, IdCampanhaView.Value);

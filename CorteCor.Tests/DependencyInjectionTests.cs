@@ -64,6 +64,7 @@ namespace CorteCor.Tests
                         services.AddScoped<FinanceiroHandler>();
                         services.AddScoped<IFinanceiroModuloHandler, FakeFinanceiroModuloHandler>();
                         services.AddScoped<FinanceiroService>();
+                        services.AddScoped<RelatorioCentralService>();
                         services.AddScoped<IntegracaoHandler>();
                         services.AddScoped<MercadoPagoService>();
                         services.AddScoped<ModeloEmailHandler>();
@@ -164,7 +165,7 @@ namespace CorteCor.Tests
         public List<CrmInteracao> ListarInteracoes(int idSalao, int idPessoa, int limit = 50) => new();
         public List<CrmOportunidade> ListarOportunidades(int idSalao, int? idPessoa, string? status) => new();
         public List<CrmContatoCampanha> ListarPublicoCampanha(int idSalao, string segmento, string? filtroTag, int? diasInatividade, int? idPessoa) => new();
-        public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize) => new() { PageIndex = pageIndex, PageSize = pageSize };
+        public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize, string? pesquisa = null, string? canal = null, string? segmento = null, string? status = null) => new() { PageIndex = pageIndex, PageSize = pageSize };
         public PagedResult<CrmClienteResumo> ListarClientesResumo(int idSalao, string? pesquisa, int pageIndex, int pageSize) => new() { PageIndex = pageIndex, PageSize = pageSize };
         public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize, string? pesquisa = null, DateTime? dataVencimentoInicio = null, DateTime? dataVencimentoFim = null) => new() { PageIndex = pageIndex, PageSize = pageSize };
         public List<CrmTimelineItem> ListarTimeline(int idSalao, int idPessoa, int limit = 100) => new();

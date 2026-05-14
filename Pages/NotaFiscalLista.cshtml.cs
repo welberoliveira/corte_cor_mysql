@@ -1,4 +1,4 @@
-﻿using CorteCor.Handlers;
+using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -57,8 +57,8 @@ namespace CorteCor.Pages
             {
                 notas = notas.Where(n => n.IdVendaProduto == IdVendaProduto.Value).ToList();
                 FiltroDescricao = string.IsNullOrWhiteSpace(FiltroDescricao)
-                    ? $"Exibindo notas vinculadas Ã  venda #{IdVendaProduto.Value}."
-                    : $"{FiltroDescricao} Exibindo tambÃ©m apenas a venda #{IdVendaProduto.Value}.";
+                    ? $"Exibindo notas vinculadas à venda #{IdVendaProduto.Value}."
+                    : $"{FiltroDescricao} Exibindo também apenas a venda #{IdVendaProduto.Value}.";
             }
 
             if (IdNotaFiscal.HasValue)
@@ -103,7 +103,7 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                Erro = "Nota nÃ£o encontrada.";
+                Erro = "Nota não encontrada.";
                     return RedirecionarComFiltros();
                 }
 
@@ -111,7 +111,7 @@ namespace CorteCor.Pages
                 var chave = nota.TipoNota == "NFS-e" ? nota.ChaveAcessoNacional : nota.ChaveAcesso;
                 if (string.IsNullOrWhiteSpace(chave))
                 {
-                Erro = "A nota nÃ£o possui chave para consulta.";
+                Erro = "A nota não possui chave para consulta.";
                     return RedirecionarComFiltros();
                 }
 
@@ -134,7 +134,7 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                Erro = "Nota nÃ£o encontrada.";
+                Erro = "Nota não encontrada.";
                     return RedirecionarComFiltros();
                 }
 
@@ -163,7 +163,7 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                Erro = "Nota nÃ£o encontrada.";
+                Erro = "Nota não encontrada.";
                     return RedirecionarComFiltros();
                 }
 
@@ -199,7 +199,7 @@ namespace CorteCor.Pages
                 var nota = await _notaHandler.ObterPorIdAsync(idNota, idSalao);
                 if (nota == null)
                 {
-                Erro = "Nota nÃ£o encontrada.";
+                Erro = "Nota não encontrada.";
                     return RedirecionarComFiltros();
                 }
 

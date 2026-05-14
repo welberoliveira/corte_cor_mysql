@@ -1,4 +1,4 @@
-﻿using CorteCor.Handlers;
+using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -53,13 +53,13 @@ namespace CorteCor.Pages
 
                 if (numeroFinal < numeroInicial)
                 {
-                    Erro = "O NÃºmero Final nÃ£o pode ser menor do que o Inicial.";
+                    Erro = "O Número Final não pode ser menor do que o Inicial.";
                     return RedirectToPage();
                 }
 
                 if (string.IsNullOrWhiteSpace(justificativa) || justificativa.Length < 15)
                 {
-                    Erro = "Justificativa muito curta. Informe no mÃ­nimo 15 caracteres.";
+                    Erro = "Justificativa muito curta. Informe no mínimo 15 caracteres.";
                     return RedirectToPage();
                 }
 
@@ -70,8 +70,8 @@ namespace CorteCor.Pages
                     return RedirectToPage();
                 }
 
-                // Dispara o serviÃ§o Fiscal responsÃ¡vel por solicitar Inutilizacao na Sefaz
-                // Por padrÃ£o nesta pÃ¡gina legada, usamos NFC-e (Modelo 65)
+                // Dispara o serviço Fiscal responsável por solicitar Inutilizacao na Sefaz
+                // Por padrão nesta página legada, usamos NFC-e (Modelo 65)
                 var evento = await _fiscalActionService.InutilizarNfceAsync(config, ano, serie, numeroInicial, numeroFinal, justificativa, "NFC-e");
                 
                 var inut = new NotaFiscalInutilizacao

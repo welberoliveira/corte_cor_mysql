@@ -202,14 +202,35 @@ namespace CorteCor.Tests
             var pagamento = new Pagamento
             {
                 IdPagamento = Guid.NewGuid(),
+                IdSalao = 1,
                 Status = "Pago",
-                Ativo = true
+                Valor = 80m,
+                Ativo = true,
+                OrigemPagamento = OrigemPagamento.Avulso
             };
 
             // Act
             _handler.AtualizarPagamento(pagamento, 1);
 
             // Assert
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
+
+        [Fact]
+        public void CadastrarPagamento_Avulso_DeveSalvarSemDesativarAgendamento()
+        {
+            var pagamento = new Pagamento
+            {
+                IdPagamento = Guid.NewGuid(),
+                IdSalao = 1,
+                OrigemPagamento = OrigemPagamento.Avulso,
+                Valor = 80m,
+                Ativo = true,
+                Status = "Pago"
+            };
+
+            _handler.CadastrarPagamento(pagamento);
+
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
         }
 

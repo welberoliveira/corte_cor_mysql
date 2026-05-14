@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Threading.Tasks;
 using CorteCor.Models;
 
@@ -48,14 +47,19 @@ namespace CorteCor.Handlers
         public async Task SalvarConfigGeralAsync(ConfigGeral config)
         {
             string query = @"
-                IF EXISTS (SELECT 1 FROM CorteCor_ConfigGeral WHERE IdSalao = @IdSalao)
-                BEGIN
-                    UPDATE CorteCor_ConfigGeral SET NomeFantasia = @NomeFantasia, LogoUrl = @LogoUrl, TemaCor = @TemaCor, ModoPDV = @ModoPDV, ModoEstoque = @ModoEstoque, AgendamentoOnline = @AgendamentoOnline, MinutosAntecedencia = @MinutosAntecedencia, DataAtualizacao = GETDATE() WHERE IdSalao = @IdSalao;
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO CorteCor_ConfigGeral (IdSalao, NomeFantasia, LogoUrl, TemaCor, ModoPDV, ModoEstoque, AgendamentoOnline, MinutosAntecedencia) VALUES (@IdSalao, @NomeFantasia, @LogoUrl, @TemaCor, @ModoPDV, @ModoEstoque, @AgendamentoOnline, @MinutosAntecedencia);
-                END";
+                INSERT INTO CorteCor_ConfigGeral
+                    (IdSalao, NomeFantasia, LogoUrl, TemaCor, ModoPDV, ModoEstoque, AgendamentoOnline, MinutosAntecedencia, DataAtualizacao)
+                VALUES
+                    (@IdSalao, @NomeFantasia, @LogoUrl, @TemaCor, @ModoPDV, @ModoEstoque, @AgendamentoOnline, @MinutosAntecedencia, NOW())
+                ON DUPLICATE KEY UPDATE
+                    NomeFantasia = VALUES(NomeFantasia),
+                    LogoUrl = VALUES(LogoUrl),
+                    TemaCor = VALUES(TemaCor),
+                    ModoPDV = VALUES(ModoPDV),
+                    ModoEstoque = VALUES(ModoEstoque),
+                    AgendamentoOnline = VALUES(AgendamentoOnline),
+                    MinutosAntecedencia = VALUES(MinutosAntecedencia),
+                    DataAtualizacao = NOW();";
 
             using var connection = _dbHandler.GetConnection();
             using var command = connection.CreateCommand(query);
@@ -103,14 +107,17 @@ namespace CorteCor.Handlers
         public async Task SalvarConfigPixAsync(ConfigPix config)
         {
             string query = @"
-                IF EXISTS (SELECT 1 FROM CorteCor_ConfigPix WHERE IdSalao = @IdSalao)
-                BEGIN
-                    UPDATE CorteCor_ConfigPix SET ChavePix = @ChavePix, PSP = @PSP, ClientId = @ClientId, ClientSecret = @ClientSecret, Certificado = @Certificado, Ativo = @Ativo WHERE IdSalao = @IdSalao;
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO CorteCor_ConfigPix (IdSalao, ChavePix, PSP, ClientId, ClientSecret, Certificado, Ativo) VALUES (@IdSalao, @ChavePix, @PSP, @ClientId, @ClientSecret, @Certificado, @Ativo);
-                END";
+                INSERT INTO CorteCor_ConfigPix
+                    (IdSalao, ChavePix, PSP, ClientId, ClientSecret, Certificado, Ativo)
+                VALUES
+                    (@IdSalao, @ChavePix, @PSP, @ClientId, @ClientSecret, @Certificado, @Ativo)
+                ON DUPLICATE KEY UPDATE
+                    ChavePix = VALUES(ChavePix),
+                    PSP = VALUES(PSP),
+                    ClientId = VALUES(ClientId),
+                    ClientSecret = VALUES(ClientSecret),
+                    Certificado = VALUES(Certificado),
+                    Ativo = VALUES(Ativo);";
 
             using var connection = _dbHandler.GetConnection();
             using var command = connection.CreateCommand(query);

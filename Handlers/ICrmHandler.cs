@@ -21,7 +21,7 @@ namespace CorteCor.Handlers
         PagedResult<CrmOportunidade> ListarOportunidadesPaginadas(int idSalao, int? idPessoa, string? status, DateTime? dataInicio, DateTime? dataFim, int pageIndex, int pageSize);
         int SalvarOportunidade(CrmOportunidade oportunidade);
         void AtualizarEtapaOportunidade(int idSalao, int idOportunidade, int idEtapa, string status, DateTime? dataFechamento);
-        PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize);
+        PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize, string? pesquisa = null, string? canal = null, string? segmento = null, string? status = null);
         int SalvarCampanha(CrmCampanha campanha);
         CrmCampanha? ObterCampanha(int idSalao, int idCampanha);
         List<CrmContatoCampanha> ListarPublicoCampanha(int idSalao, string segmento, string? filtroTag, int? diasInatividade, int? idPessoa);

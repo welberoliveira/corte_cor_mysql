@@ -1,5 +1,4 @@
 using System;
-using System.Data.SqlClient;
 using System.Threading.Tasks;
 using CorteCor.Handlers;
 using CorteCor.Models;
@@ -7,6 +6,7 @@ using CorteCor.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using MySqlConnector;
 
 namespace CorteCor.Pages.Configuracoes
 {
@@ -160,7 +160,7 @@ namespace CorteCor.Pages.Configuracoes
                 _salaoHandler.Atualizar(Salao);
                 TempData["Mensagem"] = "Dados da empresa atualizados com sucesso!";
             }
-            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
+            catch (MySqlException ex) when (ex.Number == 1062)
             {
                 TempData["MensagemErro"] = "Já existe outra unidade cadastrada com este CNPJ (" + Salao.CNPJ + "). Não é permitido duplicar o CNPJ.";
             }

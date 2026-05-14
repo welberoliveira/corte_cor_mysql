@@ -29,7 +29,7 @@ SELECT
     P.Valor,
     P.Descricao,
     P.Tipo,
-    COALESCE(P.PagoEm, P.CriadoEm, GETDATE()) AS DataReferencia,
+    COALESCE(P.PagoEm, P.CriadoEm, NOW()) AS DataReferencia,
     P.PagoEm,
     P.CriadoEm
 FROM CorteCor_Pagamento P
@@ -37,13 +37,14 @@ INNER JOIN CorteCor_Agendamento A ON A.IdAgendamento = P.IdAgendamento
 INNER JOIN CorteCor_Servico S ON S.IdServico = A.IdServico
 LEFT JOIN CorteCor_Pessoa Pe ON Pe.IdPessoa = A.IdPessoa
 WHERE S.IdSalao = @IdSalao
-  AND ISNULL(P.Ativo, 0) = 1;";
+  AND COALESCE(P.Ativo, 0) = 1;";
 
             const string selectTituloSql = @"
-SELECT TOP 1 *
+SELECT *
 FROM CorteCor_FinanceiroTitulo
 WHERE IdSalao = @IdSalao
-  AND IdPagamento = @IdPagamento;";
+  AND IdPagamento = @IdPagamento
+LIMIT 1;";
 
             const string insertSql = @"
 INSERT INTO CorteCor_FinanceiroTitulo
@@ -53,7 +54,7 @@ INSERT INTO CorteCor_FinanceiroTitulo
 VALUES
     (@IdTitulo, @IdSalao, @Tipo, @Origem, @IdPessoa, @IdAgendamento, @IdVendaProduto, @IdPagamento, @IdPlano, @IdConta,
      @Descricao, @Documento, @Status, @ValorOriginal, @ValorLiquidado, @ValorAberto, @DataCompetencia,
-     @DataVencimento, @DataLiquidacao, @Conciliado, @Observacoes, GETDATE(), GETDATE());";
+     @DataVencimento, @DataLiquidacao, @Conciliado, @Observacoes, NOW(), NOW());";
 
             const string updateSql = @"
 UPDATE CorteCor_FinanceiroTitulo
@@ -71,7 +72,7 @@ SET IdPessoa = @IdPessoa,
     Tipo = @Tipo,
     Origem = @Origem,
     Observacoes = @Observacoes,
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdTitulo = @IdTitulo
   AND IdSalao = @IdSalao;";
 
@@ -146,12 +147,12 @@ WHERE T.IdSalao = @IdSalao
   AND (
         @Pesquisa IS NULL
         OR T.Descricao LIKE @Pesquisa
-        OR ISNULL(P.Nome, '') LIKE @Pesquisa
-        OR ISNULL(T.Documento, '') LIKE @Pesquisa
+        OR COALESCE(P.Nome, '') LIKE COALESCE(@Pesquisa, '')
+        OR COALESCE(T.Documento, '') LIKE COALESCE(@Pesquisa, '')
       )
   AND (@DataInicio IS NULL OR T.DataVencimento >= @DataInicio)
   AND (@DataFim IS NULL OR T.DataVencimento <= @DataFim)
-  AND (@SomenteVencidos = 0 OR (T.Status IN ('Aberto', 'Vencido') AND T.DataVencimento < CAST(GETDATE() AS DATE)))";
+  AND (@SomenteVencidos = 0 OR (T.Status IN ('Aberto', 'Vencido') AND T.DataVencimento < CURDATE()))";
 
             const string selectSql = @"
 SELECT
@@ -166,7 +167,7 @@ ORDER BY
     CASE WHEN T.Status = 'Vencido' THEN 0 WHEN T.Status = 'Aberto' THEN 1 ELSE 2 END,
     T.DataVencimento,
     T.Descricao
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+LIMIT @PageSize OFFSET @Offset;";
 
             const string countSql = "SELECT COUNT(1) " + baseSql + ";";
 
@@ -192,7 +193,7 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
         public async Task<FinanceiroTitulo?> ObterTituloAsync(int idSalao, Guid idTitulo)
         {
             const string sql = @"
-SELECT TOP 1
+SELECT
     T.*,
     P.Nome AS NomePessoa,
     PC.Descricao AS NomePlano,
@@ -202,7 +203,8 @@ LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
 LEFT JOIN CorteCor_PlanoContas PC ON PC.IdPlano = T.IdPlano
 LEFT JOIN CorteCor_ContaCaixa CC ON CC.IdConta = T.IdConta
 WHERE T.IdSalao = @IdSalao
-  AND T.IdTitulo = @IdTitulo;";
+  AND T.IdTitulo = @IdTitulo
+LIMIT 1;";
 
             using var conn = GetConnection();
             var titulo = await conn.QueryFirstOrDefaultAsync<FinanceiroTitulo>(sql, new { IdSalao = idSalao, IdTitulo = idTitulo });
@@ -244,7 +246,7 @@ INSERT INTO CorteCor_FinanceiroTitulo
 VALUES
     (@IdTitulo, @IdSalao, @Tipo, @Origem, @IdPessoa, @IdAgendamento, @IdVendaProduto, @IdPagamento, @IdPlano, @IdConta,
      @Descricao, @Documento, @Status, @ValorOriginal, @ValorLiquidado, @ValorAberto, @DataCompetencia,
-     @DataVencimento, @DataLiquidacao, @Conciliado, @Observacoes, GETDATE(), GETDATE());";
+     @DataVencimento, @DataLiquidacao, @Conciliado, @Observacoes, NOW(), NOW());";
 
             const string updateSql = @"
 UPDATE CorteCor_FinanceiroTitulo
@@ -266,7 +268,7 @@ SET Tipo = @Tipo,
     DataLiquidacao = @DataLiquidacao,
     Conciliado = @Conciliado,
     Observacoes = @Observacoes,
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdSalao = @IdSalao
   AND IdTitulo = @IdTitulo;";
 
@@ -293,13 +295,13 @@ SET Status = @Status,
     ValorLiquidado = @ValorLiquidado,
     ValorAberto = @ValorAberto,
     Conciliado = COALESCE(@Conciliado, Conciliado),
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdSalao = @IdSalao
   AND IdTitulo = @IdTitulo;";
 
             using var conn = GetConnection();
             var atual = await conn.QueryFirstOrDefaultAsync<FinanceiroTitulo>(
-                "SELECT TOP 1 * FROM CorteCor_FinanceiroTitulo WHERE IdSalao = @IdSalao AND IdTitulo = @IdTitulo;",
+                "SELECT * FROM CorteCor_FinanceiroTitulo WHERE IdSalao = @IdSalao AND IdTitulo = @IdTitulo LIMIT 1;",
                 new { IdSalao = idSalao, IdTitulo = idTitulo });
 
             if (atual == null)
@@ -337,7 +339,7 @@ SET ValorOriginal = @ValorOriginal,
     DataLiquidacao = @DataLiquidacao,
     Conciliado = @Conciliado,
     Observacoes = @Observacoes,
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdSalao = @IdSalao
   AND IdTitulo = @IdTitulo;";
 
@@ -442,16 +444,16 @@ WHERE IdConta = @IdConta
 
             const string kpiSql = @"
 SELECT
-    ISNULL(SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATEADD(DAY, 1, @DataFim) THEN ValorLiquidado ELSE 0 END), 0) AS ReceitasLiquidadas,
-    ISNULL(SUM(CASE WHEN Tipo = 'Pagar' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATEADD(DAY, 1, @DataFim) THEN ValorLiquidado ELSE 0 END), 0) AS DespesasLiquidadas,
-    ISNULL(SUM(CASE WHEN Tipo = 'Receber' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END), 0) AS AReceberAberto,
-    ISNULL(SUM(CASE WHEN Tipo = 'Pagar' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END), 0) AS APagarAberto,
-    ISNULL(SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Vencido' THEN ValorAberto ELSE 0 END), 0) AS ReceitasVencidas,
-    ISNULL(SUM(CASE WHEN Tipo = 'Pagar' AND Status = 'Vencido' THEN ValorAberto ELSE 0 END), 0) AS DespesasVencidas,
-    ISNULL(SUM(CASE WHEN Tipo = 'Receber' AND Status IN ('Aberto', 'Vencido') THEN 1 ELSE 0 END), 0) +
-    ISNULL(SUM(CASE WHEN Tipo = 'Pagar' AND Status IN ('Aberto', 'Vencido') THEN 1 ELSE 0 END), 0) AS QuantidadeTitulosAbertos,
-    ISNULL(SUM(CASE WHEN Status = 'Vencido' THEN 1 ELSE 0 END), 0) AS QuantidadeTitulosVencidos,
-    ISNULL(AVG(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATEADD(DAY, 1, @DataFim) THEN ValorLiquidado END), 0) AS TicketMedioRecebido
+    COALESCE(SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY) THEN ValorLiquidado ELSE 0 END), 0) AS ReceitasLiquidadas,
+    COALESCE(SUM(CASE WHEN Tipo = 'Pagar' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY) THEN ValorLiquidado ELSE 0 END), 0) AS DespesasLiquidadas,
+    COALESCE(SUM(CASE WHEN Tipo = 'Receber' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END), 0) AS AReceberAberto,
+    COALESCE(SUM(CASE WHEN Tipo = 'Pagar' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END), 0) AS APagarAberto,
+    COALESCE(SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Vencido' THEN ValorAberto ELSE 0 END), 0) AS ReceitasVencidas,
+    COALESCE(SUM(CASE WHEN Tipo = 'Pagar' AND Status = 'Vencido' THEN ValorAberto ELSE 0 END), 0) AS DespesasVencidas,
+    COALESCE(SUM(CASE WHEN Tipo = 'Receber' AND Status IN ('Aberto', 'Vencido') THEN 1 ELSE 0 END), 0) +
+    COALESCE(SUM(CASE WHEN Tipo = 'Pagar' AND Status IN ('Aberto', 'Vencido') THEN 1 ELSE 0 END), 0) AS QuantidadeTitulosAbertos,
+    COALESCE(SUM(CASE WHEN Status = 'Vencido' THEN 1 ELSE 0 END), 0) AS QuantidadeTitulosVencidos,
+    COALESCE(AVG(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY) THEN ValorLiquidado END), 0) AS TicketMedioRecebido
 FROM CorteCor_FinanceiroTitulo
 WHERE IdSalao = @IdSalao;";
 
@@ -469,8 +471,8 @@ WHERE IdSalao = @IdSalao;";
 
             const string saldoBaseSql = @"
 SELECT
-    ISNULL((SELECT SUM(ISNULL(SaldoInicial, 0)) FROM CorteCor_ContaCaixa WHERE IdSalao = @IdSalao AND Ativo = 1), 0)
-    + ISNULL((SELECT SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' THEN ValorLiquidado WHEN Tipo = 'Pagar' AND Status = 'Liquidado' THEN -ValorLiquidado ELSE 0 END)
+    COALESCE((SELECT SUM(COALESCE(SaldoInicial, 0)) FROM CorteCor_ContaCaixa WHERE IdSalao = @IdSalao AND Ativo = 1), 0)
+    + COALESCE((SELECT SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' THEN ValorLiquidado WHEN Tipo = 'Pagar' AND Status = 'Liquidado' THEN -ValorLiquidado ELSE 0 END)
               FROM CorteCor_FinanceiroTitulo WHERE IdSalao = @IdSalao), 0);";
             var saldoAtual = await conn.ExecuteScalarAsync<decimal>(saldoBaseSql, new { IdSalao = idSalao });
             resumo.SaldoProjetado = saldoAtual + resumo.AReceberAberto - resumo.APagarAberto;
@@ -478,7 +480,7 @@ SELECT
 resumo.FluxoCaixa = (await ObterFluxoCaixaAsync(conn, idSalao, dataInicio.Date.AddDays(-15), dataFim.Date.AddDays(15))).ToList();
 resumo.DreGerencial = (await ObterDreAsync(conn, idSalao, dataInicio.Date, dataFim.Date)).ToList();
 resumo.ReceitasPorForma = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
-SELECT TOP 8
+SELECT
     COALESCE(NULLIF(P.Tipo, ''), T.Origem) AS Nome,
     SUM(T.ValorLiquidado) AS Valor,
     COUNT(1) AS Quantidade
@@ -488,12 +490,13 @@ WHERE T.IdSalao = @IdSalao
   AND T.Tipo = 'Receber'
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
-  AND T.DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+  AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 GROUP BY COALESCE(NULLIF(P.Tipo, ''), T.Origem)
-ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
+ORDER BY SUM(T.ValorLiquidado) DESC
+LIMIT 8;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
             resumo.DespesasPorPlano = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
-SELECT TOP 8
+SELECT
     COALESCE(PC.Descricao, 'Sem plano') AS Nome,
     SUM(T.ValorLiquidado) AS Valor,
     COUNT(1) AS Quantidade
@@ -503,12 +506,13 @@ WHERE T.IdSalao = @IdSalao
   AND T.Tipo = 'Pagar'
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
-  AND T.DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+  AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 GROUP BY COALESCE(PC.Descricao, 'Sem plano')
-ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
+ORDER BY SUM(T.ValorLiquidado) DESC
+LIMIT 8;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
             resumo.TopClientes = (await conn.QueryAsync<FinanceiroClienteResumo>(@"
-SELECT TOP 10
+SELECT
     COALESCE(P.Nome, 'Cliente nao identificado') AS NomeCliente,
     SUM(T.ValorLiquidado) AS Valor,
     COUNT(1) AS Quantidade
@@ -518,12 +522,13 @@ WHERE T.IdSalao = @IdSalao
   AND T.Tipo = 'Receber'
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
-  AND T.DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+  AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 GROUP BY COALESCE(P.Nome, 'Cliente nao identificado')
-ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
+ORDER BY SUM(T.ValorLiquidado) DESC
+LIMIT 10;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
             resumo.TitulosCriticos = (await conn.QueryAsync<FinanceiroTitulo>(@"
-SELECT TOP 10
+SELECT
     T.*,
     P.Nome AS NomePessoa,
     PC.Descricao AS NomePlano,
@@ -535,12 +540,13 @@ LEFT JOIN CorteCor_ContaCaixa CC ON CC.IdConta = T.IdConta
 WHERE T.IdSalao = @IdSalao
   AND (
         (T.Status = 'Vencido')
-        OR (T.Status = 'Aberto' AND T.DataVencimento <= DATEADD(DAY, 7, CAST(GETDATE() AS DATE)))
+        OR (T.Status = 'Aberto' AND T.DataVencimento <= DATE_ADD(CURDATE(), INTERVAL 7 DAY))
       )
 ORDER BY
     CASE WHEN T.Status = 'Vencido' THEN 0 ELSE 1 END,
     T.DataVencimento,
-    T.ValorAberto DESC;", new { IdSalao = idSalao })).ToList();
+    T.ValorAberto DESC
+LIMIT 10;", new { IdSalao = idSalao })).ToList();
 
             return resumo;
         }
@@ -565,7 +571,7 @@ LEFT JOIN CorteCor_Agendamento A ON A.IdAgendamento = T.IdAgendamento
 LEFT JOIN CorteCor_Servico S ON S.IdServico = A.IdServico
 WHERE T.IdSalao = @IdSalao
   AND T.DataVencimento >= @DataInicio
-  AND T.DataVencimento < DATEADD(DAY, 1, @DataFim)
+  AND T.DataVencimento < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 ORDER BY T.DataVencimento, T.Descricao;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
             relatorio.ReceitasPorPlano = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
@@ -579,7 +585,7 @@ WHERE T.IdSalao = @IdSalao
   AND T.Tipo = 'Receber'
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
-  AND T.DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+  AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 GROUP BY COALESCE(PC.Descricao, 'Sem plano')
 ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
@@ -594,7 +600,7 @@ WHERE T.IdSalao = @IdSalao
   AND T.Tipo = 'Pagar'
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
-  AND T.DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+  AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 GROUP BY COALESCE(PC.Descricao, 'Sem plano')
 ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
@@ -609,16 +615,16 @@ WHERE T.IdSalao = @IdSalao
   AND T.Tipo = 'Receber'
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
-  AND T.DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+  AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 GROUP BY COALESCE(NULLIF(P.Tipo, ''), T.Origem)
 ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
             relatorio.InadimplenciaPorFaixa = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
 SELECT
     CASE
-        WHEN DATEDIFF(DAY, T.DataVencimento, CAST(GETDATE() AS DATE)) BETWEEN 1 AND 7 THEN '1 a 7 dias'
-        WHEN DATEDIFF(DAY, T.DataVencimento, CAST(GETDATE() AS DATE)) BETWEEN 8 AND 30 THEN '8 a 30 dias'
-        WHEN DATEDIFF(DAY, T.DataVencimento, CAST(GETDATE() AS DATE)) BETWEEN 31 AND 60 THEN '31 a 60 dias'
+        WHEN DATEDIFF(CURDATE(), T.DataVencimento) BETWEEN 1 AND 7 THEN '1 a 7 dias'
+        WHEN DATEDIFF(CURDATE(), T.DataVencimento) BETWEEN 8 AND 30 THEN '8 a 30 dias'
+        WHEN DATEDIFF(CURDATE(), T.DataVencimento) BETWEEN 31 AND 60 THEN '31 a 60 dias'
         ELSE '61+ dias'
     END AS Nome,
     SUM(T.ValorAberto) AS Valor,
@@ -629,12 +635,12 @@ WHERE T.IdSalao = @IdSalao
   AND T.Status = 'Vencido'
 GROUP BY
     CASE
-        WHEN DATEDIFF(DAY, T.DataVencimento, CAST(GETDATE() AS DATE)) BETWEEN 1 AND 7 THEN '1 a 7 dias'
-        WHEN DATEDIFF(DAY, T.DataVencimento, CAST(GETDATE() AS DATE)) BETWEEN 8 AND 30 THEN '8 a 30 dias'
-        WHEN DATEDIFF(DAY, T.DataVencimento, CAST(GETDATE() AS DATE)) BETWEEN 31 AND 60 THEN '31 a 60 dias'
+        WHEN DATEDIFF(CURDATE(), T.DataVencimento) BETWEEN 1 AND 7 THEN '1 a 7 dias'
+        WHEN DATEDIFF(CURDATE(), T.DataVencimento) BETWEEN 8 AND 30 THEN '8 a 30 dias'
+        WHEN DATEDIFF(CURDATE(), T.DataVencimento) BETWEEN 31 AND 60 THEN '31 a 60 dias'
         ELSE '61+ dias'
     END
-ORDER BY MIN(DATEDIFF(DAY, T.DataVencimento, CAST(GETDATE() AS DATE)));", new { IdSalao = idSalao })).ToList();
+ORDER BY MIN(DATEDIFF(CURDATE(), T.DataVencimento));", new { IdSalao = idSalao })).ToList();
 
             relatorio.FluxoProjetado = (await ObterFluxoProjetadoAsync(conn, idSalao, DateTime.Today.AddDays(-7), DateTime.Today.AddDays(30))).ToList();
             return relatorio;
@@ -690,23 +696,23 @@ SELECT
     SUM(Saidas) AS Saidas
 FROM
 (
-    SELECT CAST(DataLiquidacao AS DATE) AS DataReferencia, ValorLiquidado AS Entradas, CAST(0 AS DECIMAL(18,2)) AS Saidas
+    SELECT DATE(DataLiquidacao) AS DataReferencia, ValorLiquidado AS Entradas, 0.00 AS Saidas
     FROM CorteCor_FinanceiroTitulo
-    WHERE IdSalao = @IdSalao AND Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+    WHERE IdSalao = @IdSalao AND Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 
     UNION ALL
 
-    SELECT CAST(DataLiquidacao AS DATE) AS DataReferencia, CAST(0 AS DECIMAL(18,2)) AS Entradas, ValorLiquidado AS Saidas
+    SELECT DATE(DataLiquidacao) AS DataReferencia, 0.00 AS Entradas, ValorLiquidado AS Saidas
     FROM CorteCor_FinanceiroTitulo
-    WHERE IdSalao = @IdSalao AND Tipo = 'Pagar' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATEADD(DAY, 1, @DataFim)
+    WHERE IdSalao = @IdSalao AND Tipo = 'Pagar' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 ) Fluxo
 GROUP BY DataReferencia
 ORDER BY DataReferencia;";
 
             const string saldoAnteriorSql = @"
 SELECT
-    ISNULL((SELECT SUM(ISNULL(SaldoInicial, 0)) FROM CorteCor_ContaCaixa WHERE IdSalao = @IdSalao AND Ativo = 1), 0)
-    + ISNULL(SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' THEN ValorLiquidado WHEN Tipo = 'Pagar' AND Status = 'Liquidado' THEN -ValorLiquidado ELSE 0 END), 0)
+    COALESCE((SELECT SUM(COALESCE(SaldoInicial, 0)) FROM CorteCor_ContaCaixa WHERE IdSalao = @IdSalao AND Ativo = 1), 0)
+    + COALESCE(SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' THEN ValorLiquidado WHEN Tipo = 'Pagar' AND Status = 'Liquidado' THEN -ValorLiquidado ELSE 0 END), 0)
 FROM CorteCor_FinanceiroTitulo
 WHERE IdSalao = @IdSalao
   AND DataLiquidacao < @DataInicio;";
@@ -736,15 +742,15 @@ WHERE IdSalao = @IdSalao
         {
             const string sql = @"
 SELECT
-    CAST(DataVencimento AS DATE) AS [Data],
+    DATE(DataVencimento) AS [Data],
     SUM(CASE WHEN Tipo = 'Receber' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END) AS Entradas,
     SUM(CASE WHEN Tipo = 'Pagar' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END) AS Saidas
 FROM CorteCor_FinanceiroTitulo
 WHERE IdSalao = @IdSalao
   AND DataVencimento >= @DataInicio
-  AND DataVencimento < DATEADD(DAY, 1, @DataFim)
-GROUP BY CAST(DataVencimento AS DATE)
-ORDER BY CAST(DataVencimento AS DATE);";
+  AND DataVencimento < DATE_ADD(@DataFim, INTERVAL 1 DAY)
+GROUP BY DATE(DataVencimento)
+ORDER BY DATE(DataVencimento);";
 
             var movimentos = (await conn.QueryAsync<FinanceiroFluxoCaixaItem>(sql, new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
             var saldo = 0m;
@@ -771,8 +777,8 @@ ORDER BY CAST(DataVencimento AS DATE);";
         {
             const string sql = @"
 SELECT
-    SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATEADD(DAY, 1, @DataFim) THEN ValorLiquidado ELSE 0 END) AS Receitas,
-    SUM(CASE WHEN Tipo = 'Pagar' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATEADD(DAY, 1, @DataFim) THEN ValorLiquidado ELSE 0 END) AS Despesas
+    SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY) THEN ValorLiquidado ELSE 0 END) AS Receitas,
+    SUM(CASE WHEN Tipo = 'Pagar' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY) THEN ValorLiquidado ELSE 0 END) AS Despesas
 FROM CorteCor_FinanceiroTitulo
 WHERE IdSalao = @IdSalao;";
 

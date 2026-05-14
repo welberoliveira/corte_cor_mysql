@@ -1,4 +1,4 @@
-﻿using CorteCor.Models;
+using CorteCor.Models;
 using CorteCor.Handlers;
 using CorteCor.Handlers;
 using CorteCor.Logs;
@@ -24,6 +24,9 @@ namespace CorteCor.Pages
 
         public string ErrorMessage { get; set; }
         public string NomeSalao { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string PasswordValue { get; set; } = string.Empty;
+        public bool PreservePassword { get; set; }
 
         public void OnGet()
         {
@@ -36,9 +39,13 @@ namespace CorteCor.Pages
 
             var email = Request.Form["email"].ToString();
             var password = Request.Form["password"].ToString();
+            Email = email;
+            PasswordValue = password;
 
-            var loginManager = new LoginManager();
+            var loginManager = new LoginManager(_dbHandler);
 
+            try
+            {
             if (loginManager.AutenticarUsuario(email, password))
             {
                 // Registrar acesso bem-sucedido
@@ -47,7 +54,7 @@ namespace CorteCor.Pages
                     var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
                     new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", true);
                 }
-                catch { /* NÃ£o impedir login */ }
+                catch { /* Não impedir login */ }
                 //buscar IdUsuario
                 using var connection = _dbHandler.GetConnection();
                 string query = @"
@@ -65,6 +72,7 @@ namespace CorteCor.Pages
                 else
                 {
                     ErrorMessage = "Ocorreu um erro inesperado";
+                    PreservePassword = true;
                     return Page();
                 }
 
@@ -72,7 +80,7 @@ namespace CorteCor.Pages
                 var Usuario = handler.ObterPorId(int.Parse(IdUsuario));
 
 
-                // Criar os claims do usuÃ¡rio autenticado
+                // Criar os claims do usuário autenticado
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, email),
@@ -86,25 +94,25 @@ namespace CorteCor.Pages
 
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
-                // ---- VerificaÃ§Ã£o de Limites (Email e SMS) ----
+                // ---- Verificação de Limites (Email e SMS) ----
                 try {
                     var lembreteHandler = new LembreteHandler(_dbHandler);
                     
                     // Email
                     if (lembreteHandler.VerificarLimiteEmail(Usuario.IdSalao, out int envEmail, out int limEmail))
                     {
-                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de e-mails para sua empresa foi alcançado ({envEmail}/{limEmail}). Adquira mais crÃ©ditos para continuar enviando lembretes por email.";
+                        TempData["AvisoLimite"] = $"Atenção: O limite de disparos de e-mails para sua empresa foi alcançado ({envEmail}/{limEmail}). Adquira mais créditos para continuar enviando lembretes por email.";
                     }
 
                     // SMS
                     if (lembreteHandler.VerificarLimiteSMS(Usuario.IdSalao, out int envSms, out int limSms))
                     {
-                        TempData["AvisoLimiteSMS"] = $"Atenção: O limite de disparos de SMS para sua empresa foi alcançado ({envSms}/{limSms}). Adquira mais crÃ©ditos para continuar enviando lembretes por SMS.";
+                        TempData["AvisoLimiteSMS"] = $"Atenção: O limite de disparos de SMS para sua empresa foi alcançado ({envSms}/{limSms}). Adquira mais créditos para continuar enviando lembretes por SMS.";
                     }
                 }
                 catch (Exception ex)
                 {
-                    // NÃ£o impedir login por erro aqui, apenas logar ou ignorar
+                    // Não impedir login por erro aqui, apenas logar ou ignorar
                     Console.WriteLine("Erro ao verificar limites: " + ex.Message);
                 }
                 // ----------------------------------------------
@@ -115,6 +123,8 @@ namespace CorteCor.Pages
             else
             {
                 ErrorMessage = "Email ou senha incorretos.";
+                PasswordValue = string.Empty;
+                PreservePassword = false;
 
                 // Registrar tentativa falha
                 try
@@ -122,8 +132,15 @@ namespace CorteCor.Pages
                     var ipOrigem = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
                     new LogAcessoHandler().Registrar(email, ipOrigem, "Usuario", false);
                 }
-                catch { /* NÃ£o impedir fluxo */ }
+                catch { /* Não impedir fluxo */ }
 
+                return Page();
+            }
+            }
+            catch (DatabaseConnectionException)
+            {
+                ErrorMessage = "Nao foi possivel acessar o banco de dados no momento. Tente novamente.";
+                PreservePassword = true;
                 return Page();
             }
         }

@@ -1,11 +1,11 @@
 @page
 @model CorteCor.Pages.PessoaCadastroModel
 @{
-    ViewData["Title"] = "Cadastro de Clientes";
+    ViewData["Title"] = "Cadastro de Cliente/Fornecedor/Transportador";
 }
 
 <div class="container">
-    <h4>@Model.ButtonText Cliente</h4>
+    <h4>@Model.ButtonText cliente/fornecedor/transportador</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -52,7 +52,7 @@
             </div>
         </div>
 
-        @* â”€â”€ Campos CNPJ (ReceitaWS - preenchidos automaticamente) â”€â”€ *@
+        @* -- Campos CNPJ (ReceitaWS - preenchidos automaticamente) -- *@
         <div class="row" id="cnpjFieldsRow">
             <div class="col-md-4 form-group">
                 <label for="razaoSocial">Razão Social</label>
@@ -159,13 +159,19 @@
             </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
             <h5 class="mb-0">Endereço de Entrega</h5>
-            <button type="button" class="btn btn-secondary btn-sm" id="copiarEnderecoEntrega">
-                Copiar endereço principal
-            </button>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#enderecoEntregaCampos" aria-expanded="true" aria-controls="enderecoEntregaCampos">
+                    Ocultar campos
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="copiarEnderecoEntrega">
+                    Copiar endereço principal
+                </button>
+            </div>
         </div>
         <hr />
+        <div id="enderecoEntregaCampos" class="collapse show">
         <div class="row">
             <div class="col-md-3 form-group">
                 <label for="entCep">CEP</label>
@@ -229,9 +235,16 @@
                 <input type="text" id="entTelefone" name="entTelefone" class="form-control" value="@Model.Pessoa?.EntTelefone">
             </div>
         </div>
+        </div>
 
-        <h5 class="mt-4">Informações Fiscais</h5>
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+            <h5 class="mb-0">Informações Fiscais</h5>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#informacoesFiscaisCampos" aria-expanded="true" aria-controls="informacoesFiscaisCampos">
+                Ocultar campos
+            </button>
+        </div>
         <hr />
+        <div id="informacoesFiscaisCampos" class="collapse show">
         <div class="row">
             <div class="col-md-3 form-group align-self-end">
                 <div class="form-check mb-2">
@@ -257,9 +270,16 @@
                 <input type="text" id="suframa" name="suframa" class="form-control" value="@Model.Pessoa?.Suframa">
             </div>
         </div>
+        </div>
 
-        <h5 class="mt-4">Outras Informações</h5>
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+            <h5 class="mb-0">Outras Informações</h5>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#outrasInformacoesCampos" aria-expanded="true" aria-controls="outrasInformacoesCampos">
+                Ocultar campos
+            </button>
+        </div>
         <hr />
+        <div id="outrasInformacoesCampos" class="collapse show">
         <div class="row">
             <div class="col-md-4 form-group">
                 <label for="dataComemorativa">Data Comemorativa</label>
@@ -285,6 +305,7 @@
                 <label for="observacoes">Observações</label>
                 <textarea id="observacoes" name="observacoes" class="form-control" rows="3">@Model.Pessoa?.Observacoes</textarea>
             </div>
+        </div>
         </div>
 
         <div class="row mt-3">
@@ -327,11 +348,11 @@
 
 <script>
     $(document).ready(function () {
-        // â”€â”€ MÃ¡scaras â”€â”€
+        // -- Máscaras --
         $("#telefone").inputmask("(99) 99999-9999");
         $("#cep").inputmask("99999-999");
 
-        // â”€â”€ MÃ¡scara dinÃ¢mica CPF/CNPJ â”€â”€
+        // -- Máscara dinâmica CPF/CNPJ --
         // Permite digitação livre e formata no blur conforme quantidade de dígitos
         var cpfCnpjField = $("#cpfCnpj");
         
@@ -362,7 +383,7 @@
             $(this).val(val);
         });
 
-        // â”€â”€ Auto-preenchimento CNPJ (blur) â”€â”€
+        // -- Auto-preenchimento CNPJ (blur) --
         cpfCnpjField.on("blur", function () {
             var val = $(this).val().replace(/\D/g, "");
             
@@ -376,7 +397,7 @@
                 .then(function (data) {
                     $("#cpfCnpjSpinner").hide();
                     if (data.sucesso) {
-                        // Limpar todos os campos da empresa e endereÃ§o antes de preencher
+                        // Limpar todos os campos da empresa e endereço antes de preencher
                         $("#nome").val("");
                         $("#razaoSocial").val("");
                         $("#nomeFantasia").val("");
@@ -399,7 +420,7 @@
                         $("#nomeFantasia").val(data.nomeFantasia);
                         $("#cnae").val(data.cnae);
                         
-                        // Preencher telefone, email e data de fundaÃ§Ã£o
+                        // Preencher telefone, email e data de fundação
                         if (data.telefone) $("#telefone").val(data.telefone);
                         if (data.email) $("#email").val(data.email);
                         if (data.dataFundacao) {
@@ -410,7 +431,7 @@
                             }
                         }
 
-                        // Preencher endereÃ§o da empresa
+                        // Preencher endereço da empresa
                         if (data.cep) {
                             $("#cep").val(data.cep.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"));
                         }
@@ -421,12 +442,12 @@
                         if (data.cidade) $("#cidade").val(data.cidade);
                         if (data.uf) $("#uf").val(data.uf);
                         
-                        // Se o nome estiver vazio, preencher com a razÃ£o social
+                        // Se o nome estiver vazio, preencher com a razão social
                         if (!$("#nome").val()) {
                             $("#nome").val(data.nomeFantasia || data.razaoSocial);
                         }
                     } else {
-                        alert("CNPJ: " + (data.mensagem || "NÃ£o encontrado."));
+                        alert("CNPJ: " + (data.mensagem || "Não encontrado."));
                     }
                 })
                 .catch(function (err) {
@@ -435,7 +456,7 @@
                 });
         });
 
-        // â”€â”€ Auto-preenchimento CEP (blur) â”€â”€
+        // -- Auto-preenchimento CEP (blur) --
         $("#cep").on("blur", function () {
             var val = $(this).val().replace(/\D/g, "");
             
@@ -453,10 +474,10 @@
                         $("#cidade").val(data.cidade);
                         $("#uf").val(data.uf);
                         
-                        // Focar no campo NÃºmero apÃ³s preencher
+                        // Focar no campo Número após preencher
                         $("#numero").focus();
                     } else {
-                        alert("CEP: " + (data.mensagem || "NÃ£o encontrado."));
+                        alert("CEP: " + (data.mensagem || "Não encontrado."));
                     }
                 })
                 .catch(function (err) {
@@ -489,6 +510,20 @@
             if (!$("#entTelefone").val()) {
                 $("#entTelefone").val($("#telefone").val());
             }
+        });
+
+        document.querySelectorAll("[data-toggle-section]").forEach(function (button) {
+            var targetSelector = button.getAttribute("data-bs-target");
+            var target = document.querySelector(targetSelector);
+            if (!target) return;
+
+            function atualizarTexto() {
+                button.textContent = target.classList.contains("show") ? "Ocultar campos" : "Mostrar campos";
+            }
+
+            target.addEventListener("shown.bs.collapse", atualizarTexto);
+            target.addEventListener("hidden.bs.collapse", atualizarTexto);
+            atualizarTexto();
         });
     });
 </script>

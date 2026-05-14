@@ -1,0 +1,48 @@
+@page
+@model CorteCor.Pages.Financeiro.PlanoContaCadastroModel
+@{
+    ViewData["Title"] = Model.PlanoInput.IdPlano > 0 ? "Editar Plano" : "Novo Plano";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <h2 class="mb-1">@(Model.PlanoInput.IdPlano > 0 ? "Editar plano" : "Novo plano")</h2>
+    <a class="btn btn-secondary" asp-page="/Financeiro/PlanoContas">Voltar para plano de contas</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Dados do plano</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Salvar" class="row g-3">
+            <input type="hidden" asp-for="PlanoInput.IdPlano" />
+            <div class="col-md-3">
+                <label class="form-label">Código</label>
+                <input class="form-control" asp-for="PlanoInput.Codigo" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" asp-for="PlanoInput.Tipo">
+                    <option value="R">Receita</option>
+                    <option value="D">Despesa</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Descrição</label>
+                <input class="form-control" asp-for="PlanoInput.Descricao" />
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="PlanoInput.Ativo" />
+                    <label class="form-check-label" asp-for="PlanoInput.Ativo">Ativo</label>
+                </div>
+            </div>
+            <div class="col-12 text-end">
+                <button class="btn btn-primary" type="submit">Salvar plano</button>
+            </div>
+        </form>
+    </div>
+</div>

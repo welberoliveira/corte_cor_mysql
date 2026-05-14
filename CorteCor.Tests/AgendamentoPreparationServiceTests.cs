@@ -54,7 +54,7 @@ namespace CorteCor.Tests
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 service.ValidarHorarioServico(5, inicio, inicio.AddMinutes(30), 1));
 
-            Assert.Contains("duracao", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("dura\u00E7\u00E3o", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         private AgendamentoPreparationService CriarService() =>

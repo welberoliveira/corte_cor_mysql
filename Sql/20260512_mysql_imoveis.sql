@@ -1,0 +1,153 @@
+-- Estrutura MySQL para cadastro de imoveis, fotos e leads.
+-- Script idempotente: cria as tabelas caso ainda nao existam.
+
+CREATE TABLE IF NOT EXISTS CorteCor_Imovel (
+    IdImovel INT NOT NULL AUTO_INCREMENT,
+    IdSalao INT NOT NULL,
+    CodigoImovel VARCHAR(60) NOT NULL,
+    StatusAnuncio VARCHAR(30) NOT NULL DEFAULT 'Rascunho',
+    Finalidade VARCHAR(30) NOT NULL,
+    TipoImovel VARCHAR(60) NOT NULL,
+    Titulo VARCHAR(180) NOT NULL,
+    Subtitulo VARCHAR(220) NULL,
+    ImobiliariaResponsavel VARCHAR(160) NOT NULL,
+    CreciResponsavelLegal VARCHAR(80) NOT NULL,
+    DataCadastro DATE NOT NULL,
+    DataAtualizacao DATE NOT NULL,
+
+    ValorVenda DECIMAL(15,2) NULL,
+    ValorAluguel DECIMAL(15,2) NULL,
+    ValorCondominio DECIMAL(15,2) NULL,
+    ValorIPTU DECIMAL(15,2) NULL,
+    PrecoSobConsulta TINYINT(1) NOT NULL DEFAULT 0,
+    AceitaFinanciamento TINYINT(1) NOT NULL DEFAULT 0,
+    AceitaPermuta TINYINT(1) NOT NULL DEFAULT 0,
+    ObservacoesComerciais TEXT NULL,
+    AvisoAlteracaoPreco VARCHAR(300) NOT NULL,
+
+    Estado VARCHAR(80) NOT NULL,
+    Cidade VARCHAR(120) NOT NULL,
+    Bairro VARCHAR(120) NOT NULL,
+    Logradouro VARCHAR(180) NOT NULL,
+    Numero VARCHAR(30) NULL,
+    Complemento VARCHAR(80) NULL,
+    CEP VARCHAR(20) NULL,
+    Latitude DECIMAL(10,7) NULL,
+    Longitude DECIMAL(10,7) NULL,
+    ExibirEnderecoCompleto TINYINT(1) NOT NULL DEFAULT 1,
+    TextoReferenciaRegiao VARCHAR(260) NULL,
+
+    AreaConstruidaPrivativa DECIMAL(12,2) NULL,
+    AreaAproximada TINYINT(1) NOT NULL DEFAULT 0,
+    AreaLoteTerreno DECIMAL(12,2) NULL,
+    AreaLoteAproximada TINYINT(1) NOT NULL DEFAULT 0,
+    Quartos INT NULL,
+    Suites INT NULL,
+    Banheiros INT NULL,
+    Lavabos INT NULL,
+    VagasGaragem INT NULL,
+    Salas INT NULL,
+    Varandas INT NULL,
+    Closets INT NULL,
+    Depositos INT NULL,
+
+    Piscina TINYINT(1) NOT NULL DEFAULT 0,
+    ArCondicionado TINYINT(1) NOT NULL DEFAULT 0,
+    Churrasqueira TINYINT(1) NOT NULL DEFAULT 0,
+    Sauna TINYINT(1) NOT NULL DEFAULT 0,
+    Jardim TINYINT(1) NOT NULL DEFAULT 0,
+    DependenciaEmpregadaDCE TINYINT(1) NOT NULL DEFAULT 0,
+    AreaGourmet TINYINT(1) NOT NULL DEFAULT 0,
+    Jacuzzi TINYINT(1) NOT NULL DEFAULT 0,
+    Hidromassagem TINYINT(1) NOT NULL DEFAULT 0,
+    Escritorio TINYINT(1) NOT NULL DEFAULT 0,
+    SalaTV TINYINT(1) NOT NULL DEFAULT 0,
+    CozinhaPlanejada TINYINT(1) NOT NULL DEFAULT 0,
+    ClosetCaracteristica TINYINT(1) NOT NULL DEFAULT 0,
+    VarandaCaracteristica TINYINT(1) NOT NULL DEFAULT 0,
+    LavaboCaracteristica TINYINT(1) NOT NULL DEFAULT 0,
+
+    DescricaoPrincipal LONGTEXT NOT NULL,
+    ListaComposicao TEXT NULL,
+    DestaquesImovel TEXT NULL,
+    ObservacoesFinais TEXT NULL,
+    TextoDisclaimer VARCHAR(500) NOT NULL,
+
+    VideoUrl VARCHAR(500) NULL,
+    TourVirtualUrl VARCHAR(500) NULL,
+    PlantaArquivoUrl VARCHAR(500) NULL,
+
+    NomeImobiliariaContato VARCHAR(160) NOT NULL,
+    TelefonePrincipal VARCHAR(40) NOT NULL,
+    WhatsApp VARCHAR(40) NOT NULL,
+    EmailContato VARCHAR(180) NOT NULL,
+    TextoBotaoWhatsApp VARCHAR(80) NOT NULL,
+    MensagemPadraoWhatsApp VARCHAR(500) NOT NULL,
+    PermitirVerTelefone TINYINT(1) NOT NULL DEFAULT 1,
+    ReceberNovidades TINYINT(1) NOT NULL DEFAULT 0,
+    TermosPrivacidadeTexto VARCHAR(800) NOT NULL,
+
+    SlugUrl VARCHAR(220) NOT NULL,
+    TituloSEO VARCHAR(180) NOT NULL,
+    MetaDescription VARCHAR(300) NOT NULL,
+    ImagemCompartilhamento VARCHAR(500) NOT NULL,
+    TextoCompartilhamento VARCHAR(500) NULL,
+    PermitirCompartilhamento TINYINT(1) NOT NULL DEFAULT 1,
+
+    PublicarNoSite TINYINT(1) NOT NULL DEFAULT 0,
+    DestaqueNaBusca TINYINT(1) NOT NULL DEFAULT 0,
+    TagsInternas VARCHAR(500) NULL,
+    IndexarGoogle TINYINT(1) NOT NULL DEFAULT 1,
+    ImovelDisponivel TINYINT(1) NOT NULL DEFAULT 1,
+    OrdemPrioridade INT NULL,
+    OrigemCadastro VARCHAR(40) NULL,
+    IdExterno VARCHAR(120) NULL,
+    Excluido TINYINT(1) NOT NULL DEFAULT 0,
+
+    PRIMARY KEY (IdImovel),
+    UNIQUE KEY UQ_CorteCor_Imovel_Salao_Codigo (IdSalao, CodigoImovel),
+    KEY IX_CorteCor_Imovel_Salao_Status (IdSalao, StatusAnuncio),
+    KEY IX_CorteCor_Imovel_Salao_Finalidade (IdSalao, Finalidade),
+    KEY IX_CorteCor_Imovel_Salao_Tipo (IdSalao, TipoImovel),
+    KEY IX_CorteCor_Imovel_Slug (SlugUrl),
+    CONSTRAINT FK_CorteCor_Imovel_Salao
+        FOREIGN KEY (IdSalao) REFERENCES CorteCor_Salao(IdSalao)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS CorteCor_ImovelFoto (
+    IdFoto INT NOT NULL AUTO_INCREMENT,
+    IdImovel INT NOT NULL,
+    CaminhoArquivo VARCHAR(500) NOT NULL,
+    FotoCapa TINYINT(1) NOT NULL DEFAULT 0,
+    Ordem INT NOT NULL DEFAULT 0,
+    Legenda VARCHAR(220) NULL,
+    AltText VARCHAR(220) NULL,
+    DataCadastro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (IdFoto),
+    KEY IX_CorteCor_ImovelFoto_Imovel (IdImovel, FotoCapa, Ordem),
+    CONSTRAINT FK_CorteCor_ImovelFoto_Imovel
+        FOREIGN KEY (IdImovel) REFERENCES CorteCor_Imovel(IdImovel)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS CorteCor_ImovelLead (
+    IdLead INT NOT NULL AUTO_INCREMENT,
+    IdImovel INT NOT NULL,
+    NomeInteressado VARCHAR(160) NOT NULL,
+    Email VARCHAR(180) NOT NULL,
+    TelefoneWhatsapp VARCHAR(40) NOT NULL,
+    Mensagem TEXT NULL,
+    AceiteTermos TINYINT(1) NOT NULL DEFAULT 0,
+    AceitaReceberNovidades TINYINT(1) NOT NULL DEFAULT 0,
+    Status VARCHAR(40) NOT NULL DEFAULT 'Novo',
+    Origem VARCHAR(80) NULL,
+    IpOrigem VARCHAR(80) NULL,
+    UserAgent VARCHAR(500) NULL,
+    DataCadastro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (IdLead),
+    KEY IX_CorteCor_ImovelLead_Imovel_Data (IdImovel, DataCadastro),
+    KEY IX_CorteCor_ImovelLead_Status (Status),
+    CONSTRAINT FK_CorteCor_ImovelLead_Imovel
+        FOREIGN KEY (IdImovel) REFERENCES CorteCor_Imovel(IdImovel)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -33,7 +33,7 @@ namespace CorteCor.Tests
             var result = pageModel.OnPost();
 
             Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(result);
-            Assert.Equal("Informe um telefone com DDD valido.", pageModel.Mensagem);
+            Assert.Equal("Informe um telefone com DDD v\u00E1lido.", pageModel.Mensagem);
             Assert.Equal("warning", pageModel.MensagemTipo);
         }
 

@@ -1,7 +1,6 @@
 ﻿using CorteCor.Logs;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Net.Mail;
 using System.Net;
 using CorteCor.Models;
@@ -10,6 +9,7 @@ using CorteCor.Services;
 using System.Data;
 using System.Security.Claims;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 
 namespace CorteCor.Handlers
 {
@@ -240,57 +240,19 @@ namespace CorteCor.Handlers
     public class LoginManager
     {
         private readonly IDatabaseHandler _dbHandler;
+        private readonly IConfiguration _configuration;
 
-        public LoginManager(IDatabaseHandler dbHandler = null)
+        public LoginManager(IDatabaseHandler dbHandler = null, IConfiguration? configuration = null)
         {
-            _dbHandler = dbHandler ?? new DatabaseHandler();
+            _configuration = configuration ?? AppConfigurationFactory.Build();
+            _dbHandler = dbHandler ?? new DatabaseHandler(_configuration);
         }
 
-        public virtual bool AutenticarAdministrador(string email, string senha)
-        {
-            string query = @"
-            SELECT Senha 
-            FROM CorteCor_Administrador 
-            WHERE Email = @Email 
-              AND Status = 'Ativo';";
-            using (var connection = _dbHandler.GetConnection())
-            using (var command = connection.CreateCommand(query))
-            {
-                command.AddWithValue("@Email", email);
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        string senhaHash = reader["Senha"] is DBNull ? "" : reader["Senha"].ToString();
-                        return VerificarSenha(senha, senhaHash);
-                    }
-                }
-            }
-            return false;
-        }
+        public virtual bool AutenticarAdministrador(string email, string senha) =>
+            Autenticar("CorteCor_Administrador", email, senha);
 
-        public bool AutenticarUsuario(string email, string senha)
-        {
-            string query = @"
-            SELECT Senha 
-            FROM CorteCor_Usuario 
-            WHERE Email = @Email 
-              AND Status = 'Ativo';";
-            using (var connection = _dbHandler.GetConnection())
-            using (var command = connection.CreateCommand(query))
-            {
-                command.AddWithValue("@Email", email);
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        string senhaHash = reader["Senha"] is DBNull ? "" : reader["Senha"].ToString();
-                        return VerificarSenha(senha, senhaHash);
-                    }
-                }
-            }
-            return false;
-        }
+        public bool AutenticarUsuario(string email, string senha) =>
+            Autenticar("CorteCor_Usuario", email, senha);
 
         public void RegistrarUsuario(string nome, string email, string senha, string perfil)
         {
@@ -344,29 +306,43 @@ namespace CorteCor.Handlers
 
         private string GerarHashSenha(string senha)
         {
-            // Implemente um hashing seguro (por exemplo, BCrypt ou SHA-256).
-            return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(senha));
+            return PasswordSecurity.HashPassword(senha);
         }
 
         private bool VerificarSenha(string senha, string senhaHash)
         {
-            return senhaHash == Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(senha));
+            return PasswordSecurity.VerifyPassword(senha, senhaHash);
         }
 
         public void EnviarEmail(string email, string from, string subject, string body)
         {
             try
             {
+                var smtpHost = _configuration["Smtp:Host"];
+                var smtpUsername = _configuration["Smtp:Username"];
+                var smtpPassword = _configuration["Smtp:Password"];
+                var fromAddress = _configuration["Smtp:FromAddress"];
+                var fromName = _configuration["Smtp:FromName"];
+
+                if (string.IsNullOrWhiteSpace(smtpHost) ||
+                    string.IsNullOrWhiteSpace(smtpUsername) ||
+                    string.IsNullOrWhiteSpace(smtpPassword))
+                {
+                    return;
+                }
+
                 using (var client = new SmtpClient())
                 {
-                    client.Host = "smtp-relay.sendinblue.com";
-                    client.Port = 587;
-                    client.EnableSsl = true;
-                    client.Credentials = new NetworkCredential("welberoliveira3@gmail.com", "4DPStEUZIjh2gHLs");
+                    client.Host = smtpHost;
+                    client.Port = int.TryParse(_configuration["Smtp:Port"], out var smtpPort) ? smtpPort : 587;
+                    client.EnableSsl = !bool.TryParse(_configuration["Smtp:EnableSsl"], out var enableSsl) || enableSsl;
+                    client.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
 
                     using (var message = new MailMessage())
                     {
-                        message.From = new MailAddress(from, "Tonni Corte & Cor");
+                        var resolvedFrom = string.IsNullOrWhiteSpace(fromAddress) ? from : fromAddress;
+                        var resolvedFromName = string.IsNullOrWhiteSpace(fromName) ? "Tonni Corte & Cor" : fromName;
+                        message.From = new MailAddress(resolvedFrom, resolvedFromName);
                         message.To.Add(new MailAddress(email));
                         message.Subject = subject;
                         message.Body = body;
@@ -379,6 +355,56 @@ namespace CorteCor.Handlers
             catch (Exception ex)
             {
                 // Tratar a exceção conforme necessário.
+            }
+        }
+
+        private bool Autenticar(string tableName, string email, string senha)
+        {
+            string query = $@"
+            SELECT IdUsuario, Senha
+            FROM {tableName}
+            WHERE Email = @Email
+              AND Status = 'Ativo';";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Email", email);
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read())
+                    {
+                        return false;
+                    }
+
+                    var idUsuario = reader["IdUsuario"] is DBNull ? 0 : Convert.ToInt32(reader["IdUsuario"]);
+                    string senhaHash = reader["Senha"] is DBNull ? "" : reader["Senha"].ToString();
+                    var autenticado = VerificarSenha(senha, senhaHash);
+
+                    if (autenticado && PasswordSecurity.NeedsRehash(senhaHash))
+                    {
+                        reader.Close();
+                        AtualizarHashSenha(tableName, idUsuario, senha);
+                    }
+
+                    return autenticado;
+                }
+            }
+        }
+
+        private void AtualizarHashSenha(string tableName, int idUsuario, string senha)
+        {
+            string query = $@"
+            UPDATE {tableName}
+            SET Senha = @Senha
+            WHERE IdUsuario = @IdUsuario;";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@Senha", PasswordSecurity.HashPassword(senha));
+                command.AddWithValue("@IdUsuario", idUsuario);
+                command.ExecuteNonQuery();
             }
         }
     }
@@ -1445,7 +1471,7 @@ namespace CorteCor.Handlers
         public override List<Servico> Listar()
         {
             string query = @"
-        SELECT IdServico, Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
+        SELECT IdServico, Nome, Preco, PrecoCusto, MargemContribuicao, Duracao, IdSalao, IdCategoria, CodigoTributacaoMunicipio, Cnae, AliquotaISS,
                Tags, Anotacoes, ItemListaServicoLC116, IdCnae, CodTributacaoNacional, CodNBS, Arquivado
         FROM CorteCor_Servico
         ORDER BY Nome;";
@@ -2709,7 +2735,7 @@ namespace CorteCor.Handlers
             (DataHora, Status, IdServico, IdPessoa, IdFuncionario)
         VALUES
             (@DataHora, @Status, @IdServico, @IdPessoa, @IdFuncionario);
-        SELECT SCOPE_IDENTITY();";
+        SELECT LAST_INSERT_ID();";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
@@ -2980,7 +3006,7 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@Fim", fim);
                 command.AddWithValue("@IdAgendamentoIgnorar", (object?)idAgendamentoIgnorar ?? DBNull.Value);
 
-                int count = (int)command.ExecuteScalar();
+                int count = Convert.ToInt32(command.ExecuteScalar());
                 return count == 0;
             }
         }
@@ -3608,42 +3634,67 @@ namespace CorteCor.Handlers
 
         public virtual void CadastrarPagamento(Pagamento pagamento)
         {
-            // Desativa pagamentos anteriores para evitar erro no Ã­ndice Ãºnico (UX_CorteCor_Pagamento_Agendamento_Ativo)
+            NormalizarEValidarPagamento(pagamento);
+
+            // Desativa pagamentos anteriores somente quando existe agendamento vinculado.
             string deactivateQuery = "UPDATE CorteCor_Pagamento SET Ativo = 0 WHERE IdAgendamento = @IdAgendamento AND Ativo = 1;";
 
             string insertQuery = @"
         INSERT INTO CorteCor_Pagamento
-            (IdPagamento, IdAgendamento, Ativo, Status, Valor, Moeda, Descricao, 
-             MercadoPagoPreferenceId, MercadoPagoPaymentId, CheckoutUrl, MpStatus, MpStatusDetail, Tipo)
+            (IdPagamento, IdSalao, IdAgendamento, IdPedido, IdVendaProduto, OrigemPagamento,
+             IdMeioPagamento, Ativo, Status, Data, Valor, Moeda, Descricao,
+             Contos, Campos, MercadoPagoPreferenceId, MercadoPagoPaymentId, CheckoutUrl, MpStatus,
+             MpStatusDetail, Tipo, CriadoEm, PagoEm, AtualizadoEm)
         VALUES
-            (@IdPagamento, @IdAgendamento, @Ativo, @Status, @Valor, @Moeda, @Descricao, 
-             @MercadoPagoPreferenceId, @MercadoPagoPaymentId, @CheckoutUrl, @MpStatus, @MpStatusDetail, @Tipo);";
+            (@IdPagamento, @IdSalao, @IdAgendamento, @IdPedido, @IdVendaProduto, @OrigemPagamento,
+             @IdMeioPagamento, @Ativo, @Status, @Data, @Valor, @Moeda, @Descricao,
+             @Contos, @Campos, @MercadoPagoPreferenceId, @MercadoPagoPaymentId, @CheckoutUrl, @MpStatus,
+             @MpStatusDetail, @Tipo, @CriadoEm, @PagoEm, @AtualizadoEm);";
 
             using (var connection = _dbHandler.GetConnection())
             {
-                using (var commandDeactivate = connection.CreateCommand())
+                if (pagamento.IdPagamento == Guid.Empty)
                 {
-                    commandDeactivate.CommandText = deactivateQuery;
-                    commandDeactivate.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
-                    commandDeactivate.ExecuteNonQuery();
+                    pagamento.IdPagamento = Guid.NewGuid();
+                }
+
+                if (pagamento.IdAgendamento.HasValue)
+                {
+                    using (var commandDeactivate = connection.CreateCommand())
+                    {
+                        commandDeactivate.CommandText = deactivateQuery;
+                        commandDeactivate.AddWithValue("@IdAgendamento", pagamento.IdAgendamento.Value);
+                        commandDeactivate.ExecuteNonQuery();
+                    }
                 }
 
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = insertQuery;
-                    command.AddWithValue("@IdPagamento", pagamento.IdPagamento == Guid.Empty ? Guid.NewGuid() : pagamento.IdPagamento);
-                    command.AddWithValue("@IdAgendamento", pagamento.IdAgendamento);
+                    command.AddWithValue("@IdPagamento", pagamento.IdPagamento);
+                    command.AddWithValue("@IdSalao", pagamento.IdSalao.HasValue && pagamento.IdSalao.Value > 0 ? pagamento.IdSalao.Value : (object)DBNull.Value);
+                    command.AddWithValue("@IdAgendamento", pagamento.IdAgendamento.HasValue ? pagamento.IdAgendamento.Value : (object)DBNull.Value);
+                    command.AddWithValue("@IdPedido", pagamento.IdPedido.HasValue ? pagamento.IdPedido.Value : (object)DBNull.Value);
+                    command.AddWithValue("@IdVendaProduto", pagamento.IdVendaProduto.HasValue ? pagamento.IdVendaProduto.Value : (object)DBNull.Value);
+                    command.AddWithValue("@OrigemPagamento", pagamento.OrigemPagamento);
+                    command.AddWithValue("@IdMeioPagamento", pagamento.IdMeioPagamento > 0 ? pagamento.IdMeioPagamento : (object)DBNull.Value);
                     command.AddWithValue("@Ativo", pagamento.Ativo);
                     command.AddWithValue("@Status", pagamento.Status ?? "Pendente");
+                    command.AddWithValue("@Data", pagamento.Data == default ? DateTime.Now : pagamento.Data);
                     command.AddWithValue("@Valor", pagamento.Valor);
                     command.AddWithValue("@Moeda", pagamento.Moeda ?? "BRL");
-                    command.AddWithValue("@Descricao", (object?)pagamento.Descricao ?? DBNull.Value);
+                    command.AddWithValue("@Descricao", (object?)(pagamento.Descricao ?? pagamento.Contos) ?? DBNull.Value);
+                    command.AddWithValue("@Contos", (object?)pagamento.Contos ?? DBNull.Value);
+                    command.AddWithValue("@Campos", (object?)pagamento.Campos ?? DBNull.Value);
                     command.AddWithValue("@MercadoPagoPreferenceId", (object?)pagamento.MercadoPagoPreferenceId ?? DBNull.Value);
                     command.AddWithValue("@MercadoPagoPaymentId", (object?)pagamento.MercadoPagoPaymentId ?? DBNull.Value);
                     command.AddWithValue("@CheckoutUrl", (object?)pagamento.CheckoutUrl ?? DBNull.Value);
                     command.AddWithValue("@MpStatus", (object?)pagamento.MpStatus ?? DBNull.Value);
                     command.AddWithValue("@MpStatusDetail", (object?)pagamento.MpStatusDetail ?? DBNull.Value);
                     command.AddWithValue("@Tipo", (object?)pagamento.Tipo ?? DBNull.Value);
+                    command.AddWithValue("@CriadoEm", pagamento.CriadoEm == default ? DateTime.UtcNow : pagamento.CriadoEm);
+                    command.AddWithValue("@PagoEm", (object?)pagamento.PagoEm ?? DBNull.Value);
+                    command.AddWithValue("@AtualizadoEm", (object?)pagamento.AtualizadoEm ?? DBNull.Value);
 
                     command.ExecuteNonQuery();
                 }
@@ -3700,25 +3751,53 @@ namespace CorteCor.Handlers
 
         public void AtualizarPagamento(Pagamento p, int idSalao)
         {
+            p.IdSalao = idSalao > 0 ? idSalao : p.IdSalao;
+            NormalizarEValidarPagamento(p);
+
             string query = @"
-        UPDATE P
-        SET P.Status = @Status,
+        UPDATE CorteCor_Pagamento P
+        LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
+        LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+        LEFT JOIN CorteCor_Pedido Ped ON P.IdPedido = Ped.IdPedido
+        LEFT JOIN CorteCor_VendaProduto V ON P.IdVendaProduto = V.IdVendaProduto
+        SET P.IdSalao = @IdSalaoPagamento,
+            P.IdAgendamento = @IdAgendamento,
+            P.IdPedido = @IdPedido,
+            P.IdVendaProduto = @IdVendaProduto,
+            P.OrigemPagamento = @OrigemPagamento,
+            P.IdMeioPagamento = @IdMeioPagamento,
+            P.Status = @Status,
+            P.Tipo = @Tipo,
+            P.Valor = @Valor,
+            P.Data = @Data,
+            P.Contos = @Contos,
+            P.Campos = @Campos,
+            P.Descricao = @Descricao,
             P.MercadoPagoPaymentId = @MercadoPagoPaymentId,
             P.MpStatus = @MpStatus,
             P.MpStatusDetail = @MpStatusDetail,
-            P.AtualizadoEm = GETUTCDATE(),
+            P.AtualizadoEm = NOW(),
             P.PagoEm = @PagoEm,
             P.Ativo = @Ativo
-        FROM CorteCor_Pagamento P
-        INNER JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
-        INNER JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
-        WHERE P.IdPagamento = @IdPagamento 
-          AND S.IdSalao = @IdSalao;";
+        WHERE P.IdPagamento = @IdPagamento
+          AND (@IdSalao <= 0 OR P.IdSalao = @IdSalao OR S.IdSalao = @IdSalao OR Ped.IdSalao = @IdSalao OR V.IdSalao = @IdSalao);";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
             {
+                command.AddWithValue("@IdSalaoPagamento", p.IdSalao.HasValue && p.IdSalao.Value > 0 ? p.IdSalao.Value : (object)DBNull.Value);
+                command.AddWithValue("@IdAgendamento", p.IdAgendamento.HasValue ? p.IdAgendamento.Value : (object)DBNull.Value);
+                command.AddWithValue("@IdPedido", p.IdPedido.HasValue ? p.IdPedido.Value : (object)DBNull.Value);
+                command.AddWithValue("@IdVendaProduto", p.IdVendaProduto.HasValue ? p.IdVendaProduto.Value : (object)DBNull.Value);
+                command.AddWithValue("@OrigemPagamento", p.OrigemPagamento);
+                command.AddWithValue("@IdMeioPagamento", p.IdMeioPagamento > 0 ? p.IdMeioPagamento : (object)DBNull.Value);
                 command.AddWithValue("@Status", p.Status);
+                command.AddWithValue("@Tipo", (object?)p.Tipo ?? DBNull.Value);
+                command.AddWithValue("@Valor", p.Valor);
+                command.AddWithValue("@Data", p.Data == default ? DateTime.Now : p.Data);
+                command.AddWithValue("@Contos", (object?)p.Contos ?? DBNull.Value);
+                command.AddWithValue("@Campos", (object?)p.Campos ?? DBNull.Value);
+                command.AddWithValue("@Descricao", (object?)(p.Descricao ?? p.Contos) ?? DBNull.Value);
                 command.AddWithValue("@MercadoPagoPaymentId", (object?)p.MercadoPagoPaymentId ?? DBNull.Value);
                 command.AddWithValue("@MpStatus", (object?)p.MpStatus ?? DBNull.Value);
                 command.AddWithValue("@MpStatusDetail", (object?)p.MpStatusDetail ?? DBNull.Value);
@@ -3735,11 +3814,17 @@ namespace CorteCor.Handlers
         {
             return new Pagamento
             {
-                IdPagamento = (Guid)reader["IdPagamento"],
-                IdAgendamento = (int)reader["IdAgendamento"],
-                Ativo = (bool)reader["Ativo"],
+                IdPagamento = ReadGuid(reader["IdPagamento"]),
+                IdSalao = HasColumn(reader, "IdSalao") ? ReadNullableInt(reader["IdSalao"]) : null,
+                IdAgendamento = ReadNullableInt(reader["IdAgendamento"]),
+                IdPedido = HasColumn(reader, "IdPedido") ? ReadNullableInt(reader["IdPedido"]) : null,
+                IdVendaProduto = HasColumn(reader, "IdVendaProduto") ? ReadNullableInt(reader["IdVendaProduto"]) : null,
+                OrigemPagamento = HasColumn(reader, "OrigemPagamento") && reader["OrigemPagamento"] is not DBNull
+                    ? reader["OrigemPagamento"]?.ToString() ?? OrigemPagamento.Avulso
+                    : (ReadNullableInt(reader["IdAgendamento"]).HasValue ? OrigemPagamento.Agendamento : OrigemPagamento.Avulso),
+                Ativo = Convert.ToBoolean(reader["Ativo"]),
                 Status = reader["Status"].ToString(),
-                Valor = (decimal)reader["Valor"],
+                Valor = Convert.ToDecimal(reader["Valor"]),
                 Moeda = reader["Moeda"].ToString(),
                 Descricao = reader["Descricao"]?.ToString(),
                 MercadoPagoPreferenceId = reader["MercadoPagoPreferenceId"]?.ToString(),
@@ -3747,20 +3832,102 @@ namespace CorteCor.Handlers
                 CheckoutUrl = reader["CheckoutUrl"]?.ToString(),
                 MpStatus = reader["MpStatus"]?.ToString(),
                 MpStatusDetail = reader["MpStatusDetail"]?.ToString(),
-                CriadoEm = (DateTime)reader["CriadoEm"],
-                AtualizadoEm = reader["AtualizadoEm"] is DBNull ? null : (DateTime?)reader["AtualizadoEm"],
-                PagoEm = reader["PagoEm"] is DBNull ? null : (DateTime?)reader["PagoEm"],
+                CriadoEm = Convert.ToDateTime(reader["CriadoEm"]),
+                AtualizadoEm = reader["AtualizadoEm"] is DBNull ? null : Convert.ToDateTime(reader["AtualizadoEm"]),
+                PagoEm = reader["PagoEm"] is DBNull ? null : Convert.ToDateTime(reader["PagoEm"]),
 
                 // Legacy mapping safely - Explicit check to avoid any evaluation risk
-                IdMeioPagamento = HasColumn(reader, "IdMeioPagamento") ? (reader["IdMeioPagamento"] is DBNull ? 0 : (int)reader["IdMeioPagamento"]) : 0,
+                IdMeioPagamento = HasColumn(reader, "IdMeioPagamento") ? (reader["IdMeioPagamento"] is DBNull ? 0 : Convert.ToInt32(reader["IdMeioPagamento"])) : 0,
                 Tipo = HasColumn(reader, "Tipo") ? reader["Tipo"]?.ToString() : null,
-                Data = HasColumn(reader, "Data") ? (reader["Data"] is DBNull ? (HasColumn(reader, "CriadoEm") ? (DateTime)reader["CriadoEm"] : DateTime.MinValue) : (DateTime)reader["Data"]) : (HasColumn(reader, "CriadoEm") ? (DateTime)reader["CriadoEm"] : DateTime.MinValue),
+                Data = HasColumn(reader, "Data") ? (reader["Data"] is DBNull ? (HasColumn(reader, "CriadoEm") ? Convert.ToDateTime(reader["CriadoEm"]) : DateTime.MinValue) : Convert.ToDateTime(reader["Data"])) : (HasColumn(reader, "CriadoEm") ? Convert.ToDateTime(reader["CriadoEm"]) : DateTime.MinValue),
                 Contos = HasColumn(reader, "Contos") ? reader["Contos"]?.ToString() : null,
                 Campos = HasColumn(reader, "Campos") ? reader["Campos"]?.ToString() : null,
                 NomeCliente = HasColumn(reader, "NomeCliente") ? reader["NomeCliente"]?.ToString() : null,
                 NomeServico = HasColumn(reader, "NomeServico") ? reader["NomeServico"]?.ToString() : null,
-                DataAgendamento = HasColumn(reader, "DataAgendamento") ? (reader["DataAgendamento"] is DBNull ? (DateTime?)null : (DateTime)reader["DataAgendamento"]) : null
+                DataAgendamento = HasColumn(reader, "DataAgendamento") ? (reader["DataAgendamento"] is DBNull ? (DateTime?)null : Convert.ToDateTime(reader["DataAgendamento"])) : null
             };
+        }
+
+        private static Guid ReadGuid(object value)
+        {
+            return value is Guid guid ? guid : Guid.Parse(value.ToString() ?? Guid.Empty.ToString());
+        }
+
+        private static int? ReadNullableInt(object value)
+        {
+            return value is DBNull || value is null ? null : Convert.ToInt32(value);
+        }
+
+        private static void NormalizarEValidarPagamento(Pagamento pagamento)
+        {
+            if (pagamento == null)
+            {
+                throw new InvalidOperationException("Informe os dados do pagamento.");
+            }
+
+            pagamento.IdAgendamento = pagamento.IdAgendamento.HasValue && pagamento.IdAgendamento.Value > 0
+                ? pagamento.IdAgendamento.Value
+                : null;
+            pagamento.IdPedido = pagamento.IdPedido.HasValue && pagamento.IdPedido.Value > 0
+                ? pagamento.IdPedido.Value
+                : null;
+            pagamento.IdVendaProduto = pagamento.IdVendaProduto.HasValue && pagamento.IdVendaProduto.Value > 0
+                ? pagamento.IdVendaProduto.Value
+                : null;
+            pagamento.IdSalao = pagamento.IdSalao.HasValue && pagamento.IdSalao.Value > 0
+                ? pagamento.IdSalao.Value
+                : null;
+
+            pagamento.OrigemPagamento = NormalizarOrigemPagamento(pagamento);
+
+            if (pagamento.Valor <= 0)
+            {
+                throw new InvalidOperationException("Informe um valor de pagamento maior que zero.");
+            }
+
+            if (pagamento.OrigemPagamento == OrigemPagamento.Agendamento && !pagamento.IdAgendamento.HasValue)
+            {
+                throw new InvalidOperationException("Pagamentos de agendamento exigem um agendamento válido.");
+            }
+
+            if (pagamento.OrigemPagamento == OrigemPagamento.Pedido && !pagamento.IdPedido.HasValue)
+            {
+                throw new InvalidOperationException("Pagamentos de pedido exigem um pedido válido.");
+            }
+
+            if (pagamento.OrigemPagamento == OrigemPagamento.Venda && !pagamento.IdVendaProduto.HasValue)
+            {
+                throw new InvalidOperationException("Pagamentos de venda exigem uma venda válida.");
+            }
+
+            if ((pagamento.OrigemPagamento == OrigemPagamento.Avulso
+                    || pagamento.OrigemPagamento == OrigemPagamento.Pedido
+                    || pagamento.OrigemPagamento == OrigemPagamento.Venda)
+                && !pagamento.IdSalao.HasValue)
+            {
+                throw new InvalidOperationException("Não foi possível identificar a empresa do pagamento.");
+            }
+        }
+
+        private static string NormalizarOrigemPagamento(Pagamento pagamento)
+        {
+            var origem = pagamento.OrigemPagamento?.Trim();
+            if (string.IsNullOrWhiteSpace(origem)
+                || (origem.Equals(OrigemPagamento.Avulso, StringComparison.OrdinalIgnoreCase)
+                    && (pagamento.IdAgendamento.HasValue || pagamento.IdPedido.HasValue || pagamento.IdVendaProduto.HasValue)))
+            {
+                if (pagamento.IdAgendamento.HasValue) return OrigemPagamento.Agendamento;
+                if (pagamento.IdPedido.HasValue) return OrigemPagamento.Pedido;
+                if (pagamento.IdVendaProduto.HasValue) return OrigemPagamento.Venda;
+                return OrigemPagamento.Avulso;
+            }
+
+            if (origem.Equals(OrigemPagamento.Agendamento, StringComparison.OrdinalIgnoreCase)) return OrigemPagamento.Agendamento;
+            if (origem.Equals(OrigemPagamento.Pedido, StringComparison.OrdinalIgnoreCase)) return OrigemPagamento.Pedido;
+            if (origem.Equals(OrigemPagamento.Venda, StringComparison.OrdinalIgnoreCase)) return OrigemPagamento.Venda;
+            if (origem.Equals(OrigemPagamento.Avulso, StringComparison.OrdinalIgnoreCase)) return OrigemPagamento.Avulso;
+
+            throw new InvalidOperationException("Origem de pagamento inválida.");
         }
 
         private bool HasColumn(IDataReader reader, string columnName)
@@ -3777,27 +3944,39 @@ namespace CorteCor.Handlers
 
         public void Atualizar(Pagamento p, int idSalao)
         {
+            p.IdSalao = idSalao > 0 ? idSalao : p.IdSalao;
+            NormalizarEValidarPagamento(p);
+
             string query = @"
-        UPDATE P
-        SET P.IdAgendamento = @IdAgendamento,
+        UPDATE CorteCor_Pagamento P
+        LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
+        LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+        LEFT JOIN CorteCor_Pedido Ped ON P.IdPedido = Ped.IdPedido
+        LEFT JOIN CorteCor_VendaProduto V ON P.IdVendaProduto = V.IdVendaProduto
+        SET P.IdSalao = @IdSalaoPagamento,
+            P.IdAgendamento = @IdAgendamento,
+            P.IdPedido = @IdPedido,
+            P.IdVendaProduto = @IdVendaProduto,
+            P.OrigemPagamento = @OrigemPagamento,
             P.IdMeioPagamento = @IdMeioPagamento,
             P.Tipo = @Tipo,
             P.Valor = @Valor,
             P.Data = @Data,
             P.Contos = @Contos,
             P.Campos = @Campos,
-            P.AtualizadoEm = GETUTCDATE()
-        FROM CorteCor_Pagamento P
-        INNER JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
-        INNER JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+            P.AtualizadoEm = UTC_TIMESTAMP()
         WHERE P.IdPagamento = @IdPagamento 
-          AND S.IdSalao = @IdSalao;";
+          AND (@IdSalao <= 0 OR P.IdSalao = @IdSalao OR S.IdSalao = @IdSalao OR Ped.IdSalao = @IdSalao OR V.IdSalao = @IdSalao);";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand())
             {
                 command.CommandText = query;
-                command.AddWithValue("@IdAgendamento", p.IdAgendamento);
+                command.AddWithValue("@IdSalaoPagamento", p.IdSalao.HasValue && p.IdSalao.Value > 0 ? p.IdSalao.Value : (object)DBNull.Value);
+                command.AddWithValue("@IdAgendamento", p.IdAgendamento.HasValue ? p.IdAgendamento.Value : (object)DBNull.Value);
+                command.AddWithValue("@IdPedido", p.IdPedido.HasValue ? p.IdPedido.Value : (object)DBNull.Value);
+                command.AddWithValue("@IdVendaProduto", p.IdVendaProduto.HasValue ? p.IdVendaProduto.Value : (object)DBNull.Value);
+                command.AddWithValue("@OrigemPagamento", p.OrigemPagamento);
                 command.AddWithValue("@IdMeioPagamento", p.IdMeioPagamento == 0 ? (object)DBNull.Value : p.IdMeioPagamento);
                 command.AddWithValue("@Tipo", p.Tipo ?? "");
                 command.AddWithValue("@Valor", p.Valor);
@@ -3829,12 +4008,16 @@ namespace CorteCor.Handlers
             sb.Append("LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento ");
             sb.Append("LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa ");
             sb.Append("LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico ");
+            sb.Append("LEFT JOIN CorteCor_Pedido Ped ON P.IdPedido = Ped.IdPedido ");
+            sb.Append("LEFT JOIN CorteCor_Pessoa PePed ON Ped.IdPessoa = PePed.IdPessoa ");
+            sb.Append("LEFT JOIN CorteCor_VendaProduto V ON P.IdVendaProduto = V.IdVendaProduto ");
+            sb.Append("LEFT JOIN CorteCor_Pessoa PeVenda ON V.IdPessoa = PeVenda.IdPessoa ");
             sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) ");
 
             if (filtro.DataInicio.HasValue) sb.Append("AND P.CriadoEm >= @DataInicio ");
             if (filtro.DataFim.HasValue) sb.Append("AND P.CriadoEm <= @DataFim ");
             if (!string.IsNullOrEmpty(filtro.Status)) sb.Append("AND P.Status = @Status ");
-            if (!string.IsNullOrEmpty(filtro.NomeCliente)) sb.Append("AND Pe.Nome LIKE @NomeCliente ");
+            if (!string.IsNullOrEmpty(filtro.NomeCliente)) sb.Append("AND COALESCE(Pe.Nome, PePed.Nome, PeVenda.Nome, '') LIKE @NomeCliente ");
             if (filtro.DataAgendamento.HasValue) sb.Append("AND CAST(A.DataHora AS DATE) = CAST(@DataAgendamento AS DATE) ");
 
             string baseQuery = sb.ToString();
@@ -3849,7 +4032,7 @@ namespace CorteCor.Handlers
                 }
 
                 // Data
-                string dataQuery = "SELECT P.*, Pe.Nome as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento " +
+                string dataQuery = "SELECT P.*, COALESCE(Pe.Nome, PePed.Nome, PeVenda.Nome) as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento " +
                                    baseQuery +
                                    "ORDER BY P.CriadoEm DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
@@ -3888,12 +4071,16 @@ namespace CorteCor.Handlers
             sb.Append("LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento ");
             sb.Append("LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa ");
             sb.Append("LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico ");
-            sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) AND S.IdSalao = @IdSalao ");
+            sb.Append("LEFT JOIN CorteCor_Pedido Ped ON P.IdPedido = Ped.IdPedido ");
+            sb.Append("LEFT JOIN CorteCor_Pessoa PePed ON Ped.IdPessoa = PePed.IdPessoa ");
+            sb.Append("LEFT JOIN CorteCor_VendaProduto V ON P.IdVendaProduto = V.IdVendaProduto ");
+            sb.Append("LEFT JOIN CorteCor_Pessoa PeVenda ON V.IdPessoa = PeVenda.IdPessoa ");
+            sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) AND (P.IdSalao = @IdSalao OR S.IdSalao = @IdSalao OR Ped.IdSalao = @IdSalao OR V.IdSalao = @IdSalao) ");
 
             if (filtro.DataInicio.HasValue) sb.Append("AND P.CriadoEm >= @DataInicio ");
             if (filtro.DataFim.HasValue) sb.Append("AND P.CriadoEm <= @DataFim ");
             if (!string.IsNullOrEmpty(filtro.Status)) sb.Append("AND P.Status = @Status ");
-            if (!string.IsNullOrEmpty(filtro.NomeCliente)) sb.Append("AND Pe.Nome LIKE @NomeCliente ");
+            if (!string.IsNullOrEmpty(filtro.NomeCliente)) sb.Append("AND COALESCE(Pe.Nome, PePed.Nome, PeVenda.Nome, '') LIKE @NomeCliente ");
             if (filtro.DataAgendamento.HasValue) sb.Append("AND CAST(A.DataHora AS DATE) = CAST(@DataAgendamento AS DATE) ");
 
             string baseQuery = sb.ToString();
@@ -3909,7 +4096,7 @@ namespace CorteCor.Handlers
                 }
 
                 // Data
-                string dataQuery = "SELECT P.*, Pe.Nome as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento " +
+                string dataQuery = "SELECT P.*, COALESCE(Pe.Nome, PePed.Nome, PeVenda.Nome) as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento " +
                                    baseQuery +
                                    "ORDER BY P.CriadoEm DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
@@ -3952,12 +4139,16 @@ namespace CorteCor.Handlers
             sb.Append("LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento ");
             sb.Append("LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa ");
             sb.Append("LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico ");
-            sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) AND S.IdSalao = @IdSalao ");
+            sb.Append("LEFT JOIN CorteCor_Pedido Ped ON P.IdPedido = Ped.IdPedido ");
+            sb.Append("LEFT JOIN CorteCor_Pessoa PePed ON Ped.IdPessoa = PePed.IdPessoa ");
+            sb.Append("LEFT JOIN CorteCor_VendaProduto V ON P.IdVendaProduto = V.IdVendaProduto ");
+            sb.Append("LEFT JOIN CorteCor_Pessoa PeVenda ON V.IdPessoa = PeVenda.IdPessoa ");
+            sb.Append("WHERE (P.Ativo = 1 OR P.Ativo IS NULL) AND (P.IdSalao = @IdSalao OR S.IdSalao = @IdSalao OR Ped.IdSalao = @IdSalao OR V.IdSalao = @IdSalao) ");
 
             if (filtro.DataInicio.HasValue) sb.Append("AND P.CriadoEm >= @DataInicio ");
             if (filtro.DataFim.HasValue) sb.Append("AND P.CriadoEm <= @DataFim ");
             if (!string.IsNullOrEmpty(filtro.Status)) sb.Append("AND P.Status = @Status ");
-            if (!string.IsNullOrEmpty(filtro.NomeCliente)) sb.Append("AND Pe.Nome LIKE @NomeCliente ");
+            if (!string.IsNullOrEmpty(filtro.NomeCliente)) sb.Append("AND COALESCE(Pe.Nome, PePed.Nome, PeVenda.Nome, '') LIKE @NomeCliente ");
             if (filtro.DataAgendamento.HasValue) sb.Append("AND CAST(A.DataHora AS DATE) = CAST(@DataAgendamento AS DATE) ");
 
             string baseQuery = sb.ToString();
@@ -3983,11 +4174,15 @@ namespace CorteCor.Handlers
         public virtual Pagamento ObterPorId(Guid idPagamento)
         {
             string query = @"
-            SELECT P.*, Pe.Nome as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento
+            SELECT P.*, COALESCE(Pe.Nome, PePed.Nome, PeVenda.Nome) as NomeCliente, S.Nome as NomeServico, A.DataHora as DataAgendamento
             FROM CorteCor_Pagamento P
             LEFT JOIN CorteCor_Agendamento A ON P.IdAgendamento = A.IdAgendamento
             LEFT JOIN CorteCor_Pessoa Pe ON A.IdPessoa = Pe.IdPessoa
             LEFT JOIN CorteCor_Servico S ON A.IdServico = S.IdServico
+            LEFT JOIN CorteCor_Pedido Ped ON P.IdPedido = Ped.IdPedido
+            LEFT JOIN CorteCor_Pessoa PePed ON Ped.IdPessoa = PePed.IdPessoa
+            LEFT JOIN CorteCor_VendaProduto V ON P.IdVendaProduto = V.IdVendaProduto
+            LEFT JOIN CorteCor_Pessoa PeVenda ON V.IdPessoa = PeVenda.IdPessoa
             WHERE P.IdPagamento = @Id;";
 
             using (var connection = _dbHandler.GetConnection())
@@ -4029,15 +4224,17 @@ namespace CorteCor.Handlers
             pagamento.MpStatus = mpPayment.Status;
             pagamento.MpStatusDetail = mpPayment.StatusDetail;
 
-            // LÃ³gica de atualizaÃ§Ã£o de status baseada na resposta da API
+            // Lógica de atualização de status baseada na resposta da API
             if (mpPayment.Status == "approved")
             {
                 pagamento.Status = "Pago";
                 pagamento.PagoEm = mpPayment.DateApproved ?? DateTime.UtcNow;
 
-                // Atualiza também o agendamento
-                var agHandler = new AgendamentoHandler(_dbHandler);
-                agHandler.AtualizarStatus(pagamento.IdAgendamento, "Pago", idSalao);
+                if (pagamento.IdAgendamento.HasValue)
+                {
+                    var agHandler = new AgendamentoHandler(_dbHandler);
+                    agHandler.AtualizarStatus(pagamento.IdAgendamento.Value, "Pago", idSalao);
+                }
             }
             else if (mpPayment.Status == "cancelled" || mpPayment.Status == "rejected")
             {
@@ -4100,10 +4297,9 @@ namespace CorteCor.Handlers
                 if (!string.IsNullOrEmpty(novoStatusAgendamento))
                 {
                     string queryAgendamento = @"
-                UPDATE A
-                SET Status = @StatusAg
-                FROM CorteCor_Agendamento A
+                UPDATE CorteCor_Agendamento A
                 INNER JOIN CorteCor_Pagamento P ON A.IdAgendamento = P.IdAgendamento
+                SET Status = @StatusAg
                 WHERE P.IdPagamento = @IdPagamento;";
 
                     using (var commandAg = connection.CreateCommand(queryAgendamento))
@@ -4125,6 +4321,11 @@ namespace CorteCor.Handlers
 
         public override void Cadastrar(ModeloEmail entity)
         {
+            if (ObterPorEventoIncluindoInativos(entity.IdSalao, entity.TipoEvento) != null)
+            {
+                throw new InvalidOperationException("Já existe um modelo de e-mail criado para este evento. Edite o modelo existente ou escolha outro evento.");
+            }
+
             string query = @"
         INSERT INTO CorteCor_ModeloEmail (IdSalao, TipoEvento, Assunto, CorpoHTML, Ativo, DataAtualizacao)
         VALUES (@IdSalao, @TipoEvento, @Assunto, @CorpoHTML, @Ativo, GETDATE());";
@@ -4203,6 +4404,30 @@ namespace CorteCor.Handlers
             return null;
         }
 
+        public virtual ModeloEmail ObterPorEventoIncluindoInativos(int idSalao, string tipoEvento, int? ignorarIdModelo = null)
+        {
+            string query = @"
+        SELECT TOP 1 *
+        FROM CorteCor_ModeloEmail
+        WHERE IdSalao = @IdSalao
+          AND TipoEvento = @TipoEvento
+          AND (@IgnorarIdModelo IS NULL OR IdModelo <> @IgnorarIdModelo)
+        ORDER BY Ativo DESC, DataAtualizacao DESC;";
+
+            using (var connection = _dbHandler.GetConnection())
+            using (var command = connection.CreateCommand(query))
+            {
+                command.AddWithValue("@IdSalao", idSalao);
+                command.AddWithValue("@TipoEvento", tipoEvento ?? string.Empty);
+                command.AddWithValue("@IgnorarIdModelo", ignorarIdModelo.HasValue ? ignorarIdModelo.Value : (object)DBNull.Value);
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read()) return MapReader(reader);
+                }
+            }
+            return null;
+        }
+
         public virtual ModeloEmail ObterPorEvento(int idSalao, string tipoEvento)
         {
             string query = "SELECT TOP 1 * FROM CorteCor_ModeloEmail WHERE IdSalao = @IdSalao AND TipoEvento = @TipoEvento AND Ativo = 1";
@@ -4217,6 +4442,21 @@ namespace CorteCor.Handlers
                 }
             }
             return null;
+        }
+
+        public static bool IsDuplicateKeyException(Exception ex)
+        {
+            for (var current = ex; current != null; current = current.InnerException)
+            {
+                if (current.Message.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase)
+                    || current.Message.Contains("UQ_ModeloEmail_Salao_Evento", StringComparison.OrdinalIgnoreCase)
+                    || current.Message.Contains("1062", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public override void Excluir(int id)
@@ -5449,6 +5689,8 @@ namespace CorteCor.Handlers
 
     public class ItemListaServicoHandler : EntityHandler<ItemListaServico>
     {
+        private static readonly (string Codigo, string Descricao)[] ItensPadrao = Lc116ItensCatalogo.Itens;
+
         public ItemListaServicoHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
 
         public override void Cadastrar(ItemListaServico entity) => throw new NotImplementedException();
@@ -5457,25 +5699,55 @@ namespace CorteCor.Handlers
         
         public override List<ItemListaServico> Listar()
         {
+            using (var connection = _dbHandler.GetConnection())
+            {
+                var lista = CarregarItens(connection);
+                if (ItensPadrao.All(item => lista.Any(cadastrado =>
+                        cadastrado.Codigo == item.Codigo && cadastrado.Descricao == item.Descricao)))
+                {
+                    return lista;
+                }
+
+                SemearItensPadrao(connection);
+                return CarregarItens(connection);
+            }
+        }
+
+        private static List<ItemListaServico> CarregarItens(IDbConnection connection)
+        {
             var lista = new List<ItemListaServico>();
 
-            using (var connection = _dbHandler.GetConnection())
             using (var cmd = connection.CreateCommand("SELECT IdItemListaServico, Codigo, Descricao FROM CorteCor_ItemListaServico ORDER BY Codigo"))
+            using (var reader = cmd.ExecuteReader())
             {
-                using (var reader = cmd.ExecuteReader())
+                while (reader.Read())
                 {
-                    while (reader.Read())
+                    lista.Add(new ItemListaServico
                     {
-                        lista.Add(new ItemListaServico
-                        {
-                            IdItemListaServico = Convert.ToInt32(reader["IdItemListaServico"]),
-                            Codigo = reader["Codigo"].ToString(),
-                            Descricao = reader["Descricao"].ToString()
-                        });
-                    }
+                        IdItemListaServico = Convert.ToInt32(reader["IdItemListaServico"]),
+                        Codigo = reader["Codigo"].ToString(),
+                        Descricao = reader["Descricao"].ToString()
+                    });
                 }
             }
+
             return lista;
+        }
+
+        private static void SemearItensPadrao(IDbConnection connection)
+        {
+            foreach (var item in ItensPadrao)
+            {
+                using (var cmd = connection.CreateCommand(@"
+                    INSERT INTO CorteCor_ItemListaServico (Codigo, Descricao)
+                    VALUES (@Codigo, @Descricao)
+                    ON DUPLICATE KEY UPDATE Descricao = VALUES(Descricao)"))
+                {
+                    cmd.AddWithValue("@Codigo", item.Codigo);
+                    cmd.AddWithValue("@Descricao", item.Descricao);
+                    cmd.ExecuteNonQuery();
+                }
+            }
         }
     }
 }

@@ -9,7 +9,13 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-info">@Model.Mensagem</div>
+        <div class="alert alert-info">
+            @Model.Mensagem
+            @if (Model.ModeloExistenteId.HasValue)
+            {
+                <a class="alert-link ms-2" asp-page="/ModeloEmailCadastro" asp-route-id="@Model.ModeloExistenteId.Value">Editar modelo existente</a>
+            }
+        </div>
     }
 
     <form method="post">

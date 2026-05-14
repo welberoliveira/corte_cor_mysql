@@ -35,6 +35,8 @@ namespace CorteCor.Tests
             
             _mockCommand.Setup(cmd => cmd.Parameters).Returns(_mockParameters.Object);
             _mockCommand.Setup(cmd => cmd.CreateParameter()).Returns(_mockParameter.Object);
+            _mockCommand.Setup(cmd => cmd.ExecuteReader()).Returns(_mockReader.Object);
+            _mockReader.Setup(r => r.Read()).Returns(false);
             _mockParameter.SetupAllProperties();
 
             _handler = new ModeloEmailHandler(_mockDbHandler.Object);
@@ -58,6 +60,33 @@ namespace CorteCor.Tests
 
             // Assert
             _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Once);
+        }
+
+        [Fact]
+        public void Cadastrar_QuandoEventoJaExiste_DeveBloquearAntesDoInsert()
+        {
+            var modelo = new ModeloEmail
+            {
+                IdSalao = 1,
+                TipoEvento = "LembreteAgendamento",
+                Assunto = "Lembrete",
+                CorpoHTML = "Corpo",
+                Ativo = true
+            };
+
+            _mockReader.SetupSequence(r => r.Read()).Returns(true);
+            _mockReader.Setup(r => r["IdModelo"]).Returns(7);
+            _mockReader.Setup(r => r["IdSalao"]).Returns(1);
+            _mockReader.Setup(r => r["TipoEvento"]).Returns("LembreteAgendamento");
+            _mockReader.Setup(r => r["Assunto"]).Returns("Existente");
+            _mockReader.Setup(r => r["CorpoHTML"]).Returns("Corpo existente");
+            _mockReader.Setup(r => r["Ativo"]).Returns(true);
+            _mockReader.Setup(r => r["DataAtualizacao"]).Returns(DateTime.Now);
+
+            var ex = Assert.Throws<InvalidOperationException>(() => _handler.Cadastrar(modelo));
+
+            Assert.Contains("Já existe um modelo de e-mail", ex.Message);
+            _mockCommand.Verify(cmd => cmd.ExecuteNonQuery(), Times.Never);
         }
 
         [Fact]

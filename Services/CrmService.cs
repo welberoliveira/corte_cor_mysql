@@ -1,5 +1,6 @@
 ﻿using CorteCor.Handlers;
 using CorteCor.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CorteCor.Services
 {
@@ -11,6 +12,7 @@ namespace CorteCor.Services
         private readonly SMSMarketService _smsMarketService;
         private readonly IWhatsappService _whatsappService;
         private readonly FornecedoresHandler _fornecedoresHandler;
+        private readonly IMemoryCache _cache;
 
         public CrmService(
             ICrmHandler crmHandler,
@@ -18,7 +20,8 @@ namespace CorteCor.Services
             BrevoEmailService brevoEmailService,
             SMSMarketService smsMarketService,
             IWhatsappService whatsappService,
-            FornecedoresHandler fornecedoresHandler)
+            FornecedoresHandler fornecedoresHandler,
+            IMemoryCache cache)
         {
             _crmHandler = crmHandler;
             _pessoaHandler = pessoaHandler;
@@ -26,11 +29,19 @@ namespace CorteCor.Services
             _smsMarketService = smsMarketService;
             _whatsappService = whatsappService;
             _fornecedoresHandler = fornecedoresHandler;
+            _cache = cache;
         }
 
         public void GarantirEstrutura(int idSalao)
         {
+            var cacheKey = $"crm:etapas-padrao:{idSalao}";
+            if (_cache.TryGetValue(cacheKey, out _))
+            {
+                return;
+            }
+
             _crmHandler.GarantirEtapasPadrao(idSalao);
+            _cache.Set(cacheKey, true, TimeSpan.FromMinutes(15));
         }
 
         public CrmDashboardResumo ObterDashboard(int idSalao)
@@ -95,7 +106,28 @@ namespace CorteCor.Services
 
         public void RegistrarInteracao(int idSalao, CrmInteracao interacao)
         {
-            SalvarInteracao(idSalao, interacao);
+            interacao.IdSalao = idSalao;
+            interacao.Assunto = interacao.Assunto?.Trim() ?? string.Empty;
+            interacao.Descricao = interacao.Descricao?.Trim();
+            interacao.Canal = string.IsNullOrWhiteSpace(interacao.Canal) ? CrmCanal.Sistema : interacao.Canal.Trim();
+            interacao.Tipo = string.IsNullOrWhiteSpace(interacao.Tipo) ? "Manual" : interacao.Tipo.Trim();
+            interacao.DataInteracao = interacao.DataInteracao == default ? DateTime.Now : interacao.DataInteracao;
+
+            if (interacao.IdPessoa <= 0)
+            {
+                throw new InvalidOperationException("Selecione um cliente para registrar a interação.");
+            }
+
+            if (string.IsNullOrWhiteSpace(interacao.Assunto))
+            {
+                throw new InvalidOperationException("Informe um assunto para a interação.");
+            }
+
+            _crmHandler.AdicionarInteracao(interacao);
+
+            var perfil = _crmHandler.ObterOuCriarPerfil(idSalao, interacao.IdPessoa);
+            perfil.UltimoContatoEm = interacao.DataInteracao;
+            _crmHandler.SalvarPerfil(perfil);
         }
 
         public int SalvarInteracao(int idSalao, CrmInteracao interacao)
@@ -227,9 +259,9 @@ namespace CorteCor.Services
             _crmHandler.AtualizarEtapaOportunidade(idSalao, idOportunidade, idEtapa, status, status == CrmStatusOportunidade.Aberta ? null : DateTime.Now);
         }
 
-        public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize)
+        public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize, string? pesquisa = null, string? canal = null, string? segmento = null, string? status = null)
         {
-            return _crmHandler.ListarCampanhas(idSalao, pageIndex, pageSize);
+            return _crmHandler.ListarCampanhas(idSalao, pageIndex, pageSize, pesquisa, canal, segmento, status);
         }
 
         public List<CrmCampanhaDestino> ListarDestinosCampanha(int idSalao, int idCampanha, int limit = 100)

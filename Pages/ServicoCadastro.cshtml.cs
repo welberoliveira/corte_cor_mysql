@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace CorteCor.Pages
 {
@@ -64,11 +65,57 @@ namespace CorteCor.Pages
             }
         }
 
-        private static decimal ParsePrecoBR(string valor)
+        private static bool TryParseMoedaBR(string? valor, out decimal resultado)
         {
-            if (string.IsNullOrWhiteSpace(valor)) return 0m;
-            valor = valor.Trim().Replace(".", "").Replace(",", ".");
-            return decimal.Parse(valor, CultureInfo.InvariantCulture);
+            resultado = 0m;
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return false;
+            }
+
+            valor = valor.Trim();
+            if (decimal.TryParse(valor, NumberStyles.Currency, new CultureInfo("pt-BR"), out resultado))
+            {
+                return true;
+            }
+
+            var normalizado = Regex.Replace(valor, @"[^\d,.-]", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace(",", ".");
+
+            return decimal.TryParse(normalizado, NumberStyles.Number, CultureInfo.InvariantCulture, out resultado);
+        }
+
+        private bool TryLerDecimalObrigatorio(string campo, string nomeCampo, out decimal valor)
+        {
+            if (!TryParseMoedaBR(Request.Form[campo].ToString(), out valor))
+            {
+                Mensagem = $"Informe um valor válido para {nomeCampo}.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryLerDecimalOpcional(string campo, string nomeCampo, out decimal? valor)
+        {
+            valor = null;
+            var raw = Request.Form[campo].ToString();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return true;
+            }
+
+            if (!TryParseMoedaBR(raw, out var parsed))
+            {
+                Mensagem = $"Informe um valor válido para {nomeCampo}.";
+                MensagemTipo = "warning";
+                return false;
+            }
+
+            valor = parsed;
+            return true;
         }
 
         private static TimeSpan ParseDuracao(string valor)
@@ -95,10 +142,13 @@ namespace CorteCor.Pages
 
             int.TryParse(Request.Form["id"], out var id);
 
-            decimal preco = ParsePrecoBR(Request.Form["preco"]);
-            decimal? precoCusto = string.IsNullOrWhiteSpace(Request.Form["precoCusto"]) ? null : ParsePrecoBR(Request.Form["precoCusto"]);
-            decimal? margemContribuicao = string.IsNullOrWhiteSpace(Request.Form["margemContribuicao"]) ? null : ParsePrecoBR(Request.Form["margemContribuicao"]);
-            decimal? aliquotaIss = string.IsNullOrWhiteSpace(Request.Form["aliquotaISS"]) ? null : ParsePrecoBR(Request.Form["aliquotaISS"]);
+            if (!TryLerDecimalObrigatorio("preco", "preço de venda", out var preco)
+                || !TryLerDecimalOpcional("precoCusto", "preço de custo", out var precoCusto)
+                || !TryLerDecimalOpcional("margemContribuicao", "margem de contribuição", out var margemContribuicao)
+                || !TryLerDecimalOpcional("aliquotaISS", "alíquota ISS", out var aliquotaIss))
+            {
+                return Page();
+            }
 
             Servico = new Servico
             {
@@ -195,9 +245,9 @@ namespace CorteCor.Pages
                 return false;
             }
 
-            if (Servico.Preco < 0)
+            if (Servico.Preco <= 0)
             {
-                Mensagem = "O preço de venda não pode ser negativo.";
+                Mensagem = "O preço de venda deve ser maior que zero.";
                 MensagemTipo = "warning";
                 return false;
             }

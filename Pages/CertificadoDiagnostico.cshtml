@@ -1,7 +1,7 @@
-﻿@page
+@page
 @model CorteCor.Pages.CertificadoDiagnosticoModel
 @{
-    ViewData["Title"] = "DiagnÃ³stico do Certificado Digital";
+    ViewData["Title"] = "Diagnóstico do Certificado Digital";
     Layout = "_Layout";
 }
 
@@ -13,20 +13,20 @@
                 <div class="card-header pb-0 border-bottom">
                     <div class="d-flex align-items-center justify-content-between">
                         <p class="mb-0 font-weight-bolder">
-                            <i class="fas fa-shield-alt me-2"></i>DiagnÃ³stico do Certificado Digital A1
+                            <i class="fas fa-shield-alt me-2"></i>Diagnóstico do Certificado Digital A1
                         </p>
                         <a asp-page="/EmpresaConfigFiscal" class="btn btn-secondary btn-sm">Config. Fiscais</a>
                     </div>
                 </div>
                 <div class="card-body">
                     <p class="text-sm text-muted mb-3">
-                        Esta ferramenta carrega e valida o certificado digital (.pfx) armazenado nas suas ConfiguraÃ§Ãµes Fiscais,
+                        Esta ferramenta carrega e valida o certificado digital (.pfx) armazenado nas suas Configurações Fiscais,
                         verificando validade, chave privada e dados do emissor.
                     </p>
 
                     <form method="post">
                         <button type="submit" class="btn btn-primary w-100 mb-4">
-                            Executar DiagnÃ³stico do Certificado
+                            Executar Diagnóstico do Certificado
                         </button>
                     </form>
 
@@ -35,7 +35,7 @@
                         @if (!string.IsNullOrEmpty(Model.ErroMensagem))
                         {
                             <div class="alert alert-danger" role="alert">
-                                <strong>Falha no DiagnÃ³stico:</strong> @Model.ErroMensagem
+                                <strong>Falha no Diagnóstico:</strong> @Model.ErroMensagem
                             </div>
                         }
 
@@ -55,21 +55,21 @@
                                         <p class="font-weight-bold mb-0">@Model.CnpjConfigurado</p>
                                     </div>
                                     <div class="col-md-5">
-                                        <p class="text-xs text-uppercase text-muted mb-1">RazÃ£o Social</p>
+                                        <p class="text-xs text-uppercase text-muted mb-1">Razão Social</p>
                                         <p class="font-weight-bold mb-0">@Model.RazaoSocial</p>
                                     </div>
                                     <div class="col-md-3">
                                         <p class="text-xs text-uppercase text-muted mb-1">Ambiente</p>
                                         <p class="font-weight-bold mb-0">
-                                            @(Model.AmbienteConfigurado == 1 ? "ðŸŸ¢ ProduÃ§Ã£o" : "ðŸŸ¡ HomologaÃ§Ã£o")
+                                            @(Model.AmbienteConfigurado == 1 ? "🟢 Produção" : "🟡 Homologação")
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- InformaÃ§Ãµes do Certificado -->
+                            <!-- Informações do Certificado -->
                             <div class="card card-body border mb-3">
-                                <h6 class="mb-3">InformaÃ§Ãµes do Certificado</h6>
+                                <h6 class="mb-3">Informações do Certificado</h6>
                                 
                                 <div class="row mb-2">
                                     <div class="col-12">
@@ -85,11 +85,11 @@
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <p class="text-xs text-uppercase text-muted mb-1">NÃºmero de SÃ©rie</p>
+                                        <p class="text-xs text-uppercase text-muted mb-1">Número de Série</p>
                                         <p class="text-sm font-weight-bold mb-0" style="word-break: break-all;">@Model.SerialNumber</p>
                                     </div>
                                     <div class="col-md-6">
-                                        <p class="text-xs text-uppercase text-muted mb-1">Thumbprint (ImpressÃ£o Digital)</p>
+                                        <p class="text-xs text-uppercase text-muted mb-1">Thumbprint (Impressão Digital)</p>
                                         <p class="text-sm font-weight-bold mb-0" style="word-break: break-all;">@Model.Thumbprint</p>
                                     </div>
                                 </div>
@@ -100,11 +100,11 @@
                                 <h6 class="mb-3">Validade</h6>
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <p class="text-xs text-uppercase text-muted mb-1">VÃ¡lido Desde</p>
+                                        <p class="text-xs text-uppercase text-muted mb-1">Válido Desde</p>
                                         <p class="font-weight-bold mb-0">@Model.ValidoDe.ToString("dd/MM/yyyy HH:mm:ss")</p>
                                     </div>
                                     <div class="col-md-4">
-                                        <p class="text-xs text-uppercase text-muted mb-1">VÃ¡lido AtÃ©</p>
+                                        <p class="text-xs text-uppercase text-muted mb-1">Válido Até</p>
                                         <p class="font-weight-bold text-@Model.StatusCss mb-0">@Model.ValidoAte.ToString("dd/MM/yyyy HH:mm:ss")</p>
                                     </div>
                                     <div class="col-md-4">
@@ -143,8 +143,8 @@
                                                 Chave Privada AUSENTE
                                             </span>
                                             <p class="text-xs text-danger mt-2 mb-0">
-                                                <strong>PROBLEMA CRÃTICO:</strong> O certificado nÃ£o contÃ©m chave privada. 
-                                                A assinatura XML para emissÃ£o de NFS-e falharÃ¡. 
+                                                <strong>PROBLEMA CRÍTICO:</strong> O certificado não contém chave privada. 
+                                                A assinatura XML para emissão de NFS-e falhará. 
                                                 Verifique se o arquivo .pfx foi exportado corretamente com a chave privada inclusa.
                                             </p>
                                         }

@@ -47,19 +47,6 @@ namespace CorteCor.Pages.Financeiro
         [BindProperty(SupportsGet = true)]
         public int p { get; set; } = 1;
 
-        [BindProperty(SupportsGet = true)]
-        public Guid? idTitulo { get; set; }
-
-        [BindProperty]
-        public FinanceiroTitulo TituloInput { get; set; } = new()
-        {
-            Tipo = FinanceiroTipoTitulo.Receber,
-            Origem = FinanceiroOrigemTitulo.Manual,
-            DataCompetencia = DateTime.Today,
-            DataVencimento = DateTime.Today,
-            Status = FinanceiroStatusTitulo.Aberto
-        };
-
         [TempData]
         public string? FlashMessage { get; set; }
 
@@ -69,34 +56,6 @@ namespace CorteCor.Pages.Financeiro
         public async Task OnGetAsync()
         {
             await CarregarAsync();
-        }
-
-        public async Task<IActionResult> OnPostSalvarAsync()
-        {
-            try
-            {
-                await _financeiroService.SalvarTituloAsync(ObterIdSalao(), TituloInput);
-                FlashMessage = "Lancamento financeiro salvo com sucesso.";
-                FlashType = "success";
-            }
-            catch (Exception ex)
-            {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
-            }
-
-            return RedirectToPage(new
-            {
-                Tipo,
-                Status,
-                Pesquisa,
-                IdPlano,
-                IdConta,
-                DataInicio,
-                DataFim,
-                SomenteVencidos,
-                p
-            });
         }
 
         public async Task<IActionResult> OnPostLiquidarAsync(Guid id, decimal? valorLiquidado, DateTime? dataLiquidacao, bool conciliado)
@@ -158,11 +117,6 @@ namespace CorteCor.Pages.Financeiro
                 PageIndex = p > 0 ? p : 1,
                 PageSize = 15
             });
-
-            if (idTitulo.HasValue && idTitulo.Value != Guid.Empty)
-            {
-                TituloInput = await _financeiroService.ObterTituloAsync(idSalao, idTitulo.Value) ?? TituloInput;
-            }
         }
 
         private int ObterIdSalao()

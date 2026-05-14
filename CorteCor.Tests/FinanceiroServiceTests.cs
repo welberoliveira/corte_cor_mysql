@@ -1,6 +1,7 @@
 using CorteCor.Handlers;
 using CorteCor.Models;
 using CorteCor.Services;
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
 
 namespace CorteCor.Tests
@@ -8,6 +9,7 @@ namespace CorteCor.Tests
     public class FinanceiroServiceTests
     {
         private readonly Mock<IFinanceiroModuloHandler> _handler = new();
+        private readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
 
         [Fact]
         public async Task GarantirEstruturaBaseAsync_DeveCriarPlanosEContaPadrao_QuandoNaoExistiremRegistros()
@@ -170,7 +172,7 @@ namespace CorteCor.Tests
             _handler.Verify(h => h.SalvarTituloAsync(It.IsAny<FinanceiroTitulo>()), Times.Never);
         }
 
-        private FinanceiroService CriarService() => new(_handler.Object);
+        private FinanceiroService CriarService() => new(_handler.Object, _cache);
 
         private void ConfigurarEstruturaExistente(int idSalao)
         {

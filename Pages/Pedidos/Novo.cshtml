@@ -1,7 +1,7 @@
 @page
 @model CorteCor.Pages.Pedidos.NovoModel
 @{
-    ViewData["Title"] = "Novo pedido";
+    ViewData["Title"] = "Cadastro do pedido";
 }
 
 @section Styles {
@@ -13,7 +13,8 @@
         }
 
         .pedido-hero {
-            background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%, #eef6ff 100%);
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
             border-radius: 22px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
@@ -26,6 +27,19 @@
             border: 1px solid #fdba74;
             color: #9a3412;
             font-size: 0.95rem;
+        }
+
+        .pedido-voltar {
+            color: #0d6efd !important;
+            border: 1px solid #0d6efd !important;
+            background: #ffffff !important;
+        }
+
+        .pedido-voltar:hover,
+        .pedido-voltar:focus {
+            color: #ffffff !important;
+            background: #0d6efd !important;
+            border-color: #0d6efd !important;
         }
 
         .pedido-summary {
@@ -46,9 +60,7 @@
 <div class="pedido-hero">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
         <div>
-            <a class="btn btn-link ps-0 mb-2" asp-page="/Pedidos/Index">Voltar para pedidos</a>
-            <h2 class="mb-1">Novo pedido</h2>
-            <div class="text-muted">Crie um pedido com produtos e serviços, defina validade e deixe tudo pronto para conversão em venda.</div>
+            <a class="btn pedido-voltar mb-2" asp-page="/Pedidos/Index">Voltar para pedidos</a>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             <a class="btn btn-dark" asp-page="/Vendas/Index">Ir para Vendas</a>

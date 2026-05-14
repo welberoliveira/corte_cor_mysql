@@ -64,7 +64,7 @@ namespace CorteCor.Pages
                 }
                 catch (Exception)
                 {
-            Mensagem = "NÃ£o foi possÃ­vel excluir este funcionÃ¡rio porque ele estÃ¡ associado a outros registros.";
+            Mensagem = "Não foi possível excluir este funcionário porque ele está associado a outros registros.";
                     MensagemTipo = "warning";
                 }
             }

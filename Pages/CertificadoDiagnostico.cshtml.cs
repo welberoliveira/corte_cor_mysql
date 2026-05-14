@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -23,7 +23,7 @@ namespace CorteCor.Pages
             _configHandler = configHandler;
         }
 
-        // Resultado do diagnÃ³stico
+        // Resultado do diagnóstico
         public bool DiagnosticoRealizado { get; set; } = false;
         public bool CertificadoEncontrado { get; set; } = false;
         public bool CertificadoValido { get; set; } = false;
@@ -79,17 +79,17 @@ namespace CorteCor.Pages
 
                 if (config.CertificadoPfx == null || config.CertificadoPfx.Length == 0)
                 {
-                    ErroMensagem = "Nenhum arquivo de certificado digital (.pfx) foi enviado nas ConfiguraÃ§Ãµes Fiscais.";
+                    ErroMensagem = "Nenhum arquivo de certificado digital (.pfx) foi enviado nas Configurações Fiscais.";
                     return Page();
                 }
 
                 if (config.CertificadoSenha == null || config.CertificadoSenha.Length == 0)
                 {
-                    ErroMensagem = "A senha do certificado digital nÃ£o foi configurada.";
+                    ErroMensagem = "A senha do certificado digital não foi configurada.";
                     return Page();
                 }
 
-                // Tenta instanciar o certificado pelo mesmo pipeline da aplicaÃ§Ã£o
+                // Tenta instanciar o certificado pelo mesmo pipeline da aplicação
                 X509Certificate2 cert;
                 try
                 {
@@ -97,7 +97,7 @@ namespace CorteCor.Pages
                 }
                 catch (Exception exCert)
                 {
-                    ErroMensagem = $"Falha ao carregar o certificado: {exCert.Message}. Verifique se a senha estÃ¡ correta e o arquivo .pfx nÃ£o estÃ¡ corrompido.";
+                    ErroMensagem = $"Falha ao carregar o certificado: {exCert.Message}. Verifique se a senha está correta e o arquivo .pfx não está corrompido.";
                     return Page();
                 }
 
@@ -113,32 +113,32 @@ namespace CorteCor.Pages
 
                 if (DateTime.Now < cert.NotBefore)
                 {
-                    StatusCertificado = "â³ AINDA NÃƒO VÃLIDO (data de inÃ­cio no futuro)";
+                    StatusCertificado = "⏳ AINDA NÃO VÁLIDO (data de início no futuro)";
                     StatusCss = "warning";
                     CertificadoValido = false;
                 }
                 else if (DateTime.Now > cert.NotAfter)
                 {
-                    StatusCertificado = "âŒ VENCIDO";
+                    StatusCertificado = "❌ VENCIDO";
                     StatusCss = "danger";
                     CertificadoValido = false;
                 }
                 else if (DiasRestantes <= 30)
                 {
-                    StatusCertificado = $"âš ï¸ VÃLIDO, mas VENCE EM {DiasRestantes} DIAS";
+                    StatusCertificado = $"⚠️ VÁLIDO, mas VENCE EM {DiasRestantes} DIAS";
                     StatusCss = "warning";
                     CertificadoValido = true;
                 }
                 else
                 {
-                    StatusCertificado = $"âœ… VÃLIDO ({DiasRestantes} dias restantes)";
+                    StatusCertificado = $"✅ VÁLIDO ({DiasRestantes} dias restantes)";
                     StatusCss = "success";
                     CertificadoValido = true;
                 }
 
                 if (!cert.HasPrivateKey)
                 {
-                    StatusCertificado += " | âŒ SEM CHAVE PRIVADA (assinatura XML falharÃ¡)";
+                    StatusCertificado += " | ❌ SEM CHAVE PRIVADA (assinatura XML falhará)";
                     StatusCss = "danger";
                     CertificadoValido = false;
                 }
@@ -147,7 +147,7 @@ namespace CorteCor.Pages
             }
             catch (Exception ex)
             {
-                ErroMensagem = $"Erro inesperado durante o diagnÃ³stico: {ex.Message}";
+                ErroMensagem = $"Erro inesperado durante o diagnóstico: {ex.Message}";
             }
 
             return Page();

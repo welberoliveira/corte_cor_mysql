@@ -22,6 +22,8 @@
         <div class="card-body">
             <form method="post">
                 <input type="hidden" name="id" value="@Model.Pagamento?.IdPagamento">
+                <input type="hidden" name="idPedido" value="@(Model.Pagamento?.IdPedido?.ToString() ?? "")">
+                <input type="hidden" name="idVendaProduto" value="@(Model.Pagamento?.IdVendaProduto?.ToString() ?? "")">
 
                 @if (Model.Pagamento != null && Model.Pagamento.IdPagamento != Guid.Empty)
                 {
@@ -54,7 +56,7 @@
                     <div class="col-md-6">
                         <label for="idAgendamento" class="form-label">Código do Agendamento</label>
                         <input type="number" id="idAgendamento" name="idAgendamento" class="form-control" readonly
-                               value="@(Model.Pagamento?.IdAgendamento ?? 0)">
+                               value="@(Model.Pagamento?.IdAgendamento?.ToString() ?? "")">
                     </div>
 
                     <div class="col-md-6">
@@ -100,7 +102,7 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label for="data" class="form-label">Data de Referncia</label>
+                        <label for="data" class="form-label">Data de Referência</label>
                         <input type="datetime-local" id="data" name="data" class="form-control" required @(isPago ? "readonly" : "")
                                value="@((Model.Pagamento != null && Model.Pagamento.Data != default(DateTime))
                                 ? Model.Pagamento.Data.ToString("yyyy-MM-ddTHH:mm")
@@ -115,7 +117,7 @@
 
                     <div class="col-12">
                         <label for="contos" class="form-label">Descrição / observação</label>
-                        <input type="text" id="contos" name="contos" class="form-control" value="@Model.Pagamento?.Contos" placeholder="Ex: Pagamento realizado no balco">
+                        <input type="text" id="contos" name="contos" class="form-control" value="@Model.Pagamento?.Contos" placeholder="Ex: Pagamento realizado no balcão">
                     </div>
 
                     <div class="col-12">

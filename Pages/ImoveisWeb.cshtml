@@ -1,0 +1,499 @@
+@page
+@model CorteCor.Pages.ImoveisWebModel
+
+@{
+    ViewData["Title"] = "Vitrine Online";
+    Layout = "_PublicLayout";
+}
+
+@section Styles {
+    <style>
+        .imoveis-web-page {
+            max-width: 1240px;
+            margin: 0 auto 2rem;
+            padding: 0 .85rem;
+            color: #172033;
+        }
+
+        .imoveis-web-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin: .5rem 0 1rem;
+        }
+
+        .imoveis-web-title {
+            text-align: left;
+            margin: 0;
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #172033;
+        }
+
+        .imoveis-web-subtitle {
+            display: block;
+            margin-top: .2rem;
+            color: #64748b;
+        }
+
+        .web-layout {
+            display: grid;
+            grid-template-columns: 286px minmax(0, 1fr);
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .web-filters,
+        .web-list-card {
+            background: #fff;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+        }
+
+        .web-filters {
+            position: sticky;
+            top: 1rem;
+            padding: 1rem;
+        }
+
+        .web-filter-title {
+            text-align: left;
+            font-size: 1rem;
+            margin: 0 0 .9rem;
+            color: #172033;
+        }
+
+        .web-filter-group {
+            border-top: 1px solid #e6edf5;
+            padding-top: .85rem;
+            margin-top: .85rem;
+        }
+
+        .web-filter-group:first-of-type {
+            border-top: 0;
+            padding-top: 0;
+            margin-top: 0;
+        }
+
+        .web-filter-label {
+            font-weight: 700;
+            font-size: .82rem;
+            color: #334155;
+            margin-bottom: .35rem;
+        }
+
+        .web-check-grid {
+            display: grid;
+            gap: .35rem;
+        }
+
+        .web-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: .55rem;
+        }
+
+        .web-btn-primary,
+        .web-btn-outline,
+        .web-btn-muted {
+            border-radius: 7px !important;
+            min-width: auto !important;
+            font-weight: 700;
+        }
+
+        .web-btn-primary {
+            background: #0f62fe !important;
+            color: #fff !important;
+            border: 1px solid #0f62fe !important;
+        }
+
+        .web-btn-outline {
+            background: #fff !important;
+            color: #0f62fe !important;
+            border: 1px solid #0f62fe !important;
+        }
+
+        .web-btn-muted {
+            background: #f8fafc !important;
+            color: #334155 !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+
+        .web-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: .8rem;
+        }
+
+        .web-summary h5 {
+            text-align: left;
+            margin: 0;
+            color: #172033;
+        }
+
+        .web-results {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .property-card {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+            background: #fff;
+            color: #172033;
+            text-decoration: none;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+
+        .property-card:hover,
+        .property-card:focus {
+            color: #172033;
+            transform: translateY(-2px);
+            border-color: #94a3b8;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, .12);
+        }
+
+        .property-photo {
+            position: relative;
+            min-height: 224px;
+            background: #eef2f7;
+        }
+
+        .property-photo img {
+            width: 100%;
+            height: 100%;
+            min-height: 224px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .property-photo-count {
+            position: absolute;
+            left: .75rem;
+            bottom: .75rem;
+            background: rgba(15, 23, 42, .84);
+            color: #fff;
+            border-radius: 999px;
+            padding: .32rem .65rem;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .property-body {
+            padding: 1rem 1.1rem;
+            display: grid;
+            gap: .55rem;
+        }
+
+        .property-kicker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+            align-items: center;
+            color: #64748b;
+            font-size: .84rem;
+        }
+
+        .property-chip {
+            display: inline-flex;
+            align-items: center;
+            background: #edf5ff;
+            color: #0b4aa2;
+            border-radius: 999px;
+            padding: .24rem .55rem;
+            font-weight: 700;
+        }
+
+        .property-title {
+            text-align: left;
+            margin: 0;
+            font-size: 1.15rem;
+            color: #0f172a;
+            line-height: 1.25;
+        }
+
+        .property-location {
+            color: #475569;
+            margin: 0;
+        }
+
+        .property-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .45rem;
+        }
+
+        .property-feature {
+            border: 1px solid #dbe3ef;
+            border-radius: 999px;
+            padding: .28rem .55rem;
+            color: #334155;
+            font-size: .82rem;
+            background: #fff;
+        }
+
+        .property-bottom {
+            display: flex;
+            justify-content: space-between;
+            gap: .75rem;
+            align-items: end;
+            margin-top: .25rem;
+        }
+
+        .property-price {
+            color: #0f62fe;
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .property-code {
+            color: #64748b;
+            font-size: .8rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 2.5rem 1rem;
+            color: #64748b;
+        }
+
+        @@media (max-width: 991px) {
+            .web-layout { grid-template-columns: 1fr; }
+            .web-filters { position: static; }
+            .property-card { grid-template-columns: 1fr; }
+        }
+    </style>
+}
+
+<div class="imoveis-web-page">
+    <div class="imoveis-web-header">
+        <div>
+            <h4 class="imoveis-web-title">Im&oacute;veis Web</h4>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensagem))
+    {
+        <div class="alert alert-danger">@Model.Mensagem</div>
+    }
+
+    <div class="web-layout">
+        <aside class="web-filters">
+            <h5 class="web-filter-title">Filtros</h5>
+            <form method="get">
+                @if (Model.IdSalao.HasValue)
+                {
+                    <input type="hidden" name="id" value="@Model.IdSalao.Value">
+                }
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label" for="q">Buscar</label>
+                    <input class="form-control" id="q" name="q" value="@Model.q" placeholder="C&oacute;digo, bairro, cidade">
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label" for="Finalidade">Finalidade</label>
+                    <select class="form-select" id="Finalidade" name="Finalidade">
+                        <option value="">Todas</option>
+                        @foreach (var item in Model.FinalidadeOptions)
+                        {
+                            var selected = Model.Finalidade == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label" for="TipoImovel">Tipo do im&oacute;vel</label>
+                    <select class="form-select" id="TipoImovel" name="TipoImovel">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.TipoOptions)
+                        {
+                            var selected = Model.TipoImovel == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label" for="Status">Status</label>
+                    <select class="form-select" id="Status" name="Status">
+                        <option value="">Todos</option>
+                        @foreach (var item in Model.StatusOptions)
+                        {
+                            var selected = Model.Status == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label" for="Estado">Localiza&ccedil;&atilde;o</label>
+                    <select class="form-select mb-2" id="Estado" name="Estado">
+                        <option value="">Estado</option>
+                        @foreach (var item in Model.EstadoOptions)
+                        {
+                            var selected = Model.Estado == item ? "selected" : "";
+                            @Html.Raw($"<option value=\"{item}\" {selected}>{item}</option>")
+                        }
+                    </select>
+                    <input class="form-control mb-2" name="Cidade" value="@Model.Cidade" placeholder="Cidade">
+                    <input class="form-control" name="Bairro" value="@Model.Bairro" placeholder="Bairro">
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label">Valor</label>
+                    <div class="row g-2">
+                        <div class="col-6"><input class="form-control" name="ValorMinimo" value="@Model.ValorMinimo" placeholder="M&iacute;n."></div>
+                        <div class="col-6"><input class="form-control" name="ValorMaximo" value="@Model.ValorMaximo" placeholder="M&aacute;x."></div>
+                    </div>
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label">&Aacute;rea privativa</label>
+                    <div class="row g-2">
+                        <div class="col-6"><input class="form-control" name="AreaMinima" value="@Model.AreaMinima" placeholder="M&iacute;n."></div>
+                        <div class="col-6"><input class="form-control" name="AreaMaxima" value="@Model.AreaMaxima" placeholder="M&aacute;x."></div>
+                    </div>
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label">C&ocirc;modos m&iacute;nimos</label>
+                    <div class="row g-2">
+                        <div class="col-6"><input type="number" class="form-control" name="QuartosMinimo" value="@Model.QuartosMinimo" placeholder="Quartos"></div>
+                        <div class="col-6"><input type="number" class="form-control" name="SuitesMinimo" value="@Model.SuitesMinimo" placeholder="Su&iacute;tes"></div>
+                        <div class="col-6"><input type="number" class="form-control" name="BanheirosMinimo" value="@Model.BanheirosMinimo" placeholder="Banhos"></div>
+                        <div class="col-6"><input type="number" class="form-control" name="VagasMinimo" value="@Model.VagasMinimo" placeholder="Vagas"></div>
+                    </div>
+                </div>
+
+                <div class="web-filter-group web-check-grid">
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Publicados" value="true" @(Model.Publicados ? "checked" : "")> Publicados no site</label>
+                    <input type="hidden" name="Publicados" value="false">
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Disponiveis" value="true" @(Model.Disponiveis ? "checked" : "")> Im&oacute;veis dispon&iacute;veis</label>
+                    <input type="hidden" name="Disponiveis" value="false">
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="DestaqueNaBusca" value="true" @(Model.DestaqueNaBusca ? "checked" : "")> Destaque na busca</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="PrecoSobConsulta" value="true" @(Model.PrecoSobConsulta ? "checked" : "")> Pre&ccedil;o sob consulta</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="AceitaFinanciamento" value="true" @(Model.AceitaFinanciamento ? "checked" : "")> Aceita financiamento</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="AceitaPermuta" value="true" @(Model.AceitaPermuta ? "checked" : "")> Aceita permuta</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="ComFotos" value="true" @(Model.ComFotos ? "checked" : "")> Com fotos</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="ComVideo" value="true" @(Model.ComVideo ? "checked" : "")> Com v&iacute;deo</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="ComTourVirtual" value="true" @(Model.ComTourVirtual ? "checked" : "")> Tour virtual</label>
+                </div>
+
+                <div class="web-filter-group web-check-grid">
+                    <label class="web-filter-label">Caracter&iacute;sticas</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Piscina" value="true" @(Model.Piscina ? "checked" : "")> Piscina</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="ArCondicionado" value="true" @(Model.ArCondicionado ? "checked" : "")> Ar-condicionado</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Churrasqueira" value="true" @(Model.Churrasqueira ? "checked" : "")> Churrasqueira</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Sauna" value="true" @(Model.Sauna ? "checked" : "")> Sauna</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Jardim" value="true" @(Model.Jardim ? "checked" : "")> Jardim</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="AreaGourmet" value="true" @(Model.AreaGourmet ? "checked" : "")> &Aacute;rea gourmet</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Jacuzzi" value="true" @(Model.Jacuzzi ? "checked" : "")> Jacuzzi</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Hidromassagem" value="true" @(Model.Hidromassagem ? "checked" : "")> Hidromassagem</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Escritorio" value="true" @(Model.Escritorio ? "checked" : "")> Escrit&oacute;rio</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="SalaTV" value="true" @(Model.SalaTV ? "checked" : "")> Sala de TV</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="CozinhaPlanejada" value="true" @(Model.CozinhaPlanejada ? "checked" : "")> Cozinha planejada</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Closet" value="true" @(Model.Closet ? "checked" : "")> Closet</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Varanda" value="true" @(Model.Varanda ? "checked" : "")> Varanda</label>
+                    <label class="form-check"><input class="form-check-input" type="checkbox" name="Lavabo" value="true" @(Model.Lavabo ? "checked" : "")> Lavabo</label>
+                </div>
+
+                <div class="web-filter-group">
+                    <label class="web-filter-label" for="Ordenacao">Ordenar</label>
+                    <select class="form-select" id="Ordenacao" name="Ordenacao">
+                        <option value="" selected="@(string.IsNullOrWhiteSpace(Model.Ordenacao) ? "selected" : null)">Destaques e recentes</option>
+                        <option value="mais_recentes" selected="@(Model.Ordenacao == "mais_recentes" ? "selected" : null)">Mais recentes</option>
+                        <option value="valor_asc" selected="@(Model.Ordenacao == "valor_asc" ? "selected" : null)">Menor valor</option>
+                        <option value="valor_desc" selected="@(Model.Ordenacao == "valor_desc" ? "selected" : null)">Maior valor</option>
+                        <option value="area_desc" selected="@(Model.Ordenacao == "area_desc" ? "selected" : null)">Maior &aacute;rea</option>
+                    </select>
+                </div>
+
+                <div class="web-filter-group d-grid gap-2">
+                    <button class="btn web-btn-primary" type="submit">Filtrar</button>
+                    <a asp-page="/ImoveisWeb" asp-route-id="@Model.IdSalao" class="btn web-btn-muted">Limpar</a>
+                </div>
+            </form>
+        </aside>
+
+        <main>
+            <div class="web-summary">
+                <h5>@Model.Imoveis.TotalCount im&oacute;vel(is) encontrado(s)</h5>
+                <span class="text-muted">P&aacute;gina @Model.Imoveis.PageIndex de @(Model.Imoveis.TotalPages == 0 ? 1 : Model.Imoveis.TotalPages)</span>
+            </div>
+
+            <div class="web-results">
+                @if (Model.Imoveis.Items.Any())
+                {
+                    foreach (var imovel in Model.Imoveis.Items)
+                    {
+                        <a class="property-card" asp-page="/ImovelWebItem" asp-route-id="@imovel.IdImovel">
+                            <div class="property-photo">
+                                <img src="@Model.FotoOuPlaceholder(imovel)" alt="@imovel.Titulo">
+                                <span class="property-photo-count">@imovel.QuantidadeFotos foto(s)</span>
+                            </div>
+                            <div class="property-body">
+                                <div class="property-kicker">
+                                    <span class="property-chip">@imovel.Finalidade</span>
+                                    <span>@imovel.TipoImovel</span>
+                                    <span>@imovel.StatusAnuncio</span>
+                                </div>
+                                <h5 class="property-title">@imovel.Titulo</h5>
+                                <p class="property-location">
+                                    @imovel.Bairro, @imovel.Cidade / @imovel.Estado
+                                </p>
+                                <div class="property-features">
+                                    @foreach (var item in Model.CaracteristicasResumo(imovel))
+                                    {
+                                        <span class="property-feature">@item</span>
+                                    }
+                                </div>
+                                <div class="property-bottom">
+                                    <div>
+                                        <div class="property-price">@Model.FormatarValor(imovel)</div>
+                                        <div class="property-code">C&oacute;digo @imovel.CodigoImovel</div>
+                                    </div>
+                                    <span class="btn web-btn-primary">Ver im&oacute;vel</span>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        Nenhum im&oacute;vel encontrado com os filtros selecionados.
+                    </div>
+                }
+            </div>
+
+            @if (Model.Imoveis.TotalPages > 1)
+            {
+                <nav aria-label="Paginacao de imoveis web" class="mt-3">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(Model.Imoveis.HasPreviousPage ? "" : "disabled")">
+                            <a class="page-link" asp-page="/ImoveisWeb" asp-all-route-data="Model.RouteValues(Model.Imoveis.PageIndex - 1)">Anterior</a>
+                        </li>
+                        <li class="page-item disabled"><span class="page-link">@Model.Imoveis.PageIndex / @Model.Imoveis.TotalPages</span></li>
+                        <li class="page-item @(Model.Imoveis.HasNextPage ? "" : "disabled")">
+                            <a class="page-link" asp-page="/ImoveisWeb" asp-all-route-data="Model.RouteValues(Model.Imoveis.PageIndex + 1)">Proxima</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </main>
+    </div>
+</div>

@@ -1,5 +1,55 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `CorteCor_VendaPosVendaItem`;
+DROP TABLE IF EXISTS `CorteCor_VendaPosVenda`;
+DROP TABLE IF EXISTS `CorteCor_VendaProdutoItem`;
+DROP TABLE IF EXISTS `CorteCor_VendaProduto`;
+DROP TABLE IF EXISTS `CorteCor_SalaoConfigFiscal`;
+DROP TABLE IF EXISTS `CorteCor_PlanoContas`;
+DROP TABLE IF EXISTS `CorteCor_PedidoItem`;
+DROP TABLE IF EXISTS `CorteCor_Pedido`;
+DROP TABLE IF EXISTS `CorteCor_Pagamento_Log`;
+DROP TABLE IF EXISTS `CorteCor_Pagamento`;
+DROP TABLE IF EXISTS `CorteCor_NotaFiscalLog`;
+DROP TABLE IF EXISTS `CorteCor_NotaFiscalInutilizacao`;
+DROP TABLE IF EXISTS `CorteCor_NotaFiscalEvento`;
+DROP TABLE IF EXISTS `CorteCor_NotaFiscal`;
+DROP TABLE IF EXISTS `CorteCor_MovimentoEstoque`;
+DROP TABLE IF EXISTS `CorteCor_Produto`;
+DROP TABLE IF EXISTS `CorteCor_ModeloSMS`;
+DROP TABLE IF EXISTS `CorteCor_ModeloEmail`;
+DROP TABLE IF EXISTS `CorteCor_MeioPagamento`;
+DROP TABLE IF EXISTS `CorteCor_LogEnvioEmail`;
+DROP TABLE IF EXISTS `CorteCor_LogAcessos`;
+DROP TABLE IF EXISTS `CorteCor_LembreteAgendado`;
+DROP TABLE IF EXISTS `CorteCor_LembreteConfig`;
+DROP TABLE IF EXISTS `CorteCor_ItemListaServico`;
+DROP TABLE IF EXISTS `CorteCor_Funcionario_Servico`;
+DROP TABLE IF EXISTS `CorteCor_FornecedoresWhatsapp`;
+DROP TABLE IF EXISTS `CorteCor_FornecedoresSMS`;
+DROP TABLE IF EXISTS `CorteCor_FornecedoresEmail`;
+DROP TABLE IF EXISTS `CorteCor_FinanceiroTitulo`;
+DROP TABLE IF EXISTS `CorteCor_CrmCampanhaDestino`;
+DROP TABLE IF EXISTS `CorteCor_CrmCampanha`;
+DROP TABLE IF EXISTS `CorteCor_CrmTarefa`;
+DROP TABLE IF EXISTS `CorteCor_CrmOportunidade`;
+DROP TABLE IF EXISTS `CorteCor_CrmInteracao`;
+DROP TABLE IF EXISTS `CorteCor_CrmPessoaPerfil`;
+DROP TABLE IF EXISTS `CorteCor_CrmEtapaFunil`;
+DROP TABLE IF EXISTS `CorteCor_ContaCaixa`;
+DROP TABLE IF EXISTS `CorteCor_ConfigPix`;
+DROP TABLE IF EXISTS `CorteCor_ConfigGeral`;
+DROP TABLE IF EXISTS `CorteCor_ConfigApi`;
+DROP TABLE IF EXISTS `CorteCor_Agendamento`;
+DROP TABLE IF EXISTS `CorteCor_PessoaFicha`;
+DROP TABLE IF EXISTS `CorteCor_Pessoa`;
+DROP TABLE IF EXISTS `CorteCor_Funcionario`;
+DROP TABLE IF EXISTS `CorteCor_Servico`;
+DROP TABLE IF EXISTS `CorteCor_CategoriaProduto`;
+DROP TABLE IF EXISTS `CorteCor_Usuario`;
+DROP TABLE IF EXISTS `CorteCor_Salao`;
+DROP TABLE IF EXISTS `CorteCor_Administrador`;
+
 CREATE TABLE `CorteCor_Administrador` (
   `IdUsuario` int NOT NULL AUTO_INCREMENT,
   `Nome` varchar(200) NOT NULL,
@@ -45,6 +95,8 @@ CREATE TABLE `CorteCor_Usuario` (
   `IdSalao` int NOT NULL,
   PRIMARY KEY (`IdUsuario`),
   UNIQUE KEY `UQ_CorteCor_Usuario_Email_Salao` (`Email`,`IdSalao`),
+  KEY `IX_CorteCor_Usuario_Salao_Status_Nome` (`IdSalao`,`Status`,`Nome`),
+  KEY `IX_CorteCor_Usuario_Email_Status` (`Email`,`Status`),
   CONSTRAINT `FK_CorteCor_Usuario_Salao`
     FOREIGN KEY (`IdSalao`) REFERENCES `CorteCor_Salao` (`IdSalao`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -55,7 +107,8 @@ CREATE TABLE `CorteCor_CategoriaProduto` (
   `Nome` varchar(150) NOT NULL,
   `Ativo` tinyint(1) NOT NULL DEFAULT 1,
   `DataCadastro` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`IdCategoria`)
+  PRIMARY KEY (`IdCategoria`),
+  KEY `IX_CorteCor_CategoriaProduto_Salao_Ativo_Nome` (`IdSalao`,`Ativo`,`Nome`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_Servico` (
@@ -79,6 +132,8 @@ CREATE TABLE `CorteCor_Servico` (
   `MargemContribuicao` decimal(18,2) DEFAULT NULL,
   `IdCategoria` int DEFAULT NULL,
   PRIMARY KEY (`IdServico`),
+  KEY `IX_CorteCor_Servico_Salao_Arquivado_Nome` (`IdSalao`,`Arquivado`,`Nome`),
+  KEY `IX_CorteCor_Servico_Salao_Categoria` (`IdSalao`,`IdCategoria`),
   CONSTRAINT `FK_CorteCor_Servico_Salao`
     FOREIGN KEY (`IdSalao`) REFERENCES `CorteCor_Salao` (`IdSalao`),
   CONSTRAINT `FK_Servico_Categoria`
@@ -111,6 +166,7 @@ CREATE TABLE `CorteCor_Funcionario` (
   `dom_fim` time DEFAULT NULL,
   `IdSalao` int DEFAULT NULL,
   PRIMARY KEY (`IdFuncionario`),
+  KEY `IX_CorteCor_Funcionario_Salao_Nome` (`IdSalao`,`Nome`),
   CONSTRAINT `FK_CorteCor_Funcionario_Salao`
     FOREIGN KEY (`IdSalao`) REFERENCES `CorteCor_Salao` (`IdSalao`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -164,8 +220,56 @@ CREATE TABLE `CorteCor_Pessoa` (
   `BasesLegais` longtext,
   `Observacoes` longtext,
   PRIMARY KEY (`IdPessoa`),
+  KEY `IX_CorteCor_Pessoa_Salao_Cliente_Ativo_Nome` (`IdSalao`,`IsCliente`,`Excluido`,`Nome`),
+  KEY `IX_CorteCor_Pessoa_Salao_Email` (`IdSalao`,`Email`),
+  KEY `IX_CorteCor_Pessoa_Salao_CpfCnpj` (`IdSalao`,`CpfCnpj`),
   CONSTRAINT `FK_CorteCor_Pessoa_Salao`
     FOREIGN KEY (`IdSalao`) REFERENCES `CorteCor_Salao` (`IdSalao`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `CorteCor_PessoaFicha` (
+  `PessoaID` int NOT NULL AUTO_INCREMENT,
+  `FichaID` int NOT NULL,
+  `Nome` varchar(300) DEFAULT NULL,
+  `Filiacao` varchar(500) DEFAULT NULL,
+  `RG` varchar(50) DEFAULT NULL,
+  `CPF` varchar(20) DEFAULT NULL,
+  `DataNascimento` date DEFAULT NULL,
+  `Nacionalidade` varchar(100) DEFAULT NULL,
+  `NIS` varchar(50) DEFAULT NULL,
+  `EstadoCivil` varchar(100) DEFAULT NULL,
+  `RegimeCasamento` varchar(100) DEFAULT NULL,
+  `SituacaoProfissional` varchar(150) DEFAULT NULL,
+  `Profissao` varchar(200) DEFAULT NULL,
+  `GrauInstrucao` varchar(150) DEFAULT NULL,
+  `Iletrado` tinyint(1) DEFAULT NULL,
+  `Empresa` varchar(300) DEFAULT NULL,
+  `CarteiraAssinada` tinyint(1) DEFAULT NULL,
+  `RendaMensal` decimal(18,2) DEFAULT NULL,
+  `Endereco` varchar(300) DEFAULT NULL,
+  `Quadra` varchar(50) DEFAULT NULL,
+  `PontoReferencia` varchar(300) DEFAULT NULL,
+  `Bairro` varchar(150) DEFAULT NULL,
+  `Lote` int DEFAULT NULL,
+  `MunicipioResidencia` varchar(150) DEFAULT NULL,
+  `Telefone` varchar(40) DEFAULT NULL,
+  `Celular` varchar(40) DEFAULT NULL,
+  `ConjugeNome` varchar(300) DEFAULT NULL,
+  `ConjugeFiliacao` varchar(500) DEFAULT NULL,
+  `ConjugeRG` varchar(50) DEFAULT NULL,
+  `ConjugeCPF` varchar(20) DEFAULT NULL,
+  `ConjugeIdade` int DEFAULT NULL,
+  `ConjugeNacionalidade` varchar(100) DEFAULT NULL,
+  `ConjugeSituacaoProfissional` varchar(150) DEFAULT NULL,
+  `ConjugeProfissao` varchar(200) DEFAULT NULL,
+  `ConjugeGrauInstrucao` varchar(150) DEFAULT NULL,
+  `ConjugeIletrado` tinyint(1) DEFAULT NULL,
+  `ConjugeEmpresa` varchar(300) DEFAULT NULL,
+  `ConjugeCarteiraAssinada` tinyint(1) DEFAULT NULL,
+  `ConjugeRendaMensal` decimal(18,2) DEFAULT NULL,
+  PRIMARY KEY (`PessoaID`),
+  KEY `IX_CorteCor_PessoaFicha_FichaID` (`FichaID`),
+  KEY `IX_CorteCor_PessoaFicha_Nome` (`Nome`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_Agendamento` (
@@ -178,6 +282,8 @@ CREATE TABLE `CorteCor_Agendamento` (
   `Excluido` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`IdAgendamento`),
   KEY `IX_CorteCor_Agendamento_Funcionario_DataHora` (`IdFuncionario`,`DataHora`),
+  KEY `IX_CorteCor_Agendamento_Pessoa_DataHora` (`IdPessoa`,`DataHora`),
+  KEY `IX_CorteCor_Agendamento_Servico_DataHora` (`IdServico`,`DataHora`),
   CONSTRAINT `FK_CorteCor_Agendamento_Funcionario`
     FOREIGN KEY (`IdFuncionario`) REFERENCES `CorteCor_Funcionario` (`IdFuncionario`),
   CONSTRAINT `FK_CorteCor_Agendamento_Pessoa`
@@ -190,7 +296,7 @@ CREATE TABLE `CorteCor_ConfigApi` (
   `IdApi` int NOT NULL AUTO_INCREMENT,
   `IdSalao` int NOT NULL,
   `NomeApp` varchar(100) DEFAULT NULL,
-  `ApiKey` char(36) DEFAULT (uuid()),
+  `ApiKey` char(36) DEFAULT NULL,
   `DataCriacao` datetime DEFAULT CURRENT_TIMESTAMP,
   `UltimoAcesso` datetime DEFAULT NULL,
   `Ativo` tinyint(1) DEFAULT 1,
@@ -451,8 +557,21 @@ CREATE TABLE `CorteCor_ItemListaServico` (
   `IdItemListaServico` int NOT NULL AUTO_INCREMENT,
   `Codigo` varchar(10) NOT NULL,
   `Descricao` varchar(500) NOT NULL,
-  PRIMARY KEY (`IdItemListaServico`)
+  PRIMARY KEY (`IdItemListaServico`),
+  UNIQUE KEY `UK_ItemListaServico_Codigo` (`Codigo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `CorteCor_ItemListaServico` (`Codigo`, `Descricao`)
+SELECT '06.01', 'Barbearia, cabeleireiros, manicuros, pedicuros e congeneres.'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `CorteCor_ItemListaServico` WHERE `Codigo` = '06.01'
+);
+
+INSERT INTO `CorteCor_ItemListaServico` (`Codigo`, `Descricao`)
+SELECT '06.02', 'Esteticistas, tratamento de pele, depilacao e congeneres.'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `CorteCor_ItemListaServico` WHERE `Codigo` = '06.02'
+);
 
 CREATE TABLE `CorteCor_LembreteConfig` (
   `IdConfig` int NOT NULL AUTO_INCREMENT,
@@ -600,7 +719,10 @@ CREATE TABLE `CorteCor_Produto` (
   `GrupoTributarioVinculado` int DEFAULT NULL,
   `DataCadastro` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `Excluido` tinyint(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`IdProduto`)
+  PRIMARY KEY (`IdProduto`),
+  KEY `IX_CorteCor_Produto_Salao_Ativo_Nome` (`IdSalao`,`Excluido`,`Arquivado`,`Nome`),
+  KEY `IX_CorteCor_Produto_Salao_Categoria` (`IdSalao`,`IdCategoria`),
+  KEY `IX_CorteCor_Produto_Salao_Codigo` (`IdSalao`,`CodigoProprio`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_MovimentoEstoque` (
@@ -623,7 +745,7 @@ CREATE TABLE `CorteCor_MovimentoEstoque` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_NotaFiscal` (
-  `IdNotaFiscal` char(36) NOT NULL DEFAULT (uuid()),
+  `IdNotaFiscal` char(36) NOT NULL,
   `IdSalao` int NOT NULL,
   `IdAgendamento` int DEFAULT NULL,
   `IdVendaProduto` int DEFAULT NULL,
@@ -657,7 +779,7 @@ CREATE TABLE `CorteCor_NotaFiscal` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_NotaFiscalEvento` (
-  `IdEvento` char(36) NOT NULL DEFAULT (uuid()),
+  `IdEvento` char(36) NOT NULL,
   `IdNotaFiscal` char(36) NOT NULL,
   `IdSalao` int NOT NULL,
   `TipoEvento` varchar(50) NOT NULL,
@@ -674,7 +796,7 @@ CREATE TABLE `CorteCor_NotaFiscalEvento` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_NotaFiscalInutilizacao` (
-  `IdInutilizacao` char(36) NOT NULL DEFAULT (uuid()),
+  `IdInutilizacao` char(36) NOT NULL,
   `IdSalao` int NOT NULL,
   `Ano` int NOT NULL,
   `Modelo` int NOT NULL,
@@ -712,13 +834,21 @@ CREATE TABLE `CorteCor_NotaFiscalLog` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_Pagamento` (
-  `IdPagamento` char(36) NOT NULL DEFAULT (uuid()),
-  `IdAgendamento` int NOT NULL,
+  `IdPagamento` char(36) NOT NULL,
+  `IdSalao` int DEFAULT NULL,
+  `IdAgendamento` int DEFAULT NULL,
+  `IdPedido` int DEFAULT NULL,
+  `IdVendaProduto` int DEFAULT NULL,
+  `OrigemPagamento` varchar(30) NOT NULL DEFAULT 'Avulso',
+  `IdMeioPagamento` int DEFAULT NULL,
   `Ativo` tinyint(1) NOT NULL DEFAULT 1,
   `Status` varchar(20) NOT NULL DEFAULT 'Pendente',
+  `Data` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `Valor` decimal(18,2) NOT NULL,
   `Moeda` char(3) NOT NULL DEFAULT 'BRL',
   `Descricao` varchar(400) DEFAULT NULL,
+  `Contos` varchar(255) DEFAULT NULL,
+  `Campos` longtext,
   `MercadoPagoPreferenceId` varchar(160) DEFAULT NULL,
   `MercadoPagoPaymentId` varchar(60) DEFAULT NULL,
   `CheckoutUrl` varchar(1000) DEFAULT NULL,
@@ -732,8 +862,17 @@ CREATE TABLE `CorteCor_Pagamento` (
   `UrlPagamento` varchar(1000) DEFAULT NULL,
   `Tipo` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`IdPagamento`),
-  UNIQUE KEY `UX_CorteCor_Pagamento_Agendamento_Ativo` (`IdAgendamento`),
+  KEY `IX_CorteCor_Pagamento_IdSalao` (`IdSalao`),
+  KEY `IX_CorteCor_Pagamento_IdAgendamento` (`IdAgendamento`),
+  KEY `IX_CorteCor_Pagamento_IdPedido` (`IdPedido`),
+  KEY `IX_CorteCor_Pagamento_IdVendaProduto` (`IdVendaProduto`),
+  KEY `IX_CorteCor_Pagamento_OrigemPagamento` (`OrigemPagamento`),
+  KEY `IX_CorteCor_Pagamento_IdMeioPagamento` (`IdMeioPagamento`),
   KEY `IX_CorteCor_Pagamento_MercadoPagoPaymentId` (`MercadoPagoPaymentId`),
+  CONSTRAINT `FK_CorteCor_Pagamento_Salao`
+    FOREIGN KEY (`IdSalao`) REFERENCES `CorteCor_Salao` (`IdSalao`),
+  CONSTRAINT `FK_CorteCor_Pagamento_MeioPagamento`
+    FOREIGN KEY (`IdMeioPagamento`) REFERENCES `CorteCor_MeioPagamento` (`IdMeioPagamento`),
   CONSTRAINT `FK_CorteCor_Pagamento_Agendamento`
     FOREIGN KEY (`IdAgendamento`) REFERENCES `CorteCor_Agendamento` (`IdAgendamento`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -812,7 +951,7 @@ CREATE TABLE `CorteCor_PlanoContas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_SalaoConfigFiscal` (
-  `IdConfigFiscal` char(36) NOT NULL DEFAULT (uuid()),
+  `IdConfigFiscal` char(36) NOT NULL,
   `IdSalao` int NOT NULL,
   `Cnpj` varchar(14) NOT NULL,
   `RazaoSocial` varchar(150) NOT NULL,
@@ -873,7 +1012,9 @@ CREATE TABLE `CorteCor_VendaProduto` (
   `DataCriacao` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `DataAtualizacao` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`IdVendaProduto`),
-  KEY `IX_CorteCor_VendaProduto_IdSalao_DataVenda` (`IdSalao`,`DataVenda`)
+  KEY `IX_CorteCor_VendaProduto_IdSalao_DataVenda` (`IdSalao`,`DataVenda`),
+  KEY `IX_CorteCor_VendaProduto_Salao_Status_DataVenda` (`IdSalao`,`Status`,`DataVenda`),
+  KEY `IX_CorteCor_VendaProduto_Salao_Pessoa_DataVenda` (`IdSalao`,`IdPessoa`,`DataVenda`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `CorteCor_VendaProdutoItem` (
@@ -941,5 +1082,70 @@ CREATE TABLE `CorteCor_VendaPosVendaItem` (
   CONSTRAINT `FK_CorteCor_VendaPosVendaItem_PosVenda`
     FOREIGN KEY (`IdPosVenda`) REFERENCES `CorteCor_VendaPosVenda` (`IdPosVenda`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TRIGGER IF EXISTS `BI_CorteCor_ConfigApi_SetApiKey`;
+DROP TRIGGER IF EXISTS `BI_CorteCor_NotaFiscal_SetIdNotaFiscal`;
+DROP TRIGGER IF EXISTS `BI_CorteCor_NotaFiscalEvento_SetIdEvento`;
+DROP TRIGGER IF EXISTS `BI_CorteCor_NotaFiscalInutilizacao_SetIdInutilizacao`;
+DROP TRIGGER IF EXISTS `BI_CorteCor_Pagamento_SetIdPagamento`;
+DROP TRIGGER IF EXISTS `BI_CorteCor_SalaoConfigFiscal_SetIdConfigFiscal`;
+
+DELIMITER $$
+
+CREATE TRIGGER `BI_CorteCor_ConfigApi_SetApiKey`
+BEFORE INSERT ON `CorteCor_ConfigApi`
+FOR EACH ROW
+BEGIN
+  IF NEW.`ApiKey` IS NULL OR NEW.`ApiKey` = '' THEN
+    SET NEW.`ApiKey` = UUID();
+  END IF;
+END$$
+
+CREATE TRIGGER `BI_CorteCor_NotaFiscal_SetIdNotaFiscal`
+BEFORE INSERT ON `CorteCor_NotaFiscal`
+FOR EACH ROW
+BEGIN
+  IF NEW.`IdNotaFiscal` IS NULL OR NEW.`IdNotaFiscal` = '' THEN
+    SET NEW.`IdNotaFiscal` = UUID();
+  END IF;
+END$$
+
+CREATE TRIGGER `BI_CorteCor_NotaFiscalEvento_SetIdEvento`
+BEFORE INSERT ON `CorteCor_NotaFiscalEvento`
+FOR EACH ROW
+BEGIN
+  IF NEW.`IdEvento` IS NULL OR NEW.`IdEvento` = '' THEN
+    SET NEW.`IdEvento` = UUID();
+  END IF;
+END$$
+
+CREATE TRIGGER `BI_CorteCor_NotaFiscalInutilizacao_SetIdInutilizacao`
+BEFORE INSERT ON `CorteCor_NotaFiscalInutilizacao`
+FOR EACH ROW
+BEGIN
+  IF NEW.`IdInutilizacao` IS NULL OR NEW.`IdInutilizacao` = '' THEN
+    SET NEW.`IdInutilizacao` = UUID();
+  END IF;
+END$$
+
+CREATE TRIGGER `BI_CorteCor_Pagamento_SetIdPagamento`
+BEFORE INSERT ON `CorteCor_Pagamento`
+FOR EACH ROW
+BEGIN
+  IF NEW.`IdPagamento` IS NULL OR NEW.`IdPagamento` = '' THEN
+    SET NEW.`IdPagamento` = UUID();
+  END IF;
+END$$
+
+CREATE TRIGGER `BI_CorteCor_SalaoConfigFiscal_SetIdConfigFiscal`
+BEFORE INSERT ON `CorteCor_SalaoConfigFiscal`
+FOR EACH ROW
+BEGIN
+  IF NEW.`IdConfigFiscal` IS NULL OR NEW.`IdConfigFiscal` = '' THEN
+    SET NEW.`IdConfigFiscal` = UUID();
+  END IF;
+END$$
+
+DELIMITER ;
 
 SET FOREIGN_KEY_CHECKS = 1;

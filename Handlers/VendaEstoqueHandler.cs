@@ -28,8 +28,8 @@ INSERT INTO CorteCor_VendaProduto
 VALUES
     (@IdSalao, @IdPessoa, @IdMeioPagamento, @Status, @TipoPagamento, @RecebidoNaHora, @SolicitarEmissaoFiscalServico,
      @SubtotalProdutos, @SubtotalServicos, @Desconto, @Acrescimo, @ValorTotal, @Observacoes, @Origem, @UsuarioOperador,
-     @DataVenda, GETDATE(), GETDATE());
-SELECT CAST(SCOPE_IDENTITY() AS INT);";
+     @DataVenda, NOW(), NOW());
+SELECT LAST_INSERT_ID();";
 
         const string insertItemSql = @"
 INSERT INTO CorteCor_VendaProdutoItem
@@ -57,18 +57,18 @@ VALUES
         using var tx = conn.BeginTransaction();
         try
         {
-            var idVenda = await conn.ExecuteScalarAsync<int>(insertVendaSql, venda, tx);
+            var idVendaProduto = await conn.ExecuteScalarAsync<int>(insertVendaSql, venda, tx);
 
             foreach (var item in itens)
             {
-                item.IdVendaProduto = idVenda;
+                item.IdVendaProduto = idVendaProduto;
                 item.IdSalao = venda.IdSalao;
                 await conn.ExecuteAsync(insertItemSql, item, tx);
             }
 
             foreach (var movimento in movimentos)
             {
-                movimento.IdVendaProduto = idVenda;
+                movimento.IdVendaProduto = idVendaProduto;
                 await conn.ExecuteAsync(updateEstoqueSql, new
                 {
                     movimento.IdProduto,
@@ -79,7 +79,7 @@ VALUES
             }
 
             tx.Commit();
-            return idVenda;
+            return idVendaProduto;
         }
         catch
         {
@@ -105,7 +105,7 @@ SET IdPessoa = @IdPessoa,
     Observacoes = @Observacoes,
     Origem = @Origem,
     UsuarioOperador = @UsuarioOperador,
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdSalao = @IdSalao
   AND IdVendaProduto = @IdVendaProduto;";
 
@@ -148,7 +148,7 @@ VALUES
     public async Task<VendaProduto?> ObterVendaAsync(int idSalao, int idVendaProduto)
     {
         const string sql = @"
-SELECT TOP 1
+SELECT
     V.*,
     P.Nome AS NomeCliente,
     CAST(CASE WHEN EXISTS (
@@ -157,25 +157,28 @@ SELECT TOP 1
         WHERE N.IdSalao = V.IdSalao
           AND N.IdVendaProduto = V.IdVendaProduto
           AND N.Status NOT IN ('Cancelada', 'Rejeitada')
-    ) THEN 1 ELSE 0 END AS bit) AS PossuiNotaAtiva,
+    ) THEN 1 ELSE 0 END AS UNSIGNED) AS PossuiNotaAtiva,
     (
-        SELECT TOP 1 N.Status
+        SELECT N.Status
         FROM CorteCor_NotaFiscal N
         WHERE N.IdSalao = V.IdSalao
           AND N.IdVendaProduto = V.IdVendaProduto
         ORDER BY N.DataEmissao DESC, N.DataAtualizacao DESC
+        LIMIT 1
     ) AS StatusFiscal,
     (
-        SELECT TOP 1 N.TipoNota
+        SELECT N.TipoNota
         FROM CorteCor_NotaFiscal N
         WHERE N.IdSalao = V.IdSalao
           AND N.IdVendaProduto = V.IdVendaProduto
         ORDER BY N.DataEmissao DESC, N.DataAtualizacao DESC
+        LIMIT 1
     ) AS TipoDocumentoFiscal
 FROM CorteCor_VendaProduto V
 LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = V.IdPessoa
 WHERE V.IdSalao = @IdSalao
-  AND V.IdVendaProduto = @IdVendaProduto;";
+  AND V.IdVendaProduto = @IdVendaProduto
+LIMIT 1;";
 
         using var conn = GetConnection();
         return await conn.QueryFirstOrDefaultAsync<VendaProduto>(sql, new { IdSalao = idSalao, IdVendaProduto = idVendaProduto });
@@ -201,9 +204,9 @@ SELECT
     AliquotaIss,
     Ncm,
     Cfop,
-    ISNULL(QuantidadeCancelada, 0) AS QuantidadeCancelada,
-    ISNULL(QuantidadeDevolvida, 0) AS QuantidadeDevolvida,
-    ISNULL(QuantidadeTrocada, 0) AS QuantidadeTrocada
+    COALESCE(QuantidadeCancelada, 0) AS QuantidadeCancelada,
+    COALESCE(QuantidadeDevolvida, 0) AS QuantidadeDevolvida,
+    COALESCE(QuantidadeTrocada, 0) AS QuantidadeTrocada
 FROM CorteCor_VendaProdutoItem
 WHERE IdSalao = @IdSalao
   AND IdVendaProduto = @IdVendaProduto
@@ -230,11 +233,11 @@ WHERE V.IdSalao = @IdSalao
   AND (
         @Pesquisa IS NULL
         OR P.Nome LIKE @Pesquisa
-        OR ISNULL(V.TipoPagamento, '') LIKE @Pesquisa
-        OR CAST(V.IdVendaProduto AS NVARCHAR(20)) LIKE @Pesquisa
+        OR COALESCE(V.TipoPagamento, '') LIKE COALESCE(@Pesquisa, '')
+        OR CAST(V.IdVendaProduto AS CHAR(20)) LIKE COALESCE(@Pesquisa, '')
       )
-  AND (@DataInicio IS NULL OR CAST(V.DataVenda AS DATE) >= @DataInicio)
-  AND (@DataFim IS NULL OR CAST(V.DataVenda AS DATE) <= @DataFim)";
+  AND (@DataInicio IS NULL OR DATE(V.DataVenda) >= @DataInicio)
+  AND (@DataFim IS NULL OR DATE(V.DataVenda) <= @DataFim)";
 
         const string countSql = "SELECT COUNT(1) " + baseSql + ";";
 
@@ -248,24 +251,26 @@ SELECT
         WHERE N.IdSalao = V.IdSalao
           AND N.IdVendaProduto = V.IdVendaProduto
           AND N.Status NOT IN ('Cancelada', 'Rejeitada')
-    ) THEN 1 ELSE 0 END AS bit) AS PossuiNotaAtiva,
+    ) THEN 1 ELSE 0 END AS UNSIGNED) AS PossuiNotaAtiva,
     (
-        SELECT TOP 1 N.Status
+        SELECT N.Status
         FROM CorteCor_NotaFiscal N
         WHERE N.IdSalao = V.IdSalao
           AND N.IdVendaProduto = V.IdVendaProduto
         ORDER BY N.DataEmissao DESC, N.DataAtualizacao DESC
+        LIMIT 1
     ) AS StatusFiscal,
     (
-        SELECT TOP 1 N.TipoNota
+        SELECT N.TipoNota
         FROM CorteCor_NotaFiscal N
         WHERE N.IdSalao = V.IdSalao
           AND N.IdVendaProduto = V.IdVendaProduto
         ORDER BY N.DataEmissao DESC, N.DataAtualizacao DESC
+        LIMIT 1
     ) AS TipoDocumentoFiscal
 " + baseSql + @"
 ORDER BY V.DataVenda DESC, V.IdVendaProduto DESC
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+LIMIT @PageSize OFFSET @Offset;";
 
         using var conn = GetConnection();
         var parameters = new DynamicParameters();
@@ -306,11 +311,11 @@ WHERE M.IdSalao = @IdSalao
   AND (
         @Pesquisa IS NULL
         OR P.Nome LIKE @Pesquisa
-        OR ISNULL(M.Observacao, '') LIKE @Pesquisa
-        OR CAST(ISNULL(M.IdVendaProduto, 0) AS NVARCHAR(20)) LIKE @Pesquisa
+        OR COALESCE(M.Observacao, '') LIKE COALESCE(@Pesquisa, '')
+        OR CAST(COALESCE(M.IdVendaProduto, 0) AS CHAR(20)) LIKE COALESCE(@Pesquisa, '')
       )
-  AND (@DataInicio IS NULL OR CAST(M.DataMovimento AS DATE) >= @DataInicio)
-  AND (@DataFim IS NULL OR CAST(M.DataMovimento AS DATE) <= @DataFim)";
+  AND (@DataInicio IS NULL OR DATE(M.DataMovimento) >= @DataInicio)
+  AND (@DataFim IS NULL OR DATE(M.DataMovimento) <= @DataFim)";
 
         const string countSql = "SELECT COUNT(1) " + baseSql + ";";
         const string selectSql = @"
@@ -319,7 +324,7 @@ SELECT
     P.Nome AS NomeProduto
 " + baseSql + @"
 ORDER BY M.DataMovimento DESC
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+LIMIT @PageSize OFFSET @Offset;";
 
         using var conn = GetConnection();
         var parameters = new DynamicParameters();
@@ -358,10 +363,10 @@ FROM CorteCor_Produto P
 LEFT JOIN CorteCor_CategoriaProduto C ON C.IdCategoria = P.IdCategoria
 WHERE P.IdSalao = @IdSalao
   AND (P.Excluido = 0 OR P.Excluido IS NULL)
-  AND (@Pesquisa IS NULL OR P.Nome LIKE @Pesquisa OR ISNULL(P.CodigoProprio, '') LIKE @Pesquisa)
+  AND (@Pesquisa IS NULL OR P.Nome LIKE @Pesquisa OR COALESCE(P.CodigoProprio, '') LIKE COALESCE(@Pesquisa, ''))
   AND (@SomenteBaixo = 0 OR (
-        ISNULL(P.ControlarEstoque, 0) = 1
-        AND ISNULL(P.EstoqueAtual, 0) <= ISNULL(P.EstoqueMinimo, 0)
+        COALESCE(P.ControlarEstoque, 0) = 1
+        AND COALESCE(P.EstoqueAtual, 0) <= COALESCE(P.EstoqueMinimo, 0)
       ))";
 
         const string countSql = "SELECT COUNT(1) " + baseSql + ";";
@@ -371,14 +376,14 @@ SELECT
     P.Nome,
     P.CodigoProprio,
     C.Nome AS CategoriaNome,
-    ISNULL(P.ControlarEstoque, 0) AS ControlarEstoque,
-    ISNULL(P.EstoqueAtual, 0) AS EstoqueAtual,
-    ISNULL(P.EstoqueMinimo, 0) AS EstoqueMinimo,
-    ISNULL(P.PrecoVenda, 0) AS PrecoVenda,
+    COALESCE(P.ControlarEstoque, 0) AS ControlarEstoque,
+    COALESCE(P.EstoqueAtual, 0) AS EstoqueAtual,
+    COALESCE(P.EstoqueMinimo, 0) AS EstoqueMinimo,
+    COALESCE(P.PrecoVenda, 0) AS PrecoVenda,
     P.PrecoCusto
 " + baseSql + @"
 ORDER BY P.Nome
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+LIMIT @PageSize OFFSET @Offset;";
 
         using var conn = GetConnection();
         var parameters = new DynamicParameters();
@@ -404,10 +409,10 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
     {
         const string sql = @"
 SELECT
-    SUM(CASE WHEN ISNULL(ControlarEstoque, 0) = 1 THEN 1 ELSE 0 END) AS ProdutosComControle,
-    SUM(CASE WHEN ISNULL(ControlarEstoque, 0) = 1 AND ISNULL(EstoqueAtual, 0) <= ISNULL(EstoqueMinimo, 0) THEN 1 ELSE 0 END) AS ProdutosComEstoqueBaixo,
-    SUM(CASE WHEN ISNULL(ControlarEstoque, 0) = 1 THEN ISNULL(EstoqueAtual, 0) * ISNULL(PrecoCusto, 0) ELSE 0 END) AS ValorCustoEstoque,
-    SUM(CASE WHEN ISNULL(ControlarEstoque, 0) = 1 THEN ISNULL(EstoqueAtual, 0) * ISNULL(PrecoVenda, 0) ELSE 0 END) AS ValorVendaEstoque
+    SUM(CASE WHEN COALESCE(ControlarEstoque, 0) = 1 THEN 1 ELSE 0 END) AS ProdutosComControle,
+    SUM(CASE WHEN COALESCE(ControlarEstoque, 0) = 1 AND COALESCE(EstoqueAtual, 0) <= COALESCE(EstoqueMinimo, 0) THEN 1 ELSE 0 END) AS ProdutosComEstoqueBaixo,
+    SUM(CASE WHEN COALESCE(ControlarEstoque, 0) = 1 THEN COALESCE(EstoqueAtual, 0) * COALESCE(PrecoCusto, 0) ELSE 0 END) AS ValorCustoEstoque,
+    SUM(CASE WHEN COALESCE(ControlarEstoque, 0) = 1 THEN COALESCE(EstoqueAtual, 0) * COALESCE(PrecoVenda, 0) ELSE 0 END) AS ValorVendaEstoque
 FROM CorteCor_Produto
 WHERE IdSalao = @IdSalao
   AND (Excluido = 0 OR Excluido IS NULL);";

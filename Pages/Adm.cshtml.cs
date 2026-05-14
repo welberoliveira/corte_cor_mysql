@@ -1,4 +1,4 @@
-﻿using CorteCor.Models;
+using CorteCor.Models;
 using CorteCor.Logs;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authentication;
@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
-using System.Data.SqlClient;
 using System.Security.Claims;
 
 
@@ -16,6 +15,13 @@ namespace CorteCor.Pages
 {
     public class IndexModel : PageModel
     {
+        private readonly IDatabaseHandler _dbHandler;
+
+        public IndexModel(IDatabaseHandler dbHandler)
+        {
+            _dbHandler = dbHandler;
+        }
+
         public string ErrorMessage { get; set; }
 
         [BindProperty]
@@ -37,9 +43,9 @@ namespace CorteCor.Pages
 
             var email = Request.Form["email"].ToString();
             var password = Request.Form["password"].ToString();
-            var loginManager = new LoginManager();
+            var loginManager = new LoginManager(_dbHandler);
 
-            // Tenta autenticar o usu�rio usando email e senha (a query interna do LoginManager tamb�m filtra por IdSalao)
+            // Tenta autenticar o usuário usando email e senha (a query interna do LoginManager também filtra por IdSalao)
                         if (loginManager.AutenticarAdministrador(email, password))
             {
                 // Registrar acesso bem-sucedido
@@ -50,7 +56,7 @@ namespace CorteCor.Pages
                 }
                 catch { }
 
-                // Cria os claims do usu�rio autenticado, incluindo o IdSalao
+                // Cria os claims do usuário autenticado, incluindo o IdSalao
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, email),
@@ -64,7 +70,7 @@ namespace CorteCor.Pages
                 // Efetua o login via Cookie Authentication
                 await HttpContext.SignInAsync("CookieAuth", claimsPrincipal);
 
-                // Redireciona para a p�gina protegida (por exemplo, o Painel)
+                // Redireciona para a p?gina protegida (por exemplo, o Painel)
                 return Redirect(HttpContext.Request.PathBase + "/Painel");
             }
             else

@@ -1,4 +1,4 @@
-﻿using CorteCor.Models;
+using CorteCor.Models;
 using CorteCor.Handlers;
 using System.Collections.Generic;
 using CorteCor.Handlers;
@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Logging;
 
 namespace CorteCor.Pages
 {
@@ -13,10 +14,12 @@ namespace CorteCor.Pages
     public class ModeloEmailCadastroModel : PageModel
     {
         private readonly ModeloEmailHandler _handler;
+        private readonly ILogger<ModeloEmailCadastroModel> _logger;
 
-        public ModeloEmailCadastroModel(ModeloEmailHandler handler)
+        public ModeloEmailCadastroModel(ModeloEmailHandler handler, ILogger<ModeloEmailCadastroModel> logger)
         {
             _handler = handler;
+            _logger = logger;
         }
 
         [BindProperty]
@@ -25,13 +28,14 @@ namespace CorteCor.Pages
         public List<SelectListItem> EventosOptions { get; set; } = new List<SelectListItem>
         {
             new SelectListItem("Boas Vindas", "BoasVindas"),
-            new SelectListItem("ConfirmaÃ§Ã£o de Agendamento", "ConfirmacaoAgendamento"),
+            new SelectListItem("Confirmação de Agendamento", "ConfirmacaoAgendamento"),
             new SelectListItem("Lembrete de Agendamento", "LembreteAgendamento"),
             new SelectListItem("Cancelamento de Agendamento", "CancelamentoAgendamento"),
             new SelectListItem("Lembrete de Pagamento", "LembretePagamento")
         };
 
         public string Mensagem { get; set; }
+        public int? ModeloExistenteId { get; set; }
 
         public void OnGet(int? id)
         {
@@ -41,7 +45,7 @@ namespace CorteCor.Pages
                 if (id.HasValue)
                 {
                     Modelo = _handler.ObterPorId(id.Value, idSalao);
-                    if (Modelo == null) Mensagem = "Modelo nÃ£o encontrado.";
+                    if (Modelo == null) Mensagem = "Modelo não encontrado.";
                 }
                 else
                 {
@@ -61,21 +65,42 @@ namespace CorteCor.Pages
             {
                 Modelo.IdSalao = idSalao;
 
-                // Validate if event type already exists? Ideally yes, but let's allow overwrite logic or multiple same event types (though usually 1 per event).
-                // Database script didn't enforce UNIQUE constraint on (IdSalao, TipoEvento), just an index.
-                // Assuming it's fine for now, or the handler will handle it.
+                var existente = _handler.ObterPorEventoIncluindoInativos(idSalao, Modelo.TipoEvento, Modelo.IdModelo > 0 ? Modelo.IdModelo : null);
+                if (existente != null)
+                {
+                    ModeloExistenteId = existente.IdModelo;
+                    Mensagem = "Já existe um modelo de e-mail criado para este evento. Edite o modelo existente ou escolha outro evento.";
+                    return Page();
+                }
 
-                if (Modelo.IdModelo > 0)
+                try
                 {
-                    _handler.Atualizar(Modelo);
-                    Mensagem = "Modelo atualizado com sucesso!";
+                    if (Modelo.IdModelo > 0)
+                    {
+                        _handler.Atualizar(Modelo);
+                        Mensagem = "Modelo atualizado com sucesso!";
+                    }
+                    else
+                    {
+                        _handler.Cadastrar(Modelo);
+                        Mensagem = "Modelo cadastrado com sucesso!";
+                    }
+                    return RedirectToPage("/ModeloEmailLista");
                 }
-                else
+                catch (Exception ex) when (ModeloEmailHandler.IsDuplicateKeyException(ex))
                 {
-                    _handler.Cadastrar(Modelo);
-                    Mensagem = "Modelo cadastrado com sucesso!";
+                    _logger.LogError(ex, "Tentativa duplicada de modelo de e-mail para sala {IdSalao} e evento {TipoEvento}.", idSalao, Modelo.TipoEvento);
+                    var modeloExistente = _handler.ObterPorEventoIncluindoInativos(idSalao, Modelo.TipoEvento);
+                    ModeloExistenteId = modeloExistente?.IdModelo;
+                    Mensagem = "Já existe um modelo de e-mail criado para este evento. Edite o modelo existente ou escolha outro evento.";
+                    return Page();
                 }
-                return RedirectToPage("/ModeloEmailLista");
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Erro ao salvar modelo de e-mail para sala {IdSalao}.", idSalao);
+                    Mensagem = "Não foi possível salvar o modelo de e-mail. Tente novamente em instantes.";
+                    return Page();
+                }
             }
             return Page();
         }

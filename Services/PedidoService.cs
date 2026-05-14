@@ -1,11 +1,13 @@
 using CorteCor.Handlers;
 using CorteCor.Models;
+using Dapper;
 
 namespace CorteCor.Services;
 
 public class PedidoService
 {
     private readonly PedidoHandler _pedidoHandler;
+    private readonly IDatabaseHandler _databaseHandler;
     private readonly PessoaHandler _pessoaHandler;
     private readonly ProdutoHandler _produtoHandler;
     private readonly ServicoHandler _servicoHandler;
@@ -15,6 +17,7 @@ public class PedidoService
 
     public PedidoService(
         PedidoHandler pedidoHandler,
+        IDatabaseHandler databaseHandler,
         PessoaHandler pessoaHandler,
         ProdutoHandler produtoHandler,
         ServicoHandler servicoHandler,
@@ -23,6 +26,7 @@ public class PedidoService
         CrmService crmService)
     {
         _pedidoHandler = pedidoHandler;
+        _databaseHandler = databaseHandler;
         _pessoaHandler = pessoaHandler;
         _produtoHandler = produtoHandler;
         _servicoHandler = servicoHandler;
@@ -31,15 +35,21 @@ public class PedidoService
         _crmService = crmService;
     }
 
-    public async Task<PedidoContexto> ObterContextoAsync(int idSalao, PedidoFiltro filtro)
+    public async Task<PedidoContexto> ObterContextoAsync(int idSalao, PedidoFiltro filtro, bool incluirPedidosRecentes = true)
     {
-        await _pedidoHandler.AtualizarPedidosVencidosAsync(idSalao);
+        var (clientes, produtos, servicos, meios) = await CarregarCatalogosAsync(idSalao);
+        var normalizedFilter = filtro ?? new PedidoFiltro();
+        var pedidos = new PagedResult<Pedido>
+        {
+            PageIndex = normalizedFilter.PageIndex <= 0 ? 1 : normalizedFilter.PageIndex,
+            PageSize = normalizedFilter.PageSize <= 0 ? 10 : normalizedFilter.PageSize
+        };
 
-        var clientes = _pessoaHandler.ListarPorSalao(idSalao)?.Where(p => p.IsCliente && !p.Excluido).OrderBy(p => p.Nome).ToList() ?? new List<Pessoa>();
-        var produtos = _produtoHandler.ListarPorSalao(idSalao)?.Where(p => !p.Arquivado).OrderBy(p => p.Nome).ToList() ?? new List<Produto>();
-        var servicos = _servicoHandler.ListarPorSalao(idSalao)?.Where(s => !s.Arquivado).OrderBy(s => s.Nome).ToList() ?? new List<Servico>();
-        var meios = _meioPagamentoHandler.ListarPorSalao(idSalao, true)?.OrderBy(m => m.Nome).ToList() ?? new List<MeioPagamento>();
-        var pedidos = await _pedidoHandler.ListarPedidosAsync(idSalao, filtro);
+        if (incluirPedidosRecentes)
+        {
+            await _pedidoHandler.AtualizarPedidosVencidosAsync(idSalao);
+            pedidos = await _pedidoHandler.ListarPedidosAsync(idSalao, normalizedFilter);
+        }
 
         foreach (var pedido in pedidos.Items)
         {
@@ -56,6 +66,46 @@ public class PedidoService
             MeiosPagamento = meios,
             PedidosRecentes = pedidos
         };
+    }
+
+    private async Task<(List<Pessoa> Clientes, List<Produto> Produtos, List<Servico> Servicos, List<MeioPagamento> MeiosPagamento)> CarregarCatalogosAsync(int idSalao)
+    {
+        const string sql = @"
+SELECT *
+FROM CorteCor_Pessoa
+WHERE IdSalao = @IdSalao
+  AND COALESCE(IsCliente, 0) = 1
+  AND COALESCE(Excluido, 0) = 0
+ORDER BY Nome;
+
+SELECT *
+FROM CorteCor_Produto
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Excluido, 0) = 0
+  AND COALESCE(Arquivado, 0) = 0
+ORDER BY Nome;
+
+SELECT *
+FROM CorteCor_Servico
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Arquivado, 0) = 0
+ORDER BY Nome;
+
+SELECT *
+FROM CorteCor_MeioPagamento
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Ativo, 0) = 1
+ORDER BY Nome;";
+
+        using var conn = _databaseHandler.GetConnection();
+        using var multi = await conn.QueryMultipleAsync(sql, new { IdSalao = idSalao });
+
+        var clientes = (await multi.ReadAsync<Pessoa>()).ToList();
+        var produtos = (await multi.ReadAsync<Produto>()).ToList();
+        var servicos = (await multi.ReadAsync<Servico>()).ToList();
+        var meios = (await multi.ReadAsync<MeioPagamento>()).ToList();
+
+        return (clientes, produtos, servicos, meios);
     }
 
     public async Task<PedidoOperacaoResult> CriarPedidoAsync(int idSalao, PedidoCheckoutInput input, string? usuario)

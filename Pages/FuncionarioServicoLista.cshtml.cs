@@ -44,7 +44,7 @@ namespace CorteCor.Pages
                 .Where(s => s.IdSalao == idSalao)
                 .ToList();
 
-            // Rela??es N:N (todos) e filtra por funcion?rio/servi?o do sal?o
+            // Relações N:N (todos) e filtra por funcionário/serviço do salão
             var relacoes = fsHandler.Listar() ?? new List<FuncionarioServico>();
 
             var funcionariosDict = funcionariosSalao.ToDictionary(x => x.IdFuncionario, x => x);
@@ -73,7 +73,7 @@ namespace CorteCor.Pages
                 .ToList();
         }
 
-        // Opcional (se voc? colocar bot?es na tela):
+        // Opcional (se você colocar botões na tela):
         // action=remover precisa mandar idFuncionario e idServico no form.
         public void OnPost()
         {
@@ -93,14 +93,14 @@ namespace CorteCor.Pages
                 {
                     var fsHandler = new FuncionarioServicoHandler();
 
-                    // remove a rela??o (IdFuncionario, IdServico)
+                    // remove a relação (IdFuncionario, IdServico)
                     fsHandler.Desvincular(idFuncionario, idServico);
 
-                    Mensagem = "V?nculo removido com sucesso.";
+                    Mensagem = "Vínculo removido com sucesso.";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "N?o foi poss?vel remover o v?nculo.";
+                    Mensagem = "Não foi possível remover o vínculo.";
                 }
             }
             else if (action == "alterar")

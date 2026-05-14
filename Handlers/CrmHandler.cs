@@ -1,4 +1,5 @@
 using System.Data;
+using System.Text;
 using Dapper;
 using CorteCor.Models;
 
@@ -112,37 +113,41 @@ WHERE IdPerfil = @IdPerfil AND IdSalao = @IdSalao;";
             const string whereSql = @"
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
-OUTER APPLY (
-    SELECT MAX(A.DataHora) AS UltimoAgendamentoEm
+LEFT JOIN (
+    SELECT A.IdPessoa, MAX(A.DataHora) AS UltimoAgendamentoEm
     FROM CorteCor_Agendamento A
-    WHERE A.IdPessoa = P.IdPessoa AND ISNULL(A.Excluido, 0) = 0
-) UltimoAgendamento
-OUTER APPLY (
-    SELECT MAX(COALESCE(PG.PagoEm, PG.AtualizadoEm, PG.CriadoEm)) AS UltimoPagamentoEm
+    WHERE COALESCE(A.Excluido, 0) = 0
+    GROUP BY A.IdPessoa
+) UltimoAgendamento ON UltimoAgendamento.IdPessoa = P.IdPessoa
+LEFT JOIN (
+    SELECT A.IdPessoa, MAX(COALESCE(PG.PagoEm, PG.AtualizadoEm, PG.CriadoEm)) AS UltimoPagamentoEm
     FROM CorteCor_Pagamento PG
     INNER JOIN CorteCor_Agendamento A ON A.IdAgendamento = PG.IdAgendamento
-    WHERE A.IdPessoa = P.IdPessoa AND ISNULL(PG.Ativo, 0) = 1
-) UltimoPagamento
-OUTER APPLY (
-    SELECT COUNT(1) AS TarefasAbertas
+    WHERE COALESCE(PG.Ativo, 0) = 1
+    GROUP BY A.IdPessoa
+) UltimoPagamento ON UltimoPagamento.IdPessoa = P.IdPessoa
+LEFT JOIN (
+    SELECT T.IdSalao, T.IdPessoa, COUNT(1) AS TarefasAbertas
     FROM CorteCor_CrmTarefa T
-    WHERE T.IdSalao = P.IdSalao AND T.IdPessoa = P.IdPessoa AND T.Status = 'Aberta'
-) Tarefas
-OUTER APPLY (
-    SELECT COUNT(1) AS OportunidadesAbertas,
-           ISNULL(SUM(O.ValorEstimado), 0) AS ValorOportunidadesAbertas
+    WHERE T.Status = 'Aberta'
+    GROUP BY T.IdSalao, T.IdPessoa
+) Tarefas ON Tarefas.IdSalao = P.IdSalao AND Tarefas.IdPessoa = P.IdPessoa
+LEFT JOIN (
+    SELECT O.IdSalao, O.IdPessoa, COUNT(1) AS OportunidadesAbertas,
+           COALESCE(SUM(O.ValorEstimado), 0) AS ValorOportunidadesAbertas
     FROM CorteCor_CrmOportunidade O
-    WHERE O.IdSalao = P.IdSalao AND O.IdPessoa = P.IdPessoa AND O.Status = 'Aberta'
-) Oportunidades
+    WHERE O.Status = 'Aberta'
+    GROUP BY O.IdSalao, O.IdPessoa
+) Oportunidades ON Oportunidades.IdSalao = P.IdSalao AND Oportunidades.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
   AND (
         @Pesquisa IS NULL
         OR P.Nome LIKE @Pesquisa
-        OR ISNULL(P.Email, '') LIKE @Pesquisa
-        OR ISNULL(P.Telefone, '') LIKE @Pesquisa
-        OR ISNULL(P.Tags, '') LIKE @Pesquisa
+        OR COALESCE(P.Email, '') LIKE COALESCE(@Pesquisa, '')
+        OR COALESCE(P.Telefone, '') LIKE COALESCE(@Pesquisa, '')
+        OR COALESCE(P.Tags, '') LIKE COALESCE(@Pesquisa, '')
      )";
 
             var totalSql = $"SELECT COUNT(1) {whereSql};";
@@ -159,15 +164,15 @@ SELECT
     UltimoPagamento.UltimoPagamentoEm,
     CP.UltimoContatoEm,
     CP.ProximaAcaoEm,
-    ISNULL(Tarefas.TarefasAbertas, 0) AS TarefasAbertas,
-    ISNULL(Oportunidades.OportunidadesAbertas, 0) AS OportunidadesAbertas,
-    ISNULL(Oportunidades.ValorOportunidadesAbertas, 0) AS ValorOportunidadesAbertas
+    COALESCE(Tarefas.TarefasAbertas, 0) AS TarefasAbertas,
+    COALESCE(Oportunidades.OportunidadesAbertas, 0) AS OportunidadesAbertas,
+    COALESCE(Oportunidades.ValorOportunidadesAbertas, 0) AS ValorOportunidadesAbertas
 {whereSql}
 ORDER BY
     CASE WHEN CP.ProximaAcaoEm IS NULL THEN 1 ELSE 0 END,
     CP.ProximaAcaoEm,
     P.Nome
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+LIMIT @PageSize OFFSET @Offset;";
 
             using var conn = GetConnection();
             var total = conn.ExecuteScalar<int>(totalSql, new { IdSalao = idSalao, Pesquisa = filtro });
@@ -191,7 +196,7 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
         public CrmClienteResumo ObterClienteResumo(int idSalao, int idPessoa)
         {
             const string sql = @"
-SELECT TOP 1
+SELECT
     P.IdPessoa,
     P.Nome,
     P.Email,
@@ -203,36 +208,41 @@ SELECT TOP 1
     UltimoPagamento.UltimoPagamentoEm,
     CP.UltimoContatoEm,
     CP.ProximaAcaoEm,
-    ISNULL(Tarefas.TarefasAbertas, 0) AS TarefasAbertas,
-    ISNULL(Oportunidades.OportunidadesAbertas, 0) AS OportunidadesAbertas,
-    ISNULL(Oportunidades.ValorOportunidadesAbertas, 0) AS ValorOportunidadesAbertas
+    COALESCE(Tarefas.TarefasAbertas, 0) AS TarefasAbertas,
+    COALESCE(Oportunidades.OportunidadesAbertas, 0) AS OportunidadesAbertas,
+    COALESCE(Oportunidades.ValorOportunidadesAbertas, 0) AS ValorOportunidadesAbertas
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
-OUTER APPLY (
-    SELECT MAX(A.DataHora) AS UltimoAgendamentoEm
+LEFT JOIN (
+    SELECT A.IdPessoa, MAX(A.DataHora) AS UltimoAgendamentoEm
     FROM CorteCor_Agendamento A
-    WHERE A.IdPessoa = P.IdPessoa AND ISNULL(A.Excluido, 0) = 0
-) UltimoAgendamento
-OUTER APPLY (
-    SELECT MAX(COALESCE(PG.PagoEm, PG.AtualizadoEm, PG.CriadoEm)) AS UltimoPagamentoEm
+    WHERE COALESCE(A.Excluido, 0) = 0
+    GROUP BY A.IdPessoa
+) UltimoAgendamento ON UltimoAgendamento.IdPessoa = P.IdPessoa
+LEFT JOIN (
+    SELECT A.IdPessoa, MAX(COALESCE(PG.PagoEm, PG.AtualizadoEm, PG.CriadoEm)) AS UltimoPagamentoEm
     FROM CorteCor_Pagamento PG
     INNER JOIN CorteCor_Agendamento A ON A.IdAgendamento = PG.IdAgendamento
-    WHERE A.IdPessoa = P.IdPessoa AND ISNULL(PG.Ativo, 0) = 1
-) UltimoPagamento
-OUTER APPLY (
-    SELECT COUNT(1) AS TarefasAbertas
+    WHERE COALESCE(PG.Ativo, 0) = 1
+    GROUP BY A.IdPessoa
+) UltimoPagamento ON UltimoPagamento.IdPessoa = P.IdPessoa
+LEFT JOIN (
+    SELECT T.IdSalao, T.IdPessoa, COUNT(1) AS TarefasAbertas
     FROM CorteCor_CrmTarefa T
-    WHERE T.IdSalao = P.IdSalao AND T.IdPessoa = P.IdPessoa AND T.Status = 'Aberta'
-) Tarefas
-OUTER APPLY (
-    SELECT COUNT(1) AS OportunidadesAbertas,
-           ISNULL(SUM(O.ValorEstimado), 0) AS ValorOportunidadesAbertas
+    WHERE T.Status = 'Aberta'
+    GROUP BY T.IdSalao, T.IdPessoa
+) Tarefas ON Tarefas.IdSalao = P.IdSalao AND Tarefas.IdPessoa = P.IdPessoa
+LEFT JOIN (
+    SELECT O.IdSalao, O.IdPessoa, COUNT(1) AS OportunidadesAbertas,
+           COALESCE(SUM(O.ValorEstimado), 0) AS ValorOportunidadesAbertas
     FROM CorteCor_CrmOportunidade O
-    WHERE O.IdSalao = P.IdSalao AND O.IdPessoa = P.IdPessoa AND O.Status = 'Aberta'
-) Oportunidades
+    WHERE O.Status = 'Aberta'
+    GROUP BY O.IdSalao, O.IdPessoa
+) Oportunidades ON Oportunidades.IdSalao = P.IdSalao AND Oportunidades.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
   AND P.IdPessoa = @IdPessoa
-  AND ISNULL(P.Excluido, 0) = 0;";
+  AND COALESCE(P.Excluido, 0) = 0
+LIMIT 1;";
 
             using var conn = GetConnection();
             return conn.QueryFirstOrDefault<CrmClienteResumo>(sql, new { IdSalao = idSalao, IdPessoa = idPessoa }) ?? new CrmClienteResumo();
@@ -429,9 +439,9 @@ WHERE T.IdSalao = @IdSalao
   AND (@IdPessoa IS NULL OR T.IdPessoa = @IdPessoa)
   AND (@Status IS NULL OR T.Status = @Status)
   AND (@IdUsuarioResponsavel IS NULL OR T.IdUsuarioResponsavel = @IdUsuarioResponsavel)
-  AND (@Pesquisa IS NULL OR T.Titulo LIKE '%' + @Pesquisa + '%' OR ISNULL(T.Descricao, '') LIKE '%' + @Pesquisa + '%')
-  AND (@DataVencimentoInicio IS NULL OR CAST(T.DataVencimento AS DATE) >= @DataVencimentoInicio)
-  AND (@DataVencimentoFim IS NULL OR CAST(T.DataVencimento AS DATE) <= @DataVencimentoFim)";
+  AND (@Pesquisa IS NULL OR T.Titulo LIKE CONCAT('%', @Pesquisa, '%') OR COALESCE(T.Descricao, '') LIKE CONCAT('%', @Pesquisa, '%'))
+  AND (@DataVencimentoInicio IS NULL OR DATE(T.DataVencimento) >= @DataVencimentoInicio)
+  AND (@DataVencimentoFim IS NULL OR DATE(T.DataVencimento) <= @DataVencimentoFim)";
 
             var totalSql = $"SELECT COUNT(1) {whereSql};";
             var listSql = $@"
@@ -444,7 +454,7 @@ ORDER BY
     CASE WHEN T.Status = 'Aberta' THEN 0 ELSE 1 END,
     T.DataVencimento,
     T.DataCriacao DESC
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+LIMIT @PageSize OFFSET @Offset;";
 
             using var conn = GetConnection();
             var parameters = new
@@ -648,24 +658,54 @@ WHERE IdSalao = @IdSalao AND IdOportunidade = @IdOportunidade;";
             });
         }
 
-        public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize)
+        public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize, string? pesquisa = null, string? canal = null, string? segmento = null, string? status = null)
         {
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
             pageSize = pageSize <= 0 ? 10 : pageSize;
             var offset = (pageIndex - 1) * pageSize;
-            const string totalSql = "SELECT COUNT(1) FROM CorteCor_CrmCampanha WHERE IdSalao = @IdSalao";
-            const string listSql = @"
+            var whereSql = new StringBuilder("WHERE IdSalao = @IdSalao");
+            var parameters = new DynamicParameters();
+            parameters.Add("IdSalao", idSalao);
+            parameters.Add("Offset", offset);
+            parameters.Add("PageSize", pageSize);
+
+            if (!string.IsNullOrWhiteSpace(pesquisa))
+            {
+                whereSql.Append(" AND (Nome LIKE @Pesquisa OR Assunto LIKE @Pesquisa)");
+                parameters.Add("Pesquisa", $"%{pesquisa.Trim()}%");
+            }
+
+            if (!string.IsNullOrWhiteSpace(canal))
+            {
+                whereSql.Append(" AND Canal = @Canal");
+                parameters.Add("Canal", canal.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(segmento))
+            {
+                whereSql.Append(" AND Segmento = @Segmento");
+                parameters.Add("Segmento", segmento.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                whereSql.Append(" AND Status = @Status");
+                parameters.Add("Status", status.Trim());
+            }
+
+            var totalSql = $"SELECT COUNT(1) FROM CorteCor_CrmCampanha {whereSql}";
+            var listSql = $@"
 SELECT *
 FROM CorteCor_CrmCampanha
-WHERE IdSalao = @IdSalao
+{whereSql}
 ORDER BY DataCriacao DESC
 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
             using var conn = GetConnection();
             return new PagedResult<CrmCampanha>
             {
-                Items = conn.Query<CrmCampanha>(listSql, new { IdSalao = idSalao, Offset = offset, PageSize = pageSize }).ToList(),
-                TotalCount = conn.ExecuteScalar<int>(totalSql, new { IdSalao = idSalao }),
+                Items = conn.Query<CrmCampanha>(listSql, parameters).ToList(),
+                TotalCount = conn.ExecuteScalar<int>(totalSql, parameters),
                 PageIndex = pageIndex,
                 PageSize = pageSize
             };
@@ -728,14 +768,15 @@ SELECT
     COALESCE(CP.NaoPerturbe, 0) AS NaoPerturbe
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
-OUTER APPLY (
-    SELECT MAX(A.DataHora) AS UltimoAgendamentoEm
+LEFT JOIN (
+    SELECT A.IdPessoa, MAX(A.DataHora) AS UltimoAgendamentoEm
     FROM CorteCor_Agendamento A
-    WHERE A.IdPessoa = P.IdPessoa AND ISNULL(A.Excluido, 0) = 0
-) UltimoAgendamento
+    WHERE COALESCE(A.Excluido, 0) = 0
+    GROUP BY A.IdPessoa
+) UltimoAgendamento ON UltimoAgendamento.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1";
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1";
 
             var parameters = new DynamicParameters();
             parameters.Add("IdSalao", idSalao);
@@ -744,17 +785,17 @@ WHERE P.IdSalao = @IdSalao
             {
                 case CrmSegmentoCampanha.Inativos:
                     sql += @"
-  AND COALESCE(UltimoAgendamento.UltimoAgendamentoEm, CONVERT(datetime, '19000101', 112)) <= DATEADD(DAY, -@DiasInatividade, GETDATE())";
+  AND TIMESTAMPDIFF(DAY, COALESCE(UltimoAgendamento.UltimoAgendamentoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= @DiasInatividade";
                     parameters.Add("DiasInatividade", diasInatividade.GetValueOrDefault(60));
                     break;
                 case CrmSegmentoCampanha.AniversariantesDoMes:
                     sql += @"
   AND P.DataNascimento IS NOT NULL
-  AND MONTH(P.DataNascimento) = MONTH(GETDATE())";
+  AND MONTH(P.DataNascimento) = MONTH(NOW())";
                     break;
                 case CrmSegmentoCampanha.PorTag:
                     sql += @"
-  AND ISNULL(P.Tags, '') LIKE @FiltroTag";
+  AND COALESCE(P.Tags, '') LIKE @FiltroTag";
                     parameters.Add("FiltroTag", $"%{filtroTag?.Trim()}%");
                     break;
                 case CrmSegmentoCampanha.ClienteEspecifico:
@@ -828,29 +869,32 @@ ORDER BY D.DataEnvio DESC;";
                 TotalClientes = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
 FROM CorteCor_Pessoa
-WHERE IdSalao = @IdSalao AND ISNULL(Excluido, 0) = 0 AND ISNULL(IsCliente, 0) = 1;", new { IdSalao = idSalao }),
+WHERE IdSalao = @IdSalao AND COALESCE(Excluido, 0) = 0 AND COALESCE(IsCliente, 0) = 1;", new { IdSalao = idSalao }),
 
                 ClientesInativos = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
 FROM CorteCor_Pessoa P
-OUTER APPLY (
-    SELECT MAX(A.DataHora) AS UltimoAgendamentoEm
+LEFT JOIN (
+    SELECT
+        A.IdPessoa,
+        MAX(A.DataHora) AS UltimoAgendamentoEm
     FROM CorteCor_Agendamento A
-    WHERE A.IdPessoa = P.IdPessoa AND ISNULL(A.Excluido, 0) = 0
-) UltimoAgendamento
+    WHERE COALESCE(A.Excluido, 0) = 0
+    GROUP BY A.IdPessoa
+) UltimoAgendamento ON UltimoAgendamento.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
-  AND COALESCE(UltimoAgendamento.UltimoAgendamentoEm, CONVERT(datetime, '19000101', 112)) <= DATEADD(DAY, -60, GETDATE());", new { IdSalao = idSalao }),
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
+  AND TIMESTAMPDIFF(DAY, COALESCE(UltimoAgendamento.UltimoAgendamentoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= 60;", new { IdSalao = idSalao }),
 
                 AniversariantesMes = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
 FROM CorteCor_Pessoa
 WHERE IdSalao = @IdSalao
-  AND ISNULL(Excluido, 0) = 0
-  AND ISNULL(IsCliente, 0) = 1
+  AND COALESCE(Excluido, 0) = 0
+  AND COALESCE(IsCliente, 0) = 1
   AND DataNascimento IS NOT NULL
-  AND MONTH(DataNascimento) = MONTH(GETDATE());", new { IdSalao = idSalao }),
+  AND MONTH(DataNascimento) = MONTH(NOW());", new { IdSalao = idSalao }),
 
                 TarefasAbertas = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
@@ -860,7 +904,7 @@ WHERE IdSalao = @IdSalao AND Status = 'Aberta';", new { IdSalao = idSalao }),
                 TarefasAtrasadas = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
 FROM CorteCor_CrmTarefa
-WHERE IdSalao = @IdSalao AND Status = 'Aberta' AND DataVencimento < GETDATE();", new { IdSalao = idSalao }),
+WHERE IdSalao = @IdSalao AND Status = 'Aberta' AND DataVencimento < NOW();", new { IdSalao = idSalao }),
 
                 OportunidadesAbertas = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
@@ -868,7 +912,7 @@ FROM CorteCor_CrmOportunidade
 WHERE IdSalao = @IdSalao AND Status = 'Aberta';", new { IdSalao = idSalao }),
 
                 ValorOportunidadesAbertas = conn.ExecuteScalar<decimal>(@"
-SELECT ISNULL(SUM(ValorEstimado), 0)
+SELECT COALESCE(SUM(ValorEstimado), 0)
 FROM CorteCor_CrmOportunidade
 WHERE IdSalao = @IdSalao AND Status = 'Aberta';", new { IdSalao = idSalao }),
 
@@ -876,7 +920,7 @@ WHERE IdSalao = @IdSalao AND Status = 'Aberta';", new { IdSalao = idSalao }),
 SELECT COUNT(1)
 FROM CorteCor_CrmCampanha
 WHERE IdSalao = @IdSalao
-  AND UltimoEnvioEm >= DATEADD(DAY, -30, GETDATE());", new { IdSalao = idSalao })
+  AND UltimoEnvioEm >= DATE_SUB(NOW(), INTERVAL 30 DAY);", new { IdSalao = idSalao })
             };
 
             resumo.Funil = conn.Query<CrmEtapaResumo>(@"
@@ -891,7 +935,7 @@ GROUP BY E.Nome, E.Ordem
 ORDER BY E.Ordem;", new { IdSalao = idSalao }).ToList();
 
             resumo.ProximasTarefas = conn.Query<CrmTarefa>(@"
-SELECT TOP 5
+SELECT
     T.*,
     P.Nome AS NomePessoa,
     U.Nome AS NomeResponsavel
@@ -899,10 +943,11 @@ FROM CorteCor_CrmTarefa T
 LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
 LEFT JOIN CorteCor_Usuario U ON U.IdUsuario = T.IdUsuarioResponsavel
 WHERE T.IdSalao = @IdSalao AND T.Status = 'Aberta'
-ORDER BY T.DataVencimento, T.DataCriacao DESC;", new { IdSalao = idSalao }).ToList();
+ORDER BY T.DataVencimento, T.DataCriacao DESC
+LIMIT 5;", new { IdSalao = idSalao }).ToList();
 
             resumo.ClientesEmRisco = conn.Query<CrmClienteResumo>(@"
-SELECT TOP 5
+SELECT
     P.IdPessoa,
     P.Nome,
     P.Email,
@@ -919,16 +964,20 @@ SELECT TOP 5
     0 AS ValorOportunidadesAbertas
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
-OUTER APPLY (
-    SELECT MAX(A.DataHora) AS UltimoAgendamentoEm
+LEFT JOIN (
+    SELECT
+        A.IdPessoa,
+        MAX(A.DataHora) AS UltimoAgendamentoEm
     FROM CorteCor_Agendamento A
-    WHERE A.IdPessoa = P.IdPessoa AND ISNULL(A.Excluido, 0) = 0
-) UltimoAgendamento
+    WHERE COALESCE(A.Excluido, 0) = 0
+    GROUP BY A.IdPessoa
+) UltimoAgendamento ON UltimoAgendamento.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
-  AND COALESCE(UltimoAgendamento.UltimoAgendamentoEm, CONVERT(datetime, '19000101', 112)) <= DATEADD(DAY, -60, GETDATE())
-ORDER BY UltimoAgendamento.UltimoAgendamentoEm, P.Nome;", new { IdSalao = idSalao }).ToList();
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
+  AND TIMESTAMPDIFF(DAY, COALESCE(UltimoAgendamento.UltimoAgendamentoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= 60
+ORDER BY UltimoAgendamento.UltimoAgendamentoEm, P.Nome
+LIMIT 5;", new { IdSalao = idSalao }).ToList();
 
             return resumo;
         }
@@ -950,16 +999,16 @@ SELECT COUNT(1)
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
-  AND COALESCE(CP.UltimoContatoEm, CONVERT(datetime, '19000101', 112)) <= DATEADD(DAY, -30, GETDATE());", new { IdSalao = idSalao }),
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
+  AND TIMESTAMPDIFF(DAY, COALESCE(CP.UltimoContatoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= 30;", new { IdSalao = idSalao }),
 
                 ClientesComTarefasAtrasadas = conn.ExecuteScalar<int>(@"
 SELECT COUNT(DISTINCT IdPessoa)
 FROM CorteCor_CrmTarefa
 WHERE IdSalao = @IdSalao
   AND Status = 'Aberta'
-  AND DataVencimento < GETDATE()
+  AND DataVencimento < NOW()
   AND IdPessoa IS NOT NULL;", new { IdSalao = idSalao }),
 
                 OportunidadesAbertas = conn.ExecuteScalar<int>(@"
@@ -969,7 +1018,7 @@ WHERE IdSalao = @IdSalao
   AND Status = 'Aberta';", new { IdSalao = idSalao }),
 
                 ValorPipelineAberto = conn.ExecuteScalar<decimal>(@"
-SELECT ISNULL(SUM(ValorEstimado), 0)
+SELECT COALESCE(SUM(ValorEstimado), 0)
 FROM CorteCor_CrmOportunidade
 WHERE IdSalao = @IdSalao
   AND Status = 'Aberta';", new { IdSalao = idSalao }),
@@ -979,7 +1028,7 @@ SELECT COUNT(1)
 FROM CorteCor_CrmCampanha
 WHERE IdSalao = @IdSalao
   AND UltimoEnvioEm >= @DataInicio
-  AND UltimoEnvioEm < DATEADD(DAY, 1, @DataFim);", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })
+  AND UltimoEnvioEm < DATE_ADD(@DataFim, INTERVAL 1 DAY);", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })
             };
 
             resumo.ClientesPorStatus = conn.Query<CrmResumoFaixa>(@"
@@ -990,8 +1039,8 @@ SELECT
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
 GROUP BY COALESCE(CP.StatusRelacionamento, 'Cliente')
 ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
 
@@ -1003,8 +1052,8 @@ SELECT
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
 GROUP BY COALESCE(CP.Temperatura, 'Morno')
 ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
 
@@ -1016,7 +1065,7 @@ SELECT
 FROM CorteCor_CrmInteracao
 WHERE IdSalao = @IdSalao
   AND DataInteracao >= @DataInicio
-  AND DataInteracao < DATEADD(DAY, 1, @DataFim)
+  AND DataInteracao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
 GROUP BY Canal
 ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date }).ToList();
 
@@ -1034,7 +1083,7 @@ ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
 SELECT
     E.Nome AS Nome,
     COUNT(O.IdOportunidade) AS Quantidade,
-    ISNULL(SUM(O.ValorEstimado), 0) AS Valor
+    COALESCE(SUM(O.ValorEstimado), 0) AS Valor
 FROM CorteCor_CrmEtapaFunil E
 LEFT JOIN CorteCor_CrmOportunidade O ON O.IdEtapa = E.IdEtapa AND O.IdSalao = E.IdSalao AND O.Status = 'Aberta'
 WHERE E.IdSalao = @IdSalao
@@ -1046,14 +1095,14 @@ ORDER BY E.Ordem;", new { IdSalao = idSalao }).ToList();
 SELECT
     Canal AS Nome,
     COUNT(1) AS Quantidade,
-    SUM(ISNULL(TotalSucesso, 0)) AS Valor
+    SUM(COALESCE(TotalSucesso, 0)) AS Valor
 FROM CorteCor_CrmCampanha
 WHERE IdSalao = @IdSalao
 GROUP BY Canal
 ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
 
             resumo.ClientesEmRisco = conn.Query<CrmClienteResumo>(@"
-SELECT TOP 10
+SELECT
     P.IdPessoa,
     P.Nome,
     P.Email,
@@ -1071,13 +1120,14 @@ SELECT TOP 10
 FROM CorteCor_Pessoa P
 LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
-  AND COALESCE(CP.UltimoContatoEm, CONVERT(datetime, '19000101', 112)) <= DATEADD(DAY, -30, GETDATE())
-ORDER BY CP.UltimoContatoEm, P.Nome;", new { IdSalao = idSalao }).ToList();
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
+  AND TIMESTAMPDIFF(DAY, COALESCE(CP.UltimoContatoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= 30
+ORDER BY CP.UltimoContatoEm, P.Nome
+LIMIT 10;", new { IdSalao = idSalao }).ToList();
 
             resumo.ProximasAcoes = conn.Query<CrmClienteResumo>(@"
-SELECT TOP 10
+SELECT
     P.IdPessoa,
     P.Nome,
     P.Email,
@@ -1089,29 +1139,30 @@ SELECT TOP 10
     NULL AS UltimoPagamentoEm,
     CP.UltimoContatoEm,
     CP.ProximaAcaoEm,
-    ISNULL(TA.TotalAberta, 0) AS TarefasAbertas,
+    COALESCE(TA.TotalAberta, 0) AS TarefasAbertas,
     0 AS OportunidadesAbertas,
     0 AS ValorOportunidadesAbertas
 FROM CorteCor_Pessoa P
 INNER JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa = P.IdPessoa
-OUTER APPLY (
-    SELECT COUNT(1) AS TotalAberta
+LEFT JOIN (
+    SELECT T.IdSalao, T.IdPessoa, COUNT(1) AS TotalAberta
     FROM CorteCor_CrmTarefa T
-    WHERE T.IdSalao = P.IdSalao
-      AND T.IdPessoa = P.IdPessoa
-      AND T.Status = 'Aberta'
-) TA
+    WHERE T.Status = 'Aberta'
+    GROUP BY T.IdSalao, T.IdPessoa
+) TA ON TA.IdSalao = P.IdSalao AND TA.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND ISNULL(P.Excluido, 0) = 0
-  AND ISNULL(P.IsCliente, 0) = 1
+  AND COALESCE(P.Excluido, 0) = 0
+  AND COALESCE(P.IsCliente, 0) = 1
   AND CP.ProximaAcaoEm IS NOT NULL
-ORDER BY CP.ProximaAcaoEm, P.Nome;", new { IdSalao = idSalao }).ToList();
+ORDER BY CP.ProximaAcaoEm, P.Nome
+LIMIT 10;", new { IdSalao = idSalao }).ToList();
 
             resumo.UltimasCampanhas = conn.Query<CrmCampanha>(@"
-SELECT TOP 10 *
+SELECT *
 FROM CorteCor_CrmCampanha
 WHERE IdSalao = @IdSalao
-ORDER BY COALESCE(UltimoEnvioEm, DataCriacao) DESC;", new { IdSalao = idSalao }).ToList();
+ORDER BY COALESCE(UltimoEnvioEm, DataCriacao) DESC
+LIMIT 10;", new { IdSalao = idSalao }).ToList();
 
             return resumo;
         }

@@ -25,8 +25,8 @@ INSERT INTO CorteCor_Pedido
 VALUES
     (@IdSalao, @IdPessoa, @IdMeioPagamento, @Status, @TipoPagamento, @ValidoAte,
      @SubtotalProdutos, @SubtotalServicos, @Desconto, @Acrescimo, @ValorTotal,
-     @Observacoes, @Origem, @UsuarioOperador, @IdVendaProduto, @DataPedido, GETDATE(), GETDATE());
-SELECT CAST(SCOPE_IDENTITY() AS INT);";
+     @Observacoes, @Origem, @UsuarioOperador, @IdVendaProduto, @DataPedido, NOW(), NOW());
+SELECT LAST_INSERT_ID();";
 
         const string insertItemSql = @"
 INSERT INTO CorteCor_PedidoItem
@@ -61,7 +61,7 @@ VALUES
     public async Task<Pedido?> ObterPedidoAsync(int idSalao, int idPedido)
     {
         const string sql = @"
-SELECT TOP 1
+SELECT
     P.*,
     Cli.Nome AS NomeCliente,
     CAST(CASE WHEN EXISTS (
@@ -70,7 +70,7 @@ SELECT TOP 1
         WHERE I.IdSalao = P.IdSalao
           AND I.IdPedido = P.IdPedido
           AND I.TipoItem = 'Servico'
-    ) THEN 1 ELSE 0 END AS bit) AS PossuiServico,
+    ) THEN 1 ELSE 0 END AS UNSIGNED) AS PossuiServico,
     (
         SELECT COUNT(1)
         FROM CorteCor_PedidoItem I
@@ -78,16 +78,18 @@ SELECT TOP 1
           AND I.IdPedido = P.IdPedido
     ) AS QuantidadeItens,
     (
-        SELECT TOP 1 N.Status
+        SELECT N.Status
         FROM CorteCor_NotaFiscal N
         WHERE N.IdSalao = P.IdSalao
           AND N.IdVendaProduto = P.IdVendaProduto
         ORDER BY N.DataEmissao DESC, N.DataAtualizacao DESC
+        LIMIT 1
     ) AS StatusFiscal
 FROM CorteCor_Pedido P
 LEFT JOIN CorteCor_Pessoa Cli ON Cli.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
-  AND P.IdPedido = @IdPedido;";
+  AND P.IdPedido = @IdPedido
+LIMIT 1;";
 
         using var conn = GetConnection();
         return await conn.QueryFirstOrDefaultAsync<Pedido>(sql, new { IdSalao = idSalao, IdPedido = idPedido });
@@ -138,12 +140,12 @@ WHERE P.IdSalao = @IdSalao
   AND (
         @Pesquisa IS NULL
         OR Cli.Nome LIKE @Pesquisa
-        OR ISNULL(P.TipoPagamento, '') LIKE @Pesquisa
-        OR CAST(P.IdPedido AS NVARCHAR(20)) LIKE @Pesquisa
+        OR COALESCE(P.TipoPagamento, '') LIKE COALESCE(@Pesquisa, '')
+        OR CAST(P.IdPedido AS CHAR(20)) LIKE COALESCE(@Pesquisa, '')
       )
-  AND (@DataInicio IS NULL OR CAST(P.DataPedido AS DATE) >= @DataInicio)
-  AND (@DataFim IS NULL OR CAST(P.DataPedido AS DATE) <= @DataFim)
-  AND (@SomenteVigentes = 0 OR (P.Status = 'Aberto' AND P.ValidoAte >= CAST(GETDATE() AS DATE)))";
+  AND (@DataInicio IS NULL OR DATE(P.DataPedido) >= @DataInicio)
+  AND (@DataFim IS NULL OR DATE(P.DataPedido) <= @DataFim)
+  AND (@SomenteVigentes = 0 OR (P.Status = 'Aberto' AND P.ValidoAte >= CURDATE()))";
 
         const string countSql = "SELECT COUNT(1) " + baseSql + ";";
 
@@ -157,7 +159,7 @@ SELECT
         WHERE I.IdSalao = P.IdSalao
           AND I.IdPedido = P.IdPedido
           AND I.TipoItem = 'Servico'
-    ) THEN 1 ELSE 0 END AS bit) AS PossuiServico,
+    ) THEN 1 ELSE 0 END AS UNSIGNED) AS PossuiServico,
     (
         SELECT COUNT(1)
         FROM CorteCor_PedidoItem I
@@ -165,15 +167,16 @@ SELECT
           AND I.IdPedido = P.IdPedido
     ) AS QuantidadeItens,
     (
-        SELECT TOP 1 N.Status
+        SELECT N.Status
         FROM CorteCor_NotaFiscal N
         WHERE N.IdSalao = P.IdSalao
           AND N.IdVendaProduto = P.IdVendaProduto
         ORDER BY N.DataEmissao DESC, N.DataAtualizacao DESC
+        LIMIT 1
     ) AS StatusFiscal
 " + baseSql + @"
 ORDER BY P.DataPedido DESC, P.IdPedido DESC
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+LIMIT @PageSize OFFSET @Offset;";
 
         using var conn = GetConnection();
         var parameters = new DynamicParameters();
@@ -204,10 +207,10 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
         const string sql = @"
 UPDATE CorteCor_Pedido
 SET Status = @StatusVencido,
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdSalao = @IdSalao
   AND Status = @StatusAberto
-  AND ValidoAte < CAST(GETDATE() AS DATE);";
+  AND ValidoAte < CURDATE();";
 
         using var conn = GetConnection();
         await conn.ExecuteAsync(sql, new
@@ -229,7 +232,7 @@ SET Status = @Status,
         WHEN Observacoes IS NULL OR Observacoes = '' THEN @Observacoes
         ELSE CONCAT(Observacoes, CHAR(13), CHAR(10), @Observacoes)
     END,
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdSalao = @IdSalao
   AND IdPedido = @IdPedido
   AND Status NOT IN (@StatusConvertido, @StatusCancelado);";
@@ -259,7 +262,7 @@ SET Status = @Status,
         WHEN Observacoes IS NULL OR Observacoes = '' THEN @Observacoes
         ELSE CONCAT(Observacoes, CHAR(13), CHAR(10), @Observacoes)
     END,
-    DataAtualizacao = GETDATE()
+    DataAtualizacao = NOW()
 WHERE IdSalao = @IdSalao
   AND IdPedido = @IdPedido
   AND Status NOT IN (@StatusConvertido, @StatusCancelado);";

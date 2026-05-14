@@ -17,7 +17,7 @@
 </style>
 
 <div class="container">
-    <h4>ServiÁos vinculados aos Funcion·rios</h4>
+    <h4>Servi√ßos vinculados aos Funcion√°rios</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -29,10 +29,10 @@
     <table>
         <thead>
             <tr>
-                <th>Funcion·rio</th>
-                <th>ServiÁo</th>
-                <th>PreÁo</th>
-                <th>AÁıes</th>
+                <th>Funcion√°rio</th>
+                <th>Servi√ßo</th>
+                <th>Pre√ßo</th>
+                <th>A√ß√µes</th>
             </tr>
         </thead>
         <tbody>
@@ -51,7 +51,7 @@
                         </form>
 
                         <form method="post" style="display: inline;"
-                              onsubmit="return confirm('Tem certeza que deseja remover este vÌnculo?');">
+                              onsubmit="return confirm('Tem certeza que deseja remover este v√≠nculo?');">
                             <input type="hidden" name="action" value="remover" />
                             <input type="hidden" name="idFuncionario" value="@item.IdFuncionario" />
                             <input type="hidden" name="idServico" value="@item.IdServico" />

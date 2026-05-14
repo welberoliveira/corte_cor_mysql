@@ -1,11 +1,13 @@
 using CorteCor.Handlers;
 using CorteCor.Models;
+using Dapper;
 
 namespace CorteCor.Services;
 
 public class VendaService
 {
     private readonly VendaEstoqueHandler _vendaEstoqueHandler;
+    private readonly IDatabaseHandler _databaseHandler;
     private readonly PessoaHandler _pessoaHandler;
     private readonly ProdutoHandler _produtoHandler;
     private readonly ServicoHandler _servicoHandler;
@@ -17,6 +19,7 @@ public class VendaService
 
     public VendaService(
         VendaEstoqueHandler vendaEstoqueHandler,
+        IDatabaseHandler databaseHandler,
         PessoaHandler pessoaHandler,
         ProdutoHandler produtoHandler,
         ServicoHandler servicoHandler,
@@ -27,6 +30,7 @@ public class VendaService
         CrmService crmService)
     {
         _vendaEstoqueHandler = vendaEstoqueHandler;
+        _databaseHandler = databaseHandler;
         _pessoaHandler = pessoaHandler;
         _produtoHandler = produtoHandler;
         _servicoHandler = servicoHandler;
@@ -37,13 +41,28 @@ public class VendaService
         _crmService = crmService;
     }
 
-    public async Task<VendaCheckoutContexto> ObterContextoAsync(int idSalao, VendaProdutoFiltro filtro)
+    public async Task<VendaCheckoutContexto> ObterContextoAsync(int idSalao, VendaProdutoFiltro filtro, bool incluirVendasRecentes = true)
     {
-        var clientes = _pessoaHandler.ListarPorSalao(idSalao)?.Where(p => p.IsCliente && !p.Excluido).OrderBy(p => p.Nome).ToList() ?? new List<Pessoa>();
-        var produtos = _produtoHandler.ListarPorSalao(idSalao)?.Where(p => !p.Arquivado).OrderBy(p => p.Nome).ToList() ?? new List<Produto>();
-        var servicos = _servicoHandler.ListarPorSalao(idSalao)?.Where(s => !s.Arquivado).OrderBy(s => s.Nome).ToList() ?? new List<Servico>();
-        var meios = _meioPagamentoHandler.ListarPorSalao(idSalao, true)?.OrderBy(m => m.Nome).ToList() ?? new List<MeioPagamento>();
-        var vendas = await _vendaEstoqueHandler.ListarVendasAsync(idSalao, filtro);
+        var (clientes, produtos, servicos, meios) = await CarregarCatalogosAsync(idSalao);
+        var normalizedFilter = filtro ?? new VendaProdutoFiltro();
+        var vendas = new PagedResult<VendaProduto>
+        {
+            PageIndex = normalizedFilter.PageIndex <= 0 ? 1 : normalizedFilter.PageIndex,
+            PageSize = normalizedFilter.PageSize <= 0 ? 12 : normalizedFilter.PageSize
+        };
+
+        if (incluirVendasRecentes)
+        {
+            try
+            {
+                vendas = await _vendaEstoqueHandler.ListarVendasAsync(idSalao, normalizedFilter);
+            }
+            catch (Exception ex) when (MySqlOperationalResilience.IsMaxUserConnections(ex))
+            {
+                // A listagem recente complementa a tela, mas não deve impedir a venda
+                // quando o MySQL compartilhado está temporariamente no limite de conexões.
+            }
+        }
 
         foreach (var venda in vendas.Items)
         {
@@ -60,6 +79,46 @@ public class VendaService
             MeiosPagamento = meios,
             VendasRecentes = vendas
         };
+    }
+
+    private async Task<(List<Pessoa> Clientes, List<Produto> Produtos, List<Servico> Servicos, List<MeioPagamento> MeiosPagamento)> CarregarCatalogosAsync(int idSalao)
+    {
+        const string sql = @"
+SELECT *
+FROM CorteCor_Pessoa
+WHERE IdSalao = @IdSalao
+  AND COALESCE(IsCliente, 0) = 1
+  AND COALESCE(Excluido, 0) = 0
+ORDER BY Nome;
+
+SELECT *
+FROM CorteCor_Produto
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Excluido, 0) = 0
+  AND COALESCE(Arquivado, 0) = 0
+ORDER BY Nome;
+
+SELECT *
+FROM CorteCor_Servico
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Arquivado, 0) = 0
+ORDER BY Nome;
+
+SELECT *
+FROM CorteCor_MeioPagamento
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Ativo, 0) = 1
+ORDER BY Nome;";
+
+        using var conn = _databaseHandler.GetConnection();
+        using var multi = await conn.QueryMultipleAsync(sql, new { IdSalao = idSalao });
+
+        var clientes = (await multi.ReadAsync<Pessoa>()).ToList();
+        var produtos = (await multi.ReadAsync<Produto>()).ToList();
+        var servicos = (await multi.ReadAsync<Servico>()).ToList();
+        var meios = (await multi.ReadAsync<MeioPagamento>()).ToList();
+
+        return (clientes, produtos, servicos, meios);
     }
 
     public static bool PermiteAlteracao(string? status) =>
@@ -284,6 +343,8 @@ public class VendaService
 
         if (input.EmitirNotaFiscalServico && subtotalServicos > 0)
         {
+            try
+            {
             var fiscal = await _vendaFiscalPreparationService.EmitirNotaServicoAsync(idSalao, idVenda, usuario);
             if (fiscal.IdNotaFiscal.HasValue)
             {
@@ -306,6 +367,13 @@ public class VendaService
                 ? $"Venda concluída e NFS-e emitida em homologação com sucesso."
                 : $"Venda concluída. Resultado fiscal: {fiscal.Mensagem}";
             result.MensagemTipo = fiscal.NotaFiscal?.Status == NotaFiscalStatus.Autorizada ? "success" : "warning";
+            }
+            catch (Exception ex)
+            {
+                result.Logs.Add(ex.Message);
+                result.Mensagem = $"Venda concluida. A NFS-e nao foi emitida em homologacao: {ex.Message}";
+                result.MensagemTipo = "warning";
+            }
         }
         else if (input.EmitirNotaFiscalServico && subtotalServicos <= 0)
         {
@@ -318,15 +386,28 @@ public class VendaService
 
     public async Task<VendaOperacaoResult> EmitirNotaServicoAsync(int idSalao, int idVendaProduto, string? usuario)
     {
-        var fiscal = await _vendaFiscalPreparationService.EmitirNotaServicoAsync(idSalao, idVendaProduto, usuario);
-        return new VendaOperacaoResult
+        try
         {
-            Success = fiscal.NotaFiscal?.Status == NotaFiscalStatus.Autorizada,
-            IdVendaProduto = idVendaProduto,
-            Mensagem = fiscal.Mensagem,
-            MensagemTipo = fiscal.NotaFiscal?.Status == NotaFiscalStatus.Autorizada ? "success" : "warning",
-            NotasFiscaisGeradas = fiscal.IdNotaFiscal.HasValue ? new List<Guid> { fiscal.IdNotaFiscal.Value } : new List<Guid>()
-        };
+            var fiscal = await _vendaFiscalPreparationService.EmitirNotaServicoAsync(idSalao, idVendaProduto, usuario);
+            return new VendaOperacaoResult
+            {
+                Success = fiscal.NotaFiscal?.Status == NotaFiscalStatus.Autorizada,
+                IdVendaProduto = idVendaProduto,
+                Mensagem = fiscal.Mensagem,
+                MensagemTipo = fiscal.NotaFiscal?.Status == NotaFiscalStatus.Autorizada ? "success" : "warning",
+                NotasFiscaisGeradas = fiscal.IdNotaFiscal.HasValue ? new List<Guid> { fiscal.IdNotaFiscal.Value } : new List<Guid>()
+            };
+        }
+        catch (Exception ex)
+        {
+            return new VendaOperacaoResult
+            {
+                Success = false,
+                IdVendaProduto = idVendaProduto,
+                Mensagem = $"Nao foi possivel emitir a NFS-e da venda #{idVendaProduto}: {ex.Message}",
+                MensagemTipo = "warning"
+            };
+        }
     }
 
     public async Task<VendaOperacaoResult> AtualizarVendaEmAbertoAsync(

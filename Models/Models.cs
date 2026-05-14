@@ -140,7 +140,7 @@ public class Servico
     [Required(ErrorMessage = "Informe o nome do serviço.")]
     [StringLength(160, ErrorMessage = "O nome do serviço deve ter no máximo 160 caracteres.")]
     public string Nome { get; set; }
-    [Range(typeof(decimal), "0", "9999999", ErrorMessage = "O preço do serviço deve ser maior ou igual a zero.")]
+    [Range(typeof(decimal), "0.01", "9999999", ErrorMessage = "O preço do serviço deve ser maior que zero.")]
     public decimal Preco { get; set; }
     public decimal? PrecoCusto { get; set; }
     public decimal? MargemContribuicao { get; set; }
@@ -284,7 +284,11 @@ public class MeioPagamento
 public class Pagamento
 {
     public Guid IdPagamento { get; set; }
-    public int IdAgendamento { get; set; }
+    public int? IdSalao { get; set; }
+    public int? IdAgendamento { get; set; }
+    public int? IdPedido { get; set; }
+    public int? IdVendaProduto { get; set; }
+    public string OrigemPagamento { get; set; } = CorteCor.Models.OrigemPagamento.Avulso;
     public bool Ativo { get; set; }
     public string Status { get; set; }
     public decimal Valor { get; set; }
@@ -315,6 +319,14 @@ public class Pagamento
     public string? NomeServico { get; set; }
     [NotMapped]
     public DateTime? DataAgendamento { get; set; }
+}
+
+public static class OrigemPagamento
+{
+    public const string Agendamento = "Agendamento";
+    public const string Pedido = "Pedido";
+    public const string Venda = "Venda";
+    public const string Avulso = "Avulso";
 }
 
 public class ErrorResponse

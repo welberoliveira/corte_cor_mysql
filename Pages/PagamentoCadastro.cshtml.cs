@@ -4,6 +4,9 @@ using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace CorteCor.Pages
 {
@@ -17,6 +20,9 @@ namespace CorteCor.Pages
         private readonly SalaoConfigFiscalHandler _salaoConfigFiscalHandler;
         private readonly NotaFiscalHandler _notaFiscalHandler;
         private readonly AgendamentoFiscalPreparationService _agendamentoFiscalPreparationService;
+        private readonly PedidoHandler _pedidoHandler;
+        private readonly VendaEstoqueHandler _vendaEstoqueHandler;
+        private readonly ILogger<PagamentoCadastroModel> _logger;
 
         public PagamentoCadastroModel(
             PagamentoHandler pagamentoHandler,
@@ -25,7 +31,10 @@ namespace CorteCor.Pages
             PessoaHandler pessoaHandler,
             SalaoConfigFiscalHandler salaoConfigFiscalHandler,
             NotaFiscalHandler notaFiscalHandler,
-            AgendamentoFiscalPreparationService agendamentoFiscalPreparationService)
+            AgendamentoFiscalPreparationService agendamentoFiscalPreparationService,
+            PedidoHandler pedidoHandler,
+            VendaEstoqueHandler vendaEstoqueHandler,
+            ILogger<PagamentoCadastroModel> logger)
         {
             _pagamentoHandler = pagamentoHandler;
             _agendamentoHandler = agendamentoHandler;
@@ -34,22 +43,31 @@ namespace CorteCor.Pages
             _salaoConfigFiscalHandler = salaoConfigFiscalHandler;
             _notaFiscalHandler = notaFiscalHandler;
             _agendamentoFiscalPreparationService = agendamentoFiscalPreparationService;
+            _pedidoHandler = pedidoHandler;
+            _vendaEstoqueHandler = vendaEstoqueHandler;
+            _logger = logger;
         }
 
         public Pagamento Pagamento { get; set; } = new();
         public string ButtonText = "Cadastrar";
         public string Mensagem { get; set; } = string.Empty;
 
-        public void OnGet(Guid? id, int? idAgendamento)
+        public void OnGet(Guid? id, int? idAgendamento, int? idPedido, int? idVendaProduto)
         {
-            Pagamento = new Pagamento { Data = DateTime.Now };
+            int.TryParse(User.FindFirst("IdSalao")?.Value, out var idSalao);
+            Pagamento = new Pagamento
+            {
+                Data = DateTime.Now,
+                IdSalao = idSalao > 0 ? idSalao : null,
+                OrigemPagamento = OrigemPagamento.Avulso
+            };
 
             if (id.HasValue && id.Value != Guid.Empty)
             {
                 Pagamento = _pagamentoHandler.ObterPorId(id.Value);
                 ButtonText = "Atualizar";
 
-                if (idAgendamento.HasValue && Pagamento != null)
+                if (idAgendamento.HasValue && idAgendamento.Value > 0 && Pagamento != null)
                 {
                     Pagamento.IdAgendamento = idAgendamento.Value;
                 }
@@ -57,7 +75,23 @@ namespace CorteCor.Pages
                 return;
             }
 
-            if (!idAgendamento.HasValue)
+            if (idPedido.HasValue && idPedido.Value > 0)
+            {
+                Pagamento.IdPedido = idPedido.Value;
+                Pagamento.OrigemPagamento = OrigemPagamento.Pedido;
+                Pagamento.Descricao = $"Pagamento ref. pedido {idPedido.Value}";
+                Pagamento.Contos = Pagamento.Descricao;
+            }
+
+            if (idVendaProduto.HasValue && idVendaProduto.Value > 0)
+            {
+                Pagamento.IdVendaProduto = idVendaProduto.Value;
+                Pagamento.OrigemPagamento = OrigemPagamento.Venda;
+                Pagamento.Descricao = $"Pagamento ref. venda {idVendaProduto.Value}";
+                Pagamento.Contos = Pagamento.Descricao;
+            }
+
+            if (!idAgendamento.HasValue || idAgendamento.Value <= 0)
             {
                 return;
             }
@@ -73,9 +107,12 @@ namespace CorteCor.Pages
 
             Pagamento = new Pagamento
             {
+                IdSalao = idSalao > 0 ? idSalao : null,
                 IdAgendamento = idAgendamento.Value,
+                OrigemPagamento = OrigemPagamento.Agendamento,
                 Valor = servico?.Preco ?? 0,
-                Descricao = servico != null ? $"Pagamento Ref. Servico {servico.Nome}" : string.Empty,
+                Descricao = servico != null ? $"Pagamento ref. serviço {servico.Nome}" : string.Empty,
+                Contos = servico != null ? $"Pagamento ref. serviço {servico.Nome}" : string.Empty,
                 Data = DateTime.Now,
                 NomeCliente = pessoa?.Nome,
                 NomeServico = servico?.Nome
@@ -94,7 +131,7 @@ namespace CorteCor.Pages
                     {
                         success = true,
                         valor = servico.Preco,
-                        descricao = $"Pagamento Ref. Servico {servico.Nome}"
+                        descricao = $"Pagamento ref. serviço {servico.Nome}"
                     });
                 }
             }
@@ -109,8 +146,16 @@ namespace CorteCor.Pages
                 return 0m;
             }
 
-            valor = valor.Trim().Replace(".", string.Empty).Replace(",", ".");
-            return decimal.Parse(valor, System.Globalization.CultureInfo.InvariantCulture);
+            valor = valor.Trim();
+            if (decimal.TryParse(valor, NumberStyles.Currency, new CultureInfo("pt-BR"), out var valorPtBr))
+            {
+                return valorPtBr;
+            }
+
+            var normalizado = Regex.Replace(valor, @"[^\d,.-]", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace(",", ".");
+            return decimal.Parse(normalizado, CultureInfo.InvariantCulture);
         }
 
         private static DateTime ParseDateTimeLocal(string valor)
@@ -125,53 +170,122 @@ namespace CorteCor.Pages
 
         public async Task<IActionResult> OnPostAsync()
         {
-            Guid.TryParse(Request.Form["id"], out var id);
-            int.TryParse(Request.Form["idAgendamento"], out var idAgendamento);
-            int.TryParse(Request.Form["idMeioPagamento"], out var idMeioPagamento);
-
-            var pagamento = new Pagamento
+            try
             {
-                IdPagamento = id == Guid.Empty ? Guid.NewGuid() : id,
-                IdAgendamento = idAgendamento,
-                IdMeioPagamento = idMeioPagamento,
-                Tipo = Request.Form["tipo"],
-                Valor = ParseDecimalBR(Request.Form["valor"]),
-                Data = ParseDateTimeLocal(Request.Form["data"]),
-                PagoEm = string.IsNullOrWhiteSpace(Request.Form["pagoEm"]) ? null : DateTime.Parse(Request.Form["pagoEm"]),
-                Contos = Request.Form["contos"],
-                Campos = Request.Form["campos"],
-                Ativo = true,
-                Status = AgendamentoStatus.Pago,
-                Moeda = "BRL",
-                CriadoEm = DateTime.UtcNow
-            };
+                Guid.TryParse(Request.Form["id"], out var id);
+                var idAgendamento = LerIdPositivo("idAgendamento");
+                var idPedido = LerIdPositivo("idPedido");
+                var idVendaProduto = LerIdPositivo("idVendaProduto");
+                int.TryParse(Request.Form["idMeioPagamento"], out var idMeioPagamento);
 
-            int.TryParse(User.FindFirst("IdSalao")?.Value, out var idSalao);
+                var pagoEmInformado = string.IsNullOrWhiteSpace(Request.Form["pagoEm"])
+                    ? (DateTime?)null
+                    : DateTime.Parse(Request.Form["pagoEm"]);
 
-            if (id != Guid.Empty)
-            {
-                _pagamentoHandler.AtualizarPagamento(pagamento, idSalao);
-                Mensagem = "Pagamento atualizado com sucesso!";
+                int.TryParse(User.FindFirst("IdSalao")?.Value, out var idSalao);
+
+                var pagamento = new Pagamento
+                {
+                    IdPagamento = id == Guid.Empty ? Guid.NewGuid() : id,
+                    IdSalao = idSalao > 0 ? idSalao : null,
+                    IdAgendamento = idAgendamento,
+                    IdPedido = idPedido,
+                    IdVendaProduto = idVendaProduto,
+                    OrigemPagamento = ObterOrigemPagamento(idAgendamento, idPedido, idVendaProduto),
+                    IdMeioPagamento = idMeioPagamento,
+                    Tipo = Request.Form["tipo"],
+                    Valor = ParseDecimalBR(Request.Form["valor"]),
+                    Data = ParseDateTimeLocal(Request.Form["data"]),
+                    PagoEm = pagoEmInformado ?? DateTime.Now,
+                    Contos = Request.Form["contos"],
+                    Campos = Request.Form["campos"],
+                    Descricao = Request.Form["contos"],
+                    Ativo = true,
+                    Status = AgendamentoStatus.Pago,
+                    Moeda = "BRL",
+                    CriadoEm = DateTime.UtcNow
+                };
+
+                await ValidarOrigemAsync(pagamento, idSalao);
+
+                if (id != Guid.Empty)
+                {
+                    _pagamentoHandler.AtualizarPagamento(pagamento, idSalao);
+                    Mensagem = "Pagamento atualizado com sucesso!";
+                }
+                else
+                {
+                    _pagamentoHandler.CadastrarPagamento(pagamento);
+                    id = pagamento.IdPagamento;
+                    Mensagem = "Pagamento cadastrado com sucesso!";
+                }
+
+                if (pagamento.Status == AgendamentoStatus.Pago && idAgendamento.HasValue && idSalao > 0)
+                {
+                    _agendamentoHandler.AtualizarStatus(idAgendamento.Value, AgendamentoStatus.Pago, idSalao);
+                }
+
+                if (pagamento.Status == AgendamentoStatus.Pago && idAgendamento.HasValue)
+                {
+                    await ProcessarEmissaoAutomaticaAsync(idAgendamento.Value);
+                }
+
+                OnGet(id != Guid.Empty ? id : null, null, null, null);
             }
-            else
+            catch (InvalidOperationException ex)
             {
-                _pagamentoHandler.CadastrarPagamento(pagamento);
-                id = pagamento.IdPagamento;
-                Mensagem = "Pagamento cadastrado com sucesso!";
+                Mensagem = ex.Message;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao salvar pagamento.");
+                Mensagem = "Não foi possível salvar o pagamento. Verifique os dados informados e tente novamente.";
             }
 
-            if (pagamento.Status == AgendamentoStatus.Pago && idAgendamento > 0 && idSalao > 0)
-            {
-                _agendamentoHandler.AtualizarStatus(idAgendamento, AgendamentoStatus.Pago, idSalao);
-            }
-
-            if (pagamento.Status == AgendamentoStatus.Pago && idAgendamento > 0)
-            {
-                await ProcessarEmissaoAutomaticaAsync(idAgendamento);
-            }
-
-            OnGet(id != Guid.Empty ? id : null, null);
             return Page();
+        }
+
+        private int? LerIdPositivo(string campo)
+        {
+            return int.TryParse(Request.Form[campo], out var id) && id > 0 ? id : null;
+        }
+
+        private static string ObterOrigemPagamento(int? idAgendamento, int? idPedido, int? idVendaProduto)
+        {
+            if (idAgendamento.HasValue) return OrigemPagamento.Agendamento;
+            if (idPedido.HasValue) return OrigemPagamento.Pedido;
+            if (idVendaProduto.HasValue) return OrigemPagamento.Venda;
+            return OrigemPagamento.Avulso;
+        }
+
+        private async Task ValidarOrigemAsync(Pagamento pagamento, int idSalao)
+        {
+            if (idSalao <= 0)
+            {
+                throw new InvalidOperationException("Não foi possível identificar a empresa do pagamento.");
+            }
+
+            if (pagamento.OrigemPagamento == OrigemPagamento.Agendamento)
+            {
+                if (!pagamento.IdAgendamento.HasValue || _agendamentoHandler.ObterPorId(pagamento.IdAgendamento.Value) == null)
+                {
+                    throw new InvalidOperationException("Selecione um agendamento válido para este pagamento.");
+                }
+            }
+            else if (pagamento.OrigemPagamento == OrigemPagamento.Pedido)
+            {
+                if (!pagamento.IdPedido.HasValue || await _pedidoHandler.ObterPedidoAsync(idSalao, pagamento.IdPedido.Value) == null)
+                {
+                    throw new InvalidOperationException("Selecione um pedido válido para este pagamento.");
+                }
+            }
+            else if (pagamento.OrigemPagamento == OrigemPagamento.Venda)
+            {
+                if (!pagamento.IdVendaProduto.HasValue || await _vendaEstoqueHandler.ObterVendaAsync(idSalao, pagamento.IdVendaProduto.Value) == null)
+                {
+                    throw new InvalidOperationException("Selecione uma venda válida para este pagamento.");
+                }
+            }
         }
 
         private async Task ProcessarEmissaoAutomaticaAsync(int idAgendamento)
@@ -215,8 +329,8 @@ namespace CorteCor.Pages
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao gerar emissao fiscal automatica: {ex.Message}");
-                Mensagem += $" (Pagamento confirmado, mas a emissao fiscal automatica falhou: {ex.Message})";
+                Console.WriteLine($"Erro ao gerar emissão fiscal automática: {ex.Message}");
+                Mensagem += $" (Pagamento confirmado, mas a emissão fiscal automática falhou: {ex.Message})";
             }
         }
     }
