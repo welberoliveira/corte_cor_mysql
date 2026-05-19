@@ -284,6 +284,9 @@
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/LogEmail">Log de Envios de E-mail</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Index">Dashboard Financeiro</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Relatorios">Relatórios Financeiros</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/FluxoCaixa">Fluxo de Caixa</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Dre">DRE</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/ExportacaoContabil">Exportação Contábil</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/CRM/Relatorios">Relatórios CRM</a></li>
                                 </ul>
                             </li>
@@ -295,6 +298,7 @@
                                 <ul class="dropdown-menu" aria-labelledby="AdminVendasDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Pedidos/Index">Pedidos e Orçamentos</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Vendas/Index">Vendas de Produtos e Serviços</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Compras/Index">Compras</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Estoque/Index">Controle de Estoque</a></li>
                                 </ul>
                             </li>
@@ -328,6 +332,7 @@
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresSMS">Fornecedores de SMS</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Configuracoes/FornecedoresWhatsapp">Fornecedores de WhatsApp</a></li>
                                     <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Suporte/Chamados">Gestão de Chamados</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/LogAcessosLista">Log de Acessos</a></li>
                                 </ul>
                             </li>
@@ -364,7 +369,7 @@
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Imoveis">Imóveis</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Relatorios/Index">Relatórios</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/PessoaLista">Clientes/Fornecedor/Transportador</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/PessoaLista">Clientes/Fornecedores/Leads</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/FuncionarioLista">Funcionários</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/ServicoLista">Serviços</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/ProdutoLista">Produtos</a></li>
@@ -379,6 +384,7 @@
                                 <ul class="dropdown-menu" aria-labelledby="UsuarioVendasDropdown">
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Pedidos/Index">Pedidos e Orçamentos</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Vendas/Index">Vendas de Produtos e Serviços</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Compras/Index">Compras</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Estoque/Index">Controle de Estoque</a></li>
                                 </ul>
                             </li>
@@ -421,10 +427,13 @@
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Index">Dashboard Financeiro</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Lancamentos">Contas a Pagar e Receber</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Relatorios">Relatórios Financeiros</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/FluxoCaixa">Fluxo de Caixa</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/Dre">DRE</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/ExportacaoContabil">Exportação Contábil</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/PlanoContas">Plano de Contas</a></li>
                                     <li><a class="dropdown-item" asp-area="" asp-page="/Financeiro/ContasCaixa">Contas Caixa</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Pagamentos/Pendências</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-page="/PagamentoLista">Transações de Pagamento</a></li>
                                 </ul>
                             </li>
 
@@ -476,6 +485,40 @@
             @RenderBody()
         </main>
     </div>
+    @if (User.Identity?.IsAuthenticated == true && !(ViewData["HideMenu"]?.ToString() == "true"))
+    {
+        <button type="button"
+                class="btn btn-primary shadow"
+                style="position: fixed; right: 18px; bottom: 18px; z-index: 1080; border-radius: 999px;"
+                data-bs-toggle="modal"
+                data-bs-target="#suporteModal">
+            Suporte
+        </button>
+
+        <div class="modal fade" id="suporteModal" tabindex="-1" aria-labelledby="suporteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="post" asp-page="/Suporte/Criar">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="suporteModalLabel">Suporte ao cliente</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label class="form-label" for="suporteMensagem">Mensagem</label>
+                            <textarea class="form-control" id="suporteMensagem" name="mensagem" rows="5" maxlength="4000" required placeholder="Descreva o problema ou dúvida."></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <a class="btn btn-outline-primary" asp-page="/Suporte/Chamados">Chamados Abertos</a>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Enviar chamado</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
     @if (!(ViewData["HideMenu"]?.ToString() == "true"))
     {
         <footer class="border-top  text-muted mt-5">

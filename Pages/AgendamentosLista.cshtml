@@ -41,7 +41,7 @@
 
                     <div class="col-md-3 form-group">
                         <label class="font-weight-bold">Cliente</label>
-                        <select class="form-control" asp-for="IdPessoa" asp-items="@(new SelectList(Model.PessoasOptions, "IdPessoa", "Nome"))">
+                        <select class="form-control" asp-for="IdPessoa" asp-items="@(new SelectList(Model.PessoasOptions, "IdPessoa", "Nome"))" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                             <option value="">Todos</option>
                         </select>
                     </div>

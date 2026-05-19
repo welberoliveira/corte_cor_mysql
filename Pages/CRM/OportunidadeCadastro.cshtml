@@ -20,7 +20,7 @@
         <form method="post" asp-page-handler="Salvar" class="row g-3">
             <div class="col-md-6">
                 <label class="form-label">Cliente</label>
-                <select class="form-select" asp-for="OportunidadeInput.IdPessoa">
+                <select class="form-select" asp-for="OportunidadeInput.IdPessoa" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                     <option value="">Selecione...</option>
                     @foreach (var cliente in Model.Clientes)
                     {

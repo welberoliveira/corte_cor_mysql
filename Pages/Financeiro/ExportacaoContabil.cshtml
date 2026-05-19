@@ -1,0 +1,140 @@
+@page
+@using CorteCor.Models
+@model CorteCor.Pages.Financeiro.ExportacaoContabilModel
+@{
+    ViewData["Title"] = "Exportacao contabil";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Exportacao contabil</h2>
+        <div class="text-muted">Arquivo de conferencia para a contabilidade, com plano de contas, origem, documentos e valores.</div>
+    </div>
+    <a class="btn btn-secondary" asp-page="/Financeiro/Lancamentos">Voltar para lancamentos</a>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label">Inicio</label>
+                <input type="date" class="form-control" asp-for="DataInicio" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Fim</label>
+                <input type="date" class="form-control" asp-for="DataFim" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" asp-for="Tipo">
+                    <option value="">Todos</option>
+                    <option value="@FinanceiroTipoTitulo.Receber">Receber</option>
+                    <option value="@FinanceiroTipoTitulo.Pagar">Pagar</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" asp-for="Status">
+                    <option value="">Todos</option>
+                    <option value="@FinanceiroStatusTitulo.Aberto">Aberto</option>
+                    <option value="@FinanceiroStatusTitulo.Vencido">Vencido</option>
+                    <option value="@FinanceiroStatusTitulo.Liquidado">Liquidado</option>
+                    <option value="@FinanceiroStatusTitulo.Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Grupo</label>
+                <select class="form-select" asp-for="IdGrupoPlano" id="grupoPlanoContaSelect" data-smart-select data-smart-placeholder="Digite para pesquisar grupo...">
+                    <option value="">Todos</option>
+                    @foreach (var grupo in Model.GruposPlano)
+                    {
+                        <option value="@grupo.IdPlano">@grupo.Codigo - @grupo.NomeExibicao</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Conta</label>
+                <select class="form-select" asp-for="IdPlano" id="planoContaSelect" data-smart-select data-smart-placeholder="Digite para pesquisar conta...">
+                    <option value="">Todas</option>
+                    @foreach (var plano in Model.ContasPlano)
+                    {
+                        <option value="@plano.IdPlano">@plano.Codigo - @plano.NomeExibicao</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <button type="submit" class="btn btn-success" asp-page-handler="ExportarCsv">Exportar CSV</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">Lancamentos para conferencia</div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Competencia</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Plano</th>
+                    <th>Descricao</th>
+                    <th>Pessoa</th>
+                    <th class="text-end">Valor</th>
+                    <th class="text-end">Aberto</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Titulos.Items.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">Nenhum lancamento encontrado para os filtros selecionados.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var titulo in Model.Titulos.Items)
+                    {
+                        <tr>
+                            <td>@titulo.DataCompetencia.ToString("dd/MM/yyyy")</td>
+                            <td>@titulo.Tipo</td>
+                            <td>@titulo.Status</td>
+                            <td>@(titulo.NomePlano ?? "Sem plano")</td>
+                            <td>
+                                <div class="fw-semibold">@titulo.Descricao</div>
+                                <div class="small text-muted">@titulo.Origem @(!string.IsNullOrWhiteSpace(titulo.Documento) ? $"| {titulo.Documento}" : string.Empty)</div>
+                            </td>
+                            <td>@(titulo.NomePessoa ?? "-")</td>
+                            <td class="text-end">@Model.FormatarMoeda(titulo.ValorOriginal)</td>
+                            <td class="text-end">@Model.FormatarMoeda(titulo.ValorAberto)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const grupoPlanoContaSelect = document.getElementById('grupoPlanoContaSelect');
+        const planoContaSelect = document.getElementById('planoContaSelect');
+
+        async function carregarContasPlano(idGrupo) {
+            planoContaSelect.innerHTML = '<option value="">Todas</option>';
+            if (!idGrupo) return;
+            const response = await fetch(`${window.location.pathname}?handler=ContasFilhas&idGrupo=${encodeURIComponent(idGrupo)}&tipo=${encodeURIComponent(document.getElementById('Tipo').value || '')}`, { headers: { 'Accept': 'application/json' } });
+            const contas = response.ok ? await response.json() : [];
+            contas.forEach(conta => {
+                const option = document.createElement('option');
+                option.value = conta.id;
+                option.textContent = conta.rotulo;
+                planoContaSelect.appendChild(option);
+            });
+        }
+
+        grupoPlanoContaSelect.addEventListener('change', () => carregarContasPlano(grupoPlanoContaSelect.value));
+    </script>
+}

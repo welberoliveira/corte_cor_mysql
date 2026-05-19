@@ -26,8 +26,10 @@ public static class MovimentoEstoqueTipo
 public static class MovimentoEstoqueOrigem
 {
     public const string Venda = "Venda";
+    public const string Compra = "Compra";
     public const string AjusteManual = "AjusteManual";
     public const string CancelamentoVenda = "CancelamentoVenda";
+    public const string CancelamentoCompra = "CancelamentoCompra";
     public const string PosVenda = "PosVenda";
 }
 
@@ -60,6 +62,8 @@ public class VendaProduto
     public string Status { get; set; } = VendaProdutoStatus.Finalizada;
     [StringLength(80)]
     public string? TipoPagamento { get; set; }
+    [StringLength(20)]
+    public string Recorrencia { get; set; } = RecorrenciaTipo.Nenhuma;
     public bool RecebidoNaHora { get; set; } = true;
     public bool SolicitarEmissaoFiscalServico { get; set; }
     public decimal SubtotalProdutos { get; set; }
@@ -189,6 +193,7 @@ public class VendaProdutoFiltro
     public string? Pesquisa { get; set; }
     public int? IdPessoa { get; set; }
     public string? Status { get; set; }
+    public string? Recorrencia { get; set; }
     public DateTime? DataInicio { get; set; }
     public DateTime? DataFim { get; set; }
     public int PageIndex { get; set; } = 1;
@@ -253,9 +258,14 @@ public class VendaCheckoutInput
 {
     public int? IdPessoa { get; set; }
     public int? IdMeioPagamento { get; set; }
+    public int? IdPlano { get; set; }
+    public int? IdConta { get; set; }
     public string? TipoPagamento { get; set; }
     public bool RecebidoNaHora { get; set; } = true;
     public bool EmitirNotaFiscalServico { get; set; }
+    public string? Recorrencia { get; set; }
+    public int NumeroParcelas { get; set; } = 1;
+    public DateTime? PrimeiroVencimento { get; set; }
     public decimal Desconto { get; set; }
     public decimal Acrescimo { get; set; }
     public string? Observacoes { get; set; }

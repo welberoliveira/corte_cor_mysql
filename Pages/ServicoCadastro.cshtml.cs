@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CorteCor.Pages
@@ -153,21 +154,21 @@ namespace CorteCor.Pages
             Servico = new Servico
             {
                 IdServico = id,
-                Nome = Request.Form["nome"].ToString().Trim(),
+                Nome = NormalizarTexto(Request.Form["nome"]) ?? string.Empty,
                 Preco = preco,
                 PrecoCusto = precoCusto,
                 MargemContribuicao = margemContribuicao,
                 Duracao = ParseDuracao(Request.Form["duracao"]),
                 IdSalao = idSalao,
-                CodigoTributacaoMunicipio = Request.Form["codigoTributacaoMunicipio"],
-                Cnae = Request.Form["cnae"].ToString()?.Replace(".", "").Replace("-", "").Replace("/", ""),
+                CodigoTributacaoMunicipio = NormalizarTexto(Request.Form["codigoTributacaoMunicipio"]),
+                Cnae = NormalizarTexto(Request.Form["cnae"])?.Replace(".", "").Replace("-", "").Replace("/", ""),
                 AliquotaISS = aliquotaIss,
-                Tags = Request.Form["tags"],
-                Anotacoes = Request.Form["anotacoes"],
-                ItemListaServicoLC116 = Request.Form["itemListaServicoLC116"],
-                IdCnae = Request.Form["idCnae"],
-                CodTributacaoNacional = Request.Form["codTributacaoNacional"],
-                CodNBS = Request.Form["codNBS"],
+                Tags = NormalizarTexto(Request.Form["tags"]),
+                Anotacoes = NormalizarTexto(Request.Form["anotacoes"]),
+                ItemListaServicoLC116 = NormalizarTexto(Request.Form["itemListaServicoLC116"]),
+                IdCnae = NormalizarTexto(Request.Form["idCnae"]),
+                CodTributacaoNacional = NormalizarTexto(Request.Form["codTributacaoNacional"]),
+                CodNBS = NormalizarTexto(Request.Form["codNBS"]),
                 IdCategoria = string.IsNullOrWhiteSpace(Request.Form["idCategoria"]) ? (int?)null : int.Parse(Request.Form["idCategoria"]),
                 Arquivado = Request.Form["arquivado"] == "on"
             };
@@ -298,6 +299,12 @@ namespace CorteCor.Pages
             ServicoFiscalIncompleto = !Servico.Arquivado
                 && (string.IsNullOrWhiteSpace(Servico.CodTributacaoNacional)
                     || string.IsNullOrWhiteSpace(Servico.ItemListaServicoLC116));
+        }
+
+        private static string? NormalizarTexto(string? valor)
+        {
+            var texto = valor?.Trim();
+            return string.IsNullOrWhiteSpace(texto) ? null : texto.Normalize(NormalizationForm.FormC);
         }
 
         private bool TryObterIdSalao(out int idSalao)

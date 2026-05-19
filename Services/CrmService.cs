@@ -50,10 +50,15 @@ namespace CorteCor.Services
             return _crmHandler.ObterDashboard(idSalao);
         }
 
-        public CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim)
+        public CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim, int? idUsuarioResponsavel = null)
         {
             GarantirEstrutura(idSalao);
-            return _crmHandler.ObterRelatorios(idSalao, dataInicio, dataFim);
+            return _crmHandler.ObterRelatorios(idSalao, dataInicio, dataFim, idUsuarioResponsavel);
+        }
+
+        public List<Usuario> ListarResponsaveis(int idSalao)
+        {
+            return _crmHandler.ListarResponsaveis(idSalao);
         }
 
         public PagedResult<CrmClienteResumo> ListarClientes(int idSalao, string? pesquisa, int pageIndex, int pageSize)
@@ -164,6 +169,12 @@ namespace CorteCor.Services
             return _crmHandler.ListarTarefas(idSalao, idPessoa, status, idUsuarioResponsavel, pageIndex, pageSize, pesquisa, dataVencimentoInicio, dataVencimentoFim);
         }
 
+        public CrmTarefa? ObterTarefa(int idSalao, int idTarefa)
+        {
+            GarantirEstrutura(idSalao);
+            return _crmHandler.ObterTarefa(idSalao, idTarefa);
+        }
+
         public int SalvarTarefa(int idSalao, CrmTarefa tarefa)
         {
             tarefa.IdSalao = idSalao;
@@ -262,6 +273,11 @@ namespace CorteCor.Services
         public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize, string? pesquisa = null, string? canal = null, string? segmento = null, string? status = null)
         {
             return _crmHandler.ListarCampanhas(idSalao, pageIndex, pageSize, pesquisa, canal, segmento, status);
+        }
+
+        public CrmCampanha? ObterCampanha(int idSalao, int idCampanha)
+        {
+            return _crmHandler.ObterCampanha(idSalao, idCampanha);
         }
 
         public List<CrmCampanhaDestino> ListarDestinosCampanha(int idSalao, int idCampanha, int limit = 100)

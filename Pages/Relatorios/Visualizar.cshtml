@@ -42,7 +42,7 @@
             {
                 <div class="col-12 col-md-6 col-xl-3">
                     <label class="form-label">Cliente</label>
-                    <select class="form-select" name="idPessoa">
+                    <select class="form-select" name="idPessoa" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                         <option value="">Todos</option>
                         @foreach (var item in Model.Contexto.Clientes)
                         {
@@ -98,7 +98,7 @@
             {
                 <div class="col-12 col-md-6 col-xl-3">
                     <label class="form-label">Produto</label>
-                    <select class="form-select" name="idProduto">
+                    <select class="form-select" name="idProduto" data-smart-select data-smart-placeholder="Digite para pesquisar produto...">
                         <option value="">Todos</option>
                         @foreach (var item in Model.Contexto.Produtos)
                         {
@@ -111,9 +111,19 @@
             @if (Model.UsaFiltro(RelatorioFiltros.Plano))
             {
                 <div class="col-12 col-md-6 col-xl-3">
-                    <label class="form-label">Plano</label>
-                    <select class="form-select" name="idPlano">
+                    <label class="form-label">Grupo do Plano de Contas</label>
+                    <select class="form-select" name="idGrupoPlano" id="RelatorioGrupoPlanoContaId" data-smart-select data-smart-placeholder="Digite para pesquisar grupo...">
                         <option value="">Todos</option>
+                        @foreach (var item in Model.Contexto.GruposPlano)
+                        {
+                            <option value="@item.Valor" selected="@(Model.idGrupoPlano?.ToString() == item.Valor)">@item.Rotulo</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label">Conta</label>
+                    <select class="form-select" name="idPlano" id="RelatorioPlanoContaId" data-selected="@Model.idPlano" data-smart-select data-smart-placeholder="Digite para pesquisar conta...">
+                        <option value="">Todas</option>
                         @foreach (var item in Model.Contexto.Planos)
                         {
                             <option value="@item.Valor" selected="@(Model.idPlano?.ToString() == item.Valor)">@item.Rotulo</option>
@@ -294,6 +304,55 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const grupoSelect = document.getElementById('RelatorioGrupoPlanoContaId');
+            const contaSelect = document.getElementById('RelatorioPlanoContaId');
+            if (!grupoSelect || !contaSelect) {
+                return;
+            }
+
+            const selectedConta = contaSelect.dataset.selected || '';
+
+            const limparContas = (texto = 'Todas') => {
+                contaSelect.innerHTML = `<option value="">${texto}</option>`;
+            };
+
+            grupoSelect.addEventListener('change', async () => {
+                const idGrupoPlano = grupoSelect.value;
+                limparContas(idGrupoPlano ? 'Carregando...' : 'Todas');
+
+                if (!idGrupoPlano) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${window.location.pathname}?handler=ContasPlano&idGrupoPlano=${encodeURIComponent(idGrupoPlano)}`);
+                    if (!response.ok) {
+                        throw new Error('Falha ao carregar contas');
+                    }
+
+                    const contas = await response.json();
+                    limparContas('Todas');
+
+                    contas.forEach(conta => {
+                        const option = document.createElement('option');
+                        option.value = conta.id;
+                        option.textContent = conta.rotulo;
+                        if (String(conta.id) === selectedConta) {
+                            option.selected = true;
+                        }
+                        contaSelect.appendChild(option);
+                    });
+                } catch {
+                    limparContas('Não foi possível carregar as contas');
+                }
+            });
+        })();
+    </script>
+}
 
 <div class="card shadow-sm border-0">
     <div class="card-body">

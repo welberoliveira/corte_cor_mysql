@@ -11,10 +11,12 @@ namespace CorteCor.Pages.Relatorios;
 public class VisualizarModel : PageModel
 {
     private readonly RelatorioCentralService _relatorioService;
+    private readonly FinanceiroService _financeiroService;
 
-    public VisualizarModel(RelatorioCentralService relatorioService)
+    public VisualizarModel(RelatorioCentralService relatorioService, FinanceiroService financeiroService)
     {
         _relatorioService = relatorioService;
+        _financeiroService = financeiroService;
     }
 
     public RelatorioResultado Resultado { get; private set; } = new();
@@ -35,6 +37,7 @@ public class VisualizarModel : PageModel
     [BindProperty(SupportsGet = true)] public int? idCategoria { get; set; }
     [BindProperty(SupportsGet = true)] public int? idServico { get; set; }
     [BindProperty(SupportsGet = true)] public int? idProduto { get; set; }
+    [BindProperty(SupportsGet = true)] public int? idGrupoPlano { get; set; }
     [BindProperty(SupportsGet = true)] public int? idPlano { get; set; }
     [BindProperty(SupportsGet = true)] public int? idConta { get; set; }
     [BindProperty(SupportsGet = true)] public int? ambiente { get; set; }
@@ -62,6 +65,18 @@ public class VisualizarModel : PageModel
         await CarregarAsync();
         var bytes = _relatorioService.GerarPdf(Resultado, CriarFiltro());
         return File(bytes, "application/pdf", $"{Definicao.Tipo}-{DateTime.Now:yyyyMMddHHmm}.pdf");
+    }
+
+    public async Task<JsonResult> OnGetContasPlanoAsync(int idGrupoPlano)
+    {
+        var contas = await _financeiroService.ListarContasAnaliticasPorGrupoAsync(ObterIdSalao(), idGrupoPlano);
+        return new JsonResult(contas.Select(conta => new
+        {
+            id = conta.IdPlano,
+            codigo = conta.Codigo,
+            nome = conta.NomeExibicao,
+            rotulo = $"{conta.Codigo} - {conta.NomeExibicao}"
+        }));
     }
 
     public bool UsaFiltro(string filtro) => Definicao.Filtros.Contains(filtro, StringComparer.OrdinalIgnoreCase);
@@ -124,7 +139,36 @@ public class VisualizarModel : PageModel
     private async Task CarregarAsync()
     {
         var idSalao = ObterIdSalao();
+        var definicao = _relatorioService.ObterDefinicao(tipo);
         Contexto = await _relatorioService.ObterContextoFiltrosAsync(idSalao);
+
+        if (definicao.Filtros.Contains(RelatorioFiltros.Plano, StringComparer.OrdinalIgnoreCase))
+        {
+            var gruposPlano = await _financeiroService.ListarGruposPlanoContasAsync(idSalao);
+            Contexto.GruposPlano = gruposPlano
+                .Select(grupo => new RelatorioOpcao
+                {
+                    Valor = grupo.IdPlano.ToString(),
+                    Rotulo = $"{grupo.Codigo} - {grupo.NomeExibicao}"
+                })
+                .ToList();
+
+            if (!idGrupoPlano.HasValue && idPlano.HasValue)
+            {
+                idGrupoPlano = (await _financeiroService.ObterGrupoNivel2DoPlanoAsync(idSalao, idPlano))?.IdPlano;
+            }
+
+            Contexto.Planos = idGrupoPlano.HasValue && idGrupoPlano > 0
+                ? (await _financeiroService.ListarContasAnaliticasPorGrupoAsync(idSalao, idGrupoPlano.Value))
+                    .Select(conta => new RelatorioOpcao
+                    {
+                        Valor = conta.IdPlano.ToString(),
+                        Rotulo = $"{conta.Codigo} - {conta.NomeExibicao}"
+                    })
+                    .ToList()
+                : new List<RelatorioOpcao>();
+        }
+
         Resultado = await _relatorioService.GerarAsync(idSalao, CriarFiltro());
     }
 
@@ -144,6 +188,7 @@ public class VisualizarModel : PageModel
         idCategoria = idCategoria,
         idServico = idServico,
         idProduto = idProduto,
+        idGrupoPlano = idGrupoPlano,
         idPlano = idPlano,
         idConta = idConta,
         ambiente = ambiente,
@@ -184,6 +229,7 @@ public class VisualizarModel : PageModel
         AddIfHasValue(query, "idCategoria", filtro.idCategoria);
         AddIfHasValue(query, "idServico", filtro.idServico);
         AddIfHasValue(query, "idProduto", filtro.idProduto);
+        AddIfHasValue(query, "idGrupoPlano", filtro.idGrupoPlano);
         AddIfHasValue(query, "idPlano", filtro.idPlano);
         AddIfHasValue(query, "idConta", filtro.idConta);
         AddIfHasValue(query, "ambiente", filtro.ambiente);

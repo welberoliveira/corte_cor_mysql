@@ -425,6 +425,25 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);";
             return conn.ExecuteScalar<int>(insertSql, interacao);
         }
 
+        public List<Usuario> ListarResponsaveis(int idSalao)
+        {
+            const string sql = @"
+SELECT
+    IdUsuario,
+    Nome,
+    Sobrenome,
+    Email,
+    Status,
+    IdSalao
+FROM CorteCor_Usuario
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Status, 'Ativo') <> 'Inativo'
+ORDER BY Nome, Sobrenome, Email;";
+
+            using var conn = GetConnection();
+            return conn.Query<Usuario>(sql, new { IdSalao = idSalao }).ToList();
+        }
+
         public PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize, string? pesquisa = null, DateTime? dataVencimentoInicio = null, DateTime? dataVencimentoFim = null)
         {
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
@@ -477,6 +496,23 @@ LIMIT @PageSize OFFSET @Offset;";
                 PageIndex = pageIndex,
                 PageSize = pageSize
             };
+        }
+
+        public CrmTarefa? ObterTarefa(int idSalao, int idTarefa)
+        {
+            const string sql = @"
+SELECT
+    T.*,
+    P.Nome AS NomePessoa,
+    U.Nome AS NomeResponsavel
+FROM CorteCor_CrmTarefa T
+LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
+LEFT JOIN CorteCor_Usuario U ON U.IdUsuario = T.IdUsuarioResponsavel
+WHERE T.IdSalao = @IdSalao
+  AND T.IdTarefa = @IdTarefa;";
+
+            using var conn = GetConnection();
+            return conn.QueryFirstOrDefault<CrmTarefa>(sql, new { IdSalao = idSalao, IdTarefa = idTarefa });
         }
 
         public int SalvarTarefa(CrmTarefa tarefa)
@@ -982,17 +1018,42 @@ LIMIT 5;", new { IdSalao = idSalao }).ToList();
             return resumo;
         }
 
-        public CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim)
+        public CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim, int? idUsuarioResponsavel = null)
         {
             using var conn = GetConnection();
+            var parametrosRelatorio = new
+            {
+                IdSalao = idSalao,
+                DataInicio = dataInicio.Date,
+                DataFim = dataFim.Date,
+                IdUsuarioResponsavel = idUsuarioResponsavel
+            };
+
             var resumo = new CrmRelatorioResumo
             {
                 TotalClientes = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
-FROM CorteCor_Pessoa
-WHERE IdSalao = @IdSalao
-  AND ISNULL(Excluido, 0) = 0
-  AND ISNULL(IsCliente, 0) = 1;", new { IdSalao = idSalao }),
+FROM CorteCor_Pessoa P
+WHERE P.IdSalao = @IdSalao
+  AND ISNULL(P.Excluido, 0) = 0
+  AND ISNULL(P.IsCliente, 0) = 1
+  AND (
+      @IdUsuarioResponsavel IS NULL
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmTarefa T
+          WHERE T.IdSalao = P.IdSalao
+            AND T.IdPessoa = P.IdPessoa
+            AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+      )
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmInteracao I
+          WHERE I.IdSalao = P.IdSalao
+            AND I.IdPessoa = P.IdPessoa
+            AND I.IdUsuario = @IdUsuarioResponsavel
+      )
+  );", parametrosRelatorio),
 
                 ClientesSemContato30Dias = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
@@ -1001,7 +1062,24 @@ LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa 
 WHERE P.IdSalao = @IdSalao
   AND COALESCE(P.Excluido, 0) = 0
   AND COALESCE(P.IsCliente, 0) = 1
-  AND TIMESTAMPDIFF(DAY, COALESCE(CP.UltimoContatoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= 30;", new { IdSalao = idSalao }),
+  AND TIMESTAMPDIFF(DAY, COALESCE(CP.UltimoContatoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= 30
+  AND (
+      @IdUsuarioResponsavel IS NULL
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmTarefa T
+          WHERE T.IdSalao = P.IdSalao
+            AND T.IdPessoa = P.IdPessoa
+            AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+      )
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmInteracao I
+          WHERE I.IdSalao = P.IdSalao
+            AND I.IdPessoa = P.IdPessoa
+            AND I.IdUsuario = @IdUsuarioResponsavel
+      )
+  );", parametrosRelatorio),
 
                 ClientesComTarefasAtrasadas = conn.ExecuteScalar<int>(@"
 SELECT COUNT(DISTINCT IdPessoa)
@@ -1009,26 +1087,47 @@ FROM CorteCor_CrmTarefa
 WHERE IdSalao = @IdSalao
   AND Status = 'Aberta'
   AND DataVencimento < NOW()
-  AND IdPessoa IS NOT NULL;", new { IdSalao = idSalao }),
+  AND IdPessoa IS NOT NULL
+  AND (@IdUsuarioResponsavel IS NULL OR IdUsuarioResponsavel = @IdUsuarioResponsavel);", parametrosRelatorio),
 
                 OportunidadesAbertas = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
-FROM CorteCor_CrmOportunidade
-WHERE IdSalao = @IdSalao
-  AND Status = 'Aberta';", new { IdSalao = idSalao }),
+FROM CorteCor_CrmOportunidade O
+WHERE O.IdSalao = @IdSalao
+  AND O.Status = 'Aberta'
+  AND (
+      @IdUsuarioResponsavel IS NULL
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmTarefa T
+          WHERE T.IdSalao = O.IdSalao
+            AND T.IdPessoa = O.IdPessoa
+            AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+      )
+  );", parametrosRelatorio),
 
                 ValorPipelineAberto = conn.ExecuteScalar<decimal>(@"
 SELECT COALESCE(SUM(ValorEstimado), 0)
-FROM CorteCor_CrmOportunidade
-WHERE IdSalao = @IdSalao
-  AND Status = 'Aberta';", new { IdSalao = idSalao }),
+FROM CorteCor_CrmOportunidade O
+WHERE O.IdSalao = @IdSalao
+  AND O.Status = 'Aberta'
+  AND (
+      @IdUsuarioResponsavel IS NULL
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmTarefa T
+          WHERE T.IdSalao = O.IdSalao
+            AND T.IdPessoa = O.IdPessoa
+            AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+      )
+  );", parametrosRelatorio),
 
                 CampanhasEnviadasPeriodo = conn.ExecuteScalar<int>(@"
 SELECT COUNT(1)
 FROM CorteCor_CrmCampanha
 WHERE IdSalao = @IdSalao
   AND UltimoEnvioEm >= @DataInicio
-  AND UltimoEnvioEm < DATE_ADD(@DataFim, INTERVAL 1 DAY);", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })
+  AND UltimoEnvioEm < DATE_ADD(@DataFim, INTERVAL 1 DAY);", parametrosRelatorio)
             };
 
             resumo.ClientesPorStatus = conn.Query<CrmResumoFaixa>(@"
@@ -1041,8 +1140,25 @@ LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa 
 WHERE P.IdSalao = @IdSalao
   AND COALESCE(P.Excluido, 0) = 0
   AND COALESCE(P.IsCliente, 0) = 1
+  AND (
+      @IdUsuarioResponsavel IS NULL
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmTarefa T
+          WHERE T.IdSalao = P.IdSalao
+            AND T.IdPessoa = P.IdPessoa
+            AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+      )
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmInteracao I
+          WHERE I.IdSalao = P.IdSalao
+            AND I.IdPessoa = P.IdPessoa
+            AND I.IdUsuario = @IdUsuarioResponsavel
+      )
+  )
 GROUP BY COALESCE(CP.StatusRelacionamento, 'Cliente')
-ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
+ORDER BY COUNT(1) DESC;", parametrosRelatorio).ToList();
 
             resumo.ClientesPorTemperatura = conn.Query<CrmResumoFaixa>(@"
 SELECT
@@ -1054,8 +1170,25 @@ LEFT JOIN CorteCor_CrmPessoaPerfil CP ON CP.IdSalao = P.IdSalao AND CP.IdPessoa 
 WHERE P.IdSalao = @IdSalao
   AND COALESCE(P.Excluido, 0) = 0
   AND COALESCE(P.IsCliente, 0) = 1
+  AND (
+      @IdUsuarioResponsavel IS NULL
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmTarefa T
+          WHERE T.IdSalao = P.IdSalao
+            AND T.IdPessoa = P.IdPessoa
+            AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+      )
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmInteracao I
+          WHERE I.IdSalao = P.IdSalao
+            AND I.IdPessoa = P.IdPessoa
+            AND I.IdUsuario = @IdUsuarioResponsavel
+      )
+  )
 GROUP BY COALESCE(CP.Temperatura, 'Morno')
-ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
+ORDER BY COUNT(1) DESC;", parametrosRelatorio).ToList();
 
             resumo.InteracoesPorCanal = conn.Query<CrmResumoFaixa>(@"
 SELECT
@@ -1066,8 +1199,9 @@ FROM CorteCor_CrmInteracao
 WHERE IdSalao = @IdSalao
   AND DataInteracao >= @DataInicio
   AND DataInteracao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
+  AND (@IdUsuarioResponsavel IS NULL OR IdUsuario = @IdUsuarioResponsavel)
 GROUP BY Canal
-ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date }).ToList();
+ORDER BY COUNT(1) DESC;", parametrosRelatorio).ToList();
 
             resumo.TarefasPorStatus = conn.Query<CrmResumoFaixa>(@"
 SELECT
@@ -1076,8 +1210,9 @@ SELECT
     CAST(0 AS DECIMAL(18,2)) AS Valor
 FROM CorteCor_CrmTarefa
 WHERE IdSalao = @IdSalao
+  AND (@IdUsuarioResponsavel IS NULL OR IdUsuarioResponsavel = @IdUsuarioResponsavel)
 GROUP BY Status
-ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
+ORDER BY COUNT(1) DESC;", parametrosRelatorio).ToList();
 
             resumo.OportunidadesPorEtapa = conn.Query<CrmResumoFaixa>(@"
 SELECT
@@ -1085,11 +1220,23 @@ SELECT
     COUNT(O.IdOportunidade) AS Quantidade,
     COALESCE(SUM(O.ValorEstimado), 0) AS Valor
 FROM CorteCor_CrmEtapaFunil E
-LEFT JOIN CorteCor_CrmOportunidade O ON O.IdEtapa = E.IdEtapa AND O.IdSalao = E.IdSalao AND O.Status = 'Aberta'
+LEFT JOIN CorteCor_CrmOportunidade O ON O.IdEtapa = E.IdEtapa
+    AND O.IdSalao = E.IdSalao
+    AND O.Status = 'Aberta'
+    AND (
+        @IdUsuarioResponsavel IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM CorteCor_CrmTarefa T
+            WHERE T.IdSalao = O.IdSalao
+              AND T.IdPessoa = O.IdPessoa
+              AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+        )
+    )
 WHERE E.IdSalao = @IdSalao
   AND E.Ativa = 1
 GROUP BY E.Nome, E.Ordem
-ORDER BY E.Ordem;", new { IdSalao = idSalao }).ToList();
+ORDER BY E.Ordem;", parametrosRelatorio).ToList();
 
             resumo.CampanhasPorCanal = conn.Query<CrmResumoFaixa>(@"
 SELECT
@@ -1099,7 +1246,7 @@ SELECT
 FROM CorteCor_CrmCampanha
 WHERE IdSalao = @IdSalao
 GROUP BY Canal
-ORDER BY COUNT(1) DESC;", new { IdSalao = idSalao }).ToList();
+ORDER BY COUNT(1) DESC;", parametrosRelatorio).ToList();
 
             resumo.ClientesEmRisco = conn.Query<CrmClienteResumo>(@"
 SELECT
@@ -1123,8 +1270,25 @@ WHERE P.IdSalao = @IdSalao
   AND COALESCE(P.Excluido, 0) = 0
   AND COALESCE(P.IsCliente, 0) = 1
   AND TIMESTAMPDIFF(DAY, COALESCE(CP.UltimoContatoEm, CAST('1900-01-01' AS DATETIME)), NOW()) >= 30
+  AND (
+      @IdUsuarioResponsavel IS NULL
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmTarefa T
+          WHERE T.IdSalao = P.IdSalao
+            AND T.IdPessoa = P.IdPessoa
+            AND T.IdUsuarioResponsavel = @IdUsuarioResponsavel
+      )
+      OR EXISTS (
+          SELECT 1
+          FROM CorteCor_CrmInteracao I
+          WHERE I.IdSalao = P.IdSalao
+            AND I.IdPessoa = P.IdPessoa
+            AND I.IdUsuario = @IdUsuarioResponsavel
+      )
+  )
 ORDER BY CP.UltimoContatoEm, P.Nome
-LIMIT 10;", new { IdSalao = idSalao }).ToList();
+LIMIT 10;", parametrosRelatorio).ToList();
 
             resumo.ProximasAcoes = conn.Query<CrmClienteResumo>(@"
 SELECT
@@ -1148,21 +1312,23 @@ LEFT JOIN (
     SELECT T.IdSalao, T.IdPessoa, COUNT(1) AS TotalAberta
     FROM CorteCor_CrmTarefa T
     WHERE T.Status = 'Aberta'
+      AND (@IdUsuarioResponsavel IS NULL OR T.IdUsuarioResponsavel = @IdUsuarioResponsavel)
     GROUP BY T.IdSalao, T.IdPessoa
 ) TA ON TA.IdSalao = P.IdSalao AND TA.IdPessoa = P.IdPessoa
 WHERE P.IdSalao = @IdSalao
   AND COALESCE(P.Excluido, 0) = 0
   AND COALESCE(P.IsCliente, 0) = 1
   AND CP.ProximaAcaoEm IS NOT NULL
+  AND (@IdUsuarioResponsavel IS NULL OR COALESCE(TA.TotalAberta, 0) > 0)
 ORDER BY CP.ProximaAcaoEm, P.Nome
-LIMIT 10;", new { IdSalao = idSalao }).ToList();
+LIMIT 10;", parametrosRelatorio).ToList();
 
             resumo.UltimasCampanhas = conn.Query<CrmCampanha>(@"
 SELECT *
 FROM CorteCor_CrmCampanha
 WHERE IdSalao = @IdSalao
 ORDER BY COALESCE(UltimoEnvioEm, DataCriacao) DESC
-LIMIT 10;", new { IdSalao = idSalao }).ToList();
+LIMIT 10;", parametrosRelatorio).ToList();
 
             return resumo;
         }

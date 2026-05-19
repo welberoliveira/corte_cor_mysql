@@ -3,6 +3,7 @@ using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Text;
 
 namespace CorteCor.Pages
 {
@@ -54,9 +55,9 @@ namespace CorteCor.Pages
 
             ButtonText = Categoria.IdCategoria > 0 ? "Atualizar" : "Cadastrar";
             Categoria.IdSalao = idSalao;
-            Categoria.Nome = (Categoria.Nome ?? string.Empty).Trim();
+            Categoria.Nome = NormalizarTexto(Categoria.Nome);
 
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid || string.IsNullOrWhiteSpace(Categoria.Nome))
             {
                 Mensagem = "Revise os campos obrigatórios da categoria.";
                 MensagemTipo = "danger";
@@ -89,6 +90,11 @@ namespace CorteCor.Pages
         private bool TryObterIdSalao(out int idSalao)
         {
             return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
+        }
+
+        private static string NormalizarTexto(string? valor)
+        {
+            return (valor ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
         }
     }
 }

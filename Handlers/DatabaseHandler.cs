@@ -83,28 +83,25 @@ public class DatabaseHandler : IDatabaseHandler
 
         if (!HasOption(connectionString, "Pooling"))
         {
-            // O codigo legado ainda abre varias conexoes curtas por request.
-            // Em MySQL compartilhado, manter pooling desabilitado por padrao
-            // evita saturar o limite de conexoes do usuario.
-            builder.Pooling = false;
+            builder.Pooling = true;
         }
 
-        if (builder.Pooling && !HasOption(connectionString, "MaximumPoolSize") && builder.MaximumPoolSize >= 100)
+        if (builder.Pooling && !HasOption(connectionString, "MaximumPoolSize", "Maximum Pool Size", "MaxPoolSize", "Max Pool Size"))
         {
-            builder.MaximumPoolSize = 8;
+            builder.MaximumPoolSize = 10;
         }
 
-        if (builder.Pooling && !HasOption(connectionString, "MinimumPoolSize"))
+        if (builder.Pooling && !HasOption(connectionString, "MinimumPoolSize", "Minimum Pool Size", "MinPoolSize", "Min Pool Size"))
         {
             builder.MinimumPoolSize = 0;
         }
 
-        if (builder.Pooling && !HasOption(connectionString, "ConnectionIdleTimeout"))
+        if (builder.Pooling && !HasOption(connectionString, "ConnectionIdleTimeout", "Connection Idle Timeout"))
         {
-            builder.ConnectionIdleTimeout = 15;
+            builder.ConnectionIdleTimeout = 30;
         }
 
-        if (builder.Pooling && !HasOption(connectionString, "ConnectionLifeTime"))
+        if (builder.Pooling && !HasOption(connectionString, "ConnectionLifeTime", "Connection Lifetime"))
         {
             builder.ConnectionLifeTime = 180;
         }
@@ -120,6 +117,11 @@ public class DatabaseHandler : IDatabaseHandler
         }
 
         builder.AllowUserVariables = true;
+        if (!HasOption(connectionString, "Character Set", "CharSet"))
+        {
+            builder.CharacterSet = "utf8mb4";
+        }
+
         if (builder.SslMode == MySqlSslMode.None)
         {
             builder.SslMode = MySqlSslMode.Preferred;
@@ -128,8 +130,37 @@ public class DatabaseHandler : IDatabaseHandler
         return builder.ConnectionString;
     }
 
-    private static bool HasOption(string connectionString, string optionName) =>
-        connectionString.Contains($"{optionName}=", StringComparison.OrdinalIgnoreCase);
+    private static bool HasOption(string connectionString, params string[] optionNames)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString) || optionNames.Length == 0)
+        {
+            return false;
+        }
+
+        var normalizedOptionNames = optionNames
+            .Select(NormalizeOptionName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var part in connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var separatorIndex = part.IndexOf('=');
+            if (separatorIndex <= 0)
+            {
+                continue;
+            }
+
+            var key = NormalizeOptionName(part[..separatorIndex]);
+            if (normalizedOptionNames.Contains(key))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string NormalizeOptionName(string optionName) =>
+        optionName.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
 
     private static void ValidarConnectionString(string connectionString)
     {

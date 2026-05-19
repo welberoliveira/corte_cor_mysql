@@ -134,6 +134,10 @@ builder.Services.AddScoped<PedidoService>();
 builder.Services.AddScoped<VendaEstoqueHandler>();
 builder.Services.AddScoped<VendaFiscalPreparationService>();
 builder.Services.AddScoped<VendaService>();
+builder.Services.AddScoped<CompraHandler>();
+builder.Services.AddScoped<CompraService>();
+builder.Services.AddScoped<SuporteHandler>();
+builder.Services.AddScoped<SuporteService>();
 builder.Services.AddHttpClient<ConsultaDocumentoService>();
 builder.Services.AddScoped<LogAcessoHandler>();
 

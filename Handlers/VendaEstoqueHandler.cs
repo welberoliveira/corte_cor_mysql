@@ -22,11 +22,11 @@ public class VendaEstoqueHandler
     {
         const string insertVendaSql = @"
 INSERT INTO CorteCor_VendaProduto
-    (IdSalao, IdPessoa, IdMeioPagamento, Status, TipoPagamento, RecebidoNaHora, SolicitarEmissaoFiscalServico,
+    (IdSalao, IdPessoa, IdMeioPagamento, Status, TipoPagamento, Recorrencia, RecebidoNaHora, SolicitarEmissaoFiscalServico,
      SubtotalProdutos, SubtotalServicos, Desconto, Acrescimo, ValorTotal, Observacoes, Origem, UsuarioOperador,
      DataVenda, DataCriacao, DataAtualizacao)
 VALUES
-    (@IdSalao, @IdPessoa, @IdMeioPagamento, @Status, @TipoPagamento, @RecebidoNaHora, @SolicitarEmissaoFiscalServico,
+    (@IdSalao, @IdPessoa, @IdMeioPagamento, @Status, @TipoPagamento, @Recorrencia, @RecebidoNaHora, @SolicitarEmissaoFiscalServico,
      @SubtotalProdutos, @SubtotalServicos, @Desconto, @Acrescimo, @ValorTotal, @Observacoes, @Origem, @UsuarioOperador,
      @DataVenda, NOW(), NOW());
 SELECT LAST_INSERT_ID();";
@@ -95,6 +95,7 @@ UPDATE CorteCor_VendaProduto
 SET IdPessoa = @IdPessoa,
     IdMeioPagamento = @IdMeioPagamento,
     TipoPagamento = @TipoPagamento,
+    Recorrencia = @Recorrencia,
     RecebidoNaHora = @RecebidoNaHora,
     SolicitarEmissaoFiscalServico = @SolicitarEmissaoFiscalServico,
     SubtotalProdutos = @SubtotalProdutos,
@@ -230,6 +231,7 @@ LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = V.IdPessoa
 WHERE V.IdSalao = @IdSalao
   AND (@IdPessoa IS NULL OR V.IdPessoa = @IdPessoa)
   AND (@Status IS NULL OR V.Status = @Status)
+  AND (@Recorrencia IS NULL OR V.Recorrencia = @Recorrencia)
   AND (
         @Pesquisa IS NULL
         OR P.Nome LIKE @Pesquisa
@@ -277,6 +279,7 @@ LIMIT @PageSize OFFSET @Offset;";
         parameters.Add("@IdSalao", idSalao);
         parameters.Add("@IdPessoa", normalized.IdPessoa);
         parameters.Add("@Status", string.IsNullOrWhiteSpace(normalized.Status) ? null : normalized.Status.Trim());
+        parameters.Add("@Recorrencia", string.IsNullOrWhiteSpace(normalized.Recorrencia) ? null : normalized.Recorrencia.Trim());
         parameters.Add("@Pesquisa", string.IsNullOrWhiteSpace(normalized.Pesquisa) ? null : $"%{normalized.Pesquisa.Trim()}%");
         parameters.Add("@DataInicio", normalized.DataInicio?.Date);
         parameters.Add("@DataFim", normalized.DataFim?.Date);

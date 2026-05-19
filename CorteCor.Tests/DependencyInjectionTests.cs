@@ -55,6 +55,7 @@ namespace CorteCor.Tests
                         services.AddScoped<ServicoHandler>();
                         services.AddScoped<PessoaHandler>();
                         services.AddScoped<ProdutoHandler>();
+                        services.AddScoped<ImovelHandler>();
                         services.AddScoped<CategoriaProdutoHandler>();
                         services.AddScoped<ItemListaServicoHandler>();
                         services.AddScoped<AgendamentoHandler>();
@@ -102,6 +103,10 @@ namespace CorteCor.Tests
                         services.AddScoped<VendaEstoqueHandler>();
                         services.AddScoped<VendaFiscalPreparationService>();
                         services.AddScoped<VendaService>();
+                        services.AddScoped<CompraHandler>();
+                        services.AddScoped<CompraService>();
+                        services.AddScoped<SuporteHandler>();
+                        services.AddScoped<SuporteService>();
                         services.AddHostedService<LembreteBackgroundService>();
 
                         // Manually register PageModels since we don't have MapRazorPages logic here
@@ -158,12 +163,14 @@ namespace CorteCor.Tests
         public CrmCampanha? ObterCampanha(int idSalao, int idCampanha) => new CrmCampanha { IdCampanha = idCampanha, IdSalao = idSalao, Nome = "Campanha Teste", Canal = CrmCanal.Email, Segmento = CrmSegmentoCampanha.TodosClientes, Conteudo = "Teste", Assunto = "Teste" };
         public CrmClienteResumo ObterClienteResumo(int idSalao, int idPessoa) => new CrmClienteResumo { IdPessoa = idPessoa, Nome = "Cliente Teste" };
         public CrmDashboardResumo ObterDashboard(int idSalao) => new CrmDashboardResumo();
-        public CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim) => new CrmRelatorioResumo();
+        public CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim, int? idUsuarioResponsavel = null) => new CrmRelatorioResumo();
         public CrmPessoaPerfil ObterOuCriarPerfil(int idSalao, int idPessoa) => new CrmPessoaPerfil { IdPerfil = 1, IdSalao = idSalao, IdPessoa = idPessoa };
         public List<CrmCampanhaDestino> ListarDestinosCampanha(int idSalao, int idCampanha, int limit = 100) => new();
         public List<CrmEtapaFunil> ListarEtapas(int idSalao) => new() { new CrmEtapaFunil { IdEtapa = 1, IdSalao = idSalao, Nome = "Novo Lead", Ordem = 1, Ativa = true } };
         public List<CrmInteracao> ListarInteracoes(int idSalao, int idPessoa, int limit = 50) => new();
         public List<CrmOportunidade> ListarOportunidades(int idSalao, int? idPessoa, string? status) => new();
+        public List<Usuario> ListarResponsaveis(int idSalao) => new();
+        public CrmTarefa? ObterTarefa(int idSalao, int idTarefa) => new CrmTarefa { IdSalao = idSalao, IdTarefa = idTarefa, Titulo = "Tarefa Teste", DataVencimento = DateTime.Today };
         public List<CrmContatoCampanha> ListarPublicoCampanha(int idSalao, string segmento, string? filtroTag, int? diasInatividade, int? idPessoa) => new();
         public PagedResult<CrmCampanha> ListarCampanhas(int idSalao, int pageIndex, int pageSize, string? pesquisa = null, string? canal = null, string? segmento = null, string? status = null) => new() { PageIndex = pageIndex, PageSize = pageSize };
         public PagedResult<CrmClienteResumo> ListarClientesResumo(int idSalao, string? pesquisa, int pageIndex, int pageSize) => new() { PageIndex = pageIndex, PageSize = pageSize };
@@ -192,8 +199,12 @@ namespace CorteCor.Tests
         public Task AtualizarValoresTituloAsync(int idSalao, Guid idTitulo, decimal valorOriginal, decimal valorLiquidado, decimal valorAberto, string status, DateTime? dataLiquidacao, bool conciliado, string? observacoes) => Task.CompletedTask;
         public Task<FinanceiroDashboardResumo> ObterDashboardAsync(int idSalao, DateTime dataInicio, DateTime dataFim) => Task.FromResult(new FinanceiroDashboardResumo());
         public Task<FinanceiroRelatorioResumo> ObterRelatoriosAsync(int idSalao, DateTime dataInicio, DateTime dataFim) => Task.FromResult(new FinanceiroRelatorioResumo());
+        public Task<List<FinanceiroDreMovimento>> ObterMovimentosDreAsync(int idSalao, DateTime dataInicio, DateTime dataFim) => Task.FromResult(new List<FinanceiroDreMovimento>());
+        public Task<List<FinanceiroFluxoCaixaItem>> ObterFluxoCaixaAsync(int idSalao, DateTime dataInicio, DateTime dataFim, bool projetado) => Task.FromResult(new List<FinanceiroFluxoCaixaItem>());
         public Task<FinanceiroTitulo?> ObterTituloAsync(int idSalao, Guid idTitulo) => Task.FromResult<FinanceiroTitulo?>(null);
         public Task<List<ContaCaixa>> ListarContasCaixaAsync(int idSalao) => Task.FromResult(new List<ContaCaixa>());
+        public Task<List<PlanoContas>> ListarContasAnaliticasPorGrupoAsync(int idSalao, int idGrupoPlano) => Task.FromResult(new List<PlanoContas>());
+        public Task<List<PlanoContas>> ListarGruposPlanoContasAsync(int idSalao) => Task.FromResult(new List<PlanoContas>());
         public Task<List<PlanoContas>> ListarPlanoContasAsync(int idSalao) => Task.FromResult(new List<PlanoContas>());
         public Task<List<FinanceiroTitulo>> ListarTitulosPorVendaAsync(int idSalao, int idVendaProduto) => Task.FromResult(new List<FinanceiroTitulo>());
         public Task<PagedResult<FinanceiroTitulo>> ListarTitulosAsync(int idSalao, FinanceiroTituloFiltro filtro) => Task.FromResult(new PagedResult<FinanceiroTitulo>());

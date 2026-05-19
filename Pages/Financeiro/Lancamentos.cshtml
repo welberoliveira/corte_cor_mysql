@@ -1,4 +1,5 @@
-@page
+﻿@page
+@using CorteCor.Models
 @model CorteCor.Pages.Financeiro.LancamentosModel
 @{
     ViewData["Title"] = "Lançamentos Financeiros";
@@ -7,7 +8,6 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div>
         <h2 class="mb-1">Contas a pagar e a receber</h2>
-        <div class="text-muted">Controle de títulos manuais e recebíveis sincronizados dos pagamentos.</div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <a class="btn btn-primary" asp-page="/Financeiro/LancamentoCadastro">Novo Lançamento</a>
@@ -27,7 +27,7 @@
         <form method="get" class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label">Tipo</label>
-                <select class="form-select" name="Tipo">
+                <select class="form-select" name="Tipo" id="FiltroTipoTitulo">
                     <option value="">Todos</option>
                     <option value="Receber" selected="@(Model.Tipo == "Receber")">Receber</option>
                     <option value="Pagar" selected="@(Model.Tipo == "Pagar")">Pagar</option>
@@ -44,6 +44,14 @@
                 </select>
             </div>
             <div class="col-md-3">
+                <label class="form-label">Recorr&ecirc;ncia</label>
+                <select class="form-select" name="Recorrencia">
+                    <option value="">Todas</option>
+                    <option value="@RecorrenciaTipo.Nenhuma" selected="@(Model.Recorrencia == RecorrenciaTipo.Nenhuma)">Nenhuma</option>
+                    <option value="@RecorrenciaTipo.Mensal" selected="@(Model.Recorrencia == RecorrenciaTipo.Mensal)">Mensal</option>
+                </select>
+            </div>
+            <div class="col-md-3">
                 <label class="form-label">Data início</label>
                 <input type="date" class="form-control" name="DataInicio" value="@Model.DataInicio?.ToString("yyyy-MM-dd")" />
             </div>
@@ -52,17 +60,27 @@
                 <input type="date" class="form-control" name="DataFim" value="@Model.DataFim?.ToString("yyyy-MM-dd")" />
             </div>
             <div class="col-md-4">
-                <label class="form-label">Plano</label>
-                <select class="form-select" name="IdPlano">
+                <label class="form-label">Grupo do Plano de Contas</label>
+                <select class="form-select" name="IdGrupoPlano" id="FiltroGrupoPlanoContaId" data-smart-select data-smart-placeholder="Digite para pesquisar grupo...">
                     <option value="">Todos</option>
-                    @foreach (var plano in Model.Planos)
+                    @foreach (var grupo in Model.GruposPlano)
                     {
-                        <option value="@plano.IdPlano" selected="@(Model.IdPlano == plano.IdPlano)">@plano.Descricao</option>
+                        <option value="@grupo.IdPlano" selected="@(Model.IdGrupoPlano == grupo.IdPlano)">@grupo.Codigo - @grupo.NomeExibicao</option>
                     }
                 </select>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Conta</label>
+                <select class="form-select" name="IdPlano" id="FiltroPlanoContaId" data-smart-select data-smart-placeholder="Digite para pesquisar conta...">
+                    <option value="">Todas</option>
+                    @foreach (var plano in Model.ContasPlano)
+                    {
+                        <option value="@plano.IdPlano" selected="@(Model.IdPlano == plano.IdPlano)">@plano.Codigo - @plano.NomeExibicao</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Conta caixa</label>
                 <select class="form-select" name="IdConta">
                     <option value="">Todas</option>
                     @foreach (var conta in Model.Contas)
@@ -89,6 +107,88 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const grupoSelect = document.getElementById('FiltroGrupoPlanoContaId');
+        const contaSelect = document.getElementById('FiltroPlanoContaId');
+        const tipoSelect = document.getElementById('FiltroTipoTitulo');
+
+        if (!grupoSelect || !contaSelect || !tipoSelect) {
+            return;
+        }
+
+        function tipoAtual() {
+            return tipoSelect.value || '';
+        }
+
+        function limparContas() {
+            contaSelect.innerHTML = '<option value="">Todas</option>';
+            contaSelect.disabled = true;
+        }
+
+        async function carregarGrupos(tipo) {
+            grupoSelect.innerHTML = '<option value="">Todos</option>';
+            grupoSelect.disabled = true;
+            limparContas();
+
+            const response = await fetch(`${window.location.pathname}?handler=GruposPlano&tipo=${encodeURIComponent(tipo || '')}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                grupoSelect.innerHTML = '<option value="">Nao foi possivel carregar os grupos</option>';
+                return;
+            }
+
+            const grupos = await response.json();
+            grupos.forEach(function (grupo) {
+                const option = document.createElement('option');
+                option.value = grupo.id;
+                option.textContent = grupo.rotulo;
+                grupoSelect.appendChild(option);
+            });
+
+            grupoSelect.disabled = false;
+        }
+
+        async function carregarContas(idGrupo) {
+            contaSelect.innerHTML = '<option value="">Todas</option>';
+            contaSelect.disabled = !idGrupo;
+
+            if (!idGrupo) {
+                return;
+            }
+
+            const response = await fetch(`${window.location.pathname}?handler=ContasFilhas&idGrupo=${encodeURIComponent(idGrupo)}&tipo=${encodeURIComponent(tipoAtual())}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                contaSelect.innerHTML = '<option value="">Nao foi possivel carregar as contas</option>';
+                return;
+            }
+
+            const contas = await response.json();
+            contas.forEach(function (conta) {
+                const option = document.createElement('option');
+                option.value = conta.id;
+                option.textContent = conta.rotulo;
+                contaSelect.appendChild(option);
+            });
+        }
+
+        grupoSelect.addEventListener('change', function () {
+            carregarContas(grupoSelect.value);
+        });
+
+        tipoSelect.addEventListener('change', function () {
+            carregarGrupos(tipoAtual());
+        });
+
+        contaSelect.disabled = !grupoSelect.value;
+    });
+</script>
+
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white fw-semibold">Lançamentos</div>
     <div class="card-body">
@@ -113,6 +213,10 @@
                             <td>
                                 <div class="fw-semibold">@item.Descricao</div>
                                 <div class="small text-muted">@item.NomePlano</div>
+                                @if (item.Recorrencia == RecorrenciaTipo.Mensal)
+                                {
+                                    <span class="badge bg-info text-dark">Mensal</span>
+                                }
                             </td>
                             <td>@(string.IsNullOrWhiteSpace(item.NomePessoa) ? "-" : item.NomePessoa)</td>
                             <td>@item.DataVencimento.ToString("dd/MM/yyyy")</td>
@@ -177,7 +281,7 @@
                     @for (int i = 1; i <= Model.Titulos.TotalPages; i++)
                     {
                         <li class="page-item @(i == Model.Titulos.PageIndex ? "active" : "")">
-                            <a class="page-link" asp-page="/Financeiro/Lancamentos" asp-route-p="@i" asp-route-Tipo="@Model.Tipo" asp-route-Status="@Model.Status" asp-route-Pesquisa="@Model.Pesquisa" asp-route-IdPlano="@Model.IdPlano" asp-route-IdConta="@Model.IdConta" asp-route-DataInicio="@Model.DataInicio?.ToString("yyyy-MM-dd")" asp-route-DataFim="@Model.DataFim?.ToString("yyyy-MM-dd")" asp-route-SomenteVencidos="@Model.SomenteVencidos">@i</a>
+                            <a class="page-link" asp-page="/Financeiro/Lancamentos" asp-route-p="@i" asp-route-Tipo="@Model.Tipo" asp-route-Status="@Model.Status" asp-route-Recorrencia="@Model.Recorrencia" asp-route-Pesquisa="@Model.Pesquisa" asp-route-IdGrupoPlano="@Model.IdGrupoPlano" asp-route-IdPlano="@Model.IdPlano" asp-route-IdConta="@Model.IdConta" asp-route-DataInicio="@Model.DataInicio?.ToString("yyyy-MM-dd")" asp-route-DataFim="@Model.DataFim?.ToString("yyyy-MM-dd")" asp-route-SomenteVencidos="@Model.SomenteVencidos">@i</a>
                         </li>
                     }
                 </ul>

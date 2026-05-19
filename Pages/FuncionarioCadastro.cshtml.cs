@@ -2,6 +2,7 @@
 using CorteCor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Text;
 
 namespace CorteCor.Pages
 {
@@ -65,7 +66,7 @@ namespace CorteCor.Pages
             var funcionario = new Funcionario
             {
                 IdFuncionario = id,
-                Nome = form["nome"].ToString().Trim(),
+                Nome = NormalizarTexto(form["nome"]) ?? string.Empty,
                 IdSalao = idSalao,
                 seg = GetBool("seg", form),
                 seg_ini = GetTime("seg_ini", form),
@@ -168,6 +169,12 @@ namespace CorteCor.Pages
         private bool TryObterIdSalao(out int idSalao)
         {
             return int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao) && idSalao > 0;
+        }
+
+        private static string? NormalizarTexto(string? value)
+        {
+            var texto = value?.Trim();
+            return string.IsNullOrWhiteSpace(texto) ? null : texto.Normalize(NormalizationForm.FormC);
         }
     }
 }

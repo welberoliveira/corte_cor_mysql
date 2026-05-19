@@ -57,11 +57,7 @@
                     <td>@Salao.DataCadastro.ToShortDateString()</td>
                     <td>@Salao.Status</td>
                     <td class="actions">
-                        <form method="post" style="display: inline;">
-                            <input type="hidden" name="id" value="@Salao.IdSalao">
-                            <input type="hidden" name="action" value="alterar">
-                            <button class="btn btn-info">Alterar</button>
-                        </form>
+                        <a asp-page="/EmpresaCadastro" asp-route-id="@Salao.IdSalao" class="btn btn-info">Alterar</a>
 
                         @if (Salao.Status == "Ativo")
                         {

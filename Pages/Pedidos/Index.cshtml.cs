@@ -59,7 +59,7 @@ public class IndexModel : PageModel
             var resultado = await _pedidoService.ConverterEmVendaAsync(ObterIdSalao(), new PedidoConversaoInput
             {
                 IdPedido = idPedido,
-                RecebidoNaHora = true,
+                RecebidoNaHora = false,
                 EmitirNotaFiscalServico = emitirNotaFiscalServico
             }, ObterUsuarioOperador());
 

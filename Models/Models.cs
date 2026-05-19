@@ -176,9 +176,7 @@ public class Pessoa
     [Required(ErrorMessage = "Informe o nome da pessoa.")]
     [StringLength(160, ErrorMessage = "O nome deve ter no máximo 160 caracteres.")]
     public string Nome { get; set; }
-    [Phone(ErrorMessage = "Informe um telefone válido.")]
     public string Telefone { get; set; }
-    [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
     public string Email { get; set; }
     public DateTime? DataNascimento { get; set; }
     public int IdSalao { get; set; }
@@ -205,6 +203,7 @@ public class Pessoa
     // Tipo de Contato
     public bool IsCliente { get; set; } = true;
     public bool IsFornecedor { get; set; }
+    public bool IsLead { get; set; }
     public bool IsTransportador { get; set; }
 
     // Dados Contato e Estrangeiro
@@ -674,9 +673,19 @@ public class PlanoContas
     public int IdPlano { get; set; }
     public int IdSalao { get; set; }
     public string? Codigo { get; set; }
-    public string Descricao { get; set; }
-    public string Tipo { get; set; } // 'R' or 'D'
+    public string Descricao { get; set; } = string.Empty;
+    public string Tipo { get; set; } = "D"; // 'R' or 'D'
     public bool Ativo { get; set; } = true;
+    public string? Nome { get; set; }
+    public int? IdPlanoPai { get; set; }
+    public int Nivel { get; set; }
+    public string? TipoConta { get; set; }
+    public string? NaturezaSaldo { get; set; }
+    public bool AceitaLancamento { get; set; } = true;
+    public string? GrupoDRE { get; set; }
+    public int? OrdemDRE { get; set; }
+
+    public string NomeExibicao => !string.IsNullOrWhiteSpace(Nome) ? Nome! : Descricao;
 }
 
 public class ContaCaixa

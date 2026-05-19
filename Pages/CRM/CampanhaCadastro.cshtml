@@ -1,11 +1,12 @@
 @page
 @model CorteCor.Pages.CRM.CampanhaCadastroModel
 @{
-    ViewData["Title"] = "Cadastrar Campanha";
+    var editando = Model.CampanhaInput.IdCampanha > 0;
+    ViewData["Title"] = editando ? "Editar Campanha" : "Cadastrar Campanha";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2 class="mb-1">Cadastrar nova campanha</h2>
+    <h2 class="mb-1">@(editando ? "Editar campanha" : "Cadastrar nova campanha")</h2>
     <a class="btn btn-secondary" asp-page="/CRM/Campanhas">Voltar para campanhas</a>
 </div>
 
@@ -18,6 +19,7 @@
     <div class="card-header bg-white fw-semibold">Dados da campanha</div>
     <div class="card-body">
         <form method="post" asp-page-handler="Salvar" class="row g-3">
+            <input type="hidden" asp-for="CampanhaInput.IdCampanha" />
             <div class="col-md-6">
                 <label class="form-label">Nome</label>
                 <input class="form-control" asp-for="CampanhaInput.Nome" />
@@ -48,7 +50,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Cliente específico</label>
-                <select class="form-select" asp-for="CampanhaInput.IdPessoa">
+                <select class="form-select" asp-for="CampanhaInput.IdPessoa" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                     <option value="">Selecione...</option>
                     @foreach (var cliente in Model.Clientes)
                     {

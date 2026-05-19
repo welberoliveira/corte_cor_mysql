@@ -33,10 +33,10 @@ namespace CorteCor.Handlers
                         {
                             IdModelo = Convert.ToInt32(reader["IdModelo"]),
                             IdSalao = Convert.ToInt32(reader["IdSalao"]),
-                            TipoEvento = reader["TipoEvento"].ToString(),
-                            Conteudo = reader["Conteudo"].ToString(),
-                            Ativo = Convert.ToBoolean(reader["Ativo"]),
-                            DataAtualizacao = Convert.ToDateTime(reader["DataAtualizacao"])
+                            TipoEvento = reader["TipoEvento"] is DBNull ? string.Empty : reader["TipoEvento"].ToString() ?? string.Empty,
+                            Conteudo = reader["Conteudo"] is DBNull ? string.Empty : reader["Conteudo"].ToString() ?? string.Empty,
+                            Ativo = !(reader["Ativo"] is DBNull) && Convert.ToBoolean(reader["Ativo"]),
+                            DataAtualizacao = reader["DataAtualizacao"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataAtualizacao"])
                         });
                     }
                 }
@@ -62,10 +62,10 @@ namespace CorteCor.Handlers
                         {
                             IdModelo = Convert.ToInt32(reader["IdModelo"]),
                             IdSalao = Convert.ToInt32(reader["IdSalao"]),
-                            TipoEvento = reader["TipoEvento"].ToString(),
-                            Conteudo = reader["Conteudo"].ToString(),
-                            Ativo = Convert.ToBoolean(reader["Ativo"]),
-                            DataAtualizacao = Convert.ToDateTime(reader["DataAtualizacao"])
+                            TipoEvento = reader["TipoEvento"] is DBNull ? string.Empty : reader["TipoEvento"].ToString() ?? string.Empty,
+                            Conteudo = reader["Conteudo"] is DBNull ? string.Empty : reader["Conteudo"].ToString() ?? string.Empty,
+                            Ativo = !(reader["Ativo"] is DBNull) && Convert.ToBoolean(reader["Ativo"]),
+                            DataAtualizacao = reader["DataAtualizacao"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataAtualizacao"])
                         };
                     }
                 }
@@ -75,7 +75,7 @@ namespace CorteCor.Handlers
 
         public ModeloSMS ObterPorEvento(int idSalao, string tipoEvento)
         {
-            string query = "SELECT TOP 1 * FROM CorteCor_ModeloSMS WHERE IdSalao = @IdSalao AND TipoEvento = @TipoEvento AND Ativo = 1 ORDER BY DataAtualizacao DESC";
+            string query = "SELECT * FROM CorteCor_ModeloSMS WHERE IdSalao = @IdSalao AND TipoEvento = @TipoEvento AND Ativo = 1 ORDER BY DataAtualizacao DESC LIMIT 1";
 
             using (var connection = _dbHandler.GetConnection())
             using (var command = connection.CreateCommand(query))
@@ -91,10 +91,10 @@ namespace CorteCor.Handlers
                         {
                             IdModelo = Convert.ToInt32(reader["IdModelo"]),
                             IdSalao = Convert.ToInt32(reader["IdSalao"]),
-                            TipoEvento = reader["TipoEvento"].ToString(),
-                            Conteudo = reader["Conteudo"].ToString(),
-                            Ativo = Convert.ToBoolean(reader["Ativo"]),
-                            DataAtualizacao = Convert.ToDateTime(reader["DataAtualizacao"])
+                            TipoEvento = reader["TipoEvento"] is DBNull ? string.Empty : reader["TipoEvento"].ToString() ?? string.Empty,
+                            Conteudo = reader["Conteudo"] is DBNull ? string.Empty : reader["Conteudo"].ToString() ?? string.Empty,
+                            Ativo = !(reader["Ativo"] is DBNull) && Convert.ToBoolean(reader["Ativo"]),
+                            DataAtualizacao = reader["DataAtualizacao"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataAtualizacao"])
                         };
                     }
                 }

@@ -69,22 +69,15 @@
                             }
                         </td>
                         <td class="actions">
-                            <form method="post" style="display: inline;">
-                                <input type="hidden" name="id" value="@categoria.IdCategoria">
-                                <input type="hidden" name="action" value="alterar">
-                                <input type="hidden" name="q" value="@Model.q">
-                                <input type="hidden" name="incluirInativas" value="@Model.incluirInativas">
-                                <input type="hidden" name="p" value="@Model.Categorias.PageIndex">
-                                <button type="submit" class="btn btn-info btn-sm">Alterar</button>
-                            </form>
+                            <a asp-page="/CategoriaProdutoCadastro" asp-route-id="@categoria.IdCategoria" class="btn btn-info btn-sm">Alterar</a>
 
-                            <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta categoria?');">
+                            <form method="post" style="display: inline;" data-confirm-submit="Tem certeza que deseja inativar esta categoria?">
                                 <input type="hidden" name="id" value="@categoria.IdCategoria">
                                 <input type="hidden" name="action" value="excluir">
                                 <input type="hidden" name="q" value="@Model.q">
                                 <input type="hidden" name="incluirInativas" value="@Model.incluirInativas">
                                 <input type="hidden" name="p" value="@Model.Categorias.PageIndex">
-                                <button type="submit" class="btn btn-danger btn-sm">Inativar</button>
+                                <button type="submit" class="btn btn-danger btn-sm" data-loading-text="Inativando...">Inativar</button>
                             </form>
                         </td>
                     </tr>

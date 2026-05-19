@@ -1,0 +1,142 @@
+@page
+@model CorteCor.Pages.Suporte.ChamadosModel
+@using CorteCor.Models
+@{
+    ViewData["Title"] = Model.IsAdministrador ? "Gestão de Chamados" : "Chamados Abertos";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">@(Model.IsAdministrador ? "Gestão de chamados" : "Chamados abertos")</h2>
+        <div class="text-muted">Acompanhe solicitações enviadas pelo botão de suporte.</div>
+    </div>
+    <a class="btn btn-secondary" asp-page="/Dashboard">Voltar</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white fw-semibold">Filtros</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <select class="form-select" asp-for="Status">
+                    <option value="">Todos</option>
+                    @foreach (var status in Model.StatusDisponiveis)
+                    {
+                        <option value="@status" selected="@(Model.Status == status)">@status</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Pesquisa</label>
+                <input class="form-control" asp-for="Pesquisa" placeholder="Código, usuário, e-mail, origem ou mensagem" />
+            </div>
+            <div class="col-md-3 text-md-end">
+                <button class="btn btn-primary" type="submit">Filtrar</button>
+                <a class="btn btn-secondary" asp-page="/Suporte/Chamados">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Chamados</div>
+    <div class="card-body">
+        @if (Model.Chamados.Items.Any())
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Chamado</th>
+                            <th>Usuário</th>
+                            <th>Mensagem</th>
+                            <th>Status</th>
+                            <th>Atualização</th>
+                            @if (Model.IsAdministrador)
+                            {
+                                <th class="text-end">Gestão</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var chamado in Model.Chamados.Items)
+                        {
+                            var badgeClass = chamado.Status == SuporteChamadoStatus.Concluido
+                                ? "bg-success"
+                                : chamado.Status == SuporteChamadoStatus.Cancelado
+                                    ? "bg-secondary"
+                                    : chamado.Status == SuporteChamadoStatus.EmAnalise
+                                        ? "bg-info text-dark"
+                                        : "bg-warning text-dark";
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@chamado.IdChamado</div>
+                                    <div class="small text-muted">@chamado.DataCriacao.ToString("dd/MM/yyyy HH:mm")</div>
+                                    @if (!string.IsNullOrWhiteSpace(chamado.UrlOrigem))
+                                    {
+                                        <div class="small text-muted">@chamado.UrlOrigem</div>
+                                    }
+                                </td>
+                                <td>
+                                    <div>@(string.IsNullOrWhiteSpace(chamado.NomeUsuario) ? "-" : chamado.NomeUsuario)</div>
+                                    <div class="small text-muted">@(string.IsNullOrWhiteSpace(chamado.EmailUsuario) ? "-" : chamado.EmailUsuario)</div>
+                                </td>
+                                <td>
+                                    <div style="white-space: pre-wrap;">@chamado.Mensagem</div>
+                                    @if (!string.IsNullOrWhiteSpace(chamado.ErroEmail))
+                                    {
+                                        <div class="small text-danger mt-2">Falha ao enviar e-mail: @chamado.ErroEmail</div>
+                                    }
+                                </td>
+                                <td><span class="badge @badgeClass">@chamado.Status</span></td>
+                                <td>@chamado.DataAtualizacao.ToString("dd/MM/yyyy HH:mm")</td>
+                                @if (Model.IsAdministrador)
+                                {
+                                    <td class="text-end">
+                                        <form method="post" asp-page-handler="AtualizarStatus" class="d-flex gap-2 justify-content-end">
+                                            <input type="hidden" name="idChamado" value="@chamado.IdChamado" />
+                                            <input type="hidden" name="Status" value="@Model.Status" />
+                                            <input type="hidden" name="Pesquisa" value="@Model.Pesquisa" />
+                                            <input type="hidden" name="p" value="@Model.p" />
+                                            <select class="form-select form-select-sm" name="statusNovo" style="min-width: 150px;">
+                                                @foreach (var status in Model.StatusDisponiveis)
+                                                {
+                                                    <option value="@status" selected="@(chamado.Status == status)">@status</option>
+                                                }
+                                            </select>
+                                            <button class="btn btn-sm btn-primary" type="submit">Atualizar</button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-muted">Nenhum chamado encontrado.</div>
+        }
+
+        @if (Model.Chamados.TotalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center mb-0">
+                    @for (var i = 1; i <= Model.Chamados.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Chamados.PageIndex ? "active" : "")">
+                            <a class="page-link" asp-page="/Suporte/Chamados" asp-route-p="@i" asp-route-Status="@Model.Status" asp-route-Pesquisa="@Model.Pesquisa">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+</div>

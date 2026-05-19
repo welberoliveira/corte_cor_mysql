@@ -1,4 +1,5 @@
 @page
+@using CorteCor.Models
 @model CorteCor.Pages.Vendas.NovoModel
 @{
     ViewData["Title"] = Model.TituloTela;
@@ -47,6 +48,38 @@
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
+
+        .cliente-search-wrap {
+            position: relative;
+        }
+
+        .cliente-search-results {
+            position: absolute;
+            z-index: 1050;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 260px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+            display: none;
+        }
+
+        .cliente-search-option {
+            width: 100%;
+            border: 0;
+            background: #fff;
+            text-align: left;
+            padding: 0.65rem 0.8rem;
+        }
+
+        .cliente-search-option:hover,
+        .cliente-search-option:focus {
+            background: #eff6ff;
+        }
     </style>
 }
 
@@ -84,20 +117,12 @@
 
             <div class="col-md-8">
                 <label class="form-label">Cliente</label>
-                <select class="form-select" id="clienteSelect" @(modoSomenteLeitura ? "disabled" : null)>
-                    <option value="">Consumidor não identificado</option>
-                    @foreach (var cliente in Model.Contexto.Clientes)
-                    {
-                        if (Model.VendaExistente?.IdPessoa == cliente.IdPessoa)
-                        {
-                            <option value="@cliente.IdPessoa" selected>@cliente.Nome</option>
-                        }
-                        else
-                        {
-                            <option value="@cliente.IdPessoa">@cliente.Nome</option>
-                        }
-                    }
-                </select>
+                <div class="cliente-search-wrap">
+                    <input type="hidden" id="clienteSelect" value="@Model.VendaExistente?.IdPessoa" />
+                    <input class="form-control" id="clienteBuscaInput" value="@Model.VendaExistente?.NomeCliente" placeholder="Digite nome, CPF/CNPJ, e-mail ou telefone" autocomplete="off" @(modoSomenteLeitura ? "disabled" : null) />
+                    <div class="cliente-search-results" id="clienteBuscaResults"></div>
+                </div>
+                <div class="form-text">Deixe em branco para consumidor n&atilde;o identificado.</div>
             </div>
 
             <div class="col-md-4">
@@ -119,6 +144,65 @@
             </div>
 
             <div class="col-md-4">
+                <label class="form-label">Recorr&ecirc;ncia</label>
+                <select class="form-select" id="recorrenciaSelect" @(modoSomenteLeitura ? "disabled" : null)>
+                    @if (Model.VendaExistente?.Recorrencia == RecorrenciaTipo.Mensal)
+                    {
+                        <option value="Nenhuma">Nenhuma</option>
+                        <option value="Mensal" selected>Mensal</option>
+                    }
+                    else
+                    {
+                        <option value="Nenhuma" selected>Nenhuma</option>
+                        <option value="Mensal">Mensal</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Parcelas</label>
+                <input type="number" class="form-control" id="numeroParcelasInput" value="1" min="1" max="60" step="1" @(modoSomenteLeitura ? "readonly" : null) />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Primeiro vencimento</label>
+                <input type="date" class="form-control" id="primeiroVencimentoInput" value="@DateTime.Today.ToString("yyyy-MM-dd")" @(modoSomenteLeitura ? "readonly" : null) />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Conta caixa</label>
+                <select class="form-select" id="contaCaixaSelect" @(modoSomenteLeitura ? "disabled" : null)>
+                    <option value="">Selecione quando recebido na hora</option>
+                    @foreach (var conta in Model.ContasCaixa)
+                    {
+                        <option value="@conta.IdConta">@conta.Nome</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Grupo do Plano de Contas</label>
+                <select class="form-select" id="grupoPlanoContaSelect" data-smart-select data-smart-placeholder="Digite para pesquisar grupo..." @(modoSomenteLeitura ? "disabled" : null)>
+                    <option value="">Selecione o grupo</option>
+                    @foreach (var grupo in Model.GruposPlano)
+                    {
+                        <option value="@grupo.IdPlano" selected="@(Model.GrupoPlanoContaId == grupo.IdPlano)">@grupo.Codigo - @grupo.NomeExibicao</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Conta do Plano de Contas</label>
+                <select class="form-select" id="planoContaSelect" data-selected="@Model.IdPlanoPadraoVenda" data-smart-select data-smart-placeholder="Digite para pesquisar conta..." @(modoSomenteLeitura ? "disabled" : null)>
+                    <option value="">Selecione a conta</option>
+                    @foreach (var plano in Model.ContasPlano)
+                    {
+                        <option value="@plano.IdPlano" selected="@(Model.IdPlanoPadraoVenda == plano.IdPlano)">@plano.Codigo - @plano.NomeExibicao</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-4">
                 <label class="form-label">Tipo do item</label>
                 <select class="form-select" id="tipoItemSelect" @(modoSomenteLeitura ? "disabled" : null)>
                     <option value="Produto">Produto</option>
@@ -128,12 +212,12 @@
 
             <div class="col-md-5">
                 <label class="form-label">Item</label>
-                <select class="form-select" id="catalogoSelect" @(modoSomenteLeitura ? "disabled" : null)></select>
+                <select class="form-select" id="catalogoSelect" data-smart-select data-smart-placeholder="Digite para pesquisar item..." @(modoSomenteLeitura ? "disabled" : null)></select>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">Quantidade</label>
-                <input type="number" id="quantidadeInput" class="form-control" value="1" min="0.001" step="0.001" @(modoSomenteLeitura ? "disabled" : null) />
+                <input type="number" id="quantidadeInput" class="form-control" value="1" min="1" step="1" @(modoSomenteLeitura ? "disabled" : null) />
             </div>
 
             <div class="col-md-4">
@@ -235,6 +319,7 @@
         const servicos = @Html.Raw(Model.ServicosJson);
         const itensIniciais = @Html.Raw(Model.ItensJson);
         const modoSomenteLeitura = @(modoSomenteLeitura ? "true" : "false");
+        const clientesBuscaUrl = '@Url.Page("/API/Clientes")';
         let carrinho = Array.isArray(itensIniciais) ? [...itensIniciais] : [];
 
         const tipoItemSelect = document.getElementById('tipoItemSelect');
@@ -245,9 +330,134 @@
         const payloadJsonInput = document.getElementById('payloadJson');
         const vendaForm = document.getElementById('vendaForm');
         const resumoCarrinhoLabel = document.getElementById('resumoCarrinhoLabel');
+        const clienteHidden = document.getElementById('clienteSelect');
+        const clienteBuscaInput = document.getElementById('clienteBuscaInput');
+        const clienteBuscaResults = document.getElementById('clienteBuscaResults');
+        const grupoPlanoContaSelect = document.getElementById('grupoPlanoContaSelect');
+        const planoContaSelect = document.getElementById('planoContaSelect');
+        const contaCaixaSelect = document.getElementById('contaCaixaSelect');
+        const recebidoNaHoraCheck = document.getElementById('recebidoNaHoraCheck');
+        let clienteBuscaTimer = null;
 
         function formatCurrency(value) {
             return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function esconderResultadoClientes() {
+            clienteBuscaResults.style.display = 'none';
+            clienteBuscaResults.innerHTML = '';
+        }
+
+        function selecionarCliente(cliente) {
+            clienteHidden.value = cliente?.id || '';
+            clienteBuscaInput.value = cliente?.nome || '';
+            esconderResultadoClientes();
+        }
+
+        async function buscarClientes(termo) {
+            const response = await fetch(`${clientesBuscaUrl}?q=${encodeURIComponent(termo || '')}&somenteClientes=true`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                return [];
+            }
+
+            return await response.json();
+        }
+
+        function renderClientes(clientes) {
+            if (!clientes.length) {
+                clienteBuscaResults.innerHTML = '<div class="px-3 py-2 text-muted">Nenhum cliente encontrado.</div>';
+                clienteBuscaResults.style.display = 'block';
+                return;
+            }
+
+            clienteBuscaResults.innerHTML = clientes.map(cliente => `
+                <button type="button" class="cliente-search-option" data-id="${cliente.id}" data-nome="${cliente.nome}">
+                    <span class="fw-semibold">${cliente.nome}</span>
+                    <span class="d-block small text-muted">${cliente.rotulo}</span>
+                </button>
+            `).join('');
+            clienteBuscaResults.querySelectorAll('.cliente-search-option').forEach(botao => {
+                botao.addEventListener('click', () => selecionarCliente({
+                    id: botao.dataset.id,
+                    nome: botao.dataset.nome
+                }));
+            });
+            clienteBuscaResults.style.display = 'block';
+        }
+
+        if (clienteBuscaInput && !modoSomenteLeitura) {
+            clienteBuscaInput.addEventListener('input', () => {
+                clienteHidden.value = '';
+                clearTimeout(clienteBuscaTimer);
+                const termo = clienteBuscaInput.value.trim();
+                clienteBuscaTimer = setTimeout(async () => renderClientes(await buscarClientes(termo)), 250);
+            });
+            clienteBuscaInput.addEventListener('focus', async () => {
+                if (!clienteBuscaInput.value.trim()) {
+                    renderClientes(await buscarClientes(''));
+                }
+            });
+            document.addEventListener('click', event => {
+                if (!event.target.closest('.cliente-search-wrap')) {
+                    esconderResultadoClientes();
+                }
+            });
+        }
+
+        async function carregarContasPlano(idGrupo, selectedId) {
+            planoContaSelect.innerHTML = '<option value="">Selecione a conta</option>';
+            planoContaSelect.disabled = !idGrupo || modoSomenteLeitura;
+            if (!idGrupo) {
+                return;
+            }
+
+            const response = await fetch(`${window.location.pathname}?handler=ContasFilhas&idGrupo=${encodeURIComponent(idGrupo)}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                planoContaSelect.innerHTML = '<option value="">Nao foi possivel carregar as contas</option>';
+                return;
+            }
+
+            const contas = await response.json();
+            contas.forEach(conta => {
+                const option = document.createElement('option');
+                option.value = conta.id;
+                option.textContent = conta.rotulo;
+                if (selectedId && String(selectedId) === String(conta.id)) {
+                    option.selected = true;
+                }
+                planoContaSelect.appendChild(option);
+            });
+        }
+
+        function atualizarObrigatoriedadeContaCaixa() {
+            contaCaixaSelect.required = recebidoNaHoraCheck.checked;
+        }
+
+        function formatQuantity(value) {
+            return Math.trunc(Number(value || 0)).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+        }
+
+        function formatItemQuantity(item) {
+            return item.tipoItem === 'Produto'
+                ? formatQuantity(item.quantidade)
+                : Number(item.quantidade || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+        }
+
+        function configurarQuantidadeInput() {
+            const isProduto = tipoItemSelect.value === 'Produto';
+            quantidadeInput.min = isProduto ? '1' : '0.001';
+            quantidadeInput.step = isProduto ? '1' : '0.001';
+
+            if (isProduto) {
+                const quantidade = Number(quantidadeInput.value || 1);
+                quantidadeInput.value = String(Math.max(1, Math.trunc(quantidade)));
+            }
         }
 
         function getCatalogoAtual() {
@@ -271,7 +481,7 @@
                 const option = document.createElement('option');
                 option.value = item.id;
                 const detalhe = item.tipo === 'Produto' && item.controlaEstoque
-                    ? ` | estoque: ${Number(item.estoqueAtual || 0).toFixed(3)}`
+                    ? ` | estoque: ${formatQuantity(item.estoqueAtual)}`
                     : '';
                 option.textContent = `${item.nome} | ${formatCurrency(item.valor)}${detalhe}`;
                 option.dataset.valor = item.valor;
@@ -281,6 +491,7 @@
             }
 
             valorUnitarioInput.value = Number(catalogo[0].valor || 0).toFixed(2);
+            configurarQuantidadeInput();
         }
 
         function atualizarValorCatalogo() {
@@ -311,7 +522,7 @@
                     <tr>
                         <td><span class="badge ${item.tipoItem === 'Servico' ? 'bg-primary' : 'bg-success'}">${item.tipoItem}</span></td>
                         <td>${item.descricao}</td>
-                        <td class="text-end">${Number(item.quantidade).toFixed(3)}</td>
+                        <td class="text-end">${formatItemQuantity(item)}</td>
                         <td class="text-end">${formatCurrency(item.valorUnitario)}</td>
                         <td class="text-end fw-semibold">${formatCurrency(totalItem)}</td>
                         <td class="text-end">${botaoAcao}</td>
@@ -350,6 +561,11 @@
                     return;
                 }
 
+                if (selecionado.tipo === 'Produto' && !Number.isInteger(quantidade)) {
+                    alert('Informe uma quantidade inteira para produtos de estoque.');
+                    return;
+                }
+
                 carrinho.push({
                     tipoItem: selecionado.tipo,
                     idProduto: selecionado.tipo === 'Produto' ? selecionado.id : null,
@@ -378,13 +594,32 @@
 
             const meioPagamentoSelect = document.getElementById('meioPagamentoSelect');
             const meioSelecionado = meioPagamentoSelect.options[meioPagamentoSelect.selectedIndex];
+            const recebidoNaHora = recebidoNaHoraCheck.checked;
+            const numeroParcelas = Math.max(1, Math.trunc(Number(document.getElementById('numeroParcelasInput').value || 1)));
+
+            if (!planoContaSelect.value) {
+                event.preventDefault();
+                alert('Selecione uma conta analitica do plano de contas para a venda.');
+                return;
+            }
+
+            if (recebidoNaHora && !contaCaixaSelect.value) {
+                event.preventDefault();
+                alert('Selecione a conta caixa que recebeu o valor da venda.');
+                return;
+            }
 
             const payload = {
                 idPessoa: document.getElementById('clienteSelect').value ? Number(document.getElementById('clienteSelect').value) : null,
                 idMeioPagamento: meioPagamentoSelect.value ? Number(meioPagamentoSelect.value) : null,
+                idPlano: planoContaSelect.value ? Number(planoContaSelect.value) : null,
+                idConta: contaCaixaSelect.value ? Number(contaCaixaSelect.value) : null,
                 tipoPagamento: meioSelecionado?.dataset?.nome || null,
-                recebidoNaHora: document.getElementById('recebidoNaHoraCheck').checked,
+                recorrencia: document.getElementById('recorrenciaSelect').value || 'Nenhuma',
+                recebidoNaHora,
                 emitirNotaFiscalServico: document.getElementById('emitirNotaServicoCheck').checked,
+                numeroParcelas,
+                primeiroVencimento: document.getElementById('primeiroVencimentoInput').value || null,
                 desconto: Number(document.getElementById('descontoInput').value || 0),
                 acrescimo: Number(document.getElementById('acrescimoInput').value || 0),
                 observacoes: document.getElementById('observacoesInput').value || null,
@@ -402,10 +637,16 @@
 
         tipoItemSelect.addEventListener('change', preencherCatalogo);
         catalogoSelect.addEventListener('change', atualizarValorCatalogo);
+        grupoPlanoContaSelect.addEventListener('change', () => carregarContasPlano(grupoPlanoContaSelect.value, null));
+        recebidoNaHoraCheck.addEventListener('change', atualizarObrigatoriedadeContaCaixa);
         document.getElementById('descontoInput').addEventListener('input', renderCarrinho);
         document.getElementById('acrescimoInput').addEventListener('input', renderCarrinho);
 
         preencherCatalogo();
+        atualizarObrigatoriedadeContaCaixa();
+        if (grupoPlanoContaSelect.value && planoContaSelect.dataset.selected) {
+            carregarContasPlano(grupoPlanoContaSelect.value, planoContaSelect.dataset.selected);
+        }
         renderCarrinho();
     </script>
 }

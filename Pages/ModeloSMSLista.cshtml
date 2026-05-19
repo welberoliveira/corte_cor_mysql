@@ -30,10 +30,11 @@
     <tbody>
         @foreach (var m in Model.Modelos)
         {
+            var conteudo = m.Conteudo ?? string.Empty;
             <tr>
                 <td>@m.TipoEvento</td>
                 <td class="d-none d-md-table-cell">
-                    @(m.Conteudo.Length > 50 ? m.Conteudo.Substring(0, 50) + "..." : m.Conteudo)
+                    @(conteudo.Length > 50 ? conteudo.Substring(0, 50) + "..." : conteudo)
                 </td>
                 <td>@(m.Ativo ? "Sim" : "Não")</td>
                 <td>

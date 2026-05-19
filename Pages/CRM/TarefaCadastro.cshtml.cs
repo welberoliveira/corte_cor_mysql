@@ -24,6 +24,9 @@ namespace CorteCor.Pages.CRM
         [BindProperty(SupportsGet = true)]
         public int? IdPessoa { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int? IdTarefa { get; set; }
+
         [BindProperty]
         public CrmTarefa TarefaInput { get; set; } = new();
 
@@ -35,6 +38,26 @@ namespace CorteCor.Pages.CRM
 
         public IActionResult OnGet()
         {
+            if (IdTarefa.HasValue && IdTarefa.Value > 0)
+            {
+                if (!TryObterIdSalao(out var idSalao))
+                {
+                    return RedirectToPage("/Index");
+                }
+
+                var tarefa = _crmService.ObterTarefa(idSalao, IdTarefa.Value);
+                if (tarefa == null)
+                {
+                    FlashMessage = "Tarefa não encontrada.";
+                    FlashType = "warning";
+                    return RedirectToPage("/CRM/Tarefas", new { IdPessoa });
+                }
+
+                TarefaInput = tarefa;
+                IdPessoa = tarefa.IdPessoa;
+                return Carregar();
+            }
+
             TarefaInput = new CrmTarefa
             {
                 IdPessoa = IdPessoa,
@@ -58,8 +81,9 @@ namespace CorteCor.Pages.CRM
                 }
 
                 TarefaInput.IdUsuarioResponsavel ??= ObterIdUsuario();
+                var editando = TarefaInput.IdTarefa > 0;
                 _crmService.SalvarTarefa(idSalao, TarefaInput);
-                FlashMessage = "Tarefa criada com sucesso.";
+                FlashMessage = editando ? "Tarefa atualizada com sucesso." : "Tarefa criada com sucesso.";
                 FlashType = "success";
                 return RedirectToPage("/CRM/Tarefas", new { IdPessoa = TarefaInput.IdPessoa });
             }

@@ -54,6 +54,38 @@
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
+
+        .cliente-search-wrap {
+            position: relative;
+        }
+
+        .cliente-search-results {
+            position: absolute;
+            z-index: 1050;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 260px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+            display: none;
+        }
+
+        .cliente-search-option {
+            width: 100%;
+            border: 0;
+            background: #fff;
+            text-align: left;
+            padding: 0.65rem 0.8rem;
+        }
+
+        .cliente-search-option:hover,
+        .cliente-search-option:focus {
+            background: #eff6ff;
+        }
     </style>
 }
 
@@ -82,13 +114,11 @@
 
             <div class="col-md-8">
                 <label class="form-label">Cliente</label>
-                <select class="form-select" id="clienteSelect" required>
-                    <option value="">Selecione...</option>
-                    @foreach (var cliente in Model.Contexto.Clientes)
-                    {
-                        <option value="@cliente.IdPessoa">@cliente.Nome</option>
-                    }
-                </select>
+                <div class="cliente-search-wrap">
+                    <input type="hidden" id="clienteSelect" />
+                    <input class="form-control" id="clienteBuscaInput" placeholder="Digite nome, CPF/CNPJ, e-mail ou telefone" autocomplete="off" required />
+                    <div class="cliente-search-results" id="clienteBuscaResults"></div>
+                </div>
             </div>
 
             <div class="col-md-4">
@@ -117,12 +147,12 @@
 
             <div class="col-md-6">
                 <label class="form-label">Item</label>
-                <select class="form-select" id="catalogoSelect"></select>
+                <select class="form-select" id="catalogoSelect" data-smart-select data-smart-placeholder="Digite para pesquisar item..."></select>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">Quantidade</label>
-                <input type="number" id="quantidadeInput" class="form-control" value="1" min="0.001" step="0.001" />
+                <input type="number" id="quantidadeInput" class="form-control" value="1" min="1" step="1" />
             </div>
 
             <div class="col-md-3">
@@ -201,6 +231,7 @@
     <script>
         const produtos = @Html.Raw(Model.ProdutosJson);
         const servicos = @Html.Raw(Model.ServicosJson);
+        const clientesBuscaUrl = '@Url.Page("/API/Clientes")';
         let carrinho = [];
 
         const clienteSelect = document.getElementById('clienteSelect');
@@ -218,9 +249,93 @@
         const totalPedidoLabel = document.getElementById('totalPedidoLabel');
         const resumoPedidoItems = document.getElementById('resumoPedidoItems');
         const pedidoForm = document.getElementById('pedidoForm');
+        const clienteBuscaInput = document.getElementById('clienteBuscaInput');
+        const clienteBuscaResults = document.getElementById('clienteBuscaResults');
+        let clienteBuscaTimer = null;
 
         function moeda(valor) {
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+        }
+
+        function esconderResultadoClientes() {
+            clienteBuscaResults.style.display = 'none';
+            clienteBuscaResults.innerHTML = '';
+        }
+
+        function selecionarCliente(cliente) {
+            clienteSelect.value = cliente?.id || '';
+            clienteBuscaInput.value = cliente?.nome || '';
+            esconderResultadoClientes();
+        }
+
+        async function buscarClientes(termo) {
+            const response = await fetch(`${clientesBuscaUrl}?q=${encodeURIComponent(termo || '')}&somenteClientes=true`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            return response.ok ? await response.json() : [];
+        }
+
+        function renderClientes(clientes) {
+            if (!clientes.length) {
+                clienteBuscaResults.innerHTML = '<div class="px-3 py-2 text-muted">Nenhum cliente encontrado.</div>';
+                clienteBuscaResults.style.display = 'block';
+                return;
+            }
+
+            clienteBuscaResults.innerHTML = clientes.map(cliente => `
+                <button type="button" class="cliente-search-option" data-id="${cliente.id}" data-nome="${cliente.nome}">
+                    <span class="fw-semibold">${cliente.nome}</span>
+                    <span class="d-block small text-muted">${cliente.rotulo}</span>
+                </button>
+            `).join('');
+            clienteBuscaResults.querySelectorAll('.cliente-search-option').forEach(botao => {
+                botao.addEventListener('click', () => selecionarCliente({
+                    id: botao.dataset.id,
+                    nome: botao.dataset.nome
+                }));
+            });
+            clienteBuscaResults.style.display = 'block';
+        }
+
+        clienteBuscaInput.addEventListener('input', () => {
+            clienteSelect.value = '';
+            clearTimeout(clienteBuscaTimer);
+            const termo = clienteBuscaInput.value.trim();
+            clienteBuscaTimer = setTimeout(async () => renderClientes(await buscarClientes(termo)), 250);
+        });
+
+        clienteBuscaInput.addEventListener('focus', async () => {
+            if (!clienteBuscaInput.value.trim()) {
+                renderClientes(await buscarClientes(''));
+            }
+        });
+
+        document.addEventListener('click', event => {
+            if (!event.target.closest('.cliente-search-wrap')) {
+                esconderResultadoClientes();
+            }
+        });
+
+        function quantidadeInteira(valor) {
+            return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Math.trunc(Number(valor || 0)));
+        }
+
+        function quantidadeItem(item) {
+            return item.tipoItem === 'Produto'
+                ? quantidadeInteira(item.quantidade)
+                : new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 3 }).format(Number(item.quantidade || 0));
+        }
+
+        function configurarQuantidadeInput() {
+            const isProduto = tipoItemSelect.value === 'Produto';
+            quantidadeInput.min = isProduto ? '1' : '0.001';
+            quantidadeInput.step = isProduto ? '1' : '0.001';
+
+            if (isProduto) {
+                const quantidade = Number(quantidadeInput.value || 1);
+                quantidadeInput.value = String(Math.max(1, Math.trunc(quantidade)));
+            }
         }
 
         function getCatalogoAtual() {
@@ -244,12 +359,13 @@
                 const option = document.createElement('option');
                 option.value = item.id;
                 option.textContent = item.tipo === 'Produto'
-                    ? `${item.nome} | ${moeda(item.valor)} | estoque: ${Number(item.estoqueAtual || 0).toFixed(3)}`
+                    ? `${item.nome} | ${moeda(item.valor)} | estoque: ${quantidadeInteira(item.estoqueAtual)}`
                     : `${item.nome} | ${moeda(item.valor)}`;
                 catalogoSelect.appendChild(option);
             }
 
             atualizarValorDoCatalogo();
+            configurarQuantidadeInput();
         }
 
         function atualizarValorDoCatalogo() {
@@ -283,7 +399,7 @@
                         <div class="fw-semibold">${item.descricao}</div>
                         <div class="small text-muted">${item.tipoItem === 'Produto' ? 'Item de estoque' : 'Item de serviço'}</div>
                     </td>
-                    <td class="text-end">${Number(item.quantidade).toFixed(3)}</td>
+                    <td class="text-end">${quantidadeItem(item)}</td>
                     <td class="text-end">${moeda(item.valorUnitario)}</td>
                     <td class="text-end">${moeda(item.valorTotal)}</td>
                     <td class="text-end"><button type="button" class="btn btn-sm btn-danger" data-index="${index}">Remover</button></td>
@@ -314,6 +430,11 @@
 
             if (quantidade <= 0) {
                 alert('Informe uma quantidade maior que zero.');
+                return;
+            }
+
+            if (selected.tipo === 'Produto' && !Number.isInteger(quantidade)) {
+                alert('Informe uma quantidade inteira para produtos de estoque.');
                 return;
             }
 

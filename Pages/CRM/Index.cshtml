@@ -59,20 +59,38 @@
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white fw-semibold">Funil de oportunidades</div>
             <div class="card-body">
-                @if (Model.Dashboard.Funil.Any())
+                @Html.AntiForgeryToken()
+                @if (Model.Etapas.Any())
                 {
-                    <div class="d-flex flex-column gap-3">
-                        @foreach (var etapa in Model.Dashboard.Funil)
+                    <div class="crm-kanban" data-move-url="@Url.Page("/CRM/Index", "MoverOportunidade")">
+                        @foreach (var etapa in Model.Etapas)
                         {
-                            <div class="crm-funil-item">
-                                <div class="d-flex justify-content-between">
-                                    <strong>@etapa.NomeEtapa</strong>
-                                    <span class="text-muted">@etapa.Quantidade item(ns)</span>
+                            var oportunidadesEtapa = Model.OportunidadesKanban.Where(o => o.IdEtapa == etapa.IdEtapa).ToList();
+                            var valorEtapa = oportunidadesEtapa.Sum(o => o.ValorEstimado);
+                            <section class="crm-kanban-column" data-etapa-id="@etapa.IdEtapa">
+                                <div class="crm-kanban-header">
+                                    <strong>@etapa.Nome</strong>
+                                    <span class="text-muted">@oportunidadesEtapa.Count item(ns)</span>
                                 </div>
-                                <div class="small text-muted">Valor estimado: R$ @etapa.ValorTotal.ToString("N2")</div>
-                            </div>
+                                <div class="small text-muted mb-2">Valor estimado: R$ @valorEtapa.ToString("N2")</div>
+                                <div class="crm-kanban-dropzone">
+                                    @foreach (var oportunidade in oportunidadesEtapa)
+                                    {
+                                        <article class="crm-opportunity-card" draggable="true" data-oportunidade-id="@oportunidade.IdOportunidade">
+                                            <div class="fw-semibold">@oportunidade.Titulo</div>
+                                            <div class="small text-muted">@oportunidade.NomePessoa</div>
+                                            <div class="small text-success">R$ @oportunidade.ValorEstimado.ToString("N2")</div>
+                                        </article>
+                                    }
+                                    @if (!oportunidadesEtapa.Any())
+                                    {
+                                        <div class="crm-kanban-empty">Sem oportunidades</div>
+                                    }
+                                </div>
+                            </section>
                         }
                     </div>
+                    <div class="small text-muted mt-2" id="crmKanbanFeedback" role="status"></div>
                 }
                 else
                 {
@@ -228,10 +246,144 @@
 </div>
 
 <style>
-    .crm-funil-item {
+    .crm-kanban {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: .75rem;
+        overflow-x: auto;
+        padding-bottom: .25rem;
+    }
+
+    .crm-kanban-column {
         padding: .85rem 1rem;
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: .75rem;
+        border-radius: .5rem;
+        min-height: 180px;
+    }
+
+    .crm-kanban-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+    }
+
+    .crm-kanban-dropzone {
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        min-height: 96px;
+    }
+
+    .crm-kanban-column.crm-kanban-over {
+        border-color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .crm-opportunity-card {
+        cursor: grab;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: .45rem;
+        padding: .7rem .8rem;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+    }
+
+    .crm-opportunity-card:active {
+        cursor: grabbing;
+    }
+
+    .crm-opportunity-card.crm-dragging {
+        opacity: .55;
+    }
+
+    .crm-kanban-empty {
+        color: #64748b;
+        border: 1px dashed #cbd5e1;
+        border-radius: .45rem;
+        padding: .7rem;
+        text-align: center;
     }
 </style>
+
+@section Scripts {
+    <script>
+        (() => {
+            const kanban = document.querySelector('.crm-kanban');
+            if (!kanban) {
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            const feedback = document.getElementById('crmKanbanFeedback');
+            let draggedCard = null;
+
+            kanban.querySelectorAll('.crm-opportunity-card').forEach(card => {
+                card.addEventListener('dragstart', event => {
+                    draggedCard = card;
+                    card.classList.add('crm-dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', card.dataset.oportunidadeId ?? '');
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('crm-dragging');
+                    draggedCard = null;
+                });
+            });
+
+            kanban.querySelectorAll('.crm-kanban-column').forEach(column => {
+                column.addEventListener('dragover', event => {
+                    event.preventDefault();
+                    column.classList.add('crm-kanban-over');
+                });
+
+                column.addEventListener('dragleave', () => {
+                    column.classList.remove('crm-kanban-over');
+                });
+
+                column.addEventListener('drop', async event => {
+                    event.preventDefault();
+                    column.classList.remove('crm-kanban-over');
+
+                    const idOportunidade = event.dataTransfer.getData('text/plain') || draggedCard?.dataset.oportunidadeId;
+                    const idEtapa = column.dataset.etapaId;
+                    if (!idOportunidade || !idEtapa) {
+                        return;
+                    }
+
+                    if (feedback) {
+                        feedback.textContent = 'Atualizando oportunidade...';
+                    }
+
+                    const body = new URLSearchParams();
+                    body.set('idOportunidade', idOportunidade);
+                    body.set('idEtapa', idEtapa);
+
+                    try {
+                        const response = await fetch(kanban.dataset.moveUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                                'RequestVerificationToken': token
+                            },
+                            body
+                        });
+
+                        if (!response.ok) {
+                            const data = await response.json().catch(() => null);
+                            throw new Error(data?.message || 'Não foi possível mover a oportunidade.');
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        if (feedback) {
+                            feedback.textContent = error.message;
+                        }
+                    }
+                });
+            });
+        })();
+    </script>
+}

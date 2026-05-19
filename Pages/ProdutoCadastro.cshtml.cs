@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CorteCor.Pages
@@ -212,6 +213,13 @@ namespace CorteCor.Pages
 
             if (Produto.ControlarEstoque)
             {
+                if (!EhQuantidadeInteira(Produto.EstoqueAtual) || !EhQuantidadeInteira(Produto.EstoqueMinimo))
+                {
+                    Mensagem = "Os valores de estoque devem ser numeros inteiros.";
+                    MensagemTipo = "warning";
+                    return false;
+                }
+
                 if (Produto.EstoqueAtual.HasValue && Produto.EstoqueAtual < 0 || Produto.EstoqueMinimo.HasValue && Produto.EstoqueMinimo < 0)
                 {
                     Mensagem = "Os valores de estoque não podem ser negativos.";
@@ -242,6 +250,11 @@ namespace CorteCor.Pages
             }
 
             return true;
+        }
+
+        private static bool EhQuantidadeInteira(decimal? valor)
+        {
+            return !valor.HasValue || decimal.Truncate(valor.Value) == valor.Value;
         }
 
         private static decimal ParseMoney(string valor)
@@ -289,7 +302,7 @@ namespace CorteCor.Pages
         private static string? NormalizarTexto(string valor)
         {
             var texto = valor?.Trim();
-            return string.IsNullOrWhiteSpace(texto) ? null : texto;
+            return string.IsNullOrWhiteSpace(texto) ? null : texto.Normalize(NormalizationForm.FormC);
         }
 
         private bool TryObterIdSalao(out int idSalao)

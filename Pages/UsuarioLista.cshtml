@@ -80,11 +80,7 @@
                     <td>@Usuario.DataEntrada.ToShortDateString()</td>
                     <td>@Usuario.Status</td>
                     <td class="actions flex-nowrap">
-                        <form method="post" style="display: inline;">
-                            <input type="hidden" name="id" value="@Usuario.IdUsuario">
-                            <input type="hidden" name="action" value="alterar">
-                            <button class="btn btn-info">Alterar</button>
-                        </form>
+                        <a asp-page="/UsuarioCadastro" asp-route-id="@Usuario.IdUsuario" class="btn btn-info">Alterar</a>
                         @if (Usuario.Status == "Ativo")
                         {
                             <form method="post" style="display: inline;">

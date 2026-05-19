@@ -23,7 +23,7 @@ namespace CorteCor.Pages
         }
 
         [BindProperty]
-        public ModeloEmail Modelo { get; set; }
+        public ModeloEmail Modelo { get; set; } = new();
 
         public List<SelectListItem> EventosOptions { get; set; } = new List<SelectListItem>
         {
@@ -63,18 +63,21 @@ namespace CorteCor.Pages
             var idSalaoClaim = User.FindFirst("IdSalao");
             if (idSalaoClaim != null && int.TryParse(idSalaoClaim.Value, out int idSalao))
             {
-                Modelo.IdSalao = idSalao;
-
-                var existente = _handler.ObterPorEventoIncluindoInativos(idSalao, Modelo.TipoEvento, Modelo.IdModelo > 0 ? Modelo.IdModelo : null);
-                if (existente != null)
-                {
-                    ModeloExistenteId = existente.IdModelo;
-                    Mensagem = "Já existe um modelo de e-mail criado para este evento. Edite o modelo existente ou escolha outro evento.";
-                    return Page();
-                }
-
                 try
                 {
+                    Modelo.IdSalao = idSalao;
+                    Modelo.TipoEvento ??= string.Empty;
+                    Modelo.Assunto ??= string.Empty;
+                    Modelo.CorpoHTML ??= string.Empty;
+
+                    var existente = _handler.ObterPorEventoIncluindoInativos(idSalao, Modelo.TipoEvento, Modelo.IdModelo > 0 ? Modelo.IdModelo : null);
+                    if (existente != null)
+                    {
+                        ModeloExistenteId = existente.IdModelo;
+                        Mensagem = "Ja existe um modelo de e-mail criado para este evento. Edite o modelo existente ou escolha outro evento.";
+                        return Page();
+                    }
+
                     if (Modelo.IdModelo > 0)
                     {
                         _handler.Atualizar(Modelo);
@@ -90,15 +93,22 @@ namespace CorteCor.Pages
                 catch (Exception ex) when (ModeloEmailHandler.IsDuplicateKeyException(ex))
                 {
                     _logger.LogError(ex, "Tentativa duplicada de modelo de e-mail para sala {IdSalao} e evento {TipoEvento}.", idSalao, Modelo.TipoEvento);
-                    var modeloExistente = _handler.ObterPorEventoIncluindoInativos(idSalao, Modelo.TipoEvento);
-                    ModeloExistenteId = modeloExistente?.IdModelo;
-                    Mensagem = "Já existe um modelo de e-mail criado para este evento. Edite o modelo existente ou escolha outro evento.";
+                    try
+                    {
+                        var modeloExistente = _handler.ObterPorEventoIncluindoInativos(idSalao, Modelo.TipoEvento);
+                        ModeloExistenteId = modeloExistente?.IdModelo;
+                    }
+                    catch (Exception lookupEx)
+                    {
+                        _logger.LogError(lookupEx, "Erro ao localizar modelo de e-mail duplicado para sala {IdSalao} e evento {TipoEvento}.", idSalao, Modelo.TipoEvento);
+                    }
+                    Mensagem = "Ja existe um modelo de e-mail criado para este evento. Edite o modelo existente ou escolha outro evento.";
                     return Page();
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Erro ao salvar modelo de e-mail para sala {IdSalao}.", idSalao);
-                    Mensagem = "Não foi possível salvar o modelo de e-mail. Tente novamente em instantes.";
+                    Mensagem = "Nao foi possivel salvar o modelo de e-mail. Tente novamente em instantes.";
                     return Page();
                 }
             }

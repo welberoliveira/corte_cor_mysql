@@ -55,7 +55,7 @@
         <form method="post" class="row g-3">
             <div class="col-12">
                 <label class="form-label">Produto</label>
-                <select class="form-select" name="idProduto" required>
+                <select class="form-select" name="idProduto" required data-smart-select data-smart-placeholder="Digite para pesquisar produto...">
                     <option value="">Selecione...</option>
                     @foreach (var produto in Model.ProdutosAjuste)
                     {
@@ -79,7 +79,7 @@
             </div>
             <div class="col-md-8">
                 <label class="form-label">Quantidade</label>
-                <input class="form-control" type="number" name="quantidade" min="0.001" step="0.001" value="1" required />
+                <input class="form-control" type="number" name="quantidade" min="1" step="1" value="1" required />
             </div>
             <div class="col-12">
                 <label class="form-label">Observação</label>

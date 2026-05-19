@@ -1,0 +1,158 @@
+@page
+@model CorteCor.Pages.Compras.IndexModel
+@using CorteCor.Models
+@{
+    ViewData["Title"] = "Compras";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Compras</h2>
+        <div class="text-muted">Entrada de produtos no estoque com geração de conta a pagar.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary" asp-page="/Compras/Nova">Nova compra</a>
+        <a class="btn btn-secondary" asp-page="/Estoque/Index">Estoque</a>
+        <a class="btn btn-secondary" asp-page="/Financeiro/Lancamentos">Lançamentos</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
+{
+    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white fw-semibold">Filtros</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Pesquisa</label>
+                <input class="form-control" name="q" value="@Model.q" placeholder="Fornecedor, documento ou observação" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="status">
+                    <option value="">Todos</option>
+                    <option value="@CompraStatus.Lancada" selected="@(Model.status == CompraStatus.Lancada)">Lançada</option>
+                    <option value="@CompraStatus.Cancelada" selected="@(Model.status == CompraStatus.Cancelada)">Cancelada</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Data início</label>
+                <input type="date" class="form-control" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Data fim</label>
+                <input type="date" class="form-control" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2 text-md-end">
+                <button class="btn btn-primary" type="submit">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Compras registradas</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Compra</th>
+                        <th>Fornecedor</th>
+                        <th>Plano / caixa</th>
+                        <th>Vencimento</th>
+                        <th>Status</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">A&ccedil;&otilde;es</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var compra in Model.Compras.Items)
+                    {
+                        var compraCancelada = compra.Status == CompraStatus.Cancelada;
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">#@compra.IdCompra</div>
+                                <div class="small text-muted">@compra.DataCompra.ToString("dd/MM/yyyy") • @compra.QuantidadeItens item(ns)</div>
+                                <div class="small text-muted">@compra.Documento</div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(compra.NomeFornecedor) ? "-" : compra.NomeFornecedor)</td>
+                            <td>
+                                <div>@(string.IsNullOrWhiteSpace(compra.NomePlano) ? "Sem plano" : compra.NomePlano)</div>
+                                <div class="small text-muted">Conta: @(string.IsNullOrWhiteSpace(compra.NomeConta) ? "-" : compra.NomeConta)</div>
+                            </td>
+                            <td>@compra.DataVencimento.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <span class="badge @(compraCancelada ? "bg-secondary" : compra.PagaNaHora ? "bg-primary" : "bg-warning text-dark")">@(compraCancelada ? "Cancelada" : compra.PagaNaHora ? "Paga" : compra.Status)</span>
+                            </td>
+                            <td class="text-end fw-semibold">R$ @compra.ValorTotal.ToString("N2")</td>
+                            <td class="text-end">
+                                @if (!compraCancelada)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelarCompraModal-@compra.IdCompra">
+                                        Cancelar
+                                    </button>
+
+                                    <div class="modal fade" id="cancelarCompraModal-@compra.IdCompra" tabindex="-1" aria-labelledby="cancelarCompraLabel-@compra.IdCompra" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content text-start">
+                                                <form method="post" asp-page-handler="Cancelar">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="cancelarCompraLabel-@compra.IdCompra">Cancelar compra #@compra.IdCompra</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="idCompra" value="@compra.IdCompra" />
+                                                        <input type="hidden" name="q" value="@Model.q" />
+                                                        <input type="hidden" name="status" value="@Model.status" />
+                                                        <input type="hidden" name="dataInicio" value="@Model.dataInicio?.ToString("yyyy-MM-dd")" />
+                                                        <input type="hidden" name="dataFim" value="@Model.dataFim?.ToString("yyyy-MM-dd")" />
+                                                        <input type="hidden" name="p" value="@Model.p" />
+                                                        <div class="alert alert-warning">
+                                                            A conta a pagar vinculada sera cancelada e o estoque dos produtos sera ajustado automaticamente.
+                                                        </div>
+                                                        <label class="form-label" for="justificativaCompra-@compra.IdCompra">Justificativa</label>
+                                                        <textarea class="form-control" id="justificativaCompra-@compra.IdCompra" name="justificativa" rows="3" minlength="5" maxlength="500" required placeholder="Informe o motivo do cancelamento"></textarea>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
+                                                        <button type="submit" class="btn btn-danger">Cancelar compra e ajustar estoque</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Cancelada</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Compras.Items.Any())
+                    {
+                        <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma compra encontrada.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Compras.TotalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    @for (var i = 1; i <= Model.Compras.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Compras.PageIndex ? "active" : "")">
+                            <a class="page-link" asp-page="/Compras/Index" asp-route-p="@i" asp-route-q="@Model.q" asp-route-status="@Model.status" asp-route-dataInicio="@Model.dataInicio?.ToString("yyyy-MM-dd")" asp-route-dataFim="@Model.dataFim?.ToString("yyyy-MM-dd")">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+</div>

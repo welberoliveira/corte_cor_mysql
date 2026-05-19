@@ -219,9 +219,13 @@ ORDER BY Nome;";
         {
             IdPessoa = pedido.IdPessoa,
             IdMeioPagamento = input.IdMeioPagamento ?? pedido.IdMeioPagamento,
+            IdPlano = input.IdPlano,
+            IdConta = input.IdConta,
             TipoPagamento = pedido.TipoPagamento,
             RecebidoNaHora = input.RecebidoNaHora,
             EmitirNotaFiscalServico = input.EmitirNotaFiscalServico,
+            NumeroParcelas = input.NumeroParcelas,
+            PrimeiroVencimento = input.PrimeiroVencimento,
             Desconto = pedido.Desconto,
             Acrescimo = pedido.Acrescimo,
             Observacoes = pedido.Observacoes,

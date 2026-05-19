@@ -21,7 +21,7 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert">
+        <div class="alert alert-@(string.IsNullOrWhiteSpace(Model.MensagemTipo) ? "info" : Model.MensagemTipo)">
             @Model.Mensagem
         </div>
     }
@@ -44,18 +44,14 @@
                     <td>R$ @item.ServicoPreco.ToString("0.00")</td>
 
                     <td class="actions">
-                        <form method="post" style="display: inline;">
-                            <input type="hidden" name="action" value="alterar" />
-                            <input type="hidden" name="idFuncionario" value="@item.IdFuncionario" />
-                            <button class="btn btn-info">Alterar</button>
-                        </form>
+                        <a asp-page="/FuncionarioServicoCadastro" asp-route-idFuncionario="@item.IdFuncionario" class="btn btn-info">Alterar</a>
 
-                        <form method="post" style="display: inline;"
+                        <form method="post" style="display: inline;" data-submit-feedback
                               onsubmit="return confirm('Tem certeza que deseja remover este vínculo?');">
                             <input type="hidden" name="action" value="remover" />
                             <input type="hidden" name="idFuncionario" value="@item.IdFuncionario" />
                             <input type="hidden" name="idServico" value="@item.IdServico" />
-                            <button class="btn btn-danger">Remover</button>
+                            <button class="btn btn-danger" data-loading-text="Removendo...">Remover</button>
                         </form>
                     </td>
                 </tr>

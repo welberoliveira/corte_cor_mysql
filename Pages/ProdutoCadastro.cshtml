@@ -120,11 +120,11 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label for="estoqueAtual" class="form-label">Estoque Atual</label>
-                        <input type="number" step="0.001" id="estoqueAtual" name="estoqueAtual" class="form-control" value="@(Model.Produto?.EstoqueAtual?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))" />
+                        <input type="number" min="0" step="1" id="estoqueAtual" name="estoqueAtual" class="form-control" value="@(Model.Produto?.EstoqueAtual.HasValue == true ? decimal.Truncate(Model.Produto.EstoqueAtual.Value).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "")" />
                     </div>
                     <div class="col-md-4 form-group">
                         <label for="estoqueMinimo" class="form-label">Estoque Mínimo</label>
-                        <input type="number" step="0.001" id="estoqueMinimo" name="estoqueMinimo" class="form-control" value="@(Model.Produto?.EstoqueMinimo?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))" />
+                        <input type="number" min="0" step="1" id="estoqueMinimo" name="estoqueMinimo" class="form-control" value="@(Model.Produto?.EstoqueMinimo.HasValue == true ? decimal.Truncate(Model.Produto.EstoqueMinimo.Value).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "")" />
                     </div>
                 </div>
             </div>

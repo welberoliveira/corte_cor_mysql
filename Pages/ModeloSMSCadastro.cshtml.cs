@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using CorteCor;
+using Microsoft.Extensions.Logging;
 
 
 namespace CorteCor.Pages
@@ -15,14 +16,16 @@ namespace CorteCor.Pages
     public class ModeloSMSCadastroModel : PageModel
     {
         private readonly ModeloSMSHandler _handler;
+        private readonly ILogger<ModeloSMSCadastroModel> _logger;
 
-        public ModeloSMSCadastroModel(ModeloSMSHandler handler)
+        public ModeloSMSCadastroModel(ModeloSMSHandler handler, ILogger<ModeloSMSCadastroModel> logger)
         {
             _handler = handler;
+            _logger = logger;
         }
 
         [BindProperty]
-        public ModeloSMS Modelo { get; set; }
+        public ModeloSMS Modelo { get; set; } = new();
 
         public List<SelectListItem> EventosOptions { get; set; } = new List<SelectListItem>
         {
@@ -42,8 +45,17 @@ namespace CorteCor.Pages
             {
                 if (id.HasValue && id.Value > 0)
                 {
-                    Modelo = _handler.ObterPorId(id.Value, idSalao);
-                    if (Modelo == null) Mensagem = "Modelo não encontrado.";
+                    try
+                    {
+                        Modelo = _handler.ObterPorId(id.Value, idSalao);
+                        if (Modelo == null) Mensagem = "Modelo nao encontrado.";
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Erro ao carregar modelo de SMS {IdModelo} para sala {IdSalao}.", id.Value, idSalao);
+                        Modelo = new ModeloSMS { Ativo = true, IdSalao = idSalao };
+                        Mensagem = "Nao foi possivel carregar o modelo de SMS.";
+                    }
                 }
                 else
                 {
@@ -63,17 +75,19 @@ namespace CorteCor.Pages
             {
                 Modelo.IdSalao = idSalao;
 
-                if (Modelo.IdModelo > 0)
+                try
                 {
-                    _handler.Salvar(Modelo); // Salvar handles update if Id > 0
-                    Mensagem = "Modelo atualizado com sucesso!";
-                }
-                else
-                {
+                    Modelo.TipoEvento ??= string.Empty;
+                    Modelo.Conteudo ??= string.Empty;
                     _handler.Salvar(Modelo);
-                    Mensagem = "Modelo cadastrado com sucesso!";
+                    return RedirectToPage("/ModeloSMSLista");
                 }
-                return RedirectToPage("/ModeloSMSLista");
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Erro ao salvar modelo de SMS para sala {IdSalao}.", idSalao);
+                    Mensagem = "Nao foi possivel salvar o modelo de SMS. Tente novamente em instantes.";
+                    return Page();
+                }
             }
             return Page();
         }

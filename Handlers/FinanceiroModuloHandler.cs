@@ -21,39 +21,66 @@ namespace CorteCor.Handlers
 SELECT
     P.IdPagamento,
     P.IdAgendamento,
-    A.IdPessoa,
-    S.IdSalao,
+    P.IdPedido,
+    COALESCE(P.IdVendaProduto, Ped.IdVendaProduto) AS IdVendaProduto,
+    P.OrigemPagamento,
+    COALESCE(A.IdPessoa, Ped.IdPessoa, V.IdPessoa) AS IdPessoa,
+    COALESCE(P.IdSalao, S.IdSalao, Ped.IdSalao, V.IdSalao) AS IdSalao,
     S.Nome AS NomeServico,
-    Pe.Nome AS NomePessoa,
+    COALESCE(Pe.Nome, PePed.Nome, PeVenda.Nome) AS NomePessoa,
     P.Status,
     P.Valor,
     P.Descricao,
     P.Tipo,
-    COALESCE(P.PagoEm, P.CriadoEm, NOW()) AS DataReferencia,
+    COALESCE(V.DataVenda, A.DataHora, P.Data, P.CriadoEm, NOW()) AS DataCompetenciaReferencia,
+    COALESCE(P.PagoEm, P.Data, P.CriadoEm, V.DataVenda, A.DataHora, NOW()) AS DataReferencia,
     P.PagoEm,
-    P.CriadoEm
+    P.CriadoEm,
+    COALESCE(P.Ativo, 1) AS Ativo,
+    Ped.Status AS StatusPedido,
+    Ped.IdVendaProduto AS IdVendaProdutoPedido
 FROM CorteCor_Pagamento P
-INNER JOIN CorteCor_Agendamento A ON A.IdAgendamento = P.IdAgendamento
-INNER JOIN CorteCor_Servico S ON S.IdServico = A.IdServico
+LEFT JOIN CorteCor_Agendamento A ON A.IdAgendamento = P.IdAgendamento
+LEFT JOIN CorteCor_Servico S ON S.IdServico = A.IdServico
 LEFT JOIN CorteCor_Pessoa Pe ON Pe.IdPessoa = A.IdPessoa
-WHERE S.IdSalao = @IdSalao
-  AND COALESCE(P.Ativo, 0) = 1;";
+LEFT JOIN CorteCor_Pedido Ped ON Ped.IdPedido = P.IdPedido
+LEFT JOIN CorteCor_Pessoa PePed ON PePed.IdPessoa = Ped.IdPessoa
+LEFT JOIN CorteCor_VendaProduto V ON V.IdVendaProduto = COALESCE(P.IdVendaProduto, Ped.IdVendaProduto)
+LEFT JOIN CorteCor_Pessoa PeVenda ON PeVenda.IdPessoa = V.IdPessoa
+WHERE P.IdSalao = @IdSalao
+   OR S.IdSalao = @IdSalao
+   OR Ped.IdSalao = @IdSalao
+   OR V.IdSalao = @IdSalao
+ORDER BY COALESCE(P.Ativo, 1), P.CriadoEm, P.IdPagamento;";
 
             const string selectTituloSql = @"
 SELECT *
 FROM CorteCor_FinanceiroTitulo
 WHERE IdSalao = @IdSalao
-  AND IdPagamento = @IdPagamento
+  AND (
+      IdPagamento = @IdPagamento
+      OR (
+          @IdVendaProduto IS NOT NULL
+          AND IdVendaProduto = @IdVendaProduto
+          AND Origem = @OrigemVenda
+      )
+  )
+ORDER BY
+  CASE
+      WHEN IdPagamento = @IdPagamento THEN 0
+      WHEN Origem = @OrigemVenda THEN 1
+      ELSE 2
+  END
 LIMIT 1;";
 
             const string insertSql = @"
 INSERT INTO CorteCor_FinanceiroTitulo
     (IdTitulo, IdSalao, Tipo, Origem, IdPessoa, IdAgendamento, IdVendaProduto, IdPagamento, IdPlano, IdConta,
-     Descricao, Documento, Status, ValorOriginal, ValorLiquidado, ValorAberto, DataCompetencia,
+     Descricao, Documento, Status, Recorrencia, ValorOriginal, ValorLiquidado, ValorAberto, DataCompetencia,
      DataVencimento, DataLiquidacao, Conciliado, Observacoes, DataCriacao, DataAtualizacao)
 VALUES
     (@IdTitulo, @IdSalao, @Tipo, @Origem, @IdPessoa, @IdAgendamento, @IdVendaProduto, @IdPagamento, @IdPlano, @IdConta,
-     @Descricao, @Documento, @Status, @ValorOriginal, @ValorLiquidado, @ValorAberto, @DataCompetencia,
+     @Descricao, @Documento, @Status, @Recorrencia, @ValorOriginal, @ValorLiquidado, @ValorAberto, @DataCompetencia,
      @DataVencimento, @DataLiquidacao, @Conciliado, @Observacoes, NOW(), NOW());";
 
             const string updateSql = @"
@@ -61,8 +88,10 @@ UPDATE CorteCor_FinanceiroTitulo
 SET IdPessoa = @IdPessoa,
     IdAgendamento = @IdAgendamento,
     IdVendaProduto = @IdVendaProduto,
+    IdPagamento = @IdPagamento,
     Descricao = @Descricao,
     Status = @Status,
+    Recorrencia = @Recorrencia,
     ValorOriginal = @ValorOriginal,
     ValorLiquidado = @ValorLiquidado,
     ValorAberto = @ValorAberto,
@@ -76,6 +105,17 @@ SET IdPessoa = @IdPessoa,
 WHERE IdTitulo = @IdTitulo
   AND IdSalao = @IdSalao;";
 
+            const string cancelarTituloPedidoOrcamentoSql = @"
+UPDATE CorteCor_FinanceiroTitulo
+SET Status = @Status,
+    ValorLiquidado = 0,
+    ValorAberto = 0,
+    DataLiquidacao = NULL,
+    DataAtualizacao = NOW(),
+    Observacoes = @Observacoes
+WHERE IdTitulo = @IdTitulo
+  AND IdSalao = @IdSalao;";
+
             using var conn = GetConnection();
             var pagamentos = (await conn.QueryAsync<FinanceiroPagamentoSyncRow>(pagamentosSql, new { IdSalao = idSalao })).ToList();
 
@@ -84,29 +124,57 @@ WHERE IdTitulo = @IdTitulo
                 var existente = await conn.QueryFirstOrDefaultAsync<FinanceiroTitulo>(selectTituloSql, new
                 {
                     IdSalao = idSalao,
-                    pagamento.IdPagamento
+                    pagamento.IdPagamento,
+                    pagamento.IdVendaProduto,
+                    OrigemVenda = FinanceiroOrigemTitulo.Venda
                 });
 
-                var status = MapearStatusTitulo(pagamento.Status, pagamento.DataReferencia, pagamento.PagoEm);
+                if (DeveIgnorarPedidoOrcamento(pagamento))
+                {
+                    if (existente != null && existente.Status != FinanceiroStatusTitulo.Cancelado)
+                    {
+                        await conn.ExecuteAsync(cancelarTituloPedidoOrcamentoSql, new
+                        {
+                            IdSalao = idSalao,
+                            existente.IdTitulo,
+                            Status = FinanceiroStatusTitulo.Cancelado,
+                            Observacoes = $"Cancelado automaticamente porque o pedido {pagamento.IdPedido} ainda nao foi convertido em venda."
+                        });
+                    }
+
+                    continue;
+                }
+
+                var status = pagamento.Ativo
+                    ? MapearStatusTitulo(pagamento.Status, pagamento.DataReferencia, pagamento.PagoEm)
+                    : FinanceiroStatusTitulo.Cancelado;
+
+                if (existente == null && status == FinanceiroStatusTitulo.Cancelado)
+                {
+                    continue;
+                }
+
+                var dataCompetencia = existente == null || existente.DataCompetencia == default
+                    ? pagamento.DataCompetenciaReferencia.Date
+                    : existente.DataCompetencia.Date;
                 var titulo = new FinanceiroTitulo
                 {
                     IdTitulo = existente?.IdTitulo ?? Guid.NewGuid(),
                     IdSalao = idSalao,
                     Tipo = FinanceiroTipoTitulo.Receber,
-                    Origem = FinanceiroOrigemTitulo.PagamentoAgendamento,
+                    Origem = ObterOrigemTituloPagamento(pagamento),
                     IdPessoa = pagamento.IdPessoa,
                     IdAgendamento = pagamento.IdAgendamento,
-                    IdVendaProduto = null,
+                    IdVendaProduto = pagamento.IdVendaProduto,
                     IdPagamento = pagamento.IdPagamento,
-                    Descricao = string.IsNullOrWhiteSpace(pagamento.Descricao)
-                        ? $"Recebimento do agendamento {pagamento.IdAgendamento} - {pagamento.NomeServico}"
-                        : pagamento.Descricao!,
-                    Documento = pagamento.IdPagamento.ToString(),
+                    Descricao = ObterDescricaoPagamento(pagamento),
+                    Documento = existente?.Documento ?? ObterDocumentoPagamento(pagamento),
                     Status = status,
+                    Recorrencia = existente?.Recorrencia ?? RecorrenciaTipo.Nenhuma,
                     ValorOriginal = pagamento.Valor,
                     ValorLiquidado = status == FinanceiroStatusTitulo.Liquidado ? pagamento.Valor : 0m,
                     ValorAberto = status == FinanceiroStatusTitulo.Liquidado || status == FinanceiroStatusTitulo.Cancelado ? 0m : pagamento.Valor,
-                    DataCompetencia = pagamento.DataReferencia.Date,
+                    DataCompetencia = dataCompetencia,
                     DataVencimento = pagamento.DataReferencia.Date,
                     DataLiquidacao = status == FinanceiroStatusTitulo.Liquidado ? pagamento.PagoEm ?? pagamento.DataReferencia : null,
                     Conciliado = existente?.Conciliado ?? false,
@@ -136,13 +204,29 @@ WHERE IdTitulo = @IdTitulo
 FROM CorteCor_FinanceiroTitulo T
 LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
 LEFT JOIN CorteCor_PlanoContas PC ON PC.IdPlano = T.IdPlano
+LEFT JOIN CorteCor_PlanoContas PCG ON PCG.IdPlano = @IdGrupoPlano AND PCG.IdSalao = @IdSalao
 LEFT JOIN CorteCor_ContaCaixa CC ON CC.IdConta = T.IdConta
 LEFT JOIN CorteCor_Agendamento A ON A.IdAgendamento = T.IdAgendamento
 LEFT JOIN CorteCor_Servico S ON S.IdServico = A.IdServico
 WHERE T.IdSalao = @IdSalao
   AND (@Tipo IS NULL OR T.Tipo = @Tipo)
   AND (@Status IS NULL OR T.Status = @Status)
+  AND (@Recorrencia IS NULL OR T.Recorrencia = @Recorrencia)
   AND (@IdPlano IS NULL OR T.IdPlano = @IdPlano)
+  AND (
+        @IdGrupoPlano IS NULL
+        OR PC.Codigo LIKE CONCAT(PCG.Codigo, '.%')
+        OR (
+            PC.IdPlano = PCG.IdPlano
+            AND NOT EXISTS (
+                SELECT 1
+                FROM CorteCor_PlanoContas Filho
+                WHERE Filho.IdSalao = PCG.IdSalao
+                  AND COALESCE(Filho.Ativo, 0) = 1
+                  AND Filho.Codigo LIKE CONCAT(PCG.Codigo, '.%')
+            )
+        )
+      )
   AND (@IdConta IS NULL OR T.IdConta = @IdConta)
   AND (
         @Pesquisa IS NULL
@@ -158,7 +242,10 @@ WHERE T.IdSalao = @IdSalao
 SELECT
     T.*,
     P.Nome AS NomePessoa,
-    PC.Descricao AS NomePlano,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN NULL
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS NomePlano,
     CC.Nome AS NomeConta,
     S.Nome AS NomeServico,
     T.Origem AS CategoriaFluxo
@@ -196,7 +283,10 @@ LIMIT @PageSize OFFSET @Offset;";
 SELECT
     T.*,
     P.Nome AS NomePessoa,
-    PC.Descricao AS NomePlano,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN NULL
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS NomePlano,
     CC.Nome AS NomeConta
 FROM CorteCor_FinanceiroTitulo T
 LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
@@ -222,7 +312,10 @@ LIMIT 1;";
 SELECT
     T.*,
     P.Nome AS NomePessoa,
-    PC.Descricao AS NomePlano,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN NULL
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS NomePlano,
     CC.Nome AS NomeConta
 FROM CorteCor_FinanceiroTitulo T
 LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
@@ -241,11 +334,11 @@ ORDER BY T.DataCriacao DESC;";
             const string insertSql = @"
 INSERT INTO CorteCor_FinanceiroTitulo
     (IdTitulo, IdSalao, Tipo, Origem, IdPessoa, IdAgendamento, IdVendaProduto, IdPagamento, IdPlano, IdConta,
-     Descricao, Documento, Status, ValorOriginal, ValorLiquidado, ValorAberto, DataCompetencia,
+     Descricao, Documento, Status, Recorrencia, ValorOriginal, ValorLiquidado, ValorAberto, DataCompetencia,
      DataVencimento, DataLiquidacao, Conciliado, Observacoes, DataCriacao, DataAtualizacao)
 VALUES
     (@IdTitulo, @IdSalao, @Tipo, @Origem, @IdPessoa, @IdAgendamento, @IdVendaProduto, @IdPagamento, @IdPlano, @IdConta,
-     @Descricao, @Documento, @Status, @ValorOriginal, @ValorLiquidado, @ValorAberto, @DataCompetencia,
+     @Descricao, @Documento, @Status, @Recorrencia, @ValorOriginal, @ValorLiquidado, @ValorAberto, @DataCompetencia,
      @DataVencimento, @DataLiquidacao, @Conciliado, @Observacoes, NOW(), NOW());";
 
             const string updateSql = @"
@@ -260,6 +353,7 @@ SET Tipo = @Tipo,
     Descricao = @Descricao,
     Documento = @Documento,
     Status = @Status,
+    Recorrencia = @Recorrencia,
     ValorOriginal = @ValorOriginal,
     ValorLiquidado = @ValorLiquidado,
     ValorAberto = @ValorAberto,
@@ -361,7 +455,21 @@ WHERE IdSalao = @IdSalao
         public async Task<List<PlanoContas>> ListarPlanoContasAsync(int idSalao)
         {
             const string sql = @"
-SELECT IdPlano, IdSalao, Codigo, Descricao, Tipo, Ativo
+SELECT
+    IdPlano,
+    IdSalao,
+    Codigo,
+    Descricao,
+    Tipo,
+    Ativo,
+    Nome,
+    IdPlanoPai,
+    COALESCE(NULLIF(Nivel, 0), 1 + LENGTH(Codigo) - LENGTH(REPLACE(Codigo, '.', ''))) AS Nivel,
+    TipoConta,
+    NaturezaSaldo,
+    COALESCE(AceitaLancamento, 1) AS AceitaLancamento,
+    GrupoDRE,
+    OrdemDRE
 FROM CorteCor_PlanoContas
 WHERE IdSalao = @IdSalao
 ORDER BY Codigo, Descricao;";
@@ -370,18 +478,98 @@ ORDER BY Codigo, Descricao;";
             return (await conn.QueryAsync<PlanoContas>(sql, new { IdSalao = idSalao })).ToList();
         }
 
+        public async Task<List<PlanoContas>> ListarGruposPlanoContasAsync(int idSalao)
+        {
+            const string sql = @"
+SELECT
+    IdPlano,
+    IdSalao,
+    Codigo,
+    Descricao,
+    Tipo,
+    Ativo,
+    Nome,
+    IdPlanoPai,
+    COALESCE(NULLIF(Nivel, 0), 1 + LENGTH(Codigo) - LENGTH(REPLACE(Codigo, '.', ''))) AS Nivel,
+    TipoConta,
+    NaturezaSaldo,
+    COALESCE(AceitaLancamento, 0) AS AceitaLancamento,
+    GrupoDRE,
+    OrdemDRE
+FROM CorteCor_PlanoContas
+WHERE IdSalao = @IdSalao
+  AND COALESCE(Ativo, 0) = 1
+  AND COALESCE(NULLIF(Nivel, 0), 1 + LENGTH(Codigo) - LENGTH(REPLACE(Codigo, '.', ''))) = 2
+ORDER BY Codigo, Descricao;";
+
+            using var conn = GetConnection();
+            return (await conn.QueryAsync<PlanoContas>(sql, new { IdSalao = idSalao })).ToList();
+        }
+
+        public async Task<List<PlanoContas>> ListarContasAnaliticasPorGrupoAsync(int idSalao, int idGrupoPlano)
+        {
+            const string sql = @"
+SELECT
+    P.IdPlano,
+    P.IdSalao,
+    P.Codigo,
+    P.Descricao,
+    P.Tipo,
+    P.Ativo,
+    P.Nome,
+    P.IdPlanoPai,
+    COALESCE(NULLIF(P.Nivel, 0), 1 + LENGTH(P.Codigo) - LENGTH(REPLACE(P.Codigo, '.', ''))) AS Nivel,
+    P.TipoConta,
+    P.NaturezaSaldo,
+    COALESCE(P.AceitaLancamento, 1) AS AceitaLancamento,
+    P.GrupoDRE,
+    P.OrdemDRE
+FROM CorteCor_PlanoContas P
+INNER JOIN CorteCor_PlanoContas G ON G.IdPlano = @IdGrupoPlano AND G.IdSalao = @IdSalao
+WHERE P.IdSalao = @IdSalao
+  AND COALESCE(P.Ativo, 0) = 1
+  AND COALESCE(P.AceitaLancamento, 1) = 1
+  AND (
+      P.Codigo LIKE CONCAT(G.Codigo, '.%')
+      OR (
+          P.IdPlano = G.IdPlano
+          AND NOT EXISTS (
+              SELECT 1
+              FROM CorteCor_PlanoContas Filho
+              WHERE Filho.IdSalao = G.IdSalao
+                AND COALESCE(Filho.Ativo, 0) = 1
+                AND Filho.Codigo LIKE CONCAT(G.Codigo, '.%')
+          )
+      )
+  )
+ORDER BY P.Codigo, P.Descricao;";
+
+            using var conn = GetConnection();
+            return (await conn.QueryAsync<PlanoContas>(sql, new { IdSalao = idSalao, IdGrupoPlano = idGrupoPlano })).ToList();
+        }
+
         public async Task SavePlanoContasAsync(PlanoContas plano)
         {
             const string insertSql = @"
-INSERT INTO CorteCor_PlanoContas (IdSalao, Codigo, Descricao, Tipo, Ativo)
-VALUES (@IdSalao, @Codigo, @Descricao, @Tipo, @Ativo);";
+INSERT INTO CorteCor_PlanoContas
+    (IdSalao, Codigo, Descricao, Tipo, Ativo, Nome, IdPlanoPai, Nivel, TipoConta, NaturezaSaldo, AceitaLancamento, GrupoDRE, OrdemDRE)
+VALUES
+    (@IdSalao, @Codigo, @Descricao, @Tipo, @Ativo, @Nome, @IdPlanoPai, @Nivel, @TipoConta, @NaturezaSaldo, @AceitaLancamento, @GrupoDRE, @OrdemDRE);";
 
             const string updateSql = @"
 UPDATE CorteCor_PlanoContas
 SET Codigo = @Codigo,
     Descricao = @Descricao,
     Tipo = @Tipo,
-    Ativo = @Ativo
+    Ativo = @Ativo,
+    Nome = @Nome,
+    IdPlanoPai = @IdPlanoPai,
+    Nivel = @Nivel,
+    TipoConta = @TipoConta,
+    NaturezaSaldo = @NaturezaSaldo,
+    AceitaLancamento = @AceitaLancamento,
+    GrupoDRE = @GrupoDRE,
+    OrdemDRE = @OrdemDRE
 WHERE IdPlano = @IdPlano
   AND IdSalao = @IdSalao;";
 
@@ -497,7 +685,10 @@ LIMIT 8;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = data
 
             resumo.DespesasPorPlano = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
 SELECT
-    COALESCE(PC.Descricao, 'Sem plano') AS Nome,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN 'Sem plano'
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS Nome,
     SUM(T.ValorLiquidado) AS Valor,
     COUNT(1) AS Quantidade
 FROM CorteCor_FinanceiroTitulo T
@@ -507,7 +698,7 @@ WHERE T.IdSalao = @IdSalao
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
   AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
-GROUP BY COALESCE(PC.Descricao, 'Sem plano')
+ GROUP BY PC.IdPlano, PC.Codigo, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao)
 ORDER BY SUM(T.ValorLiquidado) DESC
 LIMIT 8;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
@@ -531,7 +722,10 @@ LIMIT 10;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dat
 SELECT
     T.*,
     P.Nome AS NomePessoa,
-    PC.Descricao AS NomePlano,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN NULL
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS NomePlano,
     CC.Nome AS NomeConta
 FROM CorteCor_FinanceiroTitulo T
 LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
@@ -560,7 +754,10 @@ LIMIT 10;", new { IdSalao = idSalao })).ToList();
 SELECT
     T.*,
     P.Nome AS NomePessoa,
-    PC.Descricao AS NomePlano,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN NULL
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS NomePlano,
     CC.Nome AS NomeConta,
     S.Nome AS NomeServico
 FROM CorteCor_FinanceiroTitulo T
@@ -576,7 +773,10 @@ ORDER BY T.DataVencimento, T.Descricao;", new { IdSalao = idSalao, DataInicio = 
 
             relatorio.ReceitasPorPlano = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
 SELECT
-    COALESCE(PC.Descricao, 'Sem plano') AS Nome,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN 'Sem plano'
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS Nome,
     SUM(T.ValorLiquidado) AS Valor,
     COUNT(1) AS Quantidade
 FROM CorteCor_FinanceiroTitulo T
@@ -586,12 +786,15 @@ WHERE T.IdSalao = @IdSalao
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
   AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
-GROUP BY COALESCE(PC.Descricao, 'Sem plano')
+GROUP BY PC.IdPlano, PC.Codigo, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao)
 ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
             relatorio.DespesasPorPlano = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
 SELECT
-    COALESCE(PC.Descricao, 'Sem plano') AS Nome,
+    CASE
+        WHEN PC.IdPlano IS NULL THEN 'Sem plano'
+        ELSE CONCAT(COALESCE(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao))
+    END AS Nome,
     SUM(T.ValorLiquidado) AS Valor,
     COUNT(1) AS Quantidade
 FROM CorteCor_FinanceiroTitulo T
@@ -601,7 +804,7 @@ WHERE T.IdSalao = @IdSalao
   AND T.Status = 'Liquidado'
   AND T.DataLiquidacao >= @DataInicio
   AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
-GROUP BY COALESCE(PC.Descricao, 'Sem plano')
+GROUP BY PC.IdPlano, PC.Codigo, COALESCE(NULLIF(PC.Nome, ''), PC.Descricao)
 ORDER BY SUM(T.ValorLiquidado) DESC;", new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
 
 relatorio.ReceitasPorForma = (await conn.QueryAsync<FinanceiroResumoCategoria>(@"
@@ -646,12 +849,73 @@ ORDER BY MIN(DATEDIFF(CURDATE(), T.DataVencimento));", new { IdSalao = idSalao }
             return relatorio;
         }
 
+        public async Task<List<FinanceiroFluxoCaixaItem>> ObterFluxoCaixaAsync(int idSalao, DateTime dataInicio, DateTime dataFim, bool projetado)
+        {
+            using var conn = GetConnection();
+            var linhas = projetado
+                ? await ObterFluxoProjetadoAsync(conn, idSalao, dataInicio.Date, dataFim.Date)
+                : await ObterFluxoCaixaAsync(conn, idSalao, dataInicio.Date, dataFim.Date);
+
+            return linhas.ToList();
+        }
+
+        public async Task<List<FinanceiroDreMovimento>> ObterMovimentosDreAsync(int idSalao, DateTime dataInicio, DateTime dataFim)
+        {
+            const string sql = @"
+SELECT
+    COALESCE(
+        NULLIF(PC.GrupoDRE, ''),
+        CASE WHEN T.Tipo = 'Receber' THEN 'Receitas sem grupo DRE' ELSE 'Despesas sem grupo DRE' END
+    ) AS GrupoDRE,
+    COALESCE(
+        PC.OrdemDRE,
+        CASE WHEN T.Tipo = 'Receber' THEN 900 ELSE 910 END
+    ) AS OrdemDRE,
+    PC.IdPlano,
+    PC.Codigo,
+    COALESCE(NULLIF(PC.Nome, ''), PC.Descricao, 'Sem plano de contas') AS NomePlano,
+    COALESCE(NULLIF(PC.TipoConta, ''), CASE WHEN T.Tipo = 'Receber' THEN 'Receita' ELSE 'Despesa' END) AS TipoConta,
+    T.Tipo,
+    MONTH(T.DataCompetencia) AS Mes,
+    SUM(COALESCE(T.ValorOriginal, 0)) AS Valor
+FROM CorteCor_FinanceiroTitulo T
+LEFT JOIN CorteCor_PlanoContas PC ON PC.IdPlano = T.IdPlano AND PC.IdSalao = T.IdSalao
+WHERE T.IdSalao = @IdSalao
+  AND COALESCE(T.Status, '') <> 'Cancelado'
+  AND T.DataCompetencia >= @DataInicio
+  AND T.DataCompetencia < DATE_ADD(@DataFim, INTERVAL 1 DAY)
+GROUP BY
+    COALESCE(NULLIF(PC.GrupoDRE, ''), CASE WHEN T.Tipo = 'Receber' THEN 'Receitas sem grupo DRE' ELSE 'Despesas sem grupo DRE' END),
+    COALESCE(PC.OrdemDRE, CASE WHEN T.Tipo = 'Receber' THEN 900 ELSE 910 END),
+    PC.IdPlano,
+    PC.Codigo,
+    COALESCE(NULLIF(PC.Nome, ''), PC.Descricao, 'Sem plano de contas'),
+    COALESCE(NULLIF(PC.TipoConta, ''), CASE WHEN T.Tipo = 'Receber' THEN 'Receita' ELSE 'Despesa' END),
+    T.Tipo,
+    MONTH(T.DataCompetencia)
+ORDER BY
+    COALESCE(PC.OrdemDRE, CASE WHEN T.Tipo = 'Receber' THEN 900 ELSE 910 END),
+    PC.Codigo,
+    NomePlano,
+    MONTH(T.DataCompetencia);";
+
+            using var conn = GetConnection();
+            return (await conn.QueryAsync<FinanceiroDreMovimento>(sql, new
+            {
+                IdSalao = idSalao,
+                DataInicio = dataInicio.Date,
+                DataFim = dataFim.Date
+            })).ToList();
+        }
+
         private static DynamicParameters CriarParametrosFiltro(int idSalao, FinanceiroTituloFiltro filtro, int offset)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@IdSalao", idSalao);
             parameters.Add("@Tipo", string.IsNullOrWhiteSpace(filtro.Tipo) ? null : filtro.Tipo.Trim());
             parameters.Add("@Status", string.IsNullOrWhiteSpace(filtro.Status) ? null : filtro.Status.Trim());
+            parameters.Add("@Recorrencia", string.IsNullOrWhiteSpace(filtro.Recorrencia) ? null : filtro.Recorrencia.Trim());
+            parameters.Add("@IdGrupoPlano", filtro.IdGrupoPlano);
             parameters.Add("@IdPlano", filtro.IdPlano);
             parameters.Add("@IdConta", filtro.IdConta);
             parameters.Add("@Pesquisa", string.IsNullOrWhiteSpace(filtro.Pesquisa) ? null : $"%{filtro.Pesquisa.Trim()}%");
@@ -687,11 +951,78 @@ ORDER BY MIN(DATEDIFF(CURDATE(), T.DataVencimento));", new { IdSalao = idSalao }
             return FinanceiroStatusTitulo.Aberto;
         }
 
+        private static bool DeveIgnorarPedidoOrcamento(FinanceiroPagamentoSyncRow pagamento)
+        {
+            var origem = pagamento.OrigemPagamento ?? string.Empty;
+            var vinculadoAPedido = pagamento.IdPedido.HasValue
+                || origem.Equals(OrigemPagamento.Pedido, StringComparison.OrdinalIgnoreCase);
+
+            return vinculadoAPedido && !pagamento.IdVendaProduto.HasValue;
+        }
+
+        private static string ObterOrigemTituloPagamento(FinanceiroPagamentoSyncRow pagamento)
+        {
+            if (pagamento.IdVendaProduto.HasValue)
+            {
+                return FinanceiroOrigemTitulo.Venda;
+            }
+
+            if (pagamento.IdAgendamento.HasValue)
+            {
+                return FinanceiroOrigemTitulo.PagamentoAgendamento;
+            }
+
+            return FinanceiroOrigemTitulo.PagamentoAvulso;
+        }
+
+        private static string ObterDescricaoPagamento(FinanceiroPagamentoSyncRow pagamento)
+        {
+            if (!string.IsNullOrWhiteSpace(pagamento.Descricao))
+            {
+                return pagamento.Descricao.Trim();
+            }
+
+            if (pagamento.IdVendaProduto.HasValue && pagamento.IdPedido.HasValue)
+            {
+                return $"Recebimento da venda {pagamento.IdVendaProduto.Value} originada do pedido {pagamento.IdPedido.Value}";
+            }
+
+            if (pagamento.IdVendaProduto.HasValue)
+            {
+                return $"Recebimento da venda {pagamento.IdVendaProduto.Value}";
+            }
+
+            if (pagamento.IdAgendamento.HasValue)
+            {
+                return string.IsNullOrWhiteSpace(pagamento.NomeServico)
+                    ? $"Recebimento do agendamento {pagamento.IdAgendamento.Value}"
+                    : $"Recebimento do agendamento {pagamento.IdAgendamento.Value} - {pagamento.NomeServico}";
+            }
+
+            return $"Recebimento avulso {pagamento.IdPagamento}";
+        }
+
+        private static string ObterDocumentoPagamento(FinanceiroPagamentoSyncRow pagamento)
+        {
+            if (pagamento.IdVendaProduto.HasValue)
+            {
+                return $"VD-{pagamento.IdVendaProduto.Value}";
+            }
+
+            if (pagamento.IdAgendamento.HasValue)
+            {
+                return $"AG-{pagamento.IdAgendamento.Value}";
+            }
+
+            var idCurto = pagamento.IdPagamento.ToString("N");
+            return $"PG-{idCurto.Substring(0, Math.Min(12, idCurto.Length))}";
+        }
+
         private static async Task<IEnumerable<FinanceiroFluxoCaixaItem>> ObterFluxoCaixaAsync(IDbConnection conn, int idSalao, DateTime dataInicio, DateTime dataFim)
         {
             const string fluxoSql = @"
 SELECT
-    DataReferencia AS [Data],
+    DataReferencia AS Data,
     SUM(Entradas) AS Entradas,
     SUM(Saidas) AS Saidas
 FROM
@@ -742,7 +1073,7 @@ WHERE IdSalao = @IdSalao
         {
             const string sql = @"
 SELECT
-    DATE(DataVencimento) AS [Data],
+    DATE(DataVencimento) AS Data,
     SUM(CASE WHEN Tipo = 'Receber' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END) AS Entradas,
     SUM(CASE WHEN Tipo = 'Pagar' AND Status IN ('Aberto', 'Vencido') THEN ValorAberto ELSE 0 END) AS Saidas
 FROM CorteCor_FinanceiroTitulo
@@ -777,34 +1108,61 @@ ORDER BY DATE(DataVencimento);";
         {
             const string sql = @"
 SELECT
-    SUM(CASE WHEN Tipo = 'Receber' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY) THEN ValorLiquidado ELSE 0 END) AS Receitas,
-    SUM(CASE WHEN Tipo = 'Pagar' AND Status = 'Liquidado' AND DataLiquidacao >= @DataInicio AND DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY) THEN ValorLiquidado ELSE 0 END) AS Despesas
-FROM CorteCor_FinanceiroTitulo
-WHERE IdSalao = @IdSalao;";
+    COALESCE(
+        NULLIF(PC.GrupoDRE, ''),
+        CASE WHEN T.Tipo = 'Receber' THEN 'Receitas sem grupo DRE' ELSE 'Despesas sem grupo DRE' END
+    ) AS Grupo,
+    COALESCE(
+        PC.OrdemDRE,
+        CASE WHEN T.Tipo = 'Receber' THEN 900 ELSE 910 END
+    ) AS OrdemDRE,
+    SUM(CASE WHEN T.Tipo = 'Receber' THEN T.ValorLiquidado ELSE -T.ValorLiquidado END) AS Valor
+FROM CorteCor_FinanceiroTitulo T
+LEFT JOIN CorteCor_PlanoContas PC ON PC.IdPlano = T.IdPlano
+WHERE T.IdSalao = @IdSalao
+  AND T.Status = 'Liquidado'
+  AND T.DataLiquidacao >= @DataInicio
+  AND T.DataLiquidacao < DATE_ADD(@DataFim, INTERVAL 1 DAY)
+GROUP BY
+    COALESCE(NULLIF(PC.GrupoDRE, ''), CASE WHEN T.Tipo = 'Receber' THEN 'Receitas sem grupo DRE' ELSE 'Despesas sem grupo DRE' END),
+    COALESCE(PC.OrdemDRE, CASE WHEN T.Tipo = 'Receber' THEN 900 ELSE 910 END)
+ORDER BY
+    COALESCE(PC.OrdemDRE, CASE WHEN T.Tipo = 'Receber' THEN 900 ELSE 910 END),
+    Grupo;";
 
-            var total = await conn.QueryFirstAsync<FinanceiroDreTotalRow>(sql, new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date });
-            return new List<FinanceiroDreLinha>
+            var linhas = (await conn.QueryAsync<FinanceiroDreLinha>(sql, new { IdSalao = idSalao, DataInicio = dataInicio.Date, DataFim = dataFim.Date })).ToList();
+            var resultado = new List<FinanceiroDreLinha>(linhas);
+            resultado.Add(new FinanceiroDreLinha
             {
-                new() { Grupo = "Receita realizada", Valor = total.Receitas },
-                new() { Grupo = "Despesa realizada", Valor = total.Despesas },
-                new() { Grupo = "Resultado operacional", Valor = total.Receitas - total.Despesas }
-            };
+                Grupo = "Resultado operacional",
+                Valor = linhas.Sum(l => l.Valor)
+            });
+
+            return resultado;
         }
 
         private sealed class FinanceiroPagamentoSyncRow
         {
             public Guid IdPagamento { get; set; }
-            public int IdAgendamento { get; set; }
-            public int IdPessoa { get; set; }
+            public int? IdAgendamento { get; set; }
+            public int? IdPedido { get; set; }
+            public int? IdVendaProduto { get; set; }
+            public string? OrigemPagamento { get; set; }
+            public int? IdPessoa { get; set; }
+            public int IdSalao { get; set; }
             public string? NomeServico { get; set; }
             public string? NomePessoa { get; set; }
             public string? Status { get; set; }
             public decimal Valor { get; set; }
             public string? Descricao { get; set; }
             public string? Tipo { get; set; }
+            public DateTime DataCompetenciaReferencia { get; set; }
             public DateTime DataReferencia { get; set; }
             public DateTime? PagoEm { get; set; }
             public DateTime CriadoEm { get; set; }
+            public bool Ativo { get; set; }
+            public string? StatusPedido { get; set; }
+            public int? IdVendaProdutoPedido { get; set; }
         }
 
         private sealed class FinanceiroDashboardKpiRow
@@ -820,10 +1178,5 @@ WHERE IdSalao = @IdSalao;";
             public decimal TicketMedioRecebido { get; set; }
         }
 
-        private sealed class FinanceiroDreTotalRow
-        {
-            public decimal Receitas { get; set; }
-            public decimal Despesas { get; set; }
-        }
     }
 }

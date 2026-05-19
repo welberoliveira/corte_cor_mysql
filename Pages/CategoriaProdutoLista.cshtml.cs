@@ -15,6 +15,12 @@ namespace CorteCor.Pages
         public string Mensagem { get; set; } = string.Empty;
         public string MensagemTipo { get; set; } = "info";
 
+        [TempData]
+        public string? FlashMensagem { get; set; }
+
+        [TempData]
+        public string? FlashMensagemTipo { get; set; }
+
         [BindProperty(SupportsGet = true)]
         public string? q { get; set; }
 
@@ -31,6 +37,9 @@ namespace CorteCor.Pages
 
         public void OnGet()
         {
+            Mensagem = FlashMensagem ?? string.Empty;
+            MensagemTipo = FlashMensagemTipo ?? "info";
+
             if (!TryObterIdSalao(out var idSalao))
             {
                 Categorias = new PagedResult<CategoriaProduto> { PageIndex = 1, PageSize = 10 };
@@ -44,17 +53,23 @@ namespace CorteCor.Pages
 
         public IActionResult OnPost(int id, string action, string? q, bool incluirInativas, int p = 1)
         {
-            if (!TryObterIdSalao(out var idSalao))
-            {
-                Mensagem = "Não foi possível identificar a empresa atual.";
-                MensagemTipo = "danger";
-                OnGet();
-                return Page();
-            }
-
             if (action == "alterar")
             {
-                return Redirect($"{HttpContext.Request.PathBase}/CategoriaProdutoCadastro?id={id}");
+                if (id <= 0)
+                {
+                    FlashMensagem = "Não foi possível identificar a categoria selecionada.";
+                    FlashMensagemTipo = "danger";
+                    return RedirectToPage(new { q, incluirInativas, p });
+                }
+
+                return RedirectToPage("/CategoriaProdutoCadastro", new { id });
+            }
+
+            if (!TryObterIdSalao(out var idSalao))
+            {
+                FlashMensagem = "Não foi possível identificar a empresa atual.";
+                FlashMensagemTipo = "danger";
+                return RedirectToPage(new { q, incluirInativas, p });
             }
 
             if (action == "excluir")
@@ -62,21 +77,17 @@ namespace CorteCor.Pages
                 try
                 {
                     _categoriaHandler.ExcluirPorSalao(id, idSalao);
-                    Mensagem = "Categoria inativada com sucesso.";
-                    MensagemTipo = "success";
+                    FlashMensagem = "Categoria inativada com sucesso.";
+                    FlashMensagemTipo = "success";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível inativar esta categoria.";
-                    MensagemTipo = "danger";
+                    FlashMensagem = "Não foi possível inativar esta categoria.";
+                    FlashMensagemTipo = "danger";
                 }
             }
 
-            this.q = q;
-            this.incluirInativas = incluirInativas;
-            this.p = p;
-            OnGet();
-            return Page();
+            return RedirectToPage(new { q, incluirInativas, p });
         }
 
         private bool TryObterIdSalao(out int idSalao)

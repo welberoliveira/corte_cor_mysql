@@ -41,6 +41,22 @@ internal sealed class CompatibleDbConnection : DbConnection
         new CompatibleDbCommand(_inner.CreateCommand(), this);
 
     internal DbConnection Inner => _inner;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _inner.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await _inner.DisposeAsync();
+        await base.DisposeAsync();
+    }
 }
 
 internal sealed class CompatibleDbTransaction : DbTransaction
@@ -63,6 +79,22 @@ internal sealed class CompatibleDbTransaction : DbTransaction
     public override void Rollback() => _inner.Rollback();
 
     internal DbTransaction Inner => _inner;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _inner.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await _inner.DisposeAsync();
+        await base.DisposeAsync();
+    }
 }
 
 internal sealed class CompatibleDbCommand : DbCommand
@@ -180,6 +212,22 @@ internal sealed class CompatibleDbCommand : DbCommand
     private void ApplyTranslatedSql()
     {
         _inner.CommandText = SqlServerToMySqlTranslator.Translate(_commandText ?? _inner.CommandText);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _inner.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await _inner.DisposeAsync();
+        await base.DisposeAsync();
     }
 }
 

@@ -61,7 +61,7 @@
         <form method="get" class="row g-3 align-items-end mb-3">
             <div class="col-md-4">
                 <label class="form-label">Produto</label>
-                <select class="form-select" name="idProduto">
+                <select class="form-select" name="idProduto" data-smart-select data-smart-placeholder="Digite para pesquisar produto...">
                     <option value="">Todos</option>
                     @foreach (var produto in Model.ProdutosFiltro)
                     {
@@ -153,8 +153,8 @@
                                 <div class="fw-semibold">@item.TipoMovimento</div>
                                 <div class="small text-muted">@item.Origem</div>
                             </td>
-                            <td class="text-end">@item.Quantidade.ToString("N3")</td>
-                            <td class="text-end">@item.SaldoPosterior.ToString("N3")</td>
+                            <td class="text-end">@decimal.Truncate(item.Quantidade).ToString("N0")</td>
+                            <td class="text-end">@decimal.Truncate(item.SaldoPosterior).ToString("N0")</td>
                             <td>@item.Observacao</td>
                         </tr>
                     }

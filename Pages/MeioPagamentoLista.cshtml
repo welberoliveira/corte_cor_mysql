@@ -47,11 +47,7 @@
                     <td>@Meio.PrazoRecebimentoDias</td>
                     <td>@(Meio.Ativo ? "Sim" : "Não")</td>
                     <td class="actions">
-                        <form method="post" style="display: inline;">
-                            <input type="hidden" name="id" value="@Meio.IdMeioPagamento">
-                            <input type="hidden" name="action" value="alterar">
-                            <button class="btn btn-info">Alterar</button>
-                        </form>
+                        <a asp-page="/MeioPagamentoCadastro" asp-route-id="@Meio.IdMeioPagamento" class="btn btn-info">Alterar</a>
 
                         <form method="post" style="display: inline;">
                             <input type="hidden" name="id" value="@Meio.IdMeioPagamento">

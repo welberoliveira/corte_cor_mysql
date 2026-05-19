@@ -1,0 +1,151 @@
+@page
+@model CorteCor.Pages.Financeiro.FluxoCaixaModel
+@{
+    ViewData["Title"] = "Fluxo de Caixa";
+}
+
+<style>
+    .fluxo-card {
+        border: 0;
+        border-radius: 14px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    .fluxo-kpi-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #64748b;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Fluxo de Caixa</h2>
+        <div class="text-muted">Entradas, saídas e saldo acumulado por dia, mês ou ano.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-secondary" asp-page="/Financeiro/Lancamentos">Lançamentos</a>
+        <a class="btn btn-secondary" asp-page="/Financeiro/Index">Dashboard</a>
+    </div>
+</div>
+
+<div class="card fluxo-card mb-4">
+    <div class="card-header bg-white fw-semibold">Filtros</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label" for="Visao">Visão</label>
+                <select class="form-select" id="Visao" name="Visao">
+                    <option value="Dia" selected="@(Model.Visao == "Dia")">Dia</option>
+                    <option value="Mes" selected="@(Model.Visao == "Mes")">Mês</option>
+                    <option value="Ano" selected="@(Model.Visao == "Ano")">Ano</option>
+                </select>
+            </div>
+            <div class="col-md-3" id="FiltroDia">
+                <label class="form-label" for="Dia">Dia</label>
+                <input type="date" class="form-control" id="Dia" name="Dia" value="@Model.Dia?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3" id="FiltroMes">
+                <label class="form-label" for="Mes">Mês</label>
+                <select class="form-select" id="Mes" name="Mes">
+                    @for (var mes = 1; mes <= 12; mes++)
+                    {
+                        <option value="@mes" selected="@(Model.Mes == mes)">@System.Globalization.CultureInfo.GetCultureInfo("pt-BR").DateTimeFormat.GetMonthName(mes)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="Ano">Ano</label>
+                <select class="form-select" id="Ano" name="Ano">
+                    @foreach (var ano in Model.AnosDisponiveis)
+                    {
+                        <option value="@ano" selected="@(Model.Ano == ano)">@ano</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="Projetado" name="Projetado" value="true" checked="@Model.Projetado" />
+                    <label class="form-check-label" for="Projetado">Projetado</label>
+                </div>
+            </div>
+            <div class="col-md-12 text-md-end">
+                <button class="btn btn-primary" type="submit">Gerar fluxo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card fluxo-card h-100"><div class="card-body">
+            <div class="fluxo-kpi-label">Entradas</div>
+            <div class="fs-4 fw-bold text-success">@Model.FormatarMoeda(Model.Fluxo.TotalEntradas)</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card fluxo-card h-100"><div class="card-body">
+            <div class="fluxo-kpi-label">Saídas</div>
+            <div class="fs-4 fw-bold text-danger">@Model.FormatarMoeda(Model.Fluxo.TotalSaidas)</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card fluxo-card h-100"><div class="card-body">
+            <div class="fluxo-kpi-label">Saldo final</div>
+            <div class="fs-4 fw-bold @Model.ClasseValor(Model.Fluxo.SaldoFinal)">@Model.FormatarMoeda(Model.Fluxo.SaldoFinal)</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card fluxo-card">
+    <div class="card-header bg-white fw-semibold">Movimentação</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Período</th>
+                        <th class="text-end">Entradas</th>
+                        <th class="text-end">Saídas</th>
+                        <th class="text-end">Saldo do período</th>
+                        <th class="text-end">Saldo acumulado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var linha in Model.Fluxo.Linhas)
+                    {
+                        var saldoPeriodo = linha.Entradas - linha.Saidas;
+                        <tr>
+                            <td>@Model.RotuloData(linha.Data)</td>
+                            <td class="text-end text-success">@Model.FormatarMoeda(linha.Entradas)</td>
+                            <td class="text-end text-danger">@Model.FormatarMoeda(linha.Saidas)</td>
+                            <td class="text-end @Model.ClasseValor(saldoPeriodo)">@Model.FormatarMoeda(saldoPeriodo)</td>
+                            <td class="text-end fw-semibold @Model.ClasseValor(linha.SaldoAcumulado)">@Model.FormatarMoeda(linha.SaldoAcumulado)</td>
+                        </tr>
+                    }
+                    @if (!Model.Fluxo.Linhas.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">Nenhuma movimentação encontrada.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const visao = document.getElementById('Visao');
+        const filtroDia = document.getElementById('FiltroDia');
+        const filtroMes = document.getElementById('FiltroMes');
+
+        function ajustarFiltros() {
+            filtroDia.classList.toggle('d-none', visao.value !== 'Dia');
+            filtroMes.classList.toggle('d-none', visao.value !== 'Mes');
+        }
+
+        visao.addEventListener('change', ajustarFiltros);
+        ajustarFiltros();
+    </script>
+}

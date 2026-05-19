@@ -101,8 +101,12 @@ public class PedidoConversaoInput
 {
     public int IdPedido { get; set; }
     public int? IdMeioPagamento { get; set; }
+    public int? IdPlano { get; set; }
+    public int? IdConta { get; set; }
     public bool RecebidoNaHora { get; set; } = true;
     public bool EmitirNotaFiscalServico { get; set; }
+    public int NumeroParcelas { get; set; } = 1;
+    public DateTime? PrimeiroVencimento { get; set; }
     public string? ObservacoesConversao { get; set; }
 }
 

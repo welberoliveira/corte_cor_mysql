@@ -71,7 +71,7 @@
                             <td>
                                 @if (produto.ControlarEstoque)
                                 {
-                                    @produto.EstoqueAtual
+                                    @Model.FormatarQuantidadeEstoque(produto.EstoqueAtual)
                                     @if (produto.EstoqueAtual <= produto.EstoqueMinimo)
                                     {
                                         <span class="badge bg-warning text-dark" title="Estoque abaixo do mínimo">Baixo</span>
@@ -94,24 +94,16 @@
                                 }
                             </td>
                             <td class="actions">
-                                <form method="post" style="display: inline;">
-                                    <input type="hidden" name="id" value="@produto.IdProduto">
-                                    <input type="hidden" name="action" value="alterar">
-                                    <input type="hidden" name="idCategoria" value="@Model.IdCategoria">
-                                    <input type="hidden" name="q" value="@Model.q">
-                                    <input type="hidden" name="incluirArquivados" value="@Model.incluirArquivados">
-                                    <input type="hidden" name="p" value="@Model.Produtos.PageIndex">
-                                    <button type="submit" class="btn btn-info btn-sm">Alterar</button>
-                                </form>
+                                <a asp-page="/ProdutoCadastro" asp-route-id="@produto.IdProduto" class="btn btn-info btn-sm">Alterar</a>
 
-                                <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja inativar este produto?');">
+                                <form method="post" style="display: inline;" data-confirm-submit="Tem certeza que deseja inativar este produto?">
                                     <input type="hidden" name="id" value="@produto.IdProduto">
                                     <input type="hidden" name="action" value="excluir">
                                     <input type="hidden" name="idCategoria" value="@Model.IdCategoria">
                                     <input type="hidden" name="q" value="@Model.q">
                                     <input type="hidden" name="incluirArquivados" value="@Model.incluirArquivados">
                                     <input type="hidden" name="p" value="@Model.Produtos.PageIndex">
-                                    <button type="submit" class="btn btn-danger btn-sm">Inativar</button>
+                                    <button type="submit" class="btn btn-danger btn-sm" data-loading-text="Inativando...">Inativar</button>
                                 </form>
                             </td>
                         </tr>

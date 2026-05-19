@@ -52,6 +52,12 @@ namespace CorteCor.Pages.CRM
         [TempData]
         public string? FlashType { get; set; }
 
+        [TempData]
+        public string? FlashActionPage { get; set; }
+
+        [TempData]
+        public string? FlashActionText { get; set; }
+
         public IActionResult OnGet()
         {
             return Carregar();
@@ -95,9 +101,42 @@ namespace CorteCor.Pages.CRM
             }
             catch (Exception ex)
             {
-                FlashMessage = ex.Message;
-                FlashType = "danger";
+                DefinirMensagemErroEnvio(ex);
                 return RedirectToPage(new { IdCampanhaView = idCampanha, Pesquisa, Canal, Segmento, Status, p });
+            }
+        }
+
+        private void DefinirMensagemErroEnvio(Exception ex)
+        {
+            FlashMessage = ex.Message;
+            FlashType = "danger";
+            FlashActionPage = null;
+            FlashActionText = null;
+
+            if (ex.Message.Contains("fornecedor de e-mail ativo", StringComparison.OrdinalIgnoreCase))
+            {
+                FlashMessage = $"{ex.Message} Configure um fornecedor de e-mail ativo antes de disparar campanhas.";
+                FlashType = "warning";
+                FlashActionPage = "/Configuracoes/FornecedoresEmail";
+                FlashActionText = "Abrir fornecedores de e-mail";
+                return;
+            }
+
+            if (ex.Message.Contains("fornecedor de SMS ativo", StringComparison.OrdinalIgnoreCase))
+            {
+                FlashMessage = $"{ex.Message} Configure um fornecedor de SMS ativo antes de disparar campanhas.";
+                FlashType = "warning";
+                FlashActionPage = "/Configuracoes/FornecedoresSMS";
+                FlashActionText = "Abrir fornecedores de SMS";
+                return;
+            }
+
+            if (ex.Message.Contains("fornecedor de WhatsApp ativo", StringComparison.OrdinalIgnoreCase))
+            {
+                FlashMessage = $"{ex.Message} Configure um fornecedor de WhatsApp ativo antes de disparar campanhas.";
+                FlashType = "warning";
+                FlashActionPage = "/Configuracoes/FornecedoresWhatsapp";
+                FlashActionText = "Abrir fornecedores de WhatsApp";
             }
         }
 

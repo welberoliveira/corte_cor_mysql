@@ -188,7 +188,7 @@
                         </div>
                         <div>
                             <label class="form-label">Cliente</label>
-                            <select class="form-select" name="idPessoaFiltro">
+                            <select class="form-select" name="idPessoaFiltro" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                                 <option value="">Todos</option>
                                 @foreach (var cliente in Model.Contexto.Clientes)
                                 {

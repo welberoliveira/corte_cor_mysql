@@ -1,11 +1,12 @@
 @page
 @model CorteCor.Pages.CRM.TarefaCadastroModel
 @{
-    ViewData["Title"] = "Nova Tarefa CRM";
+    var editando = Model.TarefaInput.IdTarefa > 0;
+    ViewData["Title"] = editando ? "Editar Tarefa CRM" : "Nova Tarefa CRM";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2 class="mb-1">Nova tarefa</h2>
+    <h2 class="mb-1">@(editando ? "Editar tarefa" : "Nova tarefa")</h2>
     <a class="btn btn-secondary" asp-page="/CRM/Tarefas">Voltar para tarefas</a>
 </div>
 
@@ -18,9 +19,10 @@
     <div class="card-header bg-white fw-semibold">Dados da tarefa</div>
     <div class="card-body">
         <form method="post" asp-page-handler="Salvar" class="row g-3">
+            <input type="hidden" asp-for="TarefaInput.IdTarefa" />
             <div class="col-md-6">
                 <label class="form-label">Cliente</label>
-                <select class="form-select" asp-for="TarefaInput.IdPessoa">
+                <select class="form-select" asp-for="TarefaInput.IdPessoa" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                     <option value="">Não vinculado</option>
                     @foreach (var cliente in Model.Clientes)
                     {

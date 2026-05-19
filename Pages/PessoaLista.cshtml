@@ -1,7 +1,7 @@
 @page
 @model CorteCor.Pages.PessoaListaModel
 @{
-    ViewData["Title"] = "Pessoas";
+    ViewData["Title"] = "Clientes/Fornecedores/Leads";
 }
 
 <div class="row">
@@ -9,7 +9,7 @@
         <h2>@ViewData["Title"]</h2>
     </div>
     <div class="col-md-2 text-end">
-        <a class="btn btn-primary" asp-page="/PessoaCadastro">Nova Pessoa</a>
+        <a class="btn btn-primary" asp-page="/PessoaCadastro">Nova pessoa</a>
     </div>
 </div>
 <br />
@@ -66,22 +66,16 @@
                         {
                             <span class="badge bg-warning text-dark me-1">Fornecedor</span>
                         }
-                        @if (pessoa.IsTransportador)
+                        @if (pessoa.IsLead)
                         {
-                            <span class="badge bg-info text-dark">Transportador</span>
+                            <span class="badge bg-success me-1">Lead</span>
                         }
                     </td>
                     <td class="d-none d-md-table-cell">@(pessoa.DataNascimento.HasValue ? pessoa.DataNascimento.Value.ToShortDateString() : "")</td>
                     <td class="actions">
                         <a class="btn btn-secondary" asp-page="/CRM/Cliente" asp-route-idPessoa="@pessoa.IdPessoa">CRM</a>
 
-                        <form method="post" style="display: inline;">
-                            <input type="hidden" name="id" value="@pessoa.IdPessoa">
-                            <input type="hidden" name="action" value="alterar">
-                            <input type="hidden" name="q" value="@Model.q">
-                            <input type="hidden" name="p" value="@Model.Pessoas.PageIndex">
-                            <button class="btn btn-info" type="submit">Alterar</button>
-                        </form>
+                        <a class="btn btn-info" asp-page="/PessoaCadastro" asp-route-id="@pessoa.IdPessoa">Alterar</a>
 
                         <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta pessoa?');">
                             <input type="hidden" name="id" value="@pessoa.IdPessoa">

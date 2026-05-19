@@ -20,3 +20,13 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.smart-select-filter {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.smart-select-filter:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.18);
+}

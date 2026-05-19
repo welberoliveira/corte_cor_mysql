@@ -16,6 +16,13 @@ namespace CorteCor.Pages
     [Authorize(Policy = "UsuarioPolicy")]
     public class PagamentoListaModel : PageModel
     {
+        private readonly FinanceiroService _financeiroService;
+
+        public PagamentoListaModel(FinanceiroService financeiroService)
+        {
+            _financeiroService = financeiroService;
+        }
+
         public PagedResult<Pagamento> Pagamentos { get; set; }
         public string Mensagem { get; set; }
 
@@ -97,7 +104,15 @@ namespace CorteCor.Pages
 
                 var mpService = new MercadoPagoService(HttpContext.RequestServices.GetRequiredService<IConfiguration>());
                 bool synced = await handler.SincronizarPagamento(id, mpService, idSalao);
-                if (synced) Mensagem = "Status sincronizado com sucesso!";
+                if (synced)
+                {
+                    if (idSalao > 0)
+                    {
+                        await _financeiroService.SincronizarTitulosPagamentoAsync(idSalao);
+                    }
+
+                    Mensagem = "Status sincronizado com sucesso!";
+                }
                 else Mensagem = "Não foi possível sincronizar ou pagamento não encontrado no Mercado Pago.";
             }
 

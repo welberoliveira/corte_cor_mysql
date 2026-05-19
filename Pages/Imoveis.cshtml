@@ -145,18 +145,8 @@
                             </td>
                             <td>@imovel.DataAtualizacao.ToString("dd/MM/yyyy")</td>
                             <td class="text-end">
-                                <form method="post" class="d-inline">
-                                    <input type="hidden" name="id" value="@imovel.IdImovel">
-                                    <input type="hidden" name="action" value="alterar">
-                                    <input type="hidden" name="q" value="@Model.q">
-                                    <input type="hidden" name="status" value="@Model.Status">
-                                    <input type="hidden" name="finalidade" value="@Model.Finalidade">
-                                    <input type="hidden" name="tipoImovel" value="@Model.TipoImovel">
-                                    <input type="hidden" name="incluirInativos" value="@Model.incluirInativos">
-                                    <input type="hidden" name="p" value="@Model.Imoveis.PageIndex">
-                                    <button type="submit" class="btn btn-info btn-sm">Alterar</button>
-                                </form>
-                                <form method="post" class="d-inline" onsubmit="return confirm('Inativar este imovel?');">
+                                <a asp-page="/ImovelCadastro" asp-route-id="@imovel.IdImovel" class="btn btn-info btn-sm">Alterar</a>
+                                <form method="post" class="d-inline" data-confirm-submit="Inativar este imóvel?">
                                     <input type="hidden" name="id" value="@imovel.IdImovel">
                                     <input type="hidden" name="action" value="inativar">
                                     <input type="hidden" name="q" value="@Model.q">
@@ -165,7 +155,7 @@
                                     <input type="hidden" name="tipoImovel" value="@Model.TipoImovel">
                                     <input type="hidden" name="incluirInativos" value="@Model.incluirInativos">
                                     <input type="hidden" name="p" value="@Model.Imoveis.PageIndex">
-                                    <button type="submit" class="btn btn-warning btn-sm">Inativar</button>
+                                    <button type="submit" class="btn btn-warning btn-sm" data-loading-text="Inativando...">Inativar</button>
                                 </form>
                                 <form method="post" class="d-inline" onsubmit="return confirm('Excluir este imovel? Esta acao remove o item da lista, mas preserva o historico no banco.');">
                                     <input type="hidden" name="id" value="@imovel.IdImovel">

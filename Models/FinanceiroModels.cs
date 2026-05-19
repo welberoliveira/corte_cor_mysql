@@ -20,8 +20,16 @@ public static class FinanceiroOrigemTitulo
 {
     public const string Manual = "Manual";
     public const string PagamentoAgendamento = "PagamentoAgendamento";
+    public const string PagamentoAvulso = "PagamentoAvulso";
     public const string Venda = "Venda";
+    public const string Compra = "Compra";
     public const string PosVenda = "PosVenda";
+}
+
+public static class RecorrenciaTipo
+{
+    public const string Nenhuma = "Nenhuma";
+    public const string Mensal = "Mensal";
 }
 
     public class FinanceiroTitulo
@@ -46,6 +54,8 @@ public static class FinanceiroOrigemTitulo
         public string? Documento { get; set; }
         [StringLength(20)]
         public string Status { get; set; } = FinanceiroStatusTitulo.Aberto;
+        [StringLength(20)]
+        public string Recorrencia { get; set; } = RecorrenciaTipo.Nenhuma;
         public decimal ValorOriginal { get; set; }
         public decimal ValorLiquidado { get; set; }
         public decimal ValorAberto { get; set; }
@@ -69,6 +79,8 @@ public static class FinanceiroOrigemTitulo
     {
         public string? Tipo { get; set; }
         public string? Status { get; set; }
+        public string? Recorrencia { get; set; }
+        public int? IdGrupoPlano { get; set; }
         public int? IdPlano { get; set; }
         public int? IdConta { get; set; }
         public string? Pesquisa { get; set; }
@@ -93,10 +105,64 @@ public static class FinanceiroOrigemTitulo
         public decimal SaldoAcumulado { get; set; }
     }
 
+    public class FinanceiroFluxoCaixaResumo
+    {
+        public string Visao { get; set; } = "Mes";
+        public DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
+        public List<FinanceiroFluxoCaixaItem> Linhas { get; set; } = new();
+        public decimal TotalEntradas => Linhas.Sum(linha => linha.Entradas);
+        public decimal TotalSaidas => Linhas.Sum(linha => linha.Saidas);
+        public decimal SaldoFinal => Linhas.LastOrDefault()?.SaldoAcumulado ?? 0m;
+    }
+
     public class FinanceiroDreLinha
     {
         public string Grupo { get; set; } = string.Empty;
         public decimal Valor { get; set; }
+    }
+
+    public class FinanceiroDreMovimento
+    {
+        public string GrupoDRE { get; set; } = string.Empty;
+        public int OrdemDRE { get; set; }
+        public int? IdPlano { get; set; }
+        public string? Codigo { get; set; }
+        public string NomePlano { get; set; } = "Sem plano de contas";
+        public string? TipoConta { get; set; }
+        public string Tipo { get; set; } = FinanceiroTipoTitulo.Receber;
+        public int Mes { get; set; }
+        public decimal Valor { get; set; }
+    }
+
+    public class FinanceiroDreLinhaDemonstrativo
+    {
+        public string Descricao { get; set; } = string.Empty;
+        public int Nivel { get; set; }
+        public bool Destaque { get; set; }
+        public bool Subtotal { get; set; }
+        public bool ResultadoFinal { get; set; }
+        public Dictionary<int, decimal> ValoresPorMes { get; set; } = new();
+        public decimal Total { get; set; }
+
+        public decimal ObterValor(int mes)
+        {
+            return ValoresPorMes.TryGetValue(mes, out var valor) ? valor : 0m;
+        }
+    }
+
+    public class FinanceiroDreResumo
+    {
+        public string TipoPeriodo { get; set; } = "Mensal";
+        public DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
+        public List<int> Meses { get; set; } = new();
+        public List<FinanceiroDreLinhaDemonstrativo> Linhas { get; set; } = new();
+        public decimal ReceitaLiquida { get; set; }
+        public decimal LucroBruto { get; set; }
+        public decimal ResultadoOperacional { get; set; }
+        public decimal ResultadoAntesTributos { get; set; }
+        public decimal ResultadoLiquido { get; set; }
     }
 
     public class FinanceiroResumoCategoria

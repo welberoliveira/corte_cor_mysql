@@ -1,6 +1,7 @@
 using CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,8 @@ namespace CorteCor.Pages
         public int? IdFuncionarioSelecionado { get; set; }
         public List<int> ServicosSelecionadosIds { get; set; } = new List<int>();
 
-        public string Mensagem { get; set; }
+        public string Mensagem { get; set; } = string.Empty;
+        public string MensagemTipo { get; set; } = "success";
 
         public void OnGet(int? idFuncionario)
         {
@@ -47,13 +49,22 @@ namespace CorteCor.Pages
             }
         }
 
-        public void OnPost(bool? locked)
+        public IActionResult OnPost(bool? locked)
         {
             if (locked == true) IsLockedEmployee = true;
 
             int idFuncionario = 0;
             int.TryParse(Request.Form["idFuncionario"], out idFuncionario);
+            if (idFuncionario <= 0)
+            {
+                Mensagem = "Selecione um funcionario para vincular os servicos.";
+                MensagemTipo = "warning";
+                OnGet(null);
+                return Page();
+            }
 
+            try
+            {
             // checkbox: mesma key repetida => pega todos os values
             var idsSelecionados = new List<int>();
             var values = Request.Form["servicosSelecionados"].ToArray();
@@ -78,10 +89,17 @@ namespace CorteCor.Pages
                 });
             }
 
-            Mensagem = "Serviços vinculados ao funcionário com sucesso!";
-
-            // Recarrega mantendo seleção
-            OnGet(idFuncionario);
+            TempData["Mensagem"] = "Servicos vinculados ao funcionario com sucesso.";
+            TempData["MensagemTipo"] = "success";
+            return RedirectToPage("/FuncionarioServicoLista");
+            }
+            catch (Exception)
+            {
+                Mensagem = "Nao foi possivel salvar os vinculos do funcionario aos servicos.";
+                MensagemTipo = "danger";
+                OnGet(idFuncionario);
+                return Page();
+            }
         }
     }
 }

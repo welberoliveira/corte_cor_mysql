@@ -30,6 +30,9 @@ public class IndexModel : PageModel
     public string? statusFiltro { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public string? recorrenciaFiltro { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public DateTime? dataInicio { get; set; }
 
     [BindProperty(SupportsGet = true)]
@@ -63,16 +66,18 @@ public class IndexModel : PageModel
             FlashType = "danger";
         }
 
-        return RedirectToPage(new { q, idPessoaFiltro, statusFiltro, dataInicio, dataFim, p });
+        return RedirectToPage(new { q, idPessoaFiltro, statusFiltro, recorrenciaFiltro, dataInicio, dataFim, p });
     }
 
-    public async Task<IActionResult> OnPostCancelarVendaAsync(int idVendaProduto)
+    public async Task<IActionResult> OnPostCancelarVendaAsync(int idVendaProduto, string? justificativa)
     {
         try
         {
-            await _vendaService.CancelarVendaAsync(ObterIdSalao(), idVendaProduto, ObterUsuarioOperador(), $"Venda {idVendaProduto} cancelada pelo operador.");
-            FlashMessage = "Venda cancelada com sucesso.";
-            FlashType = "warning";
+            var resultado = await _vendaService.EstornarVendaAsync(ObterIdSalao(), idVendaProduto, ObterUsuarioOperador(), justificativa);
+            FlashMessage = string.IsNullOrWhiteSpace(resultado.ResumoFinanceiro)
+                ? resultado.Mensagem
+                : $"{resultado.Mensagem} {resultado.ResumoFinanceiro}";
+            FlashType = resultado.MensagemTipo;
         }
         catch (Exception ex)
         {
@@ -80,7 +85,7 @@ public class IndexModel : PageModel
             FlashType = "danger";
         }
 
-        return RedirectToPage(new { q, idPessoaFiltro, statusFiltro, dataInicio, dataFim, p });
+        return RedirectToPage(new { q, idPessoaFiltro, statusFiltro, recorrenciaFiltro, dataInicio, dataFim, p });
     }
 
     public string ObterUrlNotas(int idVendaProduto)
@@ -109,6 +114,7 @@ public class IndexModel : PageModel
             Pesquisa = q,
             IdPessoa = idPessoaFiltro,
             Status = statusFiltro,
+            Recorrencia = recorrenciaFiltro,
             DataInicio = dataInicio,
             DataFim = dataFim,
             PageIndex = p > 0 ? p : 1,

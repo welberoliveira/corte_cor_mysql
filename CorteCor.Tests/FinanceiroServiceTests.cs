@@ -44,6 +44,7 @@ namespace CorteCor.Tests
                 Descricao = "  Servico premium  ",
                 Documento = " DOC-9 ",
                 Observacoes = "  observacao interna  ",
+                IdPlano = 1,
                 ValorOriginal = 250m,
                 DataCompetencia = default,
                 DataVencimento = DateTime.Today.AddDays(-2)
@@ -177,7 +178,7 @@ namespace CorteCor.Tests
         private void ConfigurarEstruturaExistente(int idSalao)
         {
             _handler.Setup(h => h.ListarPlanoContasAsync(idSalao))
-                .ReturnsAsync(new List<PlanoContas> { new() { IdPlano = 1, IdSalao = idSalao, Descricao = "Receitas de Servicos", Tipo = "R", Ativo = true } });
+                .ReturnsAsync(new List<PlanoContas> { new() { IdPlano = 1, IdSalao = idSalao, Descricao = "Receitas de Servicos", Tipo = "R", Ativo = true, AceitaLancamento = true } });
             _handler.Setup(h => h.ListarContasCaixaAsync(idSalao))
                 .ReturnsAsync(new List<ContaCaixa> { new() { IdConta = 1, IdSalao = idSalao, Nome = "Caixa Principal", Tipo = "Caixa", Ativo = true } });
         }

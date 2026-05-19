@@ -89,11 +89,7 @@ public class DetalhesModel : PageModel
     {
         try
         {
-            var resultado = await _vendaService.ProcessarPosVendaAsync(ObterIdSalao(), idVendaProduto, new VendaPosVendaInput
-            {
-                TipoOperacao = VendaPosVendaTipo.CancelamentoTotal,
-                Observacoes = observacoes
-            }, ObterUsuarioOperador());
+            var resultado = await _vendaService.EstornarVendaAsync(ObterIdSalao(), idVendaProduto, ObterUsuarioOperador(), observacoes);
 
             FlashMessage = string.IsNullOrWhiteSpace(resultado.ResumoFinanceiro)
                 ? resultado.Mensagem

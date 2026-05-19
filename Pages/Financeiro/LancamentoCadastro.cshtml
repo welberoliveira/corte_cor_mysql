@@ -21,7 +21,7 @@
             <input type="hidden" asp-for="TituloInput.IdTitulo" />
             <div class="col-md-3">
                 <label class="form-label">Tipo</label>
-                <select class="form-select" asp-for="TituloInput.Tipo">
+                <select class="form-select" asp-for="TituloInput.Tipo" id="TipoTitulo">
                     <option value="Receber">Receber</option>
                     <option value="Pagar">Pagar</option>
                 </select>
@@ -32,6 +32,13 @@
                     <option value="Aberto">Aberto</option>
                     <option value="Liquidado">Liquidado</option>
                     <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Recorr&ecirc;ncia</label>
+                <select class="form-select" asp-for="TituloInput.Recorrencia">
+                    <option value="Nenhuma">Nenhuma</option>
+                    <option value="Mensal">Mensal</option>
                 </select>
             </div>
             <div class="col-md-6">
@@ -55,12 +62,22 @@
                 <input type="date" class="form-control" asp-for="TituloInput.DataVencimento" />
             </div>
             <div class="col-md-6">
-                <label class="form-label">Plano de contas</label>
-                <select class="form-select" asp-for="TituloInput.IdPlano">
-                    <option value="">Sem plano</option>
-                    @foreach (var plano in Model.Planos)
+                <label class="form-label">Grupo do Plano de Contas</label>
+                <select class="form-select" asp-for="GrupoPlanoContaId" id="GrupoPlanoContaId" data-smart-select data-smart-placeholder="Digite para pesquisar grupo...">
+                    <option value="">Selecione o grupo</option>
+                    @foreach (var grupo in Model.GruposPlano)
                     {
-                        <option value="@plano.IdPlano">@plano.Codigo - @plano.Descricao</option>
+                        <option value="@grupo.IdPlano">@grupo.Codigo - @grupo.NomeExibicao</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Conta</label>
+                <select class="form-select" asp-for="TituloInput.IdPlano" id="PlanoContaId" data-selected="@Model.TituloInput.IdPlano" required data-smart-select data-smart-placeholder="Digite para pesquisar conta...">
+                    <option value="">Selecione a conta</option>
+                    @foreach (var plano in Model.ContasPlano)
+                    {
+                        <option value="@plano.IdPlano">@plano.Codigo - @plano.NomeExibicao</option>
                     }
                 </select>
             </div>
@@ -98,3 +115,88 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const grupoSelect = document.getElementById('GrupoPlanoContaId');
+        const contaSelect = document.getElementById('PlanoContaId');
+        const tipoSelect = document.getElementById('TipoTitulo');
+
+        if (!grupoSelect || !contaSelect || !tipoSelect) {
+            return;
+        }
+
+        function tipoAtual() {
+            return tipoSelect.value || '';
+        }
+
+        function limparContas() {
+            contaSelect.innerHTML = '<option value="">Selecione a conta</option>';
+            contaSelect.disabled = true;
+        }
+
+        async function carregarGrupos(tipo) {
+            grupoSelect.innerHTML = '<option value="">Selecione o grupo</option>';
+            grupoSelect.disabled = true;
+            limparContas();
+
+            const response = await fetch(`${window.location.pathname}?handler=GruposPlano&tipo=${encodeURIComponent(tipo || '')}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                grupoSelect.innerHTML = '<option value="">Nao foi possivel carregar os grupos</option>';
+                return;
+            }
+
+            const grupos = await response.json();
+            grupos.forEach(function (grupo) {
+                const option = document.createElement('option');
+                option.value = grupo.id;
+                option.textContent = grupo.rotulo;
+                grupoSelect.appendChild(option);
+            });
+
+            grupoSelect.disabled = false;
+        }
+
+        async function carregarContas(idGrupo, selectedId) {
+            contaSelect.innerHTML = '<option value="">Selecione a conta</option>';
+            contaSelect.disabled = !idGrupo;
+
+            if (!idGrupo) {
+                return;
+            }
+
+            const response = await fetch(`${window.location.pathname}?handler=ContasFilhas&idGrupo=${encodeURIComponent(idGrupo)}&tipo=${encodeURIComponent(tipoAtual())}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                contaSelect.innerHTML = '<option value="">Nao foi possivel carregar as contas</option>';
+                return;
+            }
+
+            const contas = await response.json();
+            contas.forEach(function (conta) {
+                const option = document.createElement('option');
+                option.value = conta.id;
+                option.textContent = conta.rotulo;
+                if (selectedId && String(conta.id) === String(selectedId)) {
+                    option.selected = true;
+                }
+                contaSelect.appendChild(option);
+            });
+        }
+
+        grupoSelect.addEventListener('change', function () {
+            carregarContas(grupoSelect.value, null);
+        });
+
+        tipoSelect.addEventListener('change', function () {
+            carregarGrupos(tipoAtual());
+        });
+
+        contaSelect.disabled = !grupoSelect.value;
+    });
+</script>

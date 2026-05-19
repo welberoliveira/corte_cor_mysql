@@ -12,10 +12,12 @@ namespace CorteCor.Pages.Vendas;
 public class NovoModel : PageModel
 {
     private readonly VendaService _vendaService;
+    private readonly FinanceiroService _financeiroService;
 
-    public NovoModel(VendaService vendaService)
+    public NovoModel(VendaService vendaService, FinanceiroService financeiroService)
     {
         _vendaService = vendaService;
+        _financeiroService = financeiroService;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -23,6 +25,11 @@ public class NovoModel : PageModel
 
     public VendaCheckoutContexto Contexto { get; private set; } = new();
     public VendaProduto? VendaExistente { get; private set; }
+    public List<PlanoContas> GruposPlano { get; private set; } = new();
+    public List<PlanoContas> ContasPlano { get; private set; } = new();
+    public List<ContaCaixa> ContasCaixa { get; private set; } = new();
+    public int? GrupoPlanoContaId { get; private set; }
+    public int? IdPlanoPadraoVenda { get; private set; }
     public string ProdutosJson { get; private set; } = "[]";
     public string ServicosJson { get; private set; } = "[]";
     public string ItensJson { get; private set; } = "[]";
@@ -59,6 +66,18 @@ public class NovoModel : PageModel
     {
         await CarregarAsync();
         return Page();
+    }
+
+    public async Task<JsonResult> OnGetContasFilhasAsync(int idGrupo)
+    {
+        var contas = await _financeiroService.ListarContasAnaliticasPorGrupoAsync(ObterIdSalao(), idGrupo, FinanceiroTipoTitulo.Receber);
+        return new JsonResult(contas.Select(conta => new
+        {
+            id = conta.IdPlano,
+            codigo = conta.Codigo,
+            nome = conta.NomeExibicao,
+            rotulo = $"{conta.Codigo} - {conta.NomeExibicao}"
+        }));
     }
 
     public async Task<IActionResult> OnPostFinalizarAsync(int? idVendaProduto, string payloadJson)
@@ -107,6 +126,19 @@ public class NovoModel : PageModel
             PageIndex = 1,
             PageSize = 1
         }, incluirVendasRecentes: false);
+
+        GruposPlano = await _financeiroService.ListarGruposPlanoContasAsync(ObterIdSalao(), FinanceiroTipoTitulo.Receber);
+        ContasCaixa = (await _financeiroService.ListarContasCaixaAsync(ObterIdSalao()))
+            .Where(conta => conta.Ativo)
+            .OrderBy(conta => conta.Nome)
+            .ToList();
+
+        var planoPadrao = await _financeiroService.ObterPlanoReceitaPadraoVendaAsync(ObterIdSalao());
+        IdPlanoPadraoVenda = planoPadrao?.IdPlano;
+        GrupoPlanoContaId = (await _financeiroService.ObterGrupoNivel2DoPlanoAsync(ObterIdSalao(), IdPlanoPadraoVenda))?.IdPlano;
+        ContasPlano = GrupoPlanoContaId.HasValue
+            ? await _financeiroService.ListarContasAnaliticasPorGrupoAsync(ObterIdSalao(), GrupoPlanoContaId.Value, FinanceiroTipoTitulo.Receber)
+            : new List<PlanoContas>();
 
         ProdutosJson = JsonSerializer.Serialize(Contexto.Produtos.Select(p => new CatalogoDto
         {

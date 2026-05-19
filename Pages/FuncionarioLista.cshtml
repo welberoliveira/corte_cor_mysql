@@ -63,15 +63,9 @@
                         <td class="d-none d-md-table-cell">@(funcionario.sab ? "Sim" : "Não")</td>
                         <td class="d-none d-md-table-cell">@(funcionario.dom ? "Sim" : "Não")</td>
                         <td class="actions">
-                            <form method="post" style="display: inline;">
-                                <input type="hidden" name="id" value="@funcionario.IdFuncionario">
-                                <input type="hidden" name="action" value="alterar">
-                                <input type="hidden" name="q" value="@Model.q">
-                                <input type="hidden" name="p" value="@Model.Funcionarios.PageIndex">
-                                <button class="btn btn-info">Alterar</button>
-                            </form>
+                            <a asp-page="/FuncionarioCadastro" asp-route-id="@funcionario.IdFuncionario" class="btn btn-info">Alterar</a>
 
-                            <a href="/FuncionarioServicoCadastro?idFuncionario=@funcionario.IdFuncionario" class="btn btn-warning">Vincular Serviços</a>
+                            <a asp-page="/FuncionarioServicoCadastro" asp-route-idFuncionario="@funcionario.IdFuncionario" class="btn btn-warning">Vincular Serviços</a>
 
                             <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este funcionário?');">
                                 <input type="hidden" name="id" value="@funcionario.IdFuncionario">

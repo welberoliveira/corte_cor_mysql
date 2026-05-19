@@ -279,7 +279,7 @@
 
                 <div class="cc-modal-row">
                     <label class="form-label mb-0">Cliente</label>
-                    <select id="idPessoa" class="form-select">
+                    <select id="idPessoa" class="form-select" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                         <option value="">Selecione...</option>
                         @foreach (var p in Model.Clientes)
                         {
@@ -367,7 +367,7 @@
 
                 <div class="cc-modal-row">
                     <label class="form-label mb-0">Cliente</label>
-                    <select id="idPessoaNovo" class="form-select">
+                    <select id="idPessoaNovo" class="form-select" data-smart-select data-smart-placeholder="Digite para pesquisar cliente...">
                         <option value="">Selecione...</option>
                         @foreach (var p in Model.Clientes)
                         {
@@ -442,40 +442,45 @@
             }
         }
         async function atualizarServicosDisponiveis(start, selectId, currentValue, currentName) {
-            const resp = await fetch(`?handler=AvailableServices&start=${encodeURIComponent(start.toISOString())}`);
-            if (!resp.ok) return;
-
-            const services = await resp.json();
             const select = document.getElementById(selectId);
+            if (!select) return;
 
-            select.innerHTML = '<option value="">Selecione...</option>';
+            select.disabled = true;
+            select.innerHTML = '<option value="">Carregando servicos...</option>';
 
-            let found = false;
-            services.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.id;
-                opt.textContent = s.nome;
-                opt.dataset.duracaoMin = s.duracaoMin;
-                if (currentValue && parseInt(currentValue) === s.id) {
+            try {
+                const resp = await fetch(`?handler=AvailableServices&start=${encodeURIComponent(start.toISOString())}`);
+                if (!resp.ok) throw new Error('Falha ao carregar servicos disponiveis');
+
+                const services = await resp.json();
+                select.innerHTML = '<option value="">Selecione...</option>';
+
+                let found = false;
+                services.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.nome;
+                    opt.dataset.duracaoMin = s.duracaoMin;
+                    if (currentValue && parseInt(currentValue) === s.id) {
+                        opt.selected = true;
+                        found = true;
+                    }
+                    select.appendChild(opt);
+                });
+
+                if (currentValue && !found && currentName) {
+                    const opt = document.createElement('option');
+                    opt.value = currentValue;
+                    opt.textContent = currentName;
+                    opt.dataset.duracaoMin = 30;
                     opt.selected = true;
-                    found = true;
+                    select.appendChild(opt);
                 }
-                select.appendChild(opt);
-            });
-
-            // Se temos um valor atual (edição) e ele não veio na lista de disponíveis (pq já está ocupado por este agendamento ou outro motivo),
-            // forçamos a inclusão dele para não ficar em branco.
-            if (currentValue && !found && currentName) {
-                const opt = document.createElement('option');
-                opt.value = currentValue;
-                opt.textContent = currentName;
-                // Precisariamos da duracao, mas se for so visualizacao, ok. 
-                // Se for alterar horario, pode dar problema no calculo de fim.
-                // Ideal seria o EndPoint retornar a duracao tambem ou a gente buscar.
-                // Por hora, assumimos 30min ou tentamos pegar de algum cache se possivel, ou deixamos 0.
-                opt.dataset.duracaoMin = 30;
-                opt.selected = true;
-                select.appendChild(opt);
+            } catch (error) {
+                console.error(error);
+                select.innerHTML = '<option value="">Nao foi possivel carregar os servicos</option>';
+            } finally {
+                select.disabled = false;
             }
         }
 
@@ -488,9 +493,6 @@
 
             document.getElementById('idAgendamento').value = '';
             document.getElementById('inicio').value = toDateTimeLocalValue(start);
-
-            // Fetch serviços disponíveis
-            await atualizarServicosDisponiveis(start, 'idServico');
 
             // limpa campos
             document.getElementById('idPessoa').value = '';
@@ -519,6 +521,9 @@
             recalcularFimPeloServico();
 
             modal.show();
+            atualizarServicosDisponiveis(start, 'idServico')
+                .then(recalcularFimPeloServico)
+                .catch(console.error);
         }
 
 
@@ -832,9 +837,6 @@
             const start = roundToNext30Min(new Date());
             document.getElementById('inicioNovo').value = toDateTimeLocalValue(start);
 
-            // Fetch serviços disponíveis
-            await atualizarServicosDisponiveis(start, 'idServicoNovo');
-
             // limpa selects
             document.getElementById('idPessoaNovo').value = '';
             document.getElementById('idServicoNovo').value = '';
@@ -843,6 +845,9 @@
             sugerirFimNovoPeloServico();
 
             modalNovo.show();
+            atualizarServicosDisponiveis(start, 'idServicoNovo')
+                .then(sugerirFimNovoPeloServico)
+                .catch(console.error);
         }
 
         async function salvarAgendamentoNovo() {
@@ -1038,9 +1043,6 @@
 
 
             calendar.render();
-            document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
-            document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
-
             document.getElementById('btnSalvar').addEventListener('click', salvarAgendamento);
             document.getElementById('idServico').addEventListener('change', recalcularFimPeloServico);
 

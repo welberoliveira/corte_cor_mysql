@@ -21,6 +21,12 @@ namespace CorteCor.Pages
         public string Mensagem { get; set; } = string.Empty;
         public string MensagemTipo { get; set; } = "info";
 
+        [TempData]
+        public string? FlashMensagem { get; set; }
+
+        [TempData]
+        public string? FlashMensagemTipo { get; set; }
+
         public ServicoListaModel(CategoriaProdutoHandler categoriaHandler, ServicoHandler servicoHandler)
         {
             _categoriaHandler = categoriaHandler;
@@ -33,6 +39,8 @@ namespace CorteCor.Pages
             this.q = q;
             this.incluirArquivados = incluirArquivados;
             this.p = p;
+            Mensagem = FlashMensagem ?? string.Empty;
+            MensagemTipo = FlashMensagemTipo ?? "info";
 
             if (!TryObterIdSalao(out var idSalao))
             {
@@ -54,15 +62,21 @@ namespace CorteCor.Pages
         {
             if (action == "alterar")
             {
-                return Redirect($"{HttpContext.Request.PathBase}/ServicoCadastro?id={id}");
+                if (id <= 0)
+                {
+                    FlashMensagem = "Não foi possível identificar o serviço selecionado.";
+                    FlashMensagemTipo = "danger";
+                    return RedirectToPage(new { idCategoria, q, incluirArquivados, p });
+                }
+
+                return RedirectToPage("/ServicoCadastro", new { id });
             }
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "Não foi possível identificar a empresa atual.";
-                MensagemTipo = "danger";
-                OnGet(idCategoria, q, incluirArquivados, p);
-                return Page();
+                FlashMensagem = "Não foi possível identificar a empresa atual.";
+                FlashMensagemTipo = "danger";
+                return RedirectToPage(new { idCategoria, q, incluirArquivados, p });
             }
 
             if (action == "excluir")
@@ -70,18 +84,17 @@ namespace CorteCor.Pages
                 try
                 {
                     _servicoHandler.ExcluirPorSalao(id, idSalao);
-                    Mensagem = "Serviço excluído com sucesso.";
-                    MensagemTipo = "success";
+                    FlashMensagem = "Serviço inativado com sucesso.";
+                    FlashMensagemTipo = "success";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível excluir este serviço porque ele está associado a outros registros.";
-                    MensagemTipo = "warning";
+                    FlashMensagem = "Não foi possível inativar este serviço porque ele está associado a outros registros.";
+                    FlashMensagemTipo = "warning";
                 }
             }
 
-            OnGet(idCategoria, q, incluirArquivados, p);
-            return Page();
+            return RedirectToPage(new { idCategoria, q, incluirArquivados, p });
         }
 
         private bool TryObterIdSalao(out int idSalao)

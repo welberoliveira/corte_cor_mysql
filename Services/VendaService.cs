@@ -131,8 +131,18 @@ ORDER BY Nome;";
         VendaCheckoutInput input,
         string? usuario,
         string origem = "Manual",
-        string? observacoesComplementares = null)
+        string? observacoesComplementares = null,
+        DateTime? dataVendaReferencia = null,
+        bool processarRecorrencia = true)
     {
+        input.Recorrencia = NormalizarRecorrencia(input.Recorrencia);
+        if (processarRecorrencia && string.Equals(input.Recorrencia, RecorrenciaTipo.Mensal, StringComparison.OrdinalIgnoreCase))
+        {
+            return await FinalizarVendaRecorrenteMensalAsync(idSalao, input, usuario, origem, observacoesComplementares);
+        }
+
+        var dataVenda = dataVendaReferencia ?? DateTime.Now;
+
         if (input.Itens == null || input.Itens.Count == 0)
         {
             throw new InvalidOperationException("Adicione ao menos um produto ou serviço à venda.");
@@ -164,6 +174,8 @@ ORDER BY Nome;";
 
                 var produto = _produtoHandler.ObterPorIdESalao(item.IdProduto.Value, idSalao)
                     ?? throw new InvalidOperationException("Produto da venda não encontrado para este salão.");
+                ValidarQuantidadeProdutoInteira(item.Quantidade, produto.Nome);
+
                 var valorUnitario = item.ValorUnitario.GetValueOrDefault(produto.PrecoVenda);
                 if (valorUnitario < 0)
                 {
@@ -192,7 +204,7 @@ ORDER BY Nome;";
                     var estoqueAtual = produto.EstoqueAtual ?? 0m;
                     if (estoqueAtual < item.Quantidade)
                     {
-                        throw new InvalidOperationException($"Estoque insuficiente para o produto '{produto.Nome}'. Disponível: {estoqueAtual:N2}.");
+                        throw new InvalidOperationException($"Estoque insuficiente para o produto '{produto.Nome}'. Disponivel: {FormatarQuantidadeEstoque(estoqueAtual)}.");
                     }
 
                     movimentos.Add(new MovimentoEstoque
@@ -206,7 +218,7 @@ ORDER BY Nome;";
                         SaldoPosterior = estoqueAtual - item.Quantidade,
                         Observacao = $"Baixa automática pela venda de produtos.",
                         UsuarioOperador = usuario,
-                        DataMovimento = DateTime.Now
+                        DataMovimento = dataVenda
                     });
                 }
             }
@@ -274,6 +286,8 @@ ORDER BY Nome;";
                 : $"{observacoes}{Environment.NewLine}{observacoesComplementares.Trim()}";
         }
 
+        await ValidarFinanceiroVendaAsync(idSalao, input);
+
         var venda = new VendaProduto
         {
             IdSalao = idSalao,
@@ -282,6 +296,7 @@ ORDER BY Nome;";
             TipoPagamento = !string.IsNullOrWhiteSpace(input.TipoPagamento)
                 ? input.TipoPagamento.Trim()
                 : meioPagamento?.Nome,
+            Recorrencia = input.Recorrencia,
             RecebidoNaHora = input.RecebidoNaHora,
             SolicitarEmissaoFiscalServico = input.EmitirNotaFiscalServico,
             Status = VendaProdutoStatus.Finalizada,
@@ -293,33 +308,13 @@ ORDER BY Nome;";
             Observacoes = observacoes,
             Origem = string.IsNullOrWhiteSpace(origem) ? "Manual" : origem.Trim(),
             UsuarioOperador = usuario,
-            DataVenda = DateTime.Now
+            DataVenda = dataVenda
         };
 
         var idVenda = await _vendaEstoqueHandler.CriarVendaAsync(venda, itensNormalizados, movimentos);
 
-        Guid? idTitulo = null;
-        if (input.RecebidoNaHora || valorTotalVenda > 0)
-        {
-            idTitulo = await _financeiroService.SalvarTituloAsync(idSalao, new FinanceiroTitulo
-            {
-                Tipo = FinanceiroTipoTitulo.Receber,
-                Origem = FinanceiroOrigemTitulo.Venda,
-                IdPessoa = input.IdPessoa,
-                IdVendaProduto = idVenda,
-                Descricao = $"Venda {idVenda}",
-                Documento = $"VD-{idVenda}",
-                Status = input.RecebidoNaHora ? FinanceiroStatusTitulo.Liquidado : FinanceiroStatusTitulo.Aberto,
-                ValorOriginal = valorTotalVenda,
-                ValorLiquidado = input.RecebidoNaHora ? valorTotalVenda : 0m,
-                ValorAberto = input.RecebidoNaHora ? 0m : valorTotalVenda,
-                DataCompetencia = DateTime.Today,
-                DataVencimento = DateTime.Today,
-                DataLiquidacao = input.RecebidoNaHora ? DateTime.Now : null,
-                Conciliado = input.RecebidoNaHora,
-                Observacoes = $"Gerado automaticamente pela venda {idVenda}."
-            });
-        }
+        var titulosFinanceiros = await CriarTitulosFinanceirosVendaAsync(idSalao, idVenda, input, valorTotalVenda, dataVenda);
+        var idTitulo = titulosFinanceiros.FirstOrDefault();
 
         TentarRegistrarInteracaoCrm(idSalao, input.IdPessoa, new CrmInteracao
         {
@@ -329,14 +324,14 @@ ORDER BY Nome;";
             Descricao = $"Venda #{idVenda} concluída com total de {valorTotalVenda:N2}. Produtos: {subtotalProdutos:N2}. Serviços: {subtotalServicos:N2}. Pagamento: {venda.TipoPagamento ?? "Livre"}.",
             Referencia = $"Venda:{idVenda}",
             OrigemSistema = true,
-            DataInteracao = DateTime.Now
+            DataInteracao = dataVenda
         });
 
         var result = new VendaOperacaoResult
         {
             Success = true,
             IdVendaProduto = idVenda,
-            IdTituloFinanceiro = idTitulo,
+            IdTituloFinanceiro = idTitulo == Guid.Empty ? null : idTitulo,
             Mensagem = "Venda concluída com sucesso.",
             MensagemTipo = "success"
         };
@@ -382,6 +377,153 @@ ORDER BY Nome;";
         }
 
         return result;
+    }
+
+    private async Task<VendaOperacaoResult> FinalizarVendaRecorrenteMensalAsync(
+        int idSalao,
+        VendaCheckoutInput input,
+        string? usuario,
+        string origem,
+        string? observacoesComplementares)
+    {
+        var datas = ObterDatasRecorrenciaMensal(DateTime.Now);
+        ValidarEstoqueRecorrenciaMensal(idSalao, input, datas.Count);
+
+        var resultados = new List<VendaOperacaoResult>();
+        foreach (var data in datas)
+        {
+            resultados.Add(await FinalizarVendaAsync(
+                idSalao,
+                input,
+                usuario,
+                origem,
+                observacoesComplementares,
+                data,
+                processarRecorrencia: false));
+        }
+
+        var primeiro = resultados.First();
+        return new VendaOperacaoResult
+        {
+            Success = resultados.All(resultado => resultado.Success),
+            IdVendaProduto = primeiro.IdVendaProduto,
+            IdTituloFinanceiro = primeiro.IdTituloFinanceiro,
+            Mensagem = $"{resultados.Count} vendas mensais foram criadas de {datas.First():dd/MM/yyyy} ate {datas.Last():dd/MM/yyyy}.",
+            MensagemTipo = resultados.All(resultado => resultado.MensagemTipo == "success") ? "success" : "warning",
+            NotasFiscaisGeradas = resultados.SelectMany(resultado => resultado.NotasFiscaisGeradas).ToList(),
+            Logs = resultados.SelectMany(resultado => resultado.Logs).ToList()
+        };
+    }
+
+    private async Task ValidarFinanceiroVendaAsync(int idSalao, VendaCheckoutInput input)
+    {
+        if (!input.IdPlano.HasValue || input.IdPlano <= 0)
+        {
+            input.IdPlano = (await _financeiroService.ObterPlanoReceitaPadraoVendaAsync(idSalao))?.IdPlano;
+        }
+
+        if (!input.IdPlano.HasValue || input.IdPlano <= 0)
+        {
+            throw new InvalidOperationException("Selecione uma conta analitica do plano de contas para a venda.");
+        }
+
+        var planos = await _financeiroService.ListarPlanoContasAsync(idSalao);
+        var plano = planos.FirstOrDefault(p => p.IdPlano == input.IdPlano.Value);
+        if (plano == null || !plano.Ativo)
+        {
+            throw new InvalidOperationException("Selecione uma conta do plano de contas ativa para a venda.");
+        }
+
+        if (!plano.AceitaLancamento)
+        {
+            throw new InvalidOperationException("Selecione uma conta analitica do plano de contas. Contas agrupadoras nao aceitam lancamento.");
+        }
+
+        if (!string.Equals(plano.Tipo, "R", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("A venda precisa usar uma conta de plano de contas de recebimento/receita.");
+        }
+
+        var contas = await _financeiroService.ListarContasCaixaAsync(idSalao);
+        if (input.RecebidoNaHora && (!input.IdConta.HasValue || input.IdConta <= 0))
+        {
+            input.IdConta = contas
+                .Where(conta => conta.Ativo)
+                .OrderBy(conta => conta.Nome)
+                .FirstOrDefault()?.IdConta;
+        }
+
+        if (input.RecebidoNaHora && (!input.IdConta.HasValue || input.IdConta <= 0))
+        {
+            throw new InvalidOperationException("Selecione a conta caixa que recebeu o valor da venda.");
+        }
+
+        if (input.IdConta.HasValue && input.IdConta > 0)
+        {
+            var conta = contas.FirstOrDefault(c => c.IdConta == input.IdConta.Value);
+            if (conta == null || !conta.Ativo)
+            {
+                throw new InvalidOperationException("Selecione uma conta caixa ativa para a venda.");
+            }
+        }
+
+        input.NumeroParcelas = Math.Clamp(input.NumeroParcelas <= 0 ? 1 : input.NumeroParcelas, 1, 60);
+    }
+
+    private async Task<List<Guid>> CriarTitulosFinanceirosVendaAsync(
+        int idSalao,
+        int idVenda,
+        VendaCheckoutInput input,
+        decimal valorTotalVenda,
+        DateTime dataVenda)
+    {
+        var quantidadeParcelas = Math.Clamp(input.NumeroParcelas <= 0 ? 1 : input.NumeroParcelas, 1, 60);
+        var vencimentoBase = (input.PrimeiroVencimento ?? dataVenda).Date;
+        var ids = new List<Guid>();
+        var valorParcelaBase = decimal.Round(valorTotalVenda / quantidadeParcelas, 2);
+        var valorDistribuido = 0m;
+
+        for (var parcela = 1; parcela <= quantidadeParcelas; parcela++)
+        {
+            var valorParcela = parcela == quantidadeParcelas
+                ? decimal.Round(valorTotalVenda - valorDistribuido, 2)
+                : valorParcelaBase;
+            valorDistribuido += valorParcela;
+
+            var liquidarParcela = input.RecebidoNaHora && parcela == 1;
+            var vencimento = vencimentoBase.AddMonths(parcela - 1);
+            var documento = quantidadeParcelas > 1
+                ? $"VD-{idVenda}-{parcela:00}/{quantidadeParcelas:00}"
+                : $"VD-{idVenda}";
+
+            ids.Add(await _financeiroService.SalvarTituloAsync(idSalao, new FinanceiroTitulo
+            {
+                Tipo = FinanceiroTipoTitulo.Receber,
+                Origem = FinanceiroOrigemTitulo.Venda,
+                IdPessoa = input.IdPessoa,
+                IdVendaProduto = idVenda,
+                IdPlano = input.IdPlano,
+                IdConta = input.IdConta,
+                Descricao = quantidadeParcelas > 1
+                    ? $"Venda {idVenda} - parcela {parcela}/{quantidadeParcelas}"
+                    : $"Venda {idVenda}",
+                Documento = documento,
+                Status = liquidarParcela ? FinanceiroStatusTitulo.Liquidado : FinanceiroStatusTitulo.Aberto,
+                Recorrencia = input.Recorrencia,
+                ValorOriginal = valorParcela,
+                ValorLiquidado = liquidarParcela ? valorParcela : 0m,
+                ValorAberto = liquidarParcela ? 0m : valorParcela,
+                DataCompetencia = dataVenda.Date,
+                DataVencimento = vencimento,
+                DataLiquidacao = liquidarParcela ? dataVenda : null,
+                Conciliado = liquidarParcela,
+                Observacoes = quantidadeParcelas > 1
+                    ? $"Gerado automaticamente pela venda {idVenda}. Parcela {parcela}/{quantidadeParcelas}."
+                    : $"Gerado automaticamente pela venda {idVenda}."
+            }));
+        }
+
+        return ids;
     }
 
     public async Task<VendaOperacaoResult> EmitirNotaServicoAsync(int idSalao, int idVendaProduto, string? usuario)
@@ -461,6 +603,8 @@ ORDER BY Nome;";
 
                 var produto = _produtoHandler.ObterPorIdESalao(item.IdProduto.Value, idSalao)
                     ?? throw new InvalidOperationException("Produto da venda não encontrado para este salão.");
+                ValidarQuantidadeProdutoInteira(item.Quantidade, produto.Nome);
+
                 var valorUnitario = item.ValorUnitario.GetValueOrDefault(produto.PrecoVenda);
                 if (valorUnitario < 0)
                 {
@@ -469,7 +613,7 @@ ORDER BY Nome;";
 
                 if (produto.ControlarEstoque && (produto.EstoqueAtual ?? 0m) < item.Quantidade)
                 {
-                    throw new InvalidOperationException($"Estoque insuficiente para o produto '{produto.Nome}'. Disponível: {(produto.EstoqueAtual ?? 0m):N2}.");
+                    throw new InvalidOperationException($"Estoque insuficiente para o produto '{produto.Nome}'. Disponivel: {FormatarQuantidadeEstoque(produto.EstoqueAtual ?? 0m)}.");
                 }
 
                 var valorTotal = decimal.Round(item.Quantidade * valorUnitario, 2);
@@ -550,6 +694,7 @@ ORDER BY Nome;";
         vendaAtual.TipoPagamento = !string.IsNullOrWhiteSpace(input.TipoPagamento)
             ? input.TipoPagamento.Trim()
             : meioPagamento?.Nome;
+        vendaAtual.Recorrencia = NormalizarRecorrencia(input.Recorrencia);
         vendaAtual.RecebidoNaHora = input.RecebidoNaHora;
         vendaAtual.SolicitarEmissaoFiscalServico = input.EmitirNotaFiscalServico;
         vendaAtual.SubtotalProdutos = decimal.Round(subtotalProdutos, 2);
@@ -659,9 +804,14 @@ ORDER BY Nome;";
             var itemVenda = itensVenda.FirstOrDefault(i => i.IdItemVenda == selecionado.IdItemVenda)
                 ?? throw new InvalidOperationException("Item da venda não encontrado para o pós-venda.");
 
+            if (itemVenda.ControlaEstoque)
+            {
+                ValidarQuantidadeProdutoInteira(selecionado.Quantidade, itemVenda.Descricao);
+            }
+
             if (selecionado.Quantidade > itemVenda.QuantidadeDisponivelPosVenda)
             {
-                throw new InvalidOperationException($"A quantidade disponível para '{itemVenda.Descricao}' é {itemVenda.QuantidadeDisponivelPosVenda:N3}.");
+                throw new InvalidOperationException($"A quantidade disponivel para '{itemVenda.Descricao}' e {FormatarQuantidadeEstoque(itemVenda.QuantidadeDisponivelPosVenda)}.");
             }
 
             if (notaAtiva != null && string.Equals(itemVenda.TipoItem, VendaProdutoTipoItem.Servico, StringComparison.OrdinalIgnoreCase))
@@ -723,6 +873,8 @@ ORDER BY Nome;";
 
                 var produto = _produtoHandler.ObterPorIdESalao(reposicao.IdProduto.Value, idSalao)
                     ?? throw new InvalidOperationException("Produto de reposição não encontrado.");
+                ValidarQuantidadeProdutoInteira(reposicao.Quantidade, produto.Nome);
+
                 var valorUnitario = reposicao.ValorUnitario.GetValueOrDefault(produto.PrecoVenda);
                 if (valorUnitario < 0)
                 {
@@ -750,7 +902,7 @@ ORDER BY Nome;";
                     var saldoAnterior = ObterSaldoAtualProduto(saldoProdutos, produto.IdProduto, produto.EstoqueAtual ?? 0m);
                     if (saldoAnterior < reposicao.Quantidade)
                     {
-                        throw new InvalidOperationException($"Estoque insuficiente para a reposição do produto '{produto.Nome}'. Disponível: {saldoAnterior:N3}.");
+                        throw new InvalidOperationException($"Estoque insuficiente para a reposicao do produto '{produto.Nome}'. Disponivel: {FormatarQuantidadeEstoque(saldoAnterior)}.");
                     }
 
                     var saldoPosterior = saldoAnterior - reposicao.Quantidade;
@@ -877,13 +1029,28 @@ ORDER BY Nome;";
         };
     }
 
-    public async Task CancelarVendaAsync(int idSalao, int idVendaProduto, string? usuario, string? observacao = null)
+    public async Task<VendaPosVendaOperacaoResult> EstornarVendaAsync(int idSalao, int idVendaProduto, string? usuario, string? justificativa)
     {
-        await ProcessarPosVendaAsync(idSalao, idVendaProduto, new VendaPosVendaInput
+        if (string.IsNullOrWhiteSpace(justificativa) || justificativa.Trim().Length < 5)
+        {
+            throw new InvalidOperationException("Informe uma justificativa para estornar a venda.");
+        }
+
+        var observacao = $"Estorno total da venda #{idVendaProduto}. Justificativa: {justificativa.Trim()}";
+        var resultado = await ProcessarPosVendaAsync(idSalao, idVendaProduto, new VendaPosVendaInput
         {
             TipoOperacao = VendaPosVendaTipo.CancelamentoTotal,
             Observacoes = observacao
         }, usuario);
+
+        resultado.Mensagem = "Venda estornada com sucesso. Estoque e financeiro foram ajustados, inclusive lancamentos futuros vinculados a esta venda.";
+        resultado.MensagemTipo = "warning";
+        return resultado;
+    }
+
+    public async Task CancelarVendaAsync(int idSalao, int idVendaProduto, string? usuario, string? observacao = null)
+    {
+        await EstornarVendaAsync(idSalao, idVendaProduto, usuario, observacao);
     }
 
     public Task<VendaProduto?> ObterVendaAsync(int idSalao, int idVendaProduto) =>
@@ -915,6 +1082,8 @@ ORDER BY Nome;";
         {
             throw new InvalidOperationException("Informe uma quantidade maior que zero para o ajuste.");
         }
+
+        ValidarQuantidadeProdutoInteira(quantidade, "ajuste de estoque");
 
         var produto = _produtoHandler.ObterPorIdESalao(idProduto, idSalao)
             ?? throw new InvalidOperationException("Produto não encontrado para este salão.");
@@ -971,6 +1140,62 @@ ORDER BY Nome;";
 
         return null;
     }
+
+    private static string NormalizarRecorrencia(string? recorrencia)
+    {
+        return string.Equals(recorrencia?.Trim(), RecorrenciaTipo.Mensal, StringComparison.OrdinalIgnoreCase)
+            ? RecorrenciaTipo.Mensal
+            : RecorrenciaTipo.Nenhuma;
+    }
+
+    private static List<DateTime> ObterDatasRecorrenciaMensal(DateTime dataBase)
+    {
+        return Enumerable.Range(dataBase.Month, 13 - dataBase.Month)
+            .Select(mes => AjustarDataHoraParaMes(dataBase, dataBase.Year, mes))
+            .ToList();
+    }
+
+    private static DateTime AjustarDataHoraParaMes(DateTime dataBase, int ano, int mes)
+    {
+        var dia = Math.Min(dataBase.Day, DateTime.DaysInMonth(ano, mes));
+        return new DateTime(ano, mes, dia, dataBase.Hour, dataBase.Minute, dataBase.Second, dataBase.Kind);
+    }
+
+    private void ValidarEstoqueRecorrenciaMensal(int idSalao, VendaCheckoutInput input, int quantidadeOcorrencias)
+    {
+        var produtos = input.Itens
+            .Where(item => string.Equals(item.TipoItem, VendaProdutoTipoItem.Produto, StringComparison.OrdinalIgnoreCase) && item.IdProduto.HasValue)
+            .GroupBy(item => item.IdProduto!.Value)
+            .Select(grupo => new
+            {
+                IdProduto = grupo.Key,
+                QuantidadeTotal = grupo.Sum(item => item.Quantidade) * quantidadeOcorrencias
+            });
+
+        foreach (var item in produtos)
+        {
+            var produto = _produtoHandler.ObterPorIdESalao(item.IdProduto, idSalao)
+                ?? throw new InvalidOperationException("Produto da venda nao encontrado para este salao.");
+
+            ValidarQuantidadeProdutoInteira(item.QuantidadeTotal, produto.Nome);
+
+            if (produto.ControlarEstoque && (produto.EstoqueAtual ?? 0m) < item.QuantidadeTotal)
+            {
+                throw new InvalidOperationException($"Estoque insuficiente para criar a recorrencia mensal do produto '{produto.Nome}'. Necessario: {FormatarQuantidadeEstoque(item.QuantidadeTotal)}. Disponivel: {FormatarQuantidadeEstoque(produto.EstoqueAtual ?? 0m)}.");
+            }
+        }
+    }
+
+    private static void ValidarQuantidadeProdutoInteira(decimal quantidade, string descricao)
+    {
+        if (decimal.Truncate(quantidade) != quantidade)
+        {
+            throw new InvalidOperationException($"A quantidade do produto '{descricao}' deve ser um numero inteiro.");
+        }
+    }
+
+    private static string FormatarQuantidadeEstoque(decimal quantidade) =>
+        decimal.Truncate(quantidade).ToString("N0");
 
     private static string NormalizarTipoPosVenda(string? tipoOperacao)
     {

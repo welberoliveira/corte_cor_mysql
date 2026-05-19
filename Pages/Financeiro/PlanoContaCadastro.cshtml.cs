@@ -20,7 +20,48 @@ namespace CorteCor.Pages.Financeiro
         public int? id { get; set; }
 
         [BindProperty]
-        public PlanoContas PlanoInput { get; set; } = new() { Ativo = true, Tipo = "R" };
+        public PlanoContas PlanoInput { get; set; } = new()
+        {
+            Ativo = true,
+            Tipo = "D",
+            NaturezaSaldo = "Devedora",
+            AceitaLancamento = true
+        };
+
+        public List<PlanoContas> PlanosPai { get; private set; } = new();
+
+        public IReadOnlyList<string> TiposConta { get; } = new[]
+        {
+            "Ativo",
+            "Passivo",
+            "Patrimonio Liquido",
+            "Receita",
+            "Deducao da Receita",
+            "Custo",
+            "Despesa",
+            "Receita Financeira",
+            "Despesa Financeira",
+            "Outras Receitas",
+            "Outras Despesas",
+            "Tributo sobre Lucro",
+            "Participacao"
+        };
+
+        public IReadOnlyList<string> GruposDre { get; } = new[]
+        {
+            "Receita Bruta",
+            "Deducoes da Receita",
+            "Custos",
+            "Despesas Comerciais",
+            "Despesas Administrativas",
+            "Despesas com Pessoal",
+            "Despesas Operacionais Gerais",
+            "Resultado Financeiro",
+            "Outras Receitas Operacionais",
+            "Outras Despesas Operacionais",
+            "IRPJ e CSLL",
+            "Participacoes"
+        };
 
         [TempData]
         public string? FlashMessage { get; set; }
@@ -46,18 +87,30 @@ namespace CorteCor.Pages.Financeiro
             {
                 FlashMessage = ex.Message;
                 FlashType = "danger";
-                await CarregarAsync();
+                await CarregarAsync(carregarPlano: false);
                 return Page();
             }
         }
 
-        private async Task CarregarAsync()
+        private async Task CarregarAsync(bool carregarPlano = true)
         {
-            if (id.HasValue)
+            var planos = await _financeiroService.ListarPlanoContasAsync(ObterIdSalao());
+            var idPlano = id ?? (PlanoInput.IdPlano > 0 ? PlanoInput.IdPlano : null);
+
+            if (carregarPlano && idPlano.HasValue)
             {
-                var planos = await _financeiroService.ListarPlanoContasAsync(ObterIdSalao());
-                PlanoInput = planos.FirstOrDefault(p => p.IdPlano == id.Value) ?? PlanoInput;
+                PlanoInput = planos.FirstOrDefault(p => p.IdPlano == idPlano.Value) ?? PlanoInput;
             }
+
+            PlanosPai = planos
+                .Where(p => p.Ativo)
+                .Where(p => p.IdPlano != PlanoInput.IdPlano)
+                .Where(p => string.IsNullOrWhiteSpace(PlanoInput.Codigo)
+                    || string.IsNullOrWhiteSpace(p.Codigo)
+                    || !p.Codigo.StartsWith($"{PlanoInput.Codigo}.", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(p => p.Codigo)
+                .ThenBy(p => p.NomeExibicao)
+                .ToList();
         }
 
         private int ObterIdSalao()

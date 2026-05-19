@@ -40,15 +40,21 @@ public class ImoveisModel : PageModel
     {
         if (action == "alterar")
         {
-            return Redirect($"{HttpContext.Request.PathBase}/ImovelCadastro?id={id}");
+            if (id <= 0)
+            {
+                TempData["ImoveisMensagem"] = "Nao foi possivel identificar o imovel selecionado.";
+                TempData["ImoveisMensagemTipo"] = "danger";
+                return RedirectToPage(new { q, status, finalidade, tipoImovel, incluirInativos, p });
+            }
+
+            return RedirectToPage("/ImovelCadastro", new { id });
         }
 
         if (!TryObterIdSalao(out var idSalao))
         {
-            Mensagem = "Nao foi possivel identificar a empresa atual.";
-            MensagemTipo = "danger";
-            CarregarLista(q, status, finalidade, tipoImovel, incluirInativos, p);
-            return Page();
+            TempData["ImoveisMensagem"] = "Nao foi possivel identificar a empresa atual.";
+            TempData["ImoveisMensagemTipo"] = "danger";
+            return RedirectToPage(new { q, status, finalidade, tipoImovel, incluirInativos, p });
         }
 
         try
@@ -56,24 +62,23 @@ public class ImoveisModel : PageModel
             if (action == "inativar")
             {
                 _imovelHandler.Inativar(id, idSalao);
-                Mensagem = "Imovel inativado com sucesso.";
-                MensagemTipo = "success";
+                TempData["ImoveisMensagem"] = "Imovel inativado com sucesso.";
+                TempData["ImoveisMensagemTipo"] = "success";
             }
             else if (action == "excluir")
             {
                 _imovelHandler.Excluir(id, idSalao);
-                Mensagem = "Imovel excluido com sucesso.";
-                MensagemTipo = "success";
+                TempData["ImoveisMensagem"] = "Imovel excluido com sucesso.";
+                TempData["ImoveisMensagemTipo"] = "success";
             }
         }
         catch (Exception ex)
         {
-            Mensagem = $"Nao foi possivel executar a acao: {ex.Message}";
-            MensagemTipo = "danger";
+            TempData["ImoveisMensagem"] = $"Nao foi possivel executar a acao: {ex.Message}";
+            TempData["ImoveisMensagemTipo"] = "danger";
         }
 
-        CarregarLista(q, status, finalidade, tipoImovel, incluirInativos, p);
-        return Page();
+        return RedirectToPage(new { q, status, finalidade, tipoImovel, incluirInativos, p });
     }
 
     private void CarregarLista(string? q, string? status, string? finalidade, string? tipoImovel, bool incluirInativos, int p)

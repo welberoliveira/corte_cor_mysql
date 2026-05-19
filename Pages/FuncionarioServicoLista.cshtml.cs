@@ -1,6 +1,7 @@
 using CorteCor.Models;
 using CorteCor.Handlers;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,10 @@ namespace CorteCor.Pages
         }
 
         public List<FuncionarioServicoListaItem> Itens { get; set; } = new();
+        [TempData]
         public string Mensagem { get; set; }
+        [TempData]
+        public string MensagemTipo { get; set; } = "info";
 
         public void OnGet()
         {
@@ -75,7 +79,7 @@ namespace CorteCor.Pages
 
         // Opcional (se você colocar botões na tela):
         // action=remover precisa mandar idFuncionario e idServico no form.
-        public void OnPost()
+        public IActionResult OnPost()
         {
             int idSalao = 0;
             int.TryParse(User.FindFirst("IdSalao")?.Value, out idSalao);
@@ -96,11 +100,13 @@ namespace CorteCor.Pages
                     // remove a relação (IdFuncionario, IdServico)
                     fsHandler.Desvincular(idFuncionario, idServico);
 
-                    Mensagem = "Vínculo removido com sucesso.";
+                    Mensagem = "Vinculo removido com sucesso.";
+                    MensagemTipo = "success";
                 }
                 catch (Exception)
                 {
-                    Mensagem = "Não foi possível remover o vínculo.";
+                    Mensagem = "Nao foi possivel remover o vinculo.";
+                    MensagemTipo = "danger";
                 }
             }
             else if (action == "alterar")
@@ -108,11 +114,10 @@ namespace CorteCor.Pages
                 int idFuncionario = 0;
                 int.TryParse(Request.Form["idFuncionario"], out idFuncionario);
 
-                Response.Redirect(HttpContext.Request.PathBase + $"/FuncionarioServicoCadastro?idFuncionario={idFuncionario}");
-                return;
+                return RedirectToPage("/FuncionarioServicoCadastro", new { idFuncionario });
             }
 
-            OnGet();
+            return RedirectToPage();
         }
     }
 }

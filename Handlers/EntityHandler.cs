@@ -10,6 +10,7 @@ using System.Data;
 using System.Security.Claims;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Dapper;
 
 namespace CorteCor.Handlers
 {
@@ -1996,6 +1997,10 @@ namespace CorteCor.Handlers
     public class PessoaHandler : EntityHandler<Pessoa>
     {
         public PessoaHandler(IDatabaseHandler dbHandler = null) : base(dbHandler) { }
+
+        private static object ValorEnderecoOpcional(string? valor) =>
+            string.IsNullOrWhiteSpace(valor) ? string.Empty : valor.Trim();
+
         public virtual int CadastrarPessoa(Pessoa pessoa)
         {
             int novoId = 0;
@@ -2003,12 +2008,12 @@ namespace CorteCor.Handlers
             string query = @"
         INSERT INTO CorteCor_Pessoa
             (Nome, Telefone, Email, DataNascimento, IdSalao, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
-             IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro, 
+             IsCliente, IsFornecedor, IsLead, IsTransportador, NomeContato, Pais, IdEstrangeiro, 
              EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
              ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes)
         VALUES
             (@Nome, @Telefone, @Email, @DataNascimento, @IdSalao, @CpfCnpj, @InscricaoEstadual, @InscricaoMunicipal, @Cep, @Logradouro, @Numero, @Complemento, @Bairro, @Cidade, @UF, @RazaoSocial, @NomeFantasia, @Cnae,
-             @IsCliente, @IsFornecedor, @IsTransportador, @NomeContato, @Pais, @IdEstrangeiro,
+             @IsCliente, @IsFornecedor, @IsLead, @IsTransportador, @NomeContato, @Pais, @IdEstrangeiro,
              @EntCep, @EntUf, @EntCidade, @EntNome, @EntCpfCnpj, @EntInscricaoEstadual, @EntLogradouro, @EntNumero, @EntComplemento, @EntBairro, @EntEmail, @EntTelefone,
              @ConsumidorFinal, @IndicadorIE, @IESubstTrib, @Suframa, @Tags, @DataComemorativa, @DescricaoComemoracao, @BasesLegais, @Observacoes);
         SELECT SCOPE_IDENTITY();";
@@ -2035,13 +2040,13 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@CpfCnpj", string.IsNullOrWhiteSpace(pessoa.CpfCnpj) ? (object)DBNull.Value : pessoa.CpfCnpj);
                 command.AddWithValue("@InscricaoEstadual", string.IsNullOrWhiteSpace(pessoa.InscricaoEstadual) ? (object)DBNull.Value : pessoa.InscricaoEstadual);
                 command.AddWithValue("@InscricaoMunicipal", string.IsNullOrWhiteSpace(pessoa.InscricaoMunicipal) ? (object)DBNull.Value : pessoa.InscricaoMunicipal);
-                command.AddWithValue("@Cep", string.IsNullOrWhiteSpace(pessoa.Cep) ? (object)DBNull.Value : pessoa.Cep);
-                command.AddWithValue("@Logradouro", string.IsNullOrWhiteSpace(pessoa.Logradouro) ? (object)DBNull.Value : pessoa.Logradouro);
-                command.AddWithValue("@Numero", string.IsNullOrWhiteSpace(pessoa.Numero) ? (object)DBNull.Value : pessoa.Numero);
-                command.AddWithValue("@Complemento", string.IsNullOrWhiteSpace(pessoa.Complemento) ? (object)DBNull.Value : pessoa.Complemento);
-                command.AddWithValue("@Bairro", string.IsNullOrWhiteSpace(pessoa.Bairro) ? (object)DBNull.Value : pessoa.Bairro);
-                command.AddWithValue("@Cidade", string.IsNullOrWhiteSpace(pessoa.Cidade) ? (object)DBNull.Value : pessoa.Cidade);
-                command.AddWithValue("@UF", string.IsNullOrWhiteSpace(pessoa.UF) ? (object)DBNull.Value : pessoa.UF);
+                command.AddWithValue("@Cep", ValorEnderecoOpcional(pessoa.Cep));
+                command.AddWithValue("@Logradouro", ValorEnderecoOpcional(pessoa.Logradouro));
+                command.AddWithValue("@Numero", ValorEnderecoOpcional(pessoa.Numero));
+                command.AddWithValue("@Complemento", ValorEnderecoOpcional(pessoa.Complemento));
+                command.AddWithValue("@Bairro", ValorEnderecoOpcional(pessoa.Bairro));
+                command.AddWithValue("@Cidade", ValorEnderecoOpcional(pessoa.Cidade));
+                command.AddWithValue("@UF", ValorEnderecoOpcional(pessoa.UF));
                 command.AddWithValue("@RazaoSocial", string.IsNullOrWhiteSpace(pessoa.RazaoSocial) ? (object)DBNull.Value : pessoa.RazaoSocial);
                 command.AddWithValue("@NomeFantasia", string.IsNullOrWhiteSpace(pessoa.NomeFantasia) ? (object)DBNull.Value : pessoa.NomeFantasia);
                 command.AddWithValue("@Cnae", string.IsNullOrWhiteSpace(pessoa.Cnae) ? (object)DBNull.Value : pessoa.Cnae);
@@ -2049,21 +2054,22 @@ namespace CorteCor.Handlers
                 // Novos Campos
                 command.AddWithValue("@IsCliente", pessoa.IsCliente);
                 command.AddWithValue("@IsFornecedor", pessoa.IsFornecedor);
+                command.AddWithValue("@IsLead", pessoa.IsLead);
                 command.AddWithValue("@IsTransportador", pessoa.IsTransportador);
                 command.AddWithValue("@NomeContato", string.IsNullOrWhiteSpace(pessoa.NomeContato) ? (object)DBNull.Value : pessoa.NomeContato);
                 command.AddWithValue("@Pais", string.IsNullOrWhiteSpace(pessoa.Pais) ? (object)DBNull.Value : pessoa.Pais);
                 command.AddWithValue("@IdEstrangeiro", string.IsNullOrWhiteSpace(pessoa.IdEstrangeiro) ? (object)DBNull.Value : pessoa.IdEstrangeiro);
 
-                command.AddWithValue("@EntCep", string.IsNullOrWhiteSpace(pessoa.EntCep) ? (object)DBNull.Value : pessoa.EntCep);
-                command.AddWithValue("@EntUf", string.IsNullOrWhiteSpace(pessoa.EntUf) ? (object)DBNull.Value : pessoa.EntUf);
-                command.AddWithValue("@EntCidade", string.IsNullOrWhiteSpace(pessoa.EntCidade) ? (object)DBNull.Value : pessoa.EntCidade);
+                command.AddWithValue("@EntCep", ValorEnderecoOpcional(pessoa.EntCep));
+                command.AddWithValue("@EntUf", ValorEnderecoOpcional(pessoa.EntUf));
+                command.AddWithValue("@EntCidade", ValorEnderecoOpcional(pessoa.EntCidade));
                 command.AddWithValue("@EntNome", string.IsNullOrWhiteSpace(pessoa.EntNome) ? (object)DBNull.Value : pessoa.EntNome);
                 command.AddWithValue("@EntCpfCnpj", string.IsNullOrWhiteSpace(pessoa.EntCpfCnpj) ? (object)DBNull.Value : pessoa.EntCpfCnpj);
                 command.AddWithValue("@EntInscricaoEstadual", string.IsNullOrWhiteSpace(pessoa.EntInscricaoEstadual) ? (object)DBNull.Value : pessoa.EntInscricaoEstadual);
-                command.AddWithValue("@EntLogradouro", string.IsNullOrWhiteSpace(pessoa.EntLogradouro) ? (object)DBNull.Value : pessoa.EntLogradouro);
-                command.AddWithValue("@EntNumero", string.IsNullOrWhiteSpace(pessoa.EntNumero) ? (object)DBNull.Value : pessoa.EntNumero);
-                command.AddWithValue("@EntComplemento", string.IsNullOrWhiteSpace(pessoa.EntComplemento) ? (object)DBNull.Value : pessoa.EntComplemento);
-                command.AddWithValue("@EntBairro", string.IsNullOrWhiteSpace(pessoa.EntBairro) ? (object)DBNull.Value : pessoa.EntBairro);
+                command.AddWithValue("@EntLogradouro", ValorEnderecoOpcional(pessoa.EntLogradouro));
+                command.AddWithValue("@EntNumero", ValorEnderecoOpcional(pessoa.EntNumero));
+                command.AddWithValue("@EntComplemento", ValorEnderecoOpcional(pessoa.EntComplemento));
+                command.AddWithValue("@EntBairro", ValorEnderecoOpcional(pessoa.EntBairro));
                 command.AddWithValue("@EntEmail", string.IsNullOrWhiteSpace(pessoa.EntEmail) ? (object)DBNull.Value : pessoa.EntEmail);
                 command.AddWithValue("@EntTelefone", string.IsNullOrWhiteSpace(pessoa.EntTelefone) ? (object)DBNull.Value : pessoa.EntTelefone);
 
@@ -2090,7 +2096,7 @@ namespace CorteCor.Handlers
         {
             string query = @"
         SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
-               IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+               IsCliente, IsFornecedor, IsLead, IsTransportador, NomeContato, Pais, IdEstrangeiro,
                EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
                ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
         FROM CorteCor_Pessoa
@@ -2129,6 +2135,7 @@ namespace CorteCor.Handlers
                         Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
                         IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
                         IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                        IsLead = reader["IsLead"] is DBNull ? false : Convert.ToBoolean(reader["IsLead"]),
                         IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
                         NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
                         Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
@@ -2184,7 +2191,7 @@ namespace CorteCor.Handlers
                 // Data
                 string query = @"
             SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
-                   IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+                   IsCliente, IsFornecedor, IsLead, IsTransportador, NomeContato, Pais, IdEstrangeiro,
                    EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
                    ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
             FROM CorteCor_Pessoa
@@ -2225,6 +2232,7 @@ namespace CorteCor.Handlers
                             Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
                             IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
                             IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                            IsLead = reader["IsLead"] is DBNull ? false : Convert.ToBoolean(reader["IsLead"]),
                             IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
                             NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
                             Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
@@ -2262,7 +2270,7 @@ namespace CorteCor.Handlers
         {
             string query = @"
         SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
-               IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+               IsCliente, IsFornecedor, IsLead, IsTransportador, NomeContato, Pais, IdEstrangeiro,
                EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
                ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
         FROM CorteCor_Pessoa
@@ -2304,6 +2312,7 @@ namespace CorteCor.Handlers
                             Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
                             IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
                             IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                            IsLead = reader["IsLead"] is DBNull ? false : Convert.ToBoolean(reader["IsLead"]),
                             IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
                             NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
                             Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
@@ -2371,7 +2380,7 @@ namespace CorteCor.Handlers
 
                 string query = @"
         SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj,
-               IsCliente, IsFornecedor, IsTransportador
+               IsCliente, IsFornecedor, IsLead, IsTransportador
         FROM CorteCor_Pessoa
         WHERE IdSalao = @IdSalao
           AND (Excluido = 0 OR Excluido IS NULL)
@@ -2408,6 +2417,7 @@ namespace CorteCor.Handlers
                                 CpfCnpj = reader["CpfCnpj"] is DBNull ? "" : reader["CpfCnpj"].ToString(),
                                 IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
                                 IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                                IsLead = reader["IsLead"] is DBNull ? false : Convert.ToBoolean(reader["IsLead"]),
                                 IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"])
                             });
                         }
@@ -2416,6 +2426,41 @@ namespace CorteCor.Handlers
             }
 
             return result;
+        }
+
+        public async Task<List<Pessoa>> BuscarParaSelecaoAsync(int idSalao, string? pesquisa, bool somenteClientes, bool somenteFornecedores, int limite = 20)
+        {
+            const string sql = @"
+        SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj,
+               IsCliente, IsFornecedor, IsLead, IsTransportador
+        FROM CorteCor_Pessoa
+        WHERE IdSalao = @IdSalao
+          AND (Excluido = 0 OR Excluido IS NULL)
+          AND (@SomenteClientes = 0 OR COALESCE(IsCliente, 0) = 1)
+          AND (@SomenteFornecedores = 0 OR COALESCE(IsFornecedor, 0) = 1)
+          AND (
+                @Pesquisa IS NULL
+                OR Nome LIKE @Pesquisa
+                OR Email LIKE @Pesquisa
+                OR Telefone LIKE @Pesquisa
+                OR CpfCnpj LIKE @Pesquisa
+              )
+        ORDER BY
+            CASE WHEN @PesquisaExata IS NOT NULL AND Nome = @PesquisaExata THEN 0 ELSE 1 END,
+            Nome
+        LIMIT @Limite;";
+
+            var termo = string.IsNullOrWhiteSpace(pesquisa) ? null : pesquisa.Trim();
+            using var connection = _dbHandler.GetConnection();
+            return (await connection.QueryAsync<Pessoa>(sql, new
+            {
+                IdSalao = idSalao,
+                Pesquisa = termo == null ? null : $"%{termo}%",
+                PesquisaExata = termo,
+                SomenteClientes = somenteClientes,
+                SomenteFornecedores = somenteFornecedores,
+                Limite = Math.Clamp(limite, 1, 50)
+            })).ToList();
         }
 
         public bool ExisteCpfCnpjPorSalao(string cpfCnpj, int idSalao, int? ignorarIdPessoa = null)
@@ -2454,7 +2499,7 @@ namespace CorteCor.Handlers
         SELECT COUNT(*)
         FROM CorteCor_Pessoa
         WHERE IdSalao = @IdSalao
-          AND Email = @Email
+          AND CONCAT(';', REPLACE(COALESCE(Email, ''), '; ', ';'), ';') LIKE CONCAT('%;', @Email, ';%')
           AND (Excluido = 0 OR Excluido IS NULL)
           AND (@IgnorarIdPessoa IS NULL OR IdPessoa <> @IgnorarIdPessoa);";
 
@@ -2498,6 +2543,7 @@ namespace CorteCor.Handlers
             Cnae = @Cnae,
             IsCliente = @IsCliente,
             IsFornecedor = @IsFornecedor,
+            IsLead = @IsLead,
             IsTransportador = @IsTransportador,
             NomeContato = @NomeContato,
             Pais = @Pais,
@@ -2547,13 +2593,13 @@ namespace CorteCor.Handlers
                 command.AddWithValue("@CpfCnpj", string.IsNullOrWhiteSpace(pessoa.CpfCnpj) ? (object)DBNull.Value : pessoa.CpfCnpj);
                 command.AddWithValue("@InscricaoEstadual", string.IsNullOrWhiteSpace(pessoa.InscricaoEstadual) ? (object)DBNull.Value : pessoa.InscricaoEstadual);
                 command.AddWithValue("@InscricaoMunicipal", string.IsNullOrWhiteSpace(pessoa.InscricaoMunicipal) ? (object)DBNull.Value : pessoa.InscricaoMunicipal);
-                command.AddWithValue("@Cep", string.IsNullOrWhiteSpace(pessoa.Cep) ? (object)DBNull.Value : pessoa.Cep);
-                command.AddWithValue("@Logradouro", string.IsNullOrWhiteSpace(pessoa.Logradouro) ? (object)DBNull.Value : pessoa.Logradouro);
-                command.AddWithValue("@Numero", string.IsNullOrWhiteSpace(pessoa.Numero) ? (object)DBNull.Value : pessoa.Numero);
-                command.AddWithValue("@Complemento", string.IsNullOrWhiteSpace(pessoa.Complemento) ? (object)DBNull.Value : pessoa.Complemento);
-                command.AddWithValue("@Bairro", string.IsNullOrWhiteSpace(pessoa.Bairro) ? (object)DBNull.Value : pessoa.Bairro);
-                command.AddWithValue("@Cidade", string.IsNullOrWhiteSpace(pessoa.Cidade) ? (object)DBNull.Value : pessoa.Cidade);
-                command.AddWithValue("@UF", string.IsNullOrWhiteSpace(pessoa.UF) ? (object)DBNull.Value : pessoa.UF);
+                command.AddWithValue("@Cep", ValorEnderecoOpcional(pessoa.Cep));
+                command.AddWithValue("@Logradouro", ValorEnderecoOpcional(pessoa.Logradouro));
+                command.AddWithValue("@Numero", ValorEnderecoOpcional(pessoa.Numero));
+                command.AddWithValue("@Complemento", ValorEnderecoOpcional(pessoa.Complemento));
+                command.AddWithValue("@Bairro", ValorEnderecoOpcional(pessoa.Bairro));
+                command.AddWithValue("@Cidade", ValorEnderecoOpcional(pessoa.Cidade));
+                command.AddWithValue("@UF", ValorEnderecoOpcional(pessoa.UF));
                 command.AddWithValue("@RazaoSocial", string.IsNullOrWhiteSpace(pessoa.RazaoSocial) ? (object)DBNull.Value : pessoa.RazaoSocial);
                 command.AddWithValue("@NomeFantasia", string.IsNullOrWhiteSpace(pessoa.NomeFantasia) ? (object)DBNull.Value : pessoa.NomeFantasia);
                 command.AddWithValue("@Cnae", string.IsNullOrWhiteSpace(pessoa.Cnae) ? (object)DBNull.Value : pessoa.Cnae);
@@ -2561,21 +2607,22 @@ namespace CorteCor.Handlers
                 // Novos Campos
                 command.AddWithValue("@IsCliente", pessoa.IsCliente);
                 command.AddWithValue("@IsFornecedor", pessoa.IsFornecedor);
+                command.AddWithValue("@IsLead", pessoa.IsLead);
                 command.AddWithValue("@IsTransportador", pessoa.IsTransportador);
                 command.AddWithValue("@NomeContato", string.IsNullOrWhiteSpace(pessoa.NomeContato) ? (object)DBNull.Value : pessoa.NomeContato);
                 command.AddWithValue("@Pais", string.IsNullOrWhiteSpace(pessoa.Pais) ? (object)DBNull.Value : pessoa.Pais);
                 command.AddWithValue("@IdEstrangeiro", string.IsNullOrWhiteSpace(pessoa.IdEstrangeiro) ? (object)DBNull.Value : pessoa.IdEstrangeiro);
 
-                command.AddWithValue("@EntCep", string.IsNullOrWhiteSpace(pessoa.EntCep) ? (object)DBNull.Value : pessoa.EntCep);
-                command.AddWithValue("@EntUf", string.IsNullOrWhiteSpace(pessoa.EntUf) ? (object)DBNull.Value : pessoa.EntUf);
-                command.AddWithValue("@EntCidade", string.IsNullOrWhiteSpace(pessoa.EntCidade) ? (object)DBNull.Value : pessoa.EntCidade);
+                command.AddWithValue("@EntCep", ValorEnderecoOpcional(pessoa.EntCep));
+                command.AddWithValue("@EntUf", ValorEnderecoOpcional(pessoa.EntUf));
+                command.AddWithValue("@EntCidade", ValorEnderecoOpcional(pessoa.EntCidade));
                 command.AddWithValue("@EntNome", string.IsNullOrWhiteSpace(pessoa.EntNome) ? (object)DBNull.Value : pessoa.EntNome);
                 command.AddWithValue("@EntCpfCnpj", string.IsNullOrWhiteSpace(pessoa.EntCpfCnpj) ? (object)DBNull.Value : pessoa.EntCpfCnpj);
                 command.AddWithValue("@EntInscricaoEstadual", string.IsNullOrWhiteSpace(pessoa.EntInscricaoEstadual) ? (object)DBNull.Value : pessoa.EntInscricaoEstadual);
-                command.AddWithValue("@EntLogradouro", string.IsNullOrWhiteSpace(pessoa.EntLogradouro) ? (object)DBNull.Value : pessoa.EntLogradouro);
-                command.AddWithValue("@EntNumero", string.IsNullOrWhiteSpace(pessoa.EntNumero) ? (object)DBNull.Value : pessoa.EntNumero);
-                command.AddWithValue("@EntComplemento", string.IsNullOrWhiteSpace(pessoa.EntComplemento) ? (object)DBNull.Value : pessoa.EntComplemento);
-                command.AddWithValue("@EntBairro", string.IsNullOrWhiteSpace(pessoa.EntBairro) ? (object)DBNull.Value : pessoa.EntBairro);
+                command.AddWithValue("@EntLogradouro", ValorEnderecoOpcional(pessoa.EntLogradouro));
+                command.AddWithValue("@EntNumero", ValorEnderecoOpcional(pessoa.EntNumero));
+                command.AddWithValue("@EntComplemento", ValorEnderecoOpcional(pessoa.EntComplemento));
+                command.AddWithValue("@EntBairro", ValorEnderecoOpcional(pessoa.EntBairro));
                 command.AddWithValue("@EntEmail", string.IsNullOrWhiteSpace(pessoa.EntEmail) ? (object)DBNull.Value : pessoa.EntEmail);
                 command.AddWithValue("@EntTelefone", string.IsNullOrWhiteSpace(pessoa.EntTelefone) ? (object)DBNull.Value : pessoa.EntTelefone);
 
@@ -2625,7 +2672,7 @@ namespace CorteCor.Handlers
         {
             string query = @"
         SELECT IdPessoa, Nome, Telefone, Email, DataNascimento, IdSalao, Excluido, CpfCnpj, InscricaoEstadual, InscricaoMunicipal, Cep, Logradouro, Numero, Complemento, Bairro, Cidade, UF, RazaoSocial, NomeFantasia, Cnae,
-               IsCliente, IsFornecedor, IsTransportador, NomeContato, Pais, IdEstrangeiro,
+               IsCliente, IsFornecedor, IsLead, IsTransportador, NomeContato, Pais, IdEstrangeiro,
                EntCep, EntUf, EntCidade, EntNome, EntCpfCnpj, EntInscricaoEstadual, EntLogradouro, EntNumero, EntComplemento, EntBairro, EntEmail, EntTelefone,
                ConsumidorFinal, IndicadorIE, IESubstTrib, Suframa, Tags, DataComemorativa, DescricaoComemoracao, BasesLegais, Observacoes
         FROM CorteCor_Pessoa
@@ -2667,6 +2714,7 @@ namespace CorteCor.Handlers
                             Cnae = reader["Cnae"] is DBNull ? "" : reader["Cnae"].ToString(),
                             IsCliente = reader["IsCliente"] is DBNull ? false : Convert.ToBoolean(reader["IsCliente"]),
                             IsFornecedor = reader["IsFornecedor"] is DBNull ? false : Convert.ToBoolean(reader["IsFornecedor"]),
+                            IsLead = reader["IsLead"] is DBNull ? false : Convert.ToBoolean(reader["IsLead"]),
                             IsTransportador = reader["IsTransportador"] is DBNull ? false : Convert.ToBoolean(reader["IsTransportador"]),
                             NomeContato = reader["NomeContato"] is DBNull ? "" : reader["NomeContato"].ToString(),
                             Pais = reader["Pais"] is DBNull ? "" : reader["Pais"].ToString(),
@@ -4489,13 +4537,13 @@ namespace CorteCor.Handlers
         {
             return new ModeloEmail
             {
-                IdModelo = Convert.ToInt32(reader["IdModelo"]),
-                IdSalao = Convert.ToInt32(reader["IdSalao"]),
-                TipoEvento = reader["TipoEvento"].ToString(),
-                Assunto = reader["Assunto"].ToString(),
-                CorpoHTML = reader["CorpoHTML"].ToString(),
-                Ativo = Convert.ToBoolean(reader["Ativo"]),
-                DataAtualizacao = Convert.ToDateTime(reader["DataAtualizacao"])
+                IdModelo = reader["IdModelo"] is DBNull ? 0 : Convert.ToInt32(reader["IdModelo"]),
+                IdSalao = reader["IdSalao"] is DBNull ? 0 : Convert.ToInt32(reader["IdSalao"]),
+                TipoEvento = reader["TipoEvento"] is DBNull ? string.Empty : reader["TipoEvento"].ToString() ?? string.Empty,
+                Assunto = reader["Assunto"] is DBNull ? string.Empty : reader["Assunto"].ToString() ?? string.Empty,
+                CorpoHTML = reader["CorpoHTML"] is DBNull ? string.Empty : reader["CorpoHTML"].ToString() ?? string.Empty,
+                Ativo = !(reader["Ativo"] is DBNull) && Convert.ToBoolean(reader["Ativo"]),
+                DataAtualizacao = reader["DataAtualizacao"] is DBNull ? DateTime.MinValue : Convert.ToDateTime(reader["DataAtualizacao"])
             };
         }
     }
@@ -5751,3 +5799,5 @@ namespace CorteCor.Handlers
         }
     }
 }
+
+

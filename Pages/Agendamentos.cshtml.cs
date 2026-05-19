@@ -4,6 +4,8 @@ using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Claims;
 using System.Transactions;
 
@@ -20,6 +22,7 @@ namespace CorteCor.Pages
         private readonly MercadoPagoService _mpService;
         private readonly AgendamentoPreparationService _agendamentoPreparationService;
         private readonly AgendamentoFiscalPreparationService _agendamentoFiscalPreparationService;
+        private readonly ILogger<AgendamentosModel> _logger;
 
         public AgendamentosModel(
             AgendamentoHandler agendamentoHandler,
@@ -29,7 +32,8 @@ namespace CorteCor.Pages
             PagamentoHandler pagamentoHandler,
             MercadoPagoService mpService,
             AgendamentoPreparationService agendamentoPreparationService,
-            AgendamentoFiscalPreparationService agendamentoFiscalPreparationService)
+            AgendamentoFiscalPreparationService agendamentoFiscalPreparationService,
+            ILogger<AgendamentosModel>? logger = null)
         {
             _agendamentoHandler = agendamentoHandler;
             _servicoHandler = servicoHandler;
@@ -39,6 +43,7 @@ namespace CorteCor.Pages
             _mpService = mpService;
             _agendamentoPreparationService = agendamentoPreparationService;
             _agendamentoFiscalPreparationService = agendamentoFiscalPreparationService;
+            _logger = logger ?? NullLogger<AgendamentosModel>.Instance;
         }
 
         public List<Servico> Servicos { get; set; } = new();
@@ -157,10 +162,11 @@ namespace CorteCor.Pages
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Erro ao criar agendamento para sala {IdSalao}.", ObterIdSalao());
                 return StatusCode(500, new ErrorResponse
                 {
-                    Message = "Erro ao salvar agendamento: " + ex.Message,
-                    Detail = ex.StackTrace
+                    Message = "Nao foi possivel salvar o agendamento. Tente novamente ou ajuste o horario selecionado.",
+                    Detail = ex.Message
                 });
             }
         }
@@ -512,7 +518,19 @@ namespace CorteCor.Pages
                 start = start.ToLocalTime();
             }
 
-            return new JsonResult(_agendamentoPreparationService.ListarServicosDisponiveis(ObterIdSalao(), start));
+            try
+            {
+                return new JsonResult(_agendamentoPreparationService.ListarServicosDisponiveis(ObterIdSalao(), start));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao listar servicos disponiveis para agenda da sala {IdSalao}.", ObterIdSalao());
+                return StatusCode(500, new ErrorResponse
+                {
+                    Message = "Nao foi possivel carregar os servicos disponiveis.",
+                    Detail = ex.Message
+                });
+            }
         }
 
         private int ObterIdSalao() =>

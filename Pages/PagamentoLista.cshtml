@@ -1,7 +1,7 @@
 ﻿@page
 @model CorteCor.Pages.PagamentoListaModel
 @{
-    ViewData["Title"] = "Relatório de Pagamentos";
+    ViewData["Title"] = "Transações de Pagamento";
 
     var statusClass = new Func<string, string>(s => s switch
     {
@@ -19,7 +19,7 @@
     <div class="d-flex align-items-center justify-content-between mb-4 mt-3">
         <h2 class="mb-0">@ViewData["Title"]</h2>
         <a class="btn btn-primary shadow-sm" asp-page="/PagamentoCadastro">
-            <i class="fas fa-plus"></i> Novo Pagamento
+            <i class="fas fa-plus"></i> Nova Transação
         </a>
     </div>
 
@@ -107,7 +107,7 @@
                         <i class="fas fa-clipboard-check fa-2x"></i>
                     </div>
                     <div>
-                        <h6 class="text-uppercase mb-0 small text-muted">Atendimentos</h6>
+                        <h6 class="text-uppercase mb-0 small text-muted">Transações</h6>
                         <h4 class="mb-0 font-weight-bold text-dark">@Model.TotalContagem</h4>
                     </div>
                 </div>
@@ -192,7 +192,7 @@
                         <tr>
                             <td colspan="8" class="text-center py-5 text-muted">
                                 <i class="fas fa-search-minus fa-3x mb-3 d-block opacity-25"></i>
-                                Nenhum pagamento encontrado com os filtros selecionados.
+                                Nenhuma transação de pagamento encontrada com os filtros selecionados.
                             </td>
                         </tr>
                     }
@@ -245,4 +245,3 @@
         </nav>
     }
 </div>
-

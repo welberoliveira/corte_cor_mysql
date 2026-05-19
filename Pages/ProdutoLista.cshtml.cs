@@ -21,6 +21,12 @@ namespace CorteCor.Pages
         public string MensagemTipo { get; set; } = "info";
         public int p { get; set; } = 1;
 
+        [TempData]
+        public string? FlashMensagem { get; set; }
+
+        [TempData]
+        public string? FlashMensagemTipo { get; set; }
+
         public ProdutoListaModel(ProdutoHandler produtoHandler, CategoriaProdutoHandler categoriaHandler)
         {
             _produtoHandler = produtoHandler;
@@ -33,10 +39,12 @@ namespace CorteCor.Pages
             this.q = q;
             this.incluirArquivados = incluirArquivados;
             this.p = p;
+            Mensagem = FlashMensagem ?? string.Empty;
+            MensagemTipo = FlashMensagemTipo ?? "info";
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "";
+                Mensagem = "Não foi possível identificar a empresa atual.";
                 MensagemTipo = "danger";
                 return;
             }
@@ -54,15 +62,21 @@ namespace CorteCor.Pages
         {
             if (action == "alterar")
             {
-                return Redirect($"{HttpContext.Request.PathBase}/ProdutoCadastro?id={id}");
+                if (id <= 0)
+                {
+                    FlashMensagem = "Não foi possível identificar o produto selecionado.";
+                    FlashMensagemTipo = "danger";
+                    return RedirectToPage(new { idCategoria, q, incluirArquivados, p });
+                }
+
+                return RedirectToPage("/ProdutoCadastro", new { id });
             }
 
             if (!TryObterIdSalao(out var idSalao))
             {
-                Mensagem = "";
-                MensagemTipo = "danger";
-                OnGet(idCategoria, q, incluirArquivados, p);
-                return Page();
+                FlashMensagem = "Não foi possível identificar a empresa atual.";
+                FlashMensagemTipo = "danger";
+                return RedirectToPage(new { idCategoria, q, incluirArquivados, p });
             }
 
             if (action == "excluir")
@@ -70,18 +84,22 @@ namespace CorteCor.Pages
                 try
                 {
                     _produtoHandler.ExcluirPorSalao(id, idSalao);
-                    Mensagem = "Produto inativado com sucesso.";
-                    MensagemTipo = "success";
+                    FlashMensagem = "Produto inativado com sucesso.";
+                    FlashMensagemTipo = "success";
                 }
                 catch (Exception ex)
                 {
-                    Mensagem = $"Erro ao inativar produto: {ex.Message}";
-                    MensagemTipo = "danger";
+                    FlashMensagem = $"Erro ao inativar produto: {ex.Message}";
+                    FlashMensagemTipo = "danger";
                 }
             }
 
-            OnGet(idCategoria, q, incluirArquivados, p);
-            return Page();
+            return RedirectToPage(new { idCategoria, q, incluirArquivados, p });
+        }
+
+        public string FormatarQuantidadeEstoque(decimal? quantidade)
+        {
+            return decimal.Truncate(quantidade ?? 0m).ToString("N0");
         }
 
         private bool TryObterIdSalao(out int idSalao)

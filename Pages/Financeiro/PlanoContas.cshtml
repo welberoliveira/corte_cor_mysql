@@ -17,8 +17,50 @@
     <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
 }
 
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white fw-semibold">Filtro</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="Pesquisa">Pesquisar</label>
+                <input class="form-control" type="text" id="Pesquisa" name="Pesquisa" value="@Model.Pesquisa" placeholder="Código, descrição ou grupo DRE" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="TipoConta">Tipo de conta</label>
+                <select class="form-select" id="TipoConta" name="TipoConta">
+                    <option value="">Todos</option>
+                    @foreach (var tipo in Model.TiposConta)
+                    {
+                        <option value="@tipo" selected="@(string.Equals(Model.TipoConta, tipo, StringComparison.OrdinalIgnoreCase))">@tipo</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="Ativo">Status</label>
+                <select class="form-select" id="Ativo" name="Ativo">
+                    <option value="">Todos</option>
+                    <option value="true" selected="@(Model.Ativo == true)">Ativos</option>
+                    <option value="false" selected="@(Model.Ativo == false)">Inativos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="AceitaLancamento">Lançamento</label>
+                <select class="form-select" id="AceitaLancamento" name="AceitaLancamento">
+                    <option value="">Todos</option>
+                    <option value="true" selected="@(Model.AceitaLancamento == true)">Contas analíticas</option>
+                    <option value="false" selected="@(Model.AceitaLancamento == false)">Grupos</option>
+                </select>
+            </div>
+            <div class="col-12 d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary" type="submit">Filtrar</button>
+                <a class="btn btn-outline-secondary" asp-page="/Financeiro/PlanoContas">Limpar filtros</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-white fw-semibold">Contas cadastradas</div>
+    <div class="card-header bg-white fw-semibold">Contas cadastradas (@Model.Planos.Count)</div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-sm align-middle">
@@ -26,7 +68,9 @@
                     <tr>
                         <th>Código</th>
                         <th>Descrição</th>
+                        <th>Nível</th>
                         <th>Tipo</th>
+                        <th>Lançamento</th>
                         <th>Status</th>
                         <th class="text-end">Ações</th>
                     </tr>
@@ -36,8 +80,10 @@
                     {
                         <tr>
                             <td>@plano.Codigo</td>
-                            <td>@plano.Descricao</td>
-                            <td>@(plano.Tipo == "R" ? "Receita" : "Despesa")</td>
+                            <td>@plano.NomeExibicao</td>
+                            <td>@plano.Nivel</td>
+                            <td>@(string.IsNullOrWhiteSpace(plano.TipoConta) ? (plano.Tipo == "R" ? "Receita" : "Despesa") : plano.TipoConta)</td>
+                            <td><span class="badge @(plano.AceitaLancamento ? "bg-primary" : "bg-light text-dark")">@(plano.AceitaLancamento ? "Analítica" : "Grupo")</span></td>
                             <td><span class="badge @(plano.Ativo ? "bg-success" : "bg-secondary")">@(plano.Ativo ? "Ativo" : "Inativo")</span></td>
                             <td class="text-end">
                                 <a class="btn btn-sm btn-primary" asp-page="/Financeiro/PlanoContaCadastro" asp-route-id="@plano.IdPlano">Editar</a>
@@ -47,7 +93,7 @@
                     @if (!Model.Planos.Any())
                     {
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">Nenhum plano cadastrado.</td>
+                            <td colspan="7" class="text-center text-muted py-4">Nenhum plano encontrado.</td>
                         </tr>
                     }
                 </tbody>

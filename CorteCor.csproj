@@ -43,7 +43,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DefaultItemExcludes>$(DefaultItemExcludes);CorteCor.Tests\**;tempbuild*\**;temp_*\**;output\playwright\**;obj_*\**;test_reflect.cs</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);CorteCor.Tests\**;artifacts\**;tempbuild*\**;temp_*\**;output\playwright\**;obj_*\**;test_reflect.cs</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

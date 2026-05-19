@@ -16,7 +16,13 @@
 
 @if (!string.IsNullOrWhiteSpace(Model.FlashMessage))
 {
-    <div class="alert alert-@(Model.FlashType ?? "info")">@Model.FlashMessage</div>
+    <div class="alert alert-@(Model.FlashType ?? "info")">
+        <div>@Model.FlashMessage</div>
+        @if (!string.IsNullOrWhiteSpace(Model.FlashActionPage) && !string.IsNullOrWhiteSpace(Model.FlashActionText))
+        {
+            <a class="btn btn-sm btn-primary mt-2" asp-page="@Model.FlashActionPage">@Model.FlashActionText</a>
+        }
+    </div>
 }
 
 <div class="card shadow-sm border-0 mb-4">
@@ -98,6 +104,11 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                        <a class="btn btn-sm btn-dark"
+                                           asp-page="/CRM/CampanhaCadastro"
+                                           asp-route-IdCampanha="@campanha.IdCampanha">
+                                            Editar
+                                        </a>
                                         <a class="btn btn-sm btn-primary"
                                            asp-page="/CRM/Campanhas"
                                            asp-route-IdCampanhaView="@campanha.IdCampanha"

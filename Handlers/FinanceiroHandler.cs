@@ -20,7 +20,25 @@ namespace CorteCor.Handlers
         public async Task<List<PlanoContas>> ListarPlanoContasAsync(int idSalao)
         {
             var lista = new List<PlanoContas>();
-            string query = "SELECT IdPlano, IdSalao, Codigo, Descricao, Tipo, Ativo FROM CorteCor_PlanoContas WHERE IdSalao = @IdSalao ORDER BY Codigo;";
+            string query = @"
+SELECT
+    IdPlano,
+    IdSalao,
+    Codigo,
+    Descricao,
+    Tipo,
+    Ativo,
+    Nome,
+    IdPlanoPai,
+    COALESCE(NULLIF(Nivel, 0), 1 + LENGTH(Codigo) - LENGTH(REPLACE(Codigo, '.', ''))) AS Nivel,
+    TipoConta,
+    NaturezaSaldo,
+    COALESCE(AceitaLancamento, 1) AS AceitaLancamento,
+    GrupoDRE,
+    OrdemDRE
+FROM CorteCor_PlanoContas
+WHERE IdSalao = @IdSalao
+ORDER BY Codigo, Descricao;";
 
             using var connection = _dbHandler.GetConnection();
             using var command = connection.CreateCommand(query);
@@ -36,7 +54,15 @@ namespace CorteCor.Handlers
                     Codigo = reader["Codigo"]?.ToString(),
                     Descricao = reader["Descricao"].ToString()!,
                     Tipo = reader["Tipo"].ToString()!,
-                    Ativo = Convert.ToBoolean(reader["Ativo"])
+                    Ativo = Convert.ToBoolean(reader["Ativo"]),
+                    Nome = reader["Nome"] is DBNull ? null : reader["Nome"].ToString(),
+                    IdPlanoPai = reader["IdPlanoPai"] is DBNull ? null : Convert.ToInt32(reader["IdPlanoPai"]),
+                    Nivel = reader["Nivel"] is DBNull ? 0 : Convert.ToInt32(reader["Nivel"]),
+                    TipoConta = reader["TipoConta"] is DBNull ? null : reader["TipoConta"].ToString(),
+                    NaturezaSaldo = reader["NaturezaSaldo"] is DBNull ? null : reader["NaturezaSaldo"].ToString(),
+                    AceitaLancamento = !(reader["AceitaLancamento"] is DBNull) && Convert.ToBoolean(reader["AceitaLancamento"]),
+                    GrupoDRE = reader["GrupoDRE"] is DBNull ? null : reader["GrupoDRE"].ToString(),
+                    OrdemDRE = reader["OrdemDRE"] is DBNull ? null : Convert.ToInt32(reader["OrdemDRE"])
                 });
             }
             return lista;
@@ -44,9 +70,28 @@ namespace CorteCor.Handlers
 
         public async Task SavePlanoContasAsync(PlanoContas plano)
         {
-            string query = plano.IdPlano == 0 
-                ? "INSERT INTO CorteCor_PlanoContas (IdSalao, Codigo, Descricao, Tipo, Ativo) VALUES (@IdSalao, @Codigo, @Descricao, @Tipo, @Ativo);"
-                : "UPDATE CorteCor_PlanoContas SET Codigo = @Codigo, Descricao = @Descricao, Tipo = @Tipo, Ativo = @Ativo WHERE IdPlano = @IdPlano AND IdSalao = @IdSalao;";
+            string query = plano.IdPlano == 0
+                ? @"
+INSERT INTO CorteCor_PlanoContas
+    (IdSalao, Codigo, Descricao, Tipo, Ativo, Nome, IdPlanoPai, Nivel, TipoConta, NaturezaSaldo, AceitaLancamento, GrupoDRE, OrdemDRE)
+VALUES
+    (@IdSalao, @Codigo, @Descricao, @Tipo, @Ativo, @Nome, @IdPlanoPai, @Nivel, @TipoConta, @NaturezaSaldo, @AceitaLancamento, @GrupoDRE, @OrdemDRE);"
+                : @"
+UPDATE CorteCor_PlanoContas
+SET Codigo = @Codigo,
+    Descricao = @Descricao,
+    Tipo = @Tipo,
+    Ativo = @Ativo,
+    Nome = @Nome,
+    IdPlanoPai = @IdPlanoPai,
+    Nivel = @Nivel,
+    TipoConta = @TipoConta,
+    NaturezaSaldo = @NaturezaSaldo,
+    AceitaLancamento = @AceitaLancamento,
+    GrupoDRE = @GrupoDRE,
+    OrdemDRE = @OrdemDRE
+WHERE IdPlano = @IdPlano
+  AND IdSalao = @IdSalao;";
 
             using var connection = _dbHandler.GetConnection();
             using var command = connection.CreateCommand(query);
@@ -57,6 +102,14 @@ namespace CorteCor.Handlers
             command.AddWithValue("@Descricao", plano.Descricao);
             command.AddWithValue("@Tipo", plano.Tipo);
             command.AddWithValue("@Ativo", plano.Ativo);
+            command.AddWithValue("@Nome", string.IsNullOrWhiteSpace(plano.Nome) ? (object)DBNull.Value : plano.Nome);
+            command.AddWithValue("@IdPlanoPai", plano.IdPlanoPai ?? (object)DBNull.Value);
+            command.AddWithValue("@Nivel", plano.Nivel);
+            command.AddWithValue("@TipoConta", string.IsNullOrWhiteSpace(plano.TipoConta) ? (object)DBNull.Value : plano.TipoConta);
+            command.AddWithValue("@NaturezaSaldo", string.IsNullOrWhiteSpace(plano.NaturezaSaldo) ? (object)DBNull.Value : plano.NaturezaSaldo);
+            command.AddWithValue("@AceitaLancamento", plano.AceitaLancamento);
+            command.AddWithValue("@GrupoDRE", string.IsNullOrWhiteSpace(plano.GrupoDRE) ? (object)DBNull.Value : plano.GrupoDRE);
+            command.AddWithValue("@OrdemDRE", plano.OrdemDRE ?? (object)DBNull.Value);
 
             await Task.Run(() => command.ExecuteNonQuery());
         }

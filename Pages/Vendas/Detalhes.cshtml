@@ -176,25 +176,30 @@
                                     @foreach (var item in Model.Contexto.Itens)
                                     {
                                         var bloqueadoPorNota = notaAtiva && item.TipoItem == VendaProdutoTipoItem.Servico;
+                                        var formatoQuantidade = item.TipoItem == VendaProdutoTipoItem.Produto ? "N0" : "N3";
+                                        var stepQuantidade = item.TipoItem == VendaProdutoTipoItem.Produto ? "1" : "0.001";
+                                        var maxQuantidade = item.TipoItem == VendaProdutoTipoItem.Produto
+                                            ? decimal.Truncate(item.QuantidadeDisponivelPosVenda).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                            : item.QuantidadeDisponivelPosVenda.ToString(System.Globalization.CultureInfo.InvariantCulture);
                                         <tr>
                                             <td>
                                                 <div class="fw-semibold">@item.Descricao</div>
                                                 <div class="small text-muted">@item.TipoItem • R$ @item.ValorUnitario.ToString("N2")</div>
                                             </td>
-                                            <td class="text-end">@item.Quantidade.ToString("N3")</td>
-                                            <td class="text-end">@item.QuantidadeCancelada.ToString("N3")</td>
-                                            <td class="text-end">@item.QuantidadeDevolvida.ToString("N3")</td>
-                                            <td class="text-end">@item.QuantidadeTrocada.ToString("N3")</td>
-                                            <td class="text-end fw-semibold">@item.QuantidadeDisponivelPosVenda.ToString("N3")</td>
+                                            <td class="text-end">@item.Quantidade.ToString(formatoQuantidade)</td>
+                                            <td class="text-end">@item.QuantidadeCancelada.ToString(formatoQuantidade)</td>
+                                            <td class="text-end">@item.QuantidadeDevolvida.ToString(formatoQuantidade)</td>
+                                            <td class="text-end">@item.QuantidadeTrocada.ToString(formatoQuantidade)</td>
+                                            <td class="text-end fw-semibold">@item.QuantidadeDisponivelPosVenda.ToString(formatoQuantidade)</td>
                                             <td class="text-end">
                                                 <input type="number"
                                                        class="form-control text-end posvenda-qtd"
                                                        data-item-id="@item.IdItemVenda"
-                                                       data-disponivel="@item.QuantidadeDisponivelPosVenda.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                       data-disponivel="@maxQuantidade"
                                                        value="0"
                                                        min="0"
-                                                       step="0.001"
-                                                       max="@item.QuantidadeDisponivelPosVenda.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                       step="@stepQuantidade"
+                                                       max="@maxQuantidade"
                                                        @(bloqueadoPorNota ? "disabled" : null) />
                                             </td>
                                         </tr>
@@ -221,7 +226,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Qtd.</label>
-                                    <input class="form-control" type="number" id="reposicaoQuantidadeInput" value="1" min="0.001" step="0.001" />
+                                    <input class="form-control" type="number" id="reposicaoQuantidadeInput" value="1" min="1" step="1" />
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Unitário</label>
@@ -286,16 +291,19 @@
         </div>
 
         <div class="card pos-shell-card">
-            <div class="card-header bg-white fw-semibold">Cancelamento total</div>
+            <div class="card-header bg-white fw-semibold">Estorno total da venda</div>
             <div class="card-body">
-                <form method="post" asp-page-handler="CancelarTotal" onsubmit="return confirm('Confirma o cancelamento total desta venda?');" class="row g-3">
+                <form method="post" asp-page-handler="CancelarTotal" onsubmit="return confirm('Confirma o estorno total desta venda?');" class="row g-3">
                     <input type="hidden" name="idVendaProduto" value="@venda?.IdVendaProduto" />
                     <div class="col-12">
-                        <label class="form-label">Observações do cancelamento total</label>
-                        <textarea class="form-control" name="observacoes" rows="3" maxlength="500" placeholder="Motivo do cancelamento total"></textarea>
+                        <div class="pos-note pos-alert-warning mb-3">
+                            O estoque sera devolvido, os titulos financeiros vinculados serao ajustados e lancamentos futuros desta venda serao cancelados.
+                        </div>
+                        <label class="form-label">Justificativa do estorno total</label>
+                        <textarea class="form-control" name="observacoes" rows="3" minlength="5" maxlength="500" required placeholder="Motivo do estorno total"></textarea>
                     </div>
                     <div class="col-12 text-end">
-                        <button type="submit" class="btn btn-danger" @(notaAtiva ? "disabled" : null)>Cancelar venda por completo</button>
+                        <button type="submit" class="btn btn-danger" @(notaAtiva ? "disabled" : null)>Estornar venda</button>
                     </div>
                 </form>
             </div>
@@ -415,6 +423,30 @@
             return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
+        function formatQuantity(value) {
+            return Math.trunc(Number(value || 0)).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+        }
+
+        function formatItemQuantity(item) {
+            return item.tipoItem === 'Produto'
+                ? formatQuantity(item.quantidade)
+                : Number(item.quantidade || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+        }
+
+        function configurarQuantidadeReposicao() {
+            const catalogo = getCatalogoReposicaoAtual();
+            const selecionado = catalogo.find(item => String(item.id) === String(reposicaoCatalogoSelect.value)) || catalogo[0];
+            const isProduto = selecionado?.tipo === 'Produto';
+
+            reposicaoQuantidadeInput.min = isProduto ? '1' : '0.001';
+            reposicaoQuantidadeInput.step = isProduto ? '1' : '0.001';
+
+            if (isProduto) {
+                const quantidade = Number(reposicaoQuantidadeInput.value || 1);
+                reposicaoQuantidadeInput.value = String(Math.max(1, Math.trunc(quantidade)));
+            }
+        }
+
         function atualizarTrocaUi() {
             const isTroca = tipoOperacaoSelect.value === '@VendaPosVendaTipo.Troca';
             trocaBox.style.display = isTroca ? '' : 'none';
@@ -445,7 +477,7 @@
                 const option = document.createElement('option');
                 option.value = item.id;
                 const detalhe = item.tipo === 'Produto' && item.controlaEstoque
-                    ? ` | estoque: ${Number(item.estoqueAtual || 0).toFixed(3)}`
+                    ? ` | estoque: ${formatQuantity(item.estoqueAtual)}`
                     : '';
                 option.textContent = `${item.nome} | ${formatCurrency(item.valor)}${detalhe}`;
                 option.dataset.valor = item.valor;
@@ -455,11 +487,13 @@
             }
 
             reposicaoValorUnitarioInput.value = Number(catalogo[0].valor || 0).toFixed(2);
+            configurarQuantidadeReposicao();
         }
 
         function atualizarValorReposicao() {
             const selected = reposicaoCatalogoSelect.options[reposicaoCatalogoSelect.selectedIndex];
             reposicaoValorUnitarioInput.value = selected?.dataset?.valor ? Number(selected.dataset.valor).toFixed(2) : '0';
+            configurarQuantidadeReposicao();
         }
 
         function obterItensOriginaisSelecionados() {
@@ -510,7 +544,7 @@
                     <tr>
                         <td><span class="badge ${item.tipoItem === 'Servico' ? 'bg-primary' : 'bg-success'}">${item.tipoItem}</span></td>
                         <td>${item.descricao}</td>
-                        <td class="text-end">${Number(item.quantidade).toFixed(3)}</td>
+                        <td class="text-end">${formatItemQuantity(item)}</td>
                         <td class="text-end">${formatCurrency(item.valorUnitario)}</td>
                         <td class="text-end fw-semibold">${formatCurrency(total)}</td>
                         <td class="text-end"><button type="button" class="btn btn-sm btn-danger" onclick="removerReposicao(${index})">Remover</button></td>
@@ -536,6 +570,11 @@
 
             if (!selecionado || quantidade <= 0 || valorUnitario < 0) {
                 alert('Selecione um item válido e informe quantidade maior que zero.');
+                return;
+            }
+
+            if (selecionado.tipo === 'Produto' && !Number.isInteger(quantidade)) {
+                alert('Informe uma quantidade inteira para produtos de estoque.');
                 return;
             }
 

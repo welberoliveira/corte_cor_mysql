@@ -13,7 +13,9 @@ namespace CorteCor.Handlers
         List<CrmInteracao> ListarInteracoes(int idSalao, int idPessoa, int limit = 50);
         void AdicionarInteracao(CrmInteracao interacao);
         int SalvarInteracao(CrmInteracao interacao);
+        List<Usuario> ListarResponsaveis(int idSalao);
         PagedResult<CrmTarefa> ListarTarefas(int idSalao, int? idPessoa, string? status, int? idUsuarioResponsavel, int pageIndex, int pageSize, string? pesquisa = null, DateTime? dataVencimentoInicio = null, DateTime? dataVencimentoFim = null);
+        CrmTarefa? ObterTarefa(int idSalao, int idTarefa);
         int SalvarTarefa(CrmTarefa tarefa);
         void AtualizarStatusTarefa(int idSalao, int idTarefa, string status, DateTime? dataConclusao);
         List<CrmEtapaFunil> ListarEtapas(int idSalao);
@@ -29,6 +31,6 @@ namespace CorteCor.Handlers
         void AtualizarResumoCampanha(int idSalao, int idCampanha, string status, int totalDestinatarios, int totalSucesso, int totalFalha, DateTime? ultimoEnvioEm);
         List<CrmCampanhaDestino> ListarDestinosCampanha(int idSalao, int idCampanha, int limit = 100);
         CrmDashboardResumo ObterDashboard(int idSalao);
-        CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim);
+        CrmRelatorioResumo ObterRelatorios(int idSalao, DateTime dataInicio, DateTime dataFim, int? idUsuarioResponsavel = null);
     }
 }

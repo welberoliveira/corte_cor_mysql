@@ -16,7 +16,20 @@ internal sealed class PdfCanvas
     public const float A4Height = 842f;
 
     private static readonly Encoding Latin1Encoding = CreateLatin1Encoding();
-    private readonly StringBuilder _content = new();
+    private readonly List<StringBuilder> _pages = new();
+    private StringBuilder _content;
+
+    public PdfCanvas()
+    {
+        _content = new StringBuilder();
+        _pages.Add(_content);
+    }
+
+    public void NewPage()
+    {
+        _content = new StringBuilder();
+        _pages.Add(_content);
+    }
 
     public void SetStrokeColor(byte r, byte g, byte b)
     {
@@ -157,7 +170,10 @@ internal sealed class PdfCanvas
     public byte[] Build()
     {
         var ascii = Encoding.ASCII;
-        var stream = _content.ToString();
+        var pageCount = Math.Max(1, _pages.Count);
+        var firstPageObject = 3;
+        var regularFontObject = firstPageObject + (pageCount * 2);
+        var boldFontObject = regularFontObject + 1;
 
         using var memory = new MemoryStream();
         var offsets = new List<long>();
@@ -176,14 +192,24 @@ internal sealed class PdfCanvas
 
         WriteAscii(memory, "%PDF-1.4\n", ascii);
         WriteObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
-        WriteObject(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-        WriteObject(
-            3,
-            $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {Format(A4Width)} {Format(A4Height)}] " +
-            "/Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>");
-        WriteObject(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
-        WriteObject(5, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
-        WriteObject(6, $"<< /Length {ascii.GetByteCount(stream)} >>\nstream\n{stream}endstream");
+        var kids = string.Join(' ', Enumerable.Range(0, pageCount).Select(index => $"{firstPageObject + (index * 2)} 0 R"));
+        WriteObject(2, $"<< /Type /Pages /Kids [{kids}] /Count {pageCount} >>");
+
+        for (var index = 0; index < pageCount; index++)
+        {
+            var pageObject = firstPageObject + (index * 2);
+            var contentObject = pageObject + 1;
+            var stream = _pages[index].ToString();
+
+            WriteObject(
+                pageObject,
+                $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {Format(A4Width)} {Format(A4Height)}] " +
+                $"/Resources << /Font << /F1 {regularFontObject} 0 R /F2 {boldFontObject} 0 R >> >> /Contents {contentObject} 0 R >>");
+            WriteObject(contentObject, $"<< /Length {ascii.GetByteCount(stream)} >>\nstream\n{stream}endstream");
+        }
+
+        WriteObject(regularFontObject, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+        WriteObject(boldFontObject, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
 
         var xrefStart = memory.Position;
         WriteAscii(memory, "xref\n", ascii);

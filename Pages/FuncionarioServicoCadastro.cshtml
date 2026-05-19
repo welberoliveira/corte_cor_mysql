@@ -9,12 +9,12 @@
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
-        <div class="alert alert-success">
+        <div class="alert alert-@Model.MensagemTipo">
             @Model.Mensagem
         </div>
     }
 
-    <form method="post">
+    <form method="post" data-submit-feedback>
         @if (Model.IsLockedEmployee)
         {
             <input type="hidden" name="idFuncionario" value="@Model.IdFuncionarioSelecionado" />
@@ -79,6 +79,6 @@
             </small>
         </div>
 
-        <button type="submit" class="btn btn-primary">Salvar Relação</button>
+        <button type="submit" class="btn btn-primary" data-loading-text="Salvando vinculos...">Salvar Relação</button>
     </form>
 </div>

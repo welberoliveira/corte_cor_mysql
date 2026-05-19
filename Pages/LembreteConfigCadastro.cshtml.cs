@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace CorteCor.Pages
 {
@@ -17,6 +18,7 @@ namespace CorteCor.Pages
         private readonly ILembreteHandler _handler;
         private readonly ModeloEmailHandler _modeloEmailHandler;
         private readonly ModeloSMSHandler _modeloSmsHandler;
+        private readonly ILogger<LembreteConfigCadastroModel> _logger;
 
         [BindProperty]
         public LembreteConfig Config { get; set; } = new LembreteConfig();
@@ -35,11 +37,16 @@ namespace CorteCor.Pages
 
         public string Mensagem { get; set; }
 
-        public LembreteConfigCadastroModel(ILembreteHandler handler, ModeloEmailHandler modeloEmailHandler, ModeloSMSHandler modeloSmsHandler)
+        public LembreteConfigCadastroModel(
+            ILembreteHandler handler,
+            ModeloEmailHandler modeloEmailHandler,
+            ModeloSMSHandler modeloSmsHandler,
+            ILogger<LembreteConfigCadastroModel> logger)
         {
             _handler = handler;
             _modeloEmailHandler = modeloEmailHandler;
             _modeloSmsHandler = modeloSmsHandler;
+            _logger = logger;
             
             UnidadeOptions = new List<SelectListItem>
             {
@@ -47,6 +54,41 @@ namespace CorteCor.Pages
                 new SelectListItem { Value = "Horas", Text = "Horas" },
                 new SelectListItem { Value = "Dias", Text = "Dias" }
             };
+        }
+
+        private void CarregarOpcoesModelos(int idSalao)
+        {
+            try
+            {
+                var modeloEmails = _modeloEmailHandler.ListarPorSalao(idSalao);
+                ModeloEmailOptions = modeloEmails.Select(m => new SelectListItem
+                {
+                    Value = m.IdModelo.ToString(),
+                    Text = string.IsNullOrWhiteSpace(m.Assunto) ? m.TipoEvento : m.Assunto
+                }).ToList();
+
+                var modeloSms = _modeloSmsHandler.ListarPorSalao(idSalao);
+                ModeloSmsOptions = modeloSms.Select(m => new SelectListItem
+                {
+                    Value = m.IdModelo.ToString(),
+                    Text = DescreverModeloSms(m)
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao carregar modelos para regra de lembrete da sala {IdSalao}.", idSalao);
+                ModeloEmailOptions = new List<SelectListItem>();
+                ModeloSmsOptions = new List<SelectListItem>();
+                Mensagem = "Nao foi possivel carregar os modelos de e-mail/SMS no momento.";
+            }
+        }
+
+        private static string DescreverModeloSms(ModeloSMS modelo)
+        {
+            var evento = string.IsNullOrWhiteSpace(modelo.TipoEvento) ? "SMS" : modelo.TipoEvento;
+            var conteudo = modelo.Conteudo ?? string.Empty;
+            var resumo = conteudo.Length > 20 ? conteudo.Substring(0, 20) + "..." : conteudo;
+            return string.IsNullOrWhiteSpace(resumo) ? evento : $"{evento} - {resumo}";
         }
 
         public void OnGet(int? id, bool view = false)
@@ -62,21 +104,7 @@ namespace CorteCor.Pages
                 Config.TipoLembrete = "Email"; // Default
                 Config.AntecedenciaValor = 30; // Default: 30 minutes
 
-                // Load Email Models
-                var modeloEmails = _modeloEmailHandler.ListarPorSalao(idSalao);
-                ModeloEmailOptions = modeloEmails.Select(m => new SelectListItem
-                {
-                    Value = m.IdModelo.ToString(),
-                    Text = m.Assunto
-                }).ToList();
-
-                // Load SMS Models
-                var modeloSms = _modeloSmsHandler.ListarPorSalao(idSalao);
-                ModeloSmsOptions = modeloSms.Select(m => new SelectListItem
-                {
-                    Value = m.IdModelo.ToString(),
-                    Text = m.TipoEvento + " - " + (m.Conteudo.Length > 20 ? m.Conteudo.Substring(0, 20) + "..." : m.Conteudo)
-                }).ToList();
+                CarregarOpcoesModelos(idSalao);
             }
 
             // Logic to load existing if ID is provided (Not fully implemented in handler yet as we only have List, but logic below assumes new)
@@ -90,11 +118,19 @@ namespace CorteCor.Pages
             
             if (id.HasValue)
             {
-                var configs = _handler.ListarConfig(Config.IdSalao);
-                var existing = configs.FirstOrDefault(c => c.IdConfig == id.Value);
-                if (existing != null)
+                try
                 {
-                    Config = existing;
+                    var configs = _handler.ListarConfig(Config.IdSalao);
+                    var existing = configs.FirstOrDefault(c => c.IdConfig == id.Value);
+                    if (existing != null)
+                    {
+                        Config = existing;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Erro ao carregar regra de lembrete {IdConfig} para sala {IdSalao}.", id.Value, Config.IdSalao);
+                    Mensagem = "Nao foi possivel carregar a regra de lembrete.";
                 }
             }
         }
@@ -113,19 +149,7 @@ namespace CorteCor.Pages
                 var idSalaoClaim = User.FindFirst("IdSalao");
                 if (idSalaoClaim != null && int.TryParse(idSalaoClaim.Value, out int idS))
                 {
-                    var modeloEmails = _modeloEmailHandler.ListarPorSalao(idS);
-                    ModeloEmailOptions = modeloEmails.Select(m => new SelectListItem
-                    {
-                        Value = m.IdModelo.ToString(),
-                        Text = m.Assunto
-                    }).ToList();
-
-                    var modeloSms = _modeloSmsHandler.ListarPorSalao(idS);
-                    ModeloSmsOptions = modeloSms.Select(m => new SelectListItem
-                    {
-                        Value = m.IdModelo.ToString(),
-                        Text = m.TipoEvento + " - " + (m.Conteudo.Length > 20 ? m.Conteudo.Substring(0, 20) + "..." : m.Conteudo)
-                    }).ToList();
+                    CarregarOpcoesModelos(idS);
                 }
                 return Page();
             }
@@ -136,8 +160,18 @@ namespace CorteCor.Pages
                 Config.IdSalao = idSalao;
             }
 
-            Config.Ativo = true; // Forçar sempre como ativa conforme solicitação
-            _handler.SalvarConfig(Config);
+            Config.Ativo = true; // Forcar sempre como ativa conforme solicitacao
+            try
+            {
+                _handler.SalvarConfig(Config);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao salvar regra de lembrete para sala {IdSalao}.", Config.IdSalao);
+                Mensagem = "Nao foi possivel salvar a regra de lembrete.";
+                CarregarOpcoesModelos(Config.IdSalao);
+                return Page();
+            }
 
             // Aplicar regra retroativamente para agendamentos já existentes
             if (Config.Ativo)
@@ -148,8 +182,7 @@ namespace CorteCor.Pages
                 }
                 catch (System.Exception ex)
                 {
-                    // Logar erro mas não impedir o fluxo, pois a regra foi salva
-                    System.Console.WriteLine($"Erro ao aplicar regra retroativa: {ex.Message}");
+                    _logger.LogWarning(ex, "Regra de lembrete {IdConfig} salva, mas houve erro ao aplicar retroativamente.", Config.IdConfig);
                 }
             }
 

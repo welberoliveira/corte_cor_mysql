@@ -21,6 +21,9 @@ namespace CorteCor.Pages.CRM
 
         public List<Pessoa> Clientes { get; private set; } = new();
 
+        [BindProperty(SupportsGet = true)]
+        public int? IdCampanha { get; set; }
+
         [BindProperty]
         public CrmCampanha CampanhaInput { get; set; } = new()
         {
@@ -38,6 +41,24 @@ namespace CorteCor.Pages.CRM
 
         public IActionResult OnGet()
         {
+            if (IdCampanha.HasValue && IdCampanha.Value > 0)
+            {
+                if (!TryObterIdSalao(out var idSalao))
+                {
+                    return RedirectToPage("/Index");
+                }
+
+                var campanha = _crmService.ObterCampanha(idSalao, IdCampanha.Value);
+                if (campanha == null)
+                {
+                    FlashMessage = "Campanha não encontrada.";
+                    FlashType = "warning";
+                    return RedirectToPage("/CRM/Campanhas");
+                }
+
+                CampanhaInput = campanha;
+            }
+
             return Carregar();
         }
 
@@ -50,8 +71,9 @@ namespace CorteCor.Pages.CRM
                     return RedirectToPage("/Index");
                 }
 
+                var editando = CampanhaInput.IdCampanha > 0;
                 var idCampanha = _crmService.SalvarCampanha(idSalao, CampanhaInput);
-                FlashMessage = "Campanha salva com sucesso.";
+                FlashMessage = editando ? "Campanha atualizada com sucesso." : "Campanha salva com sucesso.";
                 FlashType = "success";
                 return RedirectToPage("/CRM/Campanhas", new { IdCampanhaView = idCampanha });
             }

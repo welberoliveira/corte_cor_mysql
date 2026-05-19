@@ -35,13 +35,13 @@
                         <td>@item.TipoLembrete</td>
                         <td>@item.AntecedenciaValor</td>
                         <td>@item.AntecedenciaUnidade</td>
-                        <td class="d-none d-md-table-cell">@item.AssuntoModelo</td>
+                        <td class="d-none d-md-table-cell">@(string.IsNullOrWhiteSpace(item.AssuntoModelo) ? "Padrao" : item.AssuntoModelo)</td>
                         <td>
                             <span class="badge @(item.Ativo ? "bg-success" : "bg-danger")">
                             @(item.Ativo ? "Ativo" : "Inativo")
                             </span>
                         </td>
-                        <td class="d-none d-md-table-cell">@item.DataInicio.ToString("dd/MM/yyyy")</td>
+                        <td class="d-none d-md-table-cell">@(item.DataInicio == DateTime.MinValue ? "-" : item.DataInicio.ToString("dd/MM/yyyy"))</td>
                         <td class="d-none d-md-table-cell">@(item.DataFim?.ToString("dd/MM/yyyy") ?? "Eterna")</td>
                         <td>
                             <a asp-page="/LembreteConfigCadastro" asp-route-id="@item.IdConfig" asp-route-view="true" class="btn btn-sm btn-info" style="margin-right: 5px;">Visualizar</a>

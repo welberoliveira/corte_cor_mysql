@@ -1,11 +1,12 @@
 @page
 @model CorteCor.Pages.PessoaCadastroModel
 @{
-    ViewData["Title"] = "Cadastro de Cliente/Fornecedor/Transportador";
+    ViewData["Title"] = "Cadastrar Cliente / Fornecedor / Lead";
+    var ufs = new[] { "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO" };
 }
 
-<div class="container">
-    <h4>@Model.ButtonText cliente/fornecedor/transportador</h4>
+<div class="container pessoa-cadastro-page">
+    <h4>Cadastrar Cliente / Fornecedor / Lead</h4>
 
     @if (!string.IsNullOrEmpty(Model.Mensagem))
     {
@@ -14,13 +15,15 @@
         </div>
     }
 
-    <form method="post">
+    <form method="post" id="pessoaCadastroForm">
         <input type="hidden" name="id" value="@Model.Pessoa?.IdPessoa">
+        <input type="hidden" id="telefone" name="telefone" value="@Model.Pessoa?.Telefone">
+        <input type="hidden" id="email" name="email" value="@Model.Pessoa?.Email">
         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <div class="row mb-3">
             <div class="col-md-12">
-                <label class="font-weight-bold d-block">Tipo de Contato</label>
+                <label class="font-weight-bold d-block">Tipo de contato</label>
                 <div class="form-check form-check-inline">
                     <input class="form-check-input" type="checkbox" id="isCliente" name="isCliente" @(Model.Pessoa?.IsCliente == true || Model.Pessoa?.IdPessoa == 0 ? "checked" : "")>
                     <label class="form-check-label" for="isCliente">Cliente</label>
@@ -30,15 +33,15 @@
                     <label class="form-check-label" for="isFornecedor">Fornecedor</label>
                 </div>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="isTransportador" name="isTransportador" @(Model.Pessoa?.IsTransportador == true ? "checked" : "")>
-                    <label class="form-check-label" for="isTransportador">Transportador</label>
+                    <input class="form-check-input" type="checkbox" id="isLead" name="isLead" @(Model.Pessoa?.IsLead == true ? "checked" : "")>
+                    <label class="form-check-label" for="isLead">Lead</label>
                 </div>
             </div>
         </div>
 
         <div class="row">
             <div class="col-md-6 form-group">
-                <label for="cpfCnpj">CPF / CNPJ</label>
+                <label for="cpfCnpj">CPF/CNPJ</label>
                 <div class="input-group">
                     <input type="text" id="cpfCnpj" name="cpfCnpj" class="form-control" value="@Model.Pessoa?.CpfCnpj">
                     <span class="input-group-text" id="cpfCnpjSpinner" style="display:none;">
@@ -52,265 +55,274 @@
             </div>
         </div>
 
-        @* -- Campos CNPJ (ReceitaWS - preenchidos automaticamente) -- *@
-        <div class="row" id="cnpjFieldsRow">
-            <div class="col-md-4 form-group">
-                <label for="razaoSocial">Razão Social</label>
-                <input type="text" id="razaoSocial" name="razaoSocial" class="form-control" value="@Model.Pessoa?.RazaoSocial">
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label>Telefone</label>
+                <div id="telefonesContainer" class="contact-list"></div>
+                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="adicionarTelefone">Adicionar telefone</button>
             </div>
-            <div class="col-md-4 form-group">
-                <label for="nomeFantasia">Nome Fantasia</label>
-                <input type="text" id="nomeFantasia" name="nomeFantasia" class="form-control" value="@Model.Pessoa?.NomeFantasia">
-            </div>
-            <div class="col-md-4 form-group">
-                <label for="cnae">CNAE</label>
-                <input type="text" id="cnae" name="cnae" class="form-control" value="@Model.Pessoa?.Cnae">
+            <div class="col-md-6 form-group">
+                <label>E-mail</label>
+                <div id="emailsContainer" class="contact-list"></div>
+                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="adicionarEmail">Adicionar e-mail</button>
             </div>
         </div>
 
         <div class="row">
             <div class="col-md-6 form-group">
-                <label for="telefone">Telefone</label>
-                <input type="text" id="telefone" name="telefone" class="form-control" value="@Model.Pessoa?.Telefone">
-            </div>
-            <div class="col-md-6 form-group">
-                <label for="email">E-mail</label>
-                <input type="email" id="email" name="email" class="form-control" value="@Model.Pessoa?.Email">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-4 form-group">
-                <label for="nomeContato">Nome do Contato</label>
+                <label for="nomeContato">Nome contato</label>
                 <input type="text" id="nomeContato" name="nomeContato" class="form-control" value="@Model.Pessoa?.NomeContato">
             </div>
-            <div class="col-md-4 form-group">
-                <label for="pais">País</label>
-                <input type="text" id="pais" name="pais" class="form-control" value="@Model.Pessoa?.Pais">
-            </div>
-            <div class="col-md-4 form-group">
-                <label for="idEstrangeiro">ID Estrangeiro</label>
-                <input type="text" id="idEstrangeiro" name="idEstrangeiro" class="form-control" value="@Model.Pessoa?.IdEstrangeiro">
-            </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-4 form-group">
-                <label for="dataNascimento">Data Nasc. / Fundação</label>
-                <input type="date" id="dataNascimento" name="dataNascimento" class="form-control"
-                       value="@(Model.Pessoa?.DataNascimento?.ToString("yyyy-MM-dd") ?? "")">
-            </div>
-            <div class="col-md-4 form-group">
-                <label for="inscricaoEstadual">Inscrição Estadual</label>
-                <input type="text" id="inscricaoEstadual" name="inscricaoEstadual" class="form-control" value="@Model.Pessoa?.InscricaoEstadual">
-            </div>
-            <div class="col-md-4 form-group">
-                <label for="inscricaoMunicipal">Inscrição Municipal</label>
-                <input type="text" id="inscricaoMunicipal" name="inscricaoMunicipal" class="form-control" value="@Model.Pessoa?.InscricaoMunicipal">
-            </div>
-        </div>
-
-        <h5 class="mt-4">Endereço</h5>
-        <hr />
-        
-        <div class="row">
-            <div class="col-md-3 form-group">
-                <label for="cep">CEP</label>
-                <div class="input-group">
-                    <input type="text" id="cep" name="cep" class="form-control" value="@Model.Pessoa?.Cep">
-                    <span class="input-group-text" id="cepSpinner" style="display:none;">
-                        <span class="spinner-border spinner-border-sm" role="status"></span>
-                    </span>
-                </div>
-            </div>
-            <div class="col-md-7 form-group">
-                <label for="logradouro">Logradouro</label>
-                <input type="text" id="logradouro" name="logradouro" class="form-control" value="@Model.Pessoa?.Logradouro">
-            </div>
-            <div class="col-md-2 form-group">
-                <label for="numero">Número</label>
-                <input type="text" id="numero" name="numero" class="form-control" value="@Model.Pessoa?.Numero">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-4 form-group">
-                <label for="complemento">Complemento</label>
-                <input type="text" id="complemento" name="complemento" class="form-control" value="@Model.Pessoa?.Complemento">
-            </div>
-            <div class="col-md-3 form-group">
-                <label for="bairro">Bairro</label>
-                <input type="text" id="bairro" name="bairro" class="form-control" value="@Model.Pessoa?.Bairro">
-            </div>
-            <div class="col-md-3 form-group">
-                <label for="cidade">Cidade</label>
-                <input type="text" id="cidade" name="cidade" class="form-control" value="@Model.Pessoa?.Cidade">
-            </div>
-            <div class="col-md-2 form-group">
-                <label for="uf">UF</label>
-                <select id="uf" name="uf" class="form-control">
-                    <option value="">--</option>
-                    @foreach (var sigla in new[] { "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO" })
-                    {
-                        var isSelected = Model.Pessoa?.UF == sigla ? "selected" : "";
-                        @Html.Raw($"<option value='{sigla}' {isSelected}>{sigla}</option>")
-                    }
-                </select>
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-            <h5 class="mb-0">Endereço de Entrega</h5>
-            <div class="d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#enderecoEntregaCampos" aria-expanded="true" aria-controls="enderecoEntregaCampos">
-                    Ocultar campos
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="copiarEnderecoEntrega">
-                    Copiar endereço principal
+        <div class="cadastro-section mt-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">Endere&ccedil;o</h5>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#enderecoCampos" aria-expanded="false" aria-controls="enderecoCampos">
+                    Mostrar
                 </button>
             </div>
-        </div>
-        <hr />
-        <div id="enderecoEntregaCampos" class="collapse show">
-        <div class="row">
-            <div class="col-md-3 form-group">
-                <label for="entCep">CEP</label>
-                <input type="text" id="entCep" name="entCep" class="form-control" value="@Model.Pessoa?.EntCep">
-            </div>
-            <div class="col-md-7 form-group">
-                <label for="entLogradouro">Logradouro</label>
-                <input type="text" id="entLogradouro" name="entLogradouro" class="form-control" value="@Model.Pessoa?.EntLogradouro">
-            </div>
-            <div class="col-md-2 form-group">
-                <label for="entNumero">Número</label>
-                <input type="text" id="entNumero" name="entNumero" class="form-control" value="@Model.Pessoa?.EntNumero">
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-4 form-group">
-                <label for="entComplemento">Complemento</label>
-                <input type="text" id="entComplemento" name="entComplemento" class="form-control" value="@Model.Pessoa?.EntComplemento">
-            </div>
-            <div class="col-md-3 form-group">
-                <label for="entBairro">Bairro</label>
-                <input type="text" id="entBairro" name="entBairro" class="form-control" value="@Model.Pessoa?.EntBairro">
-            </div>
-            <div class="col-md-3 form-group">
-                <label for="entCidade">Cidade</label>
-                <input type="text" id="entCidade" name="entCidade" class="form-control" value="@Model.Pessoa?.EntCidade">
-            </div>
-            <div class="col-md-2 form-group">
-                <label for="entUf">UF</label>
-                <select id="entUf" name="entUf" class="form-control">
-                    <option value="">--</option>
-                    @foreach (var sigla in new[] { "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO" })
-                    {
-                        var isSelected = Model.Pessoa?.EntUf == sigla ? "selected" : "";
-                        @Html.Raw($"<option value='{sigla}' {isSelected}>{sigla}</option>")
-                    }
-                </select>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-4 form-group">
-                <label for="entNome">Nome/Razão Social (Entrega)</label>
-                <input type="text" id="entNome" name="entNome" class="form-control" value="@Model.Pessoa?.EntNome">
-            </div>
-            <div class="col-md-4 form-group">
-                <label for="entCpfCnpj">CPF/CNPJ (Entrega)</label>
-                <input type="text" id="entCpfCnpj" name="entCpfCnpj" class="form-control" value="@Model.Pessoa?.EntCpfCnpj">
-            </div>
-            <div class="col-md-4 form-group">
-                <label for="entInscricaoEstadual">Inscrição Estadual (Entrega)</label>
-                <input type="text" id="entInscricaoEstadual" name="entInscricaoEstadual" class="form-control" value="@Model.Pessoa?.EntInscricaoEstadual">
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 form-group">
-                <label for="entEmail">E-mail (Entrega)</label>
-                <input type="email" id="entEmail" name="entEmail" class="form-control" value="@Model.Pessoa?.EntEmail">
-            </div>
-            <div class="col-md-6 form-group">
-                <label for="entTelefone">Telefone (Entrega)</label>
-                <input type="text" id="entTelefone" name="entTelefone" class="form-control" value="@Model.Pessoa?.EntTelefone">
-            </div>
-        </div>
-        </div>
+            <hr />
+            <div id="enderecoCampos" class="collapse">
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label for="cep">CEP</label>
+                        <div class="input-group">
+                            <input type="text" id="cep" name="cep" class="form-control" value="@Model.Pessoa?.Cep">
+                            <span class="input-group-text" id="cepSpinner" style="display:none;">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-7 form-group">
+                        <label for="logradouro">Logradouro</label>
+                        <input type="text" id="logradouro" name="logradouro" class="form-control" value="@Model.Pessoa?.Logradouro">
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label for="numero">N&uacute;mero</label>
+                        <input type="text" id="numero" name="numero" class="form-control" value="@Model.Pessoa?.Numero">
+                    </div>
+                </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-            <h5 class="mb-0">Informações Fiscais</h5>
-            <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#informacoesFiscaisCampos" aria-expanded="true" aria-controls="informacoesFiscaisCampos">
-                Ocultar campos
-            </button>
-        </div>
-        <hr />
-        <div id="informacoesFiscaisCampos" class="collapse show">
-        <div class="row">
-            <div class="col-md-3 form-group align-self-end">
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" id="consumidorFinal" name="consumidorFinal" @(Model.Pessoa?.ConsumidorFinal == true ? "checked" : "")>
-                    <label class="form-check-label" for="consumidorFinal">Consumidor Final?</label>
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="complemento">Complemento</label>
+                        <input type="text" id="complemento" name="complemento" class="form-control" value="@Model.Pessoa?.Complemento">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="bairro">Bairro</label>
+                        <input type="text" id="bairro" name="bairro" class="form-control" value="@Model.Pessoa?.Bairro">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="cidade">Cidade</label>
+                        <input type="text" id="cidade" name="cidade" class="form-control" value="@Model.Pessoa?.Cidade">
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label for="uf">UF</label>
+                        <select id="uf" name="uf" class="form-control">
+                            <option value="">--</option>
+                            @foreach (var sigla in ufs)
+                            {
+                                var isSelected = Model.Pessoa?.UF == sigla ? "selected" : "";
+                                @Html.Raw($"<option value='{sigla}' {isSelected}>{sigla}</option>")
+                            }
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3 form-group">
-                <label for="indicadorIE">Indicador IE</label>
-                <select id="indicadorIE" name="indicadorIE" class="form-control">
-                    <option value="">Selecione...</option>
-                    @if(Model.Pessoa?.IndicadorIE == 1) { <option value="1" selected>1 - Contribuinte ICMS</option> } else { <option value="1">1 - Contribuinte ICMS</option> }
-                    @if(Model.Pessoa?.IndicadorIE == 2) { <option value="2" selected>2 - Contribuinte Isento</option> } else { <option value="2">2 - Contribuinte Isento</option> }
-                    @if(Model.Pessoa?.IndicadorIE == 9) { <option value="9" selected>9 - Não Contribuinte</option> } else { <option value="9">9 - Não Contribuinte</option> }
-                </select>
-            </div>
-            <div class="col-md-3 form-group">
-                <label for="ieSubstTrib">IE Subst. Trib.</label>
-                <input type="text" id="ieSubstTrib" name="ieSubstTrib" class="form-control" value="@Model.Pessoa?.IESubstTrib">
-            </div>
-            <div class="col-md-3 form-group">
-                <label for="suframa">Suframa</label>
-                <input type="text" id="suframa" name="suframa" class="form-control" value="@Model.Pessoa?.Suframa">
-            </div>
-        </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-            <h5 class="mb-0">Outras Informações</h5>
-            <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#outrasInformacoesCampos" aria-expanded="true" aria-controls="outrasInformacoesCampos">
-                Ocultar campos
-            </button>
+        <div class="cadastro-section mt-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">Endere&ccedil;o de entrega</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#enderecoEntregaCampos" aria-expanded="false" aria-controls="enderecoEntregaCampos">
+                        Mostrar
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="copiarEnderecoEntrega">
+                        Copiar endere&ccedil;o principal
+                    </button>
+                </div>
+            </div>
+            <hr />
+            <div id="enderecoEntregaCampos" class="collapse">
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label for="entCep">CEP</label>
+                        <input type="text" id="entCep" name="entCep" class="form-control" value="@Model.Pessoa?.EntCep">
+                    </div>
+                    <div class="col-md-7 form-group">
+                        <label for="entLogradouro">Logradouro</label>
+                        <input type="text" id="entLogradouro" name="entLogradouro" class="form-control" value="@Model.Pessoa?.EntLogradouro">
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label for="entNumero">N&uacute;mero</label>
+                        <input type="text" id="entNumero" name="entNumero" class="form-control" value="@Model.Pessoa?.EntNumero">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="entComplemento">Complemento</label>
+                        <input type="text" id="entComplemento" name="entComplemento" class="form-control" value="@Model.Pessoa?.EntComplemento">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="entBairro">Bairro</label>
+                        <input type="text" id="entBairro" name="entBairro" class="form-control" value="@Model.Pessoa?.EntBairro">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="entCidade">Cidade</label>
+                        <input type="text" id="entCidade" name="entCidade" class="form-control" value="@Model.Pessoa?.EntCidade">
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label for="entUf">UF</label>
+                        <select id="entUf" name="entUf" class="form-control">
+                            <option value="">--</option>
+                            @foreach (var sigla in ufs)
+                            {
+                                var isSelected = Model.Pessoa?.EntUf == sigla ? "selected" : "";
+                                @Html.Raw($"<option value='{sigla}' {isSelected}>{sigla}</option>")
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="entNome">Nome/Raz&atilde;o Social (entrega)</label>
+                        <input type="text" id="entNome" name="entNome" class="form-control" value="@Model.Pessoa?.EntNome">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="entCpfCnpj">CPF/CNPJ (entrega)</label>
+                        <input type="text" id="entCpfCnpj" name="entCpfCnpj" class="form-control" value="@Model.Pessoa?.EntCpfCnpj">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="entInscricaoEstadual">Inscri&ccedil;&atilde;o Estadual (entrega)</label>
+                        <input type="text" id="entInscricaoEstadual" name="entInscricaoEstadual" class="form-control" value="@Model.Pessoa?.EntInscricaoEstadual">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label for="entEmail">E-mail (entrega)</label>
+                        <input type="email" id="entEmail" name="entEmail" class="form-control" value="@Model.Pessoa?.EntEmail">
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="entTelefone">Telefone (entrega)</label>
+                        <input type="text" id="entTelefone" name="entTelefone" class="form-control" value="@Model.Pessoa?.EntTelefone">
+                    </div>
+                </div>
+            </div>
         </div>
-        <hr />
-        <div id="outrasInformacoesCampos" class="collapse show">
-        <div class="row">
-            <div class="col-md-4 form-group">
-                <label for="dataComemorativa">Data Comemorativa</label>
-                <input type="date" id="dataComemorativa" name="dataComemorativa" class="form-control" value="@(Model.Pessoa?.DataComemorativa?.ToString("yyyy-MM-dd") ?? "")">
+
+        <div class="cadastro-section mt-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">Informa&ccedil;&otilde;es da empresa</h5>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-toggle-section data-bs-toggle="collapse" data-bs-target="#informacoesEmpresaCampos" aria-expanded="false" aria-controls="informacoesEmpresaCampos">
+                    Mostrar
+                </button>
             </div>
-            <div class="col-md-8 form-group">
-                <label for="descricaoComemoracao">Descrição da Comemoração</label>
-                <input type="text" id="descricaoComemoracao" name="descricaoComemoracao" class="form-control" value="@Model.Pessoa?.DescricaoComemoracao">
+            <hr />
+            <div id="informacoesEmpresaCampos" class="collapse">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="razaoSocial">Raz&atilde;o Social</label>
+                        <input type="text" id="razaoSocial" name="razaoSocial" class="form-control" value="@Model.Pessoa?.RazaoSocial">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="nomeFantasia">Nome Fantasia</label>
+                        <input type="text" id="nomeFantasia" name="nomeFantasia" class="form-control" value="@Model.Pessoa?.NomeFantasia">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="cnae">CNAE</label>
+                        <input type="text" id="cnae" name="cnae" class="form-control" value="@Model.Pessoa?.Cnae">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="dataNascimento">Data nasc./funda&ccedil;&atilde;o</label>
+                        <input type="date" id="dataNascimento" name="dataNascimento" class="form-control" value="@(Model.Pessoa?.DataNascimento?.ToString("yyyy-MM-dd") ?? "")">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="pais">Pa&iacute;s</label>
+                        <input type="text" id="pais" name="pais" class="form-control" value="@Model.Pessoa?.Pais">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="idEstrangeiro">ID Estrangeiro</label>
+                        <input type="text" id="idEstrangeiro" name="idEstrangeiro" class="form-control" value="@Model.Pessoa?.IdEstrangeiro">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="inscricaoEstadual">Inscri&ccedil;&atilde;o Estadual</label>
+                        <input type="text" id="inscricaoEstadual" name="inscricaoEstadual" class="form-control" value="@Model.Pessoa?.InscricaoEstadual">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="inscricaoMunicipal">Inscri&ccedil;&atilde;o Municipal</label>
+                        <input type="text" id="inscricaoMunicipal" name="inscricaoMunicipal" class="form-control" value="@Model.Pessoa?.InscricaoMunicipal">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="ieSubstTrib">IE Subst. Trib.</label>
+                        <input type="text" id="ieSubstTrib" name="ieSubstTrib" class="form-control" value="@Model.Pessoa?.IESubstTrib">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3 form-group align-self-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="consumidorFinal" name="consumidorFinal" @(Model.Pessoa?.ConsumidorFinal == true ? "checked" : "")>
+                            <label class="form-check-label" for="consumidorFinal">Consumidor final?</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="indicadorIE">Indicador IE</label>
+                        <select id="indicadorIE" name="indicadorIE" class="form-control">
+                            <option value="">Selecione...</option>
+                            @if (Model.Pessoa?.IndicadorIE == 1) { <option value="1" selected>1 - Contribuinte ICMS</option> } else { <option value="1">1 - Contribuinte ICMS</option> }
+                            @if (Model.Pessoa?.IndicadorIE == 2) { <option value="2" selected>2 - Contribuinte Isento</option> } else { <option value="2">2 - Contribuinte Isento</option> }
+                            @if (Model.Pessoa?.IndicadorIE == 9) { <option value="9" selected>9 - N&atilde;o Contribuinte</option> } else { <option value="9">9 - N&atilde;o Contribuinte</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="suframa">Suframa</label>
+                        <input type="text" id="suframa" name="suframa" class="form-control" value="@Model.Pessoa?.Suframa">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="dataComemorativa">Data comemorativa</label>
+                        <input type="date" id="dataComemorativa" name="dataComemorativa" class="form-control" value="@(Model.Pessoa?.DataComemorativa?.ToString("yyyy-MM-dd") ?? "")">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 form-group">
+                        <label for="descricaoComemoracao">Descri&ccedil;&atilde;o da comemora&ccedil;&atilde;o</label>
+                        <input type="text" id="descricaoComemoracao" name="descricaoComemoracao" class="form-control" value="@Model.Pessoa?.DescricaoComemoracao">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="tags">Palavras-chave (tags)</label>
+                        <input type="text" id="tags" name="tags" class="form-control" value="@Model.Pessoa?.Tags" placeholder="Ex.: Revenda, VIP, Especial">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label for="basesLegais">Bases legais (LGPD)</label>
+                        <textarea id="basesLegais" name="basesLegais" class="form-control" rows="3">@Model.Pessoa?.BasesLegais</textarea>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="observacoes">Observa&ccedil;&otilde;es</label>
+                        <textarea id="observacoes" name="observacoes" class="form-control" rows="3">@Model.Pessoa?.Observacoes</textarea>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12 form-group">
-                <label for="tags">Palavras-chave (Tags)</label>
-                <input type="text" id="tags" name="tags" class="form-control" value="@Model.Pessoa?.Tags" placeholder="Ex: Revenda, Vip, Especial">
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 form-group">
-                <label for="basesLegais">Bases Legais (LGPD)</label>
-                <textarea id="basesLegais" name="basesLegais" class="form-control" rows="3">@Model.Pessoa?.BasesLegais</textarea>
-            </div>
-            <div class="col-md-6 form-group">
-                <label for="observacoes">Observações</label>
-                <textarea id="observacoes" name="observacoes" class="form-control" rows="3">@Model.Pessoa?.Observacoes</textarea>
-            </div>
-        </div>
         </div>
 
         <div class="row mt-3">
             <div class="col-md-6">
                 <button type="submit" class="btn btn-primary">@Model.ButtonText</button>
+                <a class="btn btn-secondary" asp-page="/PessoaLista">Cancelar</a>
             </div>
             <div class="col-md-6 text-end">
                 @{
@@ -318,23 +330,15 @@
                 }
                 @if (cadastroSalvo)
                 {
-                    <button type="submit" asp-page-handler="EnviarCredenciais" 
-                            class="btn btn-secondary"
-                            id="btnEnviarCredenciais">
-                        <i class="bi bi-envelope"></i> Enviar Credenciais
+                    <button type="submit" asp-page-handler="EnviarCredenciais" class="btn btn-secondary" id="btnEnviarCredenciais">
+                        <i class="bi bi-envelope"></i> Enviar credenciais
                     </button>
                 }
                 else
                 {
-                    <button type="submit" asp-page-handler="EnviarCredenciais" 
-                            class="btn btn-secondary"
-                            id="btnEnviarCredenciais"
-                            disabled>
-                        <i class="bi bi-envelope"></i> Enviar Credenciais
+                    <button type="submit" asp-page-handler="EnviarCredenciais" class="btn btn-secondary" id="btnEnviarCredenciais" disabled>
+                        <i class="bi bi-envelope"></i> Enviar credenciais
                     </button>
-                }
-                @if (!cadastroSalvo)
-                {
                     <div class="alert alert-warning mt-2 small" id="alertaCredenciais">
                         <i class="bi bi-info-circle"></i>
                         Conclua e salve o cadastro antes de gerar os dados de acesso.
@@ -345,49 +349,171 @@
     </form>
 </div>
 
+<style>
+    .pessoa-cadastro-page .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .contact-row {
+        display: flex;
+        gap: .5rem;
+        margin-bottom: .5rem;
+    }
+
+    .contact-row .form-control {
+        min-width: 0;
+    }
+
+    .contact-row .btn {
+        white-space: nowrap;
+    }
+
+    .contact-remove-btn {
+        background-color: #dc3545 !important;
+        border-color: #dc3545 !important;
+        color: #fff !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    .contact-remove-btn:hover,
+    .contact-remove-btn:focus {
+        background-color: #bb2d3b !important;
+        border-color: #b02a37 !important;
+        color: #fff !important;
+    }
+</style>
 
 <script>
     $(document).ready(function () {
-        // -- Máscaras --
-        $("#telefone").inputmask("(99) 99999-9999");
-        $("#cep").inputmask("99999-999");
+        const telefonesIniciais = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TelefonesCadastro));
+        const emailsIniciais = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.EmailsCadastro));
 
-        // -- Máscara dinâmica CPF/CNPJ --
-        // Permite digitação livre e formata no blur conforme quantidade de dígitos
+        function normalizarLista(valores) {
+            const itens = Array.isArray(valores) ? valores : [valores];
+            return [...new Set(itens.map(function (valor) {
+                return (valor || "").trim();
+            }).filter(Boolean))];
+        }
+
+        function criarGerenciadorContatos(config) {
+            let itens = normalizarLista(config.valoresIniciais);
+            if (itens.length === 0) {
+                itens = [""];
+            }
+
+            const container = $(config.container);
+            const hidden = $(config.hidden);
+
+            function sincronizar() {
+                hidden.val(itens.map(function (valor) {
+                    return (valor || "").trim();
+                }).filter(Boolean).join("; "));
+            }
+
+            function renderizar() {
+                container.empty();
+
+                itens.forEach(function (valor, index) {
+                    const row = $('<div class="contact-row"></div>');
+                    const input = $('<input class="form-control">')
+                        .attr("type", config.tipo || "text")
+                        .attr("placeholder", config.placeholder)
+                        .val(valor);
+
+                    if (config.mascaraTelefone) {
+                        input.inputmask("(99) 99999-9999");
+                    }
+
+                    input.on("input", function () {
+                        itens[index] = $(this).val();
+                        sincronizar();
+                    });
+
+                    const remover = $('<button type="button" class="btn btn-danger btn-sm contact-remove-btn">Excluir</button>');
+                    remover.on("click", function () {
+                        itens.splice(index, 1);
+                        if (itens.length === 0) {
+                            itens = [""];
+                        }
+                        renderizar();
+                    });
+
+                    row.append(input, remover);
+                    container.append(row);
+                });
+
+                sincronizar();
+            }
+
+            $(config.botaoAdicionar).on("click", function () {
+                itens.push("");
+                renderizar();
+                container.find("input").last().focus();
+            });
+
+            renderizar();
+
+            return {
+                setValues: function (valores) {
+                    itens = normalizarLista(valores);
+                    if (itens.length === 0) {
+                        itens = [""];
+                    }
+                    renderizar();
+                },
+                getFirst: function () {
+                    return normalizarLista(itens)[0] || "";
+                },
+                sync: sincronizar
+            };
+        }
+
+        const telefoneManager = criarGerenciadorContatos({
+            container: "#telefonesContainer",
+            hidden: "#telefone",
+            botaoAdicionar: "#adicionarTelefone",
+            placeholder: "(00) 00000-0000",
+            valoresIniciais: telefonesIniciais,
+            mascaraTelefone: true
+        });
+
+        const emailManager = criarGerenciadorContatos({
+            container: "#emailsContainer",
+            hidden: "#email",
+            botaoAdicionar: "#adicionarEmail",
+            placeholder: "email@exemplo.com",
+            tipo: "email",
+            valoresIniciais: emailsIniciais
+        });
+
+        $("#cep").inputmask("99999-999");
+        $("#entCep").inputmask("99999-999");
+        $("#entTelefone").inputmask("(99) 99999-9999");
+
         var cpfCnpjField = $("#cpfCnpj");
-        
-        // Limitar a 14 dígitos numéricos (tamanho máximo do CNPJ)
-        cpfCnpjField.attr("maxlength", "18"); // 18 = CNPJ formatado (99.999.999/9999-99)
-        
+        cpfCnpjField.attr("maxlength", "18");
+
         cpfCnpjField.on("input", function () {
-            // Remove tudo que não é número
             var val = $(this).val().replace(/\D/g, "");
-            
-            // Limitar a 14 dígitos
             if (val.length > 14) val = val.substring(0, 14);
-            
-            // Formatar enquanto digita
+
             if (val.length <= 11) {
-                // Formato CPF parcial: 999.999.999-99
                 val = val.replace(/(\d{3})(\d)/, "$1.$2");
                 val = val.replace(/(\d{3})(\d)/, "$1.$2");
                 val = val.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
             } else {
-                // Formato CNPJ: 99.999.999/9999-99
                 val = val.replace(/^(\d{2})(\d)/, "$1.$2");
                 val = val.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
                 val = val.replace(/\.(\d{3})(\d)/, ".$1/$2");
                 val = val.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
             }
-            
+
             $(this).val(val);
         });
 
-        // -- Auto-preenchimento CNPJ (blur) --
         cpfCnpjField.on("blur", function () {
             var val = $(this).val().replace(/\D/g, "");
-            
-            // Só consultar se for CNPJ (14 dígitos)
             if (val.length !== 14) return;
 
             $("#cpfCnpjSpinner").show();
@@ -397,13 +523,12 @@
                 .then(function (data) {
                     $("#cpfCnpjSpinner").hide();
                     if (data.sucesso) {
-                        // Limpar todos os campos da empresa e endereço antes de preencher
                         $("#nome").val("");
                         $("#razaoSocial").val("");
                         $("#nomeFantasia").val("");
                         $("#cnae").val("");
-                        $("#telefone").val("");
-                        $("#email").val("");
+                        telefoneManager.setValues([]);
+                        emailManager.setValues([]);
                         $("#dataNascimento").val("");
                         $("#inscricaoEstadual").val("");
                         $("#inscricaoMunicipal").val("");
@@ -415,23 +540,19 @@
                         $("#cidade").val("");
                         $("#uf").val("");
 
-                        // Preencher dados da empresa
                         $("#razaoSocial").val(data.razaoSocial);
                         $("#nomeFantasia").val(data.nomeFantasia);
                         $("#cnae").val(data.cnae);
-                        
-                        // Preencher telefone, email e data de fundação
-                        if (data.telefone) $("#telefone").val(data.telefone);
-                        if (data.email) $("#email").val(data.email);
+
+                        if (data.telefone) telefoneManager.setValues([data.telefone]);
+                        if (data.email) emailManager.setValues([data.email]);
                         if (data.dataFundacao) {
                             var partes = data.dataFundacao.split("/");
                             if (partes.length === 3) {
-                                var dataFormatada = partes[2] + "-" + partes[1] + "-" + partes[0];
-                                $("#dataNascimento").val(dataFormatada);
+                                $("#dataNascimento").val(partes[2] + "-" + partes[1] + "-" + partes[0]);
                             }
                         }
 
-                        // Preencher endereço da empresa
                         if (data.cep) {
                             $("#cep").val(data.cep.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"));
                         }
@@ -441,13 +562,12 @@
                         if (data.bairro) $("#bairro").val(data.bairro);
                         if (data.cidade) $("#cidade").val(data.cidade);
                         if (data.uf) $("#uf").val(data.uf);
-                        
-                        // Se o nome estiver vazio, preencher com a razão social
+
                         if (!$("#nome").val()) {
                             $("#nome").val(data.nomeFantasia || data.razaoSocial);
                         }
                     } else {
-                        alert("CNPJ: " + (data.mensagem || "Não encontrado."));
+                        alert("CNPJ: " + (data.mensagem || "Nao encontrado."));
                     }
                 })
                 .catch(function (err) {
@@ -456,10 +576,8 @@
                 });
         });
 
-        // -- Auto-preenchimento CEP (blur) --
         $("#cep").on("blur", function () {
             var val = $(this).val().replace(/\D/g, "");
-            
             if (val.length !== 8) return;
 
             $("#cepSpinner").show();
@@ -473,11 +591,9 @@
                         $("#bairro").val(data.bairro);
                         $("#cidade").val(data.cidade);
                         $("#uf").val(data.uf);
-                        
-                        // Focar no campo Número após preencher
                         $("#numero").focus();
                     } else {
-                        alert("CEP: " + (data.mensagem || "Não encontrado."));
+                        alert("CEP: " + (data.mensagem || "Nao encontrado."));
                     }
                 })
                 .catch(function (err) {
@@ -504,11 +620,11 @@
             }
 
             if (!$("#entEmail").val()) {
-                $("#entEmail").val($("#email").val());
+                $("#entEmail").val(emailManager.getFirst());
             }
 
             if (!$("#entTelefone").val()) {
-                $("#entTelefone").val($("#telefone").val());
+                $("#entTelefone").val(telefoneManager.getFirst());
             }
         });
 
@@ -518,12 +634,18 @@
             if (!target) return;
 
             function atualizarTexto() {
-                button.textContent = target.classList.contains("show") ? "Ocultar campos" : "Mostrar campos";
+                button.textContent = target.classList.contains("show") ? "Ocultar" : "Mostrar";
+                button.setAttribute("aria-expanded", target.classList.contains("show") ? "true" : "false");
             }
 
             target.addEventListener("shown.bs.collapse", atualizarTexto);
             target.addEventListener("hidden.bs.collapse", atualizarTexto);
             atualizarTexto();
+        });
+
+        $("#pessoaCadastroForm").on("submit", function () {
+            telefoneManager.sync();
+            emailManager.sync();
         });
     });
 </script>

@@ -123,10 +123,14 @@ public sealed class RelatorioCentralService
                   ORDER BY Nome;",
                 new { IdSalao = idSalao })).ToList(),
             Planos = (await conn.QueryAsync<RelatorioOpcao>(
-                @"SELECT CAST(IdPlano AS varchar(20)) AS Valor, Descricao AS Rotulo
+                @"SELECT
+                    CAST(IdPlano AS varchar(20)) AS Valor,
+                    CONCAT(ISNULL(NULLIF(Codigo, ''), ''), CASE WHEN NULLIF(Codigo, '') IS NULL THEN '' ELSE ' - ' END, ISNULL(NULLIF(Nome, ''), Descricao)) AS Rotulo
                   FROM CorteCor_PlanoContas
                   WHERE IdSalao = @IdSalao
-                  ORDER BY Descricao;",
+                    AND ISNULL(Ativo, 0) = 1
+                    AND ISNULL(AceitaLancamento, 1) = 1
+                  ORDER BY Codigo, Descricao;",
                 new { IdSalao = idSalao })).ToList(),
             Contas = (await conn.QueryAsync<RelatorioOpcao>(
                 @"SELECT CAST(IdConta AS varchar(20)) AS Valor, Nome AS Rotulo
@@ -267,6 +271,7 @@ public sealed class RelatorioCentralService
         parameters.Add("IdCategoria", filtro.idCategoria);
         parameters.Add("IdServico", filtro.idServico);
         parameters.Add("IdProduto", filtro.idProduto);
+        parameters.Add("IdGrupoPlano", filtro.idGrupoPlano);
         parameters.Add("IdPlano", filtro.idPlano);
         parameters.Add("IdConta", filtro.idConta);
         parameters.Add("Ambiente", filtro.ambiente);
@@ -447,8 +452,8 @@ public sealed class RelatorioCentralService
                     P.Nome AS Nome,
                     ISNULL(C.Nome, '') AS Categoria,
                     FORMAT(P.PrecoVenda, 'N2', 'pt-BR') AS PrecoVenda,
-                    FORMAT(P.EstoqueAtual, 'N3', 'pt-BR') AS EstoqueAtual,
-                    FORMAT(P.EstoqueMinimo, 'N3', 'pt-BR') AS EstoqueMinimo,
+                    FORMAT(P.EstoqueAtual, 'N0', 'pt-BR') AS EstoqueAtual,
+                    FORMAT(P.EstoqueMinimo, 'N0', 'pt-BR') AS EstoqueMinimo,
                     CASE WHEN ISNULL(P.Arquivado, 0) = 1 THEN 'Arquivado' ELSE 'Ativo' END AS Situacao
                   FROM CorteCor_Produto P
                   LEFT JOIN CorteCor_CategoriaProduto C ON C.IdCategoria = P.IdCategoria
@@ -520,8 +525,8 @@ public sealed class RelatorioCentralService
                 @"SELECT
                     P.Nome AS Produto,
                     ISNULL(C.Nome, '') AS Categoria,
-                    FORMAT(P.EstoqueAtual, 'N3', 'pt-BR') AS EstoqueAtual,
-                    FORMAT(P.EstoqueMinimo, 'N3', 'pt-BR') AS EstoqueMinimo,
+                    FORMAT(P.EstoqueAtual, 'N0', 'pt-BR') AS EstoqueAtual,
+                    FORMAT(P.EstoqueMinimo, 'N0', 'pt-BR') AS EstoqueMinimo,
                     FORMAT(P.PrecoVenda, 'N2', 'pt-BR') AS PrecoVenda,
                     CASE
                         WHEN ISNULL(P.ControlarEstoque, 0) = 0 THEN 'Sem controle'
@@ -700,7 +705,10 @@ public sealed class RelatorioCentralService
                 @"SELECT
                     T.Tipo,
                     ISNULL(P.Nome, '') AS Pessoa,
-                    ISNULL(PC.Descricao, '') AS Plano,
+                    CASE
+                        WHEN PC.IdPlano IS NULL THEN ''
+                        ELSE CONCAT(ISNULL(NULLIF(PC.Codigo, ''), ''), CASE WHEN NULLIF(PC.Codigo, '') IS NULL THEN '' ELSE ' - ' END, ISNULL(NULLIF(PC.Nome, ''), PC.Descricao))
+                    END AS Plano,
                     ISNULL(CC.Nome, '') AS Conta,
                     T.Status,
                     FORMAT(T.ValorOriginal, 'N2', 'pt-BR') AS Valor,
@@ -708,11 +716,26 @@ public sealed class RelatorioCentralService
                   FROM CorteCor_FinanceiroTitulo T
                   LEFT JOIN CorteCor_Pessoa P ON P.IdPessoa = T.IdPessoa
                   LEFT JOIN CorteCor_PlanoContas PC ON PC.IdPlano = T.IdPlano
+                  LEFT JOIN CorteCor_PlanoContas PCG ON PCG.IdPlano = @IdGrupoPlano AND PCG.IdSalao = @IdSalao
                   LEFT JOIN CorteCor_ContaCaixa CC ON CC.IdConta = T.IdConta
                   WHERE T.IdSalao = @IdSalao
                     AND (@Pesquisa IS NULL OR T.Descricao LIKE @Pesquisa OR ISNULL(P.Nome, '') LIKE @Pesquisa OR ISNULL(T.Documento, '') LIKE @Pesquisa)
                     AND (@Tipo IS NULL OR T.Tipo = @Tipo)
                     AND (@Status IS NULL OR T.Status = @Status)
+                    AND (
+                        @IdGrupoPlano IS NULL
+                        OR PC.Codigo LIKE CONCAT(PCG.Codigo, '.%')
+                        OR (
+                            PC.IdPlano = PCG.IdPlano
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM CorteCor_PlanoContas Filho
+                                WHERE Filho.IdSalao = PCG.IdSalao
+                                  AND ISNULL(Filho.Ativo, 0) = 1
+                                  AND Filho.Codigo LIKE CONCAT(PCG.Codigo, '.%')
+                            )
+                        )
+                    )
                     AND (@IdPlano IS NULL OR T.IdPlano = @IdPlano)
                     AND (@IdConta IS NULL OR T.IdConta = @IdConta)
                     AND (@DataInicio IS NULL OR CAST(T.DataVencimento AS date) >= @DataInicio)
@@ -729,9 +752,25 @@ public sealed class RelatorioCentralService
                     FORMAT(SUM(T.ValorLiquidado), 'N2', 'pt-BR') AS ValorLiquidado,
                     FORMAT(SUM(T.ValorAberto), 'N2', 'pt-BR') AS ValorAberto
                   FROM CorteCor_FinanceiroTitulo T
+                  LEFT JOIN CorteCor_PlanoContas PC ON PC.IdPlano = T.IdPlano
+                  LEFT JOIN CorteCor_PlanoContas PCG ON PCG.IdPlano = @IdGrupoPlano AND PCG.IdSalao = @IdSalao
                   WHERE T.IdSalao = @IdSalao
                     AND (@Tipo IS NULL OR T.Tipo = @Tipo)
                     AND (@Status IS NULL OR T.Status = @Status)
+                    AND (
+                        @IdGrupoPlano IS NULL
+                        OR PC.Codigo LIKE CONCAT(PCG.Codigo, '.%')
+                        OR (
+                            PC.IdPlano = PCG.IdPlano
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM CorteCor_PlanoContas Filho
+                                WHERE Filho.IdSalao = PCG.IdSalao
+                                  AND ISNULL(Filho.Ativo, 0) = 1
+                                  AND Filho.Codigo LIKE CONCAT(PCG.Codigo, '.%')
+                            )
+                        )
+                    )
                     AND (@IdPlano IS NULL OR T.IdPlano = @IdPlano)
                     AND (@IdConta IS NULL OR T.IdConta = @IdConta)
                     AND (@DataInicio IS NULL OR CAST(T.DataVencimento AS date) >= @DataInicio)
@@ -743,16 +782,21 @@ public sealed class RelatorioCentralService
             RelatorioTipos.FinanceiroPlanoContas => (
                 @"SELECT
                     ISNULL(Codigo, '') AS Codigo,
-                    Descricao,
-                    Tipo,
+                    ISNULL(NULLIF(Nome, ''), Descricao) AS Nome,
+                    ISNULL(Nivel, 1) AS Nivel,
+                    ISNULL(TipoConta, CASE WHEN Tipo = 'R' THEN 'Receita' ELSE 'Despesa' END) AS TipoConta,
+                    ISNULL(NaturezaSaldo, '') AS NaturezaSaldo,
+                    CASE WHEN ISNULL(AceitaLancamento, 1) = 1 THEN 'Analitica' ELSE 'Grupo' END AS Lancamento,
+                    ISNULL(GrupoDRE, '') AS GrupoDRE,
+                    ISNULL(CAST(OrdemDRE AS varchar(20)), '') AS OrdemDRE,
                     CASE WHEN ISNULL(Ativo, 1) = 1 THEN 'Ativo' ELSE 'Inativo' END AS Situacao
                   FROM CorteCor_PlanoContas
                   WHERE IdSalao = @IdSalao
-                    AND (@Pesquisa IS NULL OR ISNULL(Codigo, '') LIKE @Pesquisa OR Descricao LIKE @Pesquisa)
-                    AND (@Tipo IS NULL OR Tipo = @Tipo)
+                    AND (@Pesquisa IS NULL OR ISNULL(Codigo, '') LIKE @Pesquisa OR Descricao LIKE @Pesquisa OR ISNULL(Nome, '') LIKE @Pesquisa)
+                    AND (@Tipo IS NULL OR Tipo = @Tipo OR TipoConta = @Tipo)
                     AND (@Ativo IS NULL OR (CASE WHEN @Ativo = 1 THEN CASE WHEN ISNULL(Ativo, 1) = 1 THEN 1 ELSE 0 END ELSE CASE WHEN ISNULL(Ativo, 1) = 0 THEN 1 ELSE 0 END END) = 1)
-                  ORDER BY Descricao;",
-                Colunas("Codigo", "Descricao", "Tipo", "Situacao")),
+                  ORDER BY Codigo, Descricao;",
+                Colunas("Codigo", "Nome", "Nivel", "TipoConta", "NaturezaSaldo", "Lancamento", "GrupoDRE", "OrdemDRE", "Situacao")),
 
             RelatorioTipos.FinanceiroContasCaixa => (
                 @"SELECT

@@ -21,23 +21,77 @@
             <input type="hidden" asp-for="PlanoInput.IdPlano" />
             <div class="col-md-3">
                 <label class="form-label">Código</label>
-                <input class="form-control" asp-for="PlanoInput.Codigo" />
+                <input class="form-control" asp-for="PlanoInput.Codigo" placeholder="Ex.: 7.2.02.006" required />
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Tipo</label>
-                <select class="form-select" asp-for="PlanoInput.Tipo">
-                    <option value="R">Receita</option>
-                    <option value="D">Despesa</option>
+            <div class="col-md-5">
+                <label class="form-label">Nome/Descrição</label>
+                <input class="form-control" asp-for="PlanoInput.Descricao" placeholder="Ex.: Contabilidade" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Conta pai</label>
+                <select class="form-select" asp-for="PlanoInput.IdPlanoPai" data-smart-select data-smart-placeholder="Digite para pesquisar conta pai...">
+                    <option value="">Sem conta pai</option>
+                    @foreach (var plano in Model.PlanosPai)
+                    {
+                        <option value="@plano.IdPlano" selected="@(Model.PlanoInput.IdPlanoPai == plano.IdPlano)">
+                            @plano.Codigo - @plano.NomeExibicao
+                        </option>
+                    }
                 </select>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Descrição</label>
-                <input class="form-control" asp-for="PlanoInput.Descricao" />
+            <div class="col-md-2">
+                <label class="form-label">Nível</label>
+                <input class="form-control" asp-for="PlanoInput.Nivel" type="number" min="1" placeholder="Auto" />
             </div>
-            <div class="col-12">
+            <div class="col-md-3">
+                <label class="form-label">Tipo financeiro</label>
+                <select class="form-select" asp-for="PlanoInput.Tipo">
+                    <option value="D" selected="@(Model.PlanoInput.Tipo == "D")">Despesa/Débito</option>
+                    <option value="R" selected="@(Model.PlanoInput.Tipo == "R")">Receita/Crédito</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tipo contábil</label>
+                <select class="form-select" asp-for="PlanoInput.TipoConta">
+                    <option value="">Selecione</option>
+                    @foreach (var tipoConta in Model.TiposConta)
+                    {
+                        <option value="@tipoConta" selected="@(Model.PlanoInput.TipoConta == tipoConta)">@tipoConta</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Natureza do saldo</label>
+                <select class="form-select" asp-for="PlanoInput.NaturezaSaldo">
+                    <option value="">Selecione</option>
+                    <option value="Devedora" selected="@(Model.PlanoInput.NaturezaSaldo == "Devedora")">Devedora</option>
+                    <option value="Credora" selected="@(Model.PlanoInput.NaturezaSaldo == "Credora")">Credora</option>
+                </select>
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Grupo DRE</label>
+                <select class="form-select" asp-for="PlanoInput.GrupoDRE">
+                    <option value="">Não se aplica</option>
+                    @foreach (var grupoDre in Model.GruposDre)
+                    {
+                        <option value="@grupoDre" selected="@(Model.PlanoInput.GrupoDRE == grupoDre)">@grupoDre</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ordem DRE</label>
+                <input class="form-control" asp-for="PlanoInput.OrdemDRE" type="number" min="0" />
+            </div>
+            <div class="col-md-6">
                 <div class="form-check">
                     <input class="form-check-input" asp-for="PlanoInput.Ativo" />
                     <label class="form-check-label" asp-for="PlanoInput.Ativo">Ativo</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="PlanoInput.AceitaLancamento" />
+                    <label class="form-check-label" asp-for="PlanoInput.AceitaLancamento">Aceita lançamento</label>
                 </div>
             </div>
             <div class="col-12 text-end">

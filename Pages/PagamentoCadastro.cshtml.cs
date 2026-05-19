@@ -22,6 +22,7 @@ namespace CorteCor.Pages
         private readonly AgendamentoFiscalPreparationService _agendamentoFiscalPreparationService;
         private readonly PedidoHandler _pedidoHandler;
         private readonly VendaEstoqueHandler _vendaEstoqueHandler;
+        private readonly FinanceiroService _financeiroService;
         private readonly ILogger<PagamentoCadastroModel> _logger;
 
         public PagamentoCadastroModel(
@@ -34,6 +35,7 @@ namespace CorteCor.Pages
             AgendamentoFiscalPreparationService agendamentoFiscalPreparationService,
             PedidoHandler pedidoHandler,
             VendaEstoqueHandler vendaEstoqueHandler,
+            FinanceiroService financeiroService,
             ILogger<PagamentoCadastroModel> logger)
         {
             _pagamentoHandler = pagamentoHandler;
@@ -45,6 +47,7 @@ namespace CorteCor.Pages
             _agendamentoFiscalPreparationService = agendamentoFiscalPreparationService;
             _pedidoHandler = pedidoHandler;
             _vendaEstoqueHandler = vendaEstoqueHandler;
+            _financeiroService = financeiroService;
             _logger = logger;
         }
 
@@ -228,6 +231,11 @@ namespace CorteCor.Pages
                 if (pagamento.Status == AgendamentoStatus.Pago && idAgendamento.HasValue)
                 {
                     await ProcessarEmissaoAutomaticaAsync(idAgendamento.Value);
+                }
+
+                if (idSalao > 0)
+                {
+                    await _financeiroService.SincronizarTitulosPagamentoAsync(idSalao);
                 }
 
                 OnGet(id != Guid.Empty ? id : null, null, null, null);

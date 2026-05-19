@@ -5,6 +5,7 @@ using CorteCor.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Text;
 
 namespace CorteCor.Pages
 {
@@ -19,6 +20,8 @@ namespace CorteCor.Pages
         public string ButtonText = "Cadastrar";
         public string Mensagem { get; set; } = string.Empty;
         public string MensagemTipo { get; set; } = "success";
+        public List<string> TelefonesCadastro => SepararContatos(Pessoa?.Telefone);
+        public List<string> EmailsCadastro => SepararContatos(Pessoa?.Email);
 
         public PessoaCadastroModel(ConsultaDocumentoService consultaService, PessoaHandler pessoaHandler)
         {
@@ -174,7 +177,7 @@ namespace CorteCor.Pages
                     return;
                 }
 
-                string email = Request.Form["email"];
+                string email = ObterPrimeiroContato(Request.Form["email"]);
                 if (string.IsNullOrWhiteSpace(email))
                 {
                     Mensagem = "O campo e-mail e obrigatorio para enviar credenciais.";
@@ -241,50 +244,51 @@ namespace CorteCor.Pages
             {
                 IdPessoa = id,
                 IdSalao = idSalao,
-                Nome = Request.Form["nome"].ToString().Trim(),
-                Telefone = Request.Form["telefone"].ToString().Trim(),
-                Email = Request.Form["email"].ToString().Trim(),
+                Nome = NormalizarTexto(Request.Form["nome"]) ?? string.Empty,
+                Telefone = NormalizarTexto(Request.Form["telefone"]) ?? string.Empty,
+                Email = NormalizarTexto(Request.Form["email"]) ?? string.Empty,
                 DataNascimento = dataNascimento,
                 CpfCnpj = LimparDocumento(Request.Form["cpfCnpj"]),
-                InscricaoEstadual = Request.Form["inscricaoEstadual"],
-                InscricaoMunicipal = Request.Form["inscricaoMunicipal"],
+                InscricaoEstadual = NormalizarTexto(Request.Form["inscricaoEstadual"]),
+                InscricaoMunicipal = NormalizarTexto(Request.Form["inscricaoMunicipal"]),
                 Cep = LimparCep(Request.Form["cep"]),
-                Logradouro = Request.Form["logradouro"],
-                Numero = Request.Form["numero"],
-                Complemento = Request.Form["complemento"],
-                Bairro = Request.Form["bairro"],
-                Cidade = Request.Form["cidade"],
-                UF = Request.Form["uf"],
-                RazaoSocial = Request.Form["razaoSocial"],
-                NomeFantasia = Request.Form["nomeFantasia"],
-                Cnae = Request.Form["cnae"],
+                Logradouro = NormalizarTexto(Request.Form["logradouro"]),
+                Numero = NormalizarTexto(Request.Form["numero"]),
+                Complemento = NormalizarTexto(Request.Form["complemento"]),
+                Bairro = NormalizarTexto(Request.Form["bairro"]),
+                Cidade = NormalizarTexto(Request.Form["cidade"]),
+                UF = NormalizarTexto(Request.Form["uf"]),
+                RazaoSocial = NormalizarTexto(Request.Form["razaoSocial"]),
+                NomeFantasia = NormalizarTexto(Request.Form["nomeFantasia"]),
+                Cnae = NormalizarTexto(Request.Form["cnae"]),
                 IsCliente = Request.Form["isCliente"] == "on" || Request.Form["isCliente"] == "true",
                 IsFornecedor = Request.Form["isFornecedor"] == "on" || Request.Form["isFornecedor"] == "true",
-                IsTransportador = Request.Form["isTransportador"] == "on" || Request.Form["isTransportador"] == "true",
-                NomeContato = Request.Form["nomeContato"],
-                Pais = Request.Form["pais"],
-                IdEstrangeiro = Request.Form["idEstrangeiro"],
+                IsLead = Request.Form["isLead"] == "on" || Request.Form["isLead"] == "true",
+                IsTransportador = false,
+                NomeContato = NormalizarTexto(Request.Form["nomeContato"]),
+                Pais = NormalizarTexto(Request.Form["pais"]),
+                IdEstrangeiro = NormalizarTexto(Request.Form["idEstrangeiro"]),
                 EntCep = LimparCep(Request.Form["entCep"]),
-                EntUf = Request.Form["entUf"],
-                EntCidade = Request.Form["entCidade"],
-                EntNome = Request.Form["entNome"],
+                EntUf = NormalizarTexto(Request.Form["entUf"]),
+                EntCidade = NormalizarTexto(Request.Form["entCidade"]),
+                EntNome = NormalizarTexto(Request.Form["entNome"]),
                 EntCpfCnpj = LimparDocumento(Request.Form["entCpfCnpj"]),
-                EntInscricaoEstadual = Request.Form["entInscricaoEstadual"],
-                EntLogradouro = Request.Form["entLogradouro"],
-                EntNumero = Request.Form["entNumero"],
-                EntComplemento = Request.Form["entComplemento"],
-                EntBairro = Request.Form["entBairro"],
-                EntEmail = Request.Form["entEmail"],
-                EntTelefone = Request.Form["entTelefone"],
+                EntInscricaoEstadual = NormalizarTexto(Request.Form["entInscricaoEstadual"]),
+                EntLogradouro = NormalizarTexto(Request.Form["entLogradouro"]),
+                EntNumero = NormalizarTexto(Request.Form["entNumero"]),
+                EntComplemento = NormalizarTexto(Request.Form["entComplemento"]),
+                EntBairro = NormalizarTexto(Request.Form["entBairro"]),
+                EntEmail = NormalizarTexto(Request.Form["entEmail"]),
+                EntTelefone = NormalizarTexto(Request.Form["entTelefone"]),
                 ConsumidorFinal = consumidorFinal,
                 IndicadorIE = indicadorIE,
-                IESubstTrib = Request.Form["ieSubstTrib"],
-                Suframa = Request.Form["suframa"],
-                Tags = Request.Form["tags"],
+                IESubstTrib = NormalizarTexto(Request.Form["ieSubstTrib"]),
+                Suframa = NormalizarTexto(Request.Form["suframa"]),
+                Tags = NormalizarTexto(Request.Form["tags"]),
                 DataComemorativa = dataComemorativa,
-                DescricaoComemoracao = Request.Form["descricaoComemoracao"],
-                BasesLegais = Request.Form["basesLegais"],
-                Observacoes = Request.Form["observacoes"]
+                DescricaoComemoracao = NormalizarTexto(Request.Form["descricaoComemoracao"]),
+                BasesLegais = NormalizarTexto(Request.Form["basesLegais"]),
+                Observacoes = NormalizarTexto(Request.Form["observacoes"])
             };
         }
 
@@ -297,28 +301,31 @@ namespace CorteCor.Pages
                 return false;
             }
 
-            if (!pessoa.IsCliente && !pessoa.IsFornecedor && !pessoa.IsTransportador)
+            if (!pessoa.IsCliente && !pessoa.IsFornecedor && !pessoa.IsLead)
             {
                 Mensagem = "Selecione pelo menos um tipo de contato.";
                 MensagemTipo = "warning";
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(pessoa.Email) && !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(pessoa.Email))
+            var emails = SepararContatos(pessoa.Email);
+            var emailValidator = new System.ComponentModel.DataAnnotations.EmailAddressAttribute();
+            if (emails.Any(email => !emailValidator.IsValid(email)))
             {
-                Mensagem = "Informe um e-mail válido.";
+                Mensagem = "Informe somente e-mails validos.";
                 MensagemTipo = "warning";
                 return false;
             }
 
-            var telefoneNumerico = string.IsNullOrWhiteSpace(pessoa.Telefone)
-                ? string.Empty
-                : new string(pessoa.Telefone.Where(char.IsDigit).ToArray());
-            if (!string.IsNullOrWhiteSpace(telefoneNumerico) && telefoneNumerico.Length is < 10 or > 11)
+            foreach (var telefone in SepararContatos(pessoa.Telefone))
             {
-                Mensagem = "Informe um telefone com DDD válido.";
-                MensagemTipo = "warning";
-                return false;
+                var telefoneItemNumerico = new string(telefone.Where(char.IsDigit).ToArray());
+                if (!string.IsNullOrWhiteSpace(telefoneItemNumerico) && telefoneItemNumerico.Length is < 10 or > 11)
+                {
+                    Mensagem = "Informe telefones com DDD valido.";
+                    MensagemTipo = "warning";
+                    return false;
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(pessoa.CpfCnpj) && pessoa.CpfCnpj.Length != 11 && pessoa.CpfCnpj.Length != 14)
@@ -335,11 +342,14 @@ namespace CorteCor.Pages
                 return false;
             }
 
-            if (_pessoaHandler.ExisteEmailPorSalao(pessoa.Email ?? string.Empty, pessoa.IdSalao, pessoa.IdPessoa > 0 ? pessoa.IdPessoa : null))
+            foreach (var email in emails)
             {
-                Mensagem = "Ja existe uma pessoa com este e-mail.";
-                MensagemTipo = "warning";
-                return false;
+                if (_pessoaHandler.ExisteEmailPorSalao(email, pessoa.IdSalao, pessoa.IdPessoa > 0 ? pessoa.IdPessoa : null))
+                {
+                    Mensagem = $"Ja existe uma pessoa com o e-mail {email}.";
+                    MensagemTipo = "warning";
+                    return false;
+                }
             }
 
             return true;
@@ -364,5 +374,28 @@ namespace CorteCor.Pages
 
             return value.Replace("-", "").Trim();
         }
+
+        private static string? NormalizarTexto(string? value)
+        {
+            var texto = value?.Trim();
+            return string.IsNullOrWhiteSpace(texto) ? null : texto.Normalize(NormalizationForm.FormC);
+        }
+
+        private static List<string> SepararContatos(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return new List<string>();
+            }
+
+            return valor
+                .Split(new[] { ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string ObterPrimeiroContato(string? valor) =>
+            SepararContatos(valor).FirstOrDefault() ?? string.Empty;
     }
 }

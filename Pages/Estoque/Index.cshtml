@@ -141,8 +141,8 @@
                                 <div class="small text-muted">@item.CodigoProprio</div>
                             </td>
                             <td>@(string.IsNullOrWhiteSpace(item.CategoriaNome) ? "-" : item.CategoriaNome)</td>
-                            <td class="text-end">@item.EstoqueAtual.ToString("N3")</td>
-                            <td class="text-end">@item.EstoqueMinimo.ToString("N3")</td>
+                            <td class="text-end">@decimal.Truncate(item.EstoqueAtual).ToString("N0")</td>
+                            <td class="text-end">@decimal.Truncate(item.EstoqueMinimo).ToString("N0")</td>
                             <td class="text-end">R$ @item.PrecoVenda.ToString("N2")</td>
                             <td class="text-end">
                                 @if (!item.ControlarEstoque)

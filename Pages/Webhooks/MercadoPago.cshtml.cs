@@ -13,11 +13,16 @@ namespace CorteCor.Pages.Webhooks
     {
         private readonly ILogger<MercadoPagoWebhookModel> _logger;
         private readonly IConfiguration _configuration;
+        private readonly FinanceiroService _financeiroService;
 
-        public MercadoPagoWebhookModel(ILogger<MercadoPagoWebhookModel> logger, IConfiguration configuration)
+        public MercadoPagoWebhookModel(
+            ILogger<MercadoPagoWebhookModel> logger,
+            IConfiguration configuration,
+            FinanceiroService financeiroService)
         {
             _logger = logger;
             _configuration = configuration;
+            _financeiroService = financeiroService;
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -87,23 +92,29 @@ namespace CorteCor.Pages.Webhooks
                             {
                                 p.MpStatus = payment.Status;
                                 p.MpStatusDetail = payment.StatusDetail;
+                                var idSalaoFinanceiro = p.IdSalao.GetValueOrDefault();
+                                var agendamento = p.IdAgendamento.HasValue
+                                    ? agendamentoHandler.ObterPorId(p.IdAgendamento.Value)
+                                    : null;
+                                Servico? servicoAgendamento = null;
+                                if (agendamento != null)
+                                {
+                                    var servicoHandler = new ServicoHandler();
+                                    servicoAgendamento = servicoHandler.ObterPorId(agendamento.IdServico);
+                                    if (servicoAgendamento != null)
+                                    {
+                                        idSalaoFinanceiro = idSalaoFinanceiro > 0 ? idSalaoFinanceiro : servicoAgendamento.IdSalao;
+                                    }
+                                }
 
                                 if (payment.Status == "approved")
                                 {
                                     p.Status = "Pago";
                                     p.PagoEm = payment.DateApproved ?? DateTime.UtcNow;
-                                    
-                                    var agendamento = p.IdAgendamento.HasValue
-                                        ? agendamentoHandler.ObterPorId(p.IdAgendamento.Value)
-                                        : null;
-                                    if (agendamento != null)
+
+                                    if (agendamento != null && servicoAgendamento != null)
                                     {
-                                        var servicoHandler = new ServicoHandler();
-                                        var servico = servicoHandler.ObterPorId(agendamento.IdServico);
-                                        if (servico != null)
-                                        {
-                                            agendamentoHandler.AtualizarStatus(p.IdAgendamento.Value, "Pago", servico.IdSalao);
-                                        }
+                                        agendamentoHandler.AtualizarStatus(agendamento.IdAgendamento, "Pago", servicoAgendamento.IdSalao);
                                     }
                                 }
                                 else if (payment.Status == "rejected" || payment.Status == "cancelled")
@@ -118,6 +129,10 @@ namespace CorteCor.Pages.Webhooks
                                 }
 
                                 pagHandler.AtualizarStatusWebhook(p.IdPagamento, p.Status, payment.Id, p.MpStatus, p.MpStatusDetail, p.PagoEm);
+                                if (idSalaoFinanceiro > 0)
+                                {
+                                    await _financeiroService.SincronizarTitulosPagamentoAsync(idSalaoFinanceiro);
+                                }
                             }
                         }
                     }

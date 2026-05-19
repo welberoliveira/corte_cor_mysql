@@ -13,6 +13,7 @@
     }
 
     <form method="post" class="mt-4">
+        <input type="hidden" asp-for="Categoria.IdCategoria">
         <input type="hidden" name="action" value="salvar">
         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 

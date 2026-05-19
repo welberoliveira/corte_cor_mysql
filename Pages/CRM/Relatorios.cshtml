@@ -32,7 +32,18 @@
                 <label class="form-label">Data fim</label>
                 <input type="date" class="form-control" name="dataFim" value="@Model.DataFim.ToString("yyyy-MM-dd")" />
             </div>
-            <div class="col-md-6 text-md-end">
+            <div class="col-md-3">
+                <label class="form-label">Respons&aacute;vel</label>
+                <select class="form-select" asp-for="IdUsuarioResponsavel">
+                    <option value="">Todos</option>
+                    @foreach (var responsavel in Model.Responsaveis)
+                    {
+                        var nomeResponsavel = $"{responsavel.Nome} {responsavel.Sobrenome}".Trim();
+                        <option value="@responsavel.IdUsuario">@(!string.IsNullOrWhiteSpace(nomeResponsavel) ? nomeResponsavel : responsavel.Email)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 text-md-end">
                 <button class="btn btn-primary" type="submit">Atualizar relatórios</button>
             </div>
         </form>

@@ -92,6 +92,7 @@ public sealed class RelatorioFiltroInput
     public int? idCategoria { get; set; }
     public int? idServico { get; set; }
     public int? idProduto { get; set; }
+    public int? idGrupoPlano { get; set; }
     public int? idPlano { get; set; }
     public int? idConta { get; set; }
     public int? ambiente { get; set; }
@@ -118,6 +119,7 @@ public sealed class RelatorioFiltrosContexto
     public List<RelatorioOpcao> Categorias { get; set; } = new();
     public List<RelatorioOpcao> Servicos { get; set; } = new();
     public List<RelatorioOpcao> Produtos { get; set; } = new();
+    public List<RelatorioOpcao> GruposPlano { get; set; } = new();
     public List<RelatorioOpcao> Planos { get; set; } = new();
     public List<RelatorioOpcao> Contas { get; set; } = new();
 }

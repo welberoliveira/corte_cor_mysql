@@ -298,11 +298,6 @@ public class ImovelCadastroModel : PageModel
             return Falha("Informe a descricao principal do imovel.");
         }
 
-        if (totalFotosRestantes <= 0)
-        {
-            return Falha("Inclua ao menos uma foto para a galeria do imovel.");
-        }
-
         if (string.IsNullOrWhiteSpace(Imovel.TelefonePrincipal) ||
             string.IsNullOrWhiteSpace(Imovel.WhatsApp) ||
             string.IsNullOrWhiteSpace(Imovel.EmailContato))
@@ -346,10 +341,15 @@ public class ImovelCadastroModel : PageModel
             return;
         }
 
-        var pasta = ObterPastaUpload(idImovel);
+        var pasta = ObterPastaUpload();
         Directory.CreateDirectory(pasta);
         var proximaOrdem = fotosExistentes.Any() ? fotosExistentes.Max(f => f.Ordem) + 1 : 1;
         var deveMarcarPrimeiraComoCapa = !fotoCapaId.HasValue && !fotosExistentes.Any(f => !fotosRemovidas.Contains(f.IdFoto) && f.FotoCapa);
+        var codigoArquivo = SanitizarParteNomeArquivo(Imovel.CodigoImovel);
+        if (string.IsNullOrWhiteSpace(codigoArquivo))
+        {
+            codigoArquivo = idImovel.ToString(CultureInfo.InvariantCulture);
+        }
 
         foreach (var arquivo in fotos)
         {
@@ -364,7 +364,13 @@ public class ImovelCadastroModel : PageModel
                 continue;
             }
 
-            var nomeArquivo = $"{Guid.NewGuid():N}{extensao}";
+            var nomeOriginal = SanitizarParteNomeArquivo(Path.GetFileNameWithoutExtension(arquivo.FileName));
+            if (string.IsNullOrWhiteSpace(nomeOriginal))
+            {
+                nomeOriginal = "foto";
+            }
+
+            var nomeArquivo = ObterNomeArquivoDisponivel(pasta, $"{codigoArquivo}_{nomeOriginal}", extensao);
             var caminhoFisico = Path.Combine(pasta, nomeArquivo);
             await using (var stream = System.IO.File.Create(caminhoFisico))
             {
@@ -374,7 +380,7 @@ public class ImovelCadastroModel : PageModel
             _imovelHandler.AdicionarFoto(new ImovelFoto
             {
                 IdImovel = idImovel,
-                CaminhoArquivo = $"/uploads/imoveis/{idImovel}/{nomeArquivo}",
+                CaminhoArquivo = $"/uploads/imoveis/{nomeArquivo}",
                 Ordem = proximaOrdem++,
                 FotoCapa = deveMarcarPrimeiraComoCapa,
                 Legenda = null,
@@ -404,7 +410,7 @@ public class ImovelCadastroModel : PageModel
         _imovelHandler.Salvar(Imovel);
     }
 
-    private string ObterPastaUpload(int idImovel)
+    private string ObterPastaUpload()
     {
         var webRoot = _environment.WebRootPath;
         if (string.IsNullOrWhiteSpace(webRoot))
@@ -412,7 +418,57 @@ public class ImovelCadastroModel : PageModel
             webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         }
 
-        return Path.Combine(webRoot, "uploads", "imoveis", idImovel.ToString(CultureInfo.InvariantCulture));
+        return Path.Combine(webRoot, "uploads", "imoveis");
+    }
+
+    private static string ObterNomeArquivoDisponivel(string pasta, string nomeBase, string extensao)
+    {
+        nomeBase = nomeBase.Length > 120 ? nomeBase[..120].Trim('-', '_', '.') : nomeBase;
+        var nomeArquivo = $"{nomeBase}{extensao}";
+        var contador = 2;
+
+        while (System.IO.File.Exists(Path.Combine(pasta, nomeArquivo)))
+        {
+            nomeArquivo = $"{nomeBase}_{contador}{extensao}";
+            contador++;
+        }
+
+        return nomeArquivo;
+    }
+
+    private static string SanitizarParteNomeArquivo(string? valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+        {
+            return string.Empty;
+        }
+
+        var normalizado = valor.Trim().Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder();
+
+        foreach (var c in normalizado)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
+            {
+                continue;
+            }
+
+            if (char.IsLetterOrDigit(c))
+            {
+                builder.Append(c);
+            }
+            else if (c == '-' || c == '_')
+            {
+                builder.Append(c);
+            }
+            else if (char.IsWhiteSpace(c) || c == '.')
+            {
+                builder.Append('-');
+            }
+        }
+
+        var limpo = Regex.Replace(builder.ToString(), @"[-_]{2,}", "-").Trim('-', '_', '.');
+        return limpo;
     }
 
     private void RemoverArquivoFisico(string caminhoArquivo)
